@@ -82,26 +82,34 @@ function BoolField({ label, value, onChange, notesField, notesValue, onNotesChan
 
 export function PatientFormSteps({ step, form, updateField }: Props) {
   const [illnessSort, setIllnessSort] = useState<SortMode>("category");
+  const [illnessCategoryFilter, setIllnessCategoryFilter] = useState("all");
   const [symptomSort, setSymptomSort] = useState<SortMode>("category");
   const [prevIllnessSort, setPrevIllnessSort] = useState<SortMode>("category");
 
+  const allCurrentIllnesses: { label: string; category: string; field: keyof OnboardingFormData; notesField?: keyof OnboardingFormData }[] = [
+    { label: "Senses", category: "Senses", field: "illness_senses", notesField: "illness_senses_notes" },
+    { label: "Neurological", category: "Nervous System", field: "illness_neurological" },
+    { label: "Hormone Function", category: "Hormones", field: "illness_hormone" },
+    { label: "Immune Function & Allergies", category: "Immunity", field: "illness_immune" },
+    { label: "Liver Function", category: "Liver", field: "illness_liver" },
+    { label: "Mental Health", category: "Mental Health", field: "illness_mental_health", notesField: "illness_mental_health_notes" },
+    { label: "Kidney Function", category: "Kidney", field: "illness_kidney", notesField: "illness_kidney_notes" },
+    { label: "Gastrointestinal & Digestion", category: "Gastrointestinal", field: "illness_gastrointestinal", notesField: "illness_gastrointestinal_notes" },
+    { label: "Cardiovascular", category: "Cardiovascular", field: "illness_cardiovascular", notesField: "illness_cardiovascular_notes" },
+    { label: "Cancer", category: "Cancer", field: "illness_cancer", notesField: "illness_cancer_notes" },
+    { label: "Musculoskeletal", category: "Musculoskeletal", field: "illness_musculoskeletal", notesField: "illness_musculoskeletal_notes" },
+  ];
+
+  const illnessCategories = useMemo(() => {
+    const cats = [...new Set(allCurrentIllnesses.map((i) => i.category))].sort();
+    return [{ value: "all", label: "Show All" }, ...cats.map((c) => ({ value: c, label: c }))];
+  }, []);
+
   const currentIllnesses = useMemo(() => {
-    const items: { label: string; category: string; field: keyof OnboardingFormData; notesField?: keyof OnboardingFormData }[] = [
-      { label: "Senses", category: "Senses", field: "illness_senses", notesField: "illness_senses_notes" },
-      { label: "Neurological", category: "Nervous System", field: "illness_neurological" },
-      { label: "Hormone Function", category: "Hormones", field: "illness_hormone" },
-      { label: "Immune Function & Allergies", category: "Immunity", field: "illness_immune" },
-      { label: "Liver Function", category: "Liver", field: "illness_liver" },
-      { label: "Mental Health", category: "Mental Health", field: "illness_mental_health", notesField: "illness_mental_health_notes" },
-      { label: "Kidney Function", category: "Kidney", field: "illness_kidney", notesField: "illness_kidney_notes" },
-      { label: "Gastrointestinal & Digestion", category: "Gastrointestinal", field: "illness_gastrointestinal", notesField: "illness_gastrointestinal_notes" },
-      { label: "Cardiovascular", category: "Cardiovascular", field: "illness_cardiovascular", notesField: "illness_cardiovascular_notes" },
-      { label: "Cancer", category: "Cancer", field: "illness_cancer", notesField: "illness_cancer_notes" },
-      { label: "Musculoskeletal", category: "Musculoskeletal", field: "illness_musculoskeletal", notesField: "illness_musculoskeletal_notes" },
-    ];
+    let items = illnessCategoryFilter === "all" ? allCurrentIllnesses : allCurrentIllnesses.filter((i) => i.category === illnessCategoryFilter);
     if (illnessSort === "alphabetical") return [...items].sort((a, b) => a.label.localeCompare(b.label));
     return items;
-  }, [illnessSort]);
+  }, [illnessSort, illnessCategoryFilter]);
 
   const symptoms = useMemo(() => {
     const items: { label: string; category: string; field: keyof OnboardingFormData }[] = [
@@ -339,7 +347,19 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
   if (step === 6) {
     return (
       <div className="space-y-4">
-        <SortToggle mode={illnessSort} onChange={setIllnessSort} />
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <Select value={illnessCategoryFilter} onValueChange={setIllnessCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by category" />
+            </SelectTrigger>
+            <SelectContent>
+              {illnessCategories.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <SortToggle mode={illnessSort} onChange={setIllnessSort} />
+        </div>
         {currentIllnesses.map((item) => (
           <BoolField
             key={item.field}
