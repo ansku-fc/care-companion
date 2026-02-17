@@ -15,6 +15,7 @@ export type OnboardingFormData = {
   date_of_birth: string;
   email: string;
   phone: string;
+  phone_country_code: string;
   address: string;
   post_code: string;
   city: string;
@@ -107,7 +108,7 @@ export type OnboardingFormData = {
 };
 
 const defaultFormData: OnboardingFormData = {
-  full_name: "", gender: "", date_of_birth: "", email: "", phone: "", address: "", post_code: "", city: "", country: "", tier: "tier_1",
+  full_name: "", gender: "", date_of_birth: "", email: "", phone: "", phone_country_code: "+44", address: "", post_code: "", city: "", country: "", tier: "tier_1",
   age: null, height_cm: null, weight_kg: null, waist_circumference_cm: null, waist_to_hip_ratio: null, bmi: null,
   exercise_met_hours: null, smoking: "no", sun_exposure: null, alcohol_units_per_week: null, other_substances: false, other_substances_notes: "",
   fruits_vegetables_g_per_day: null, fish_g_per_day: null, fiber_g_per_day: null, red_meat_g_per_day: null, sugar_g_per_day: null, sodium_g_per_day: null,
@@ -167,7 +168,7 @@ export function AddPatientDialog() {
           gender: form.gender || null,
           date_of_birth: form.date_of_birth || null,
           email: form.email || null,
-          phone: form.phone || null,
+          phone: form.phone ? `${form.phone_country_code}${form.phone}` : null,
           address: form.address || null,
           post_code: form.post_code || null,
           city: form.city || null,

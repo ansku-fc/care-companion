@@ -106,7 +106,34 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
         </div>
         <div className="space-y-1">
           <Label>Phone</Label>
-          <Input value={form.phone} onChange={(e) => updateField("phone", e.target.value)} />
+          <div className="flex gap-2">
+            <Select value={form.phone_country_code || "+44"} onValueChange={(v) => updateField("phone_country_code", v)}>
+              <SelectTrigger className="w-[100px] shrink-0"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="+44">🇬🇧 +44</SelectItem>
+                <SelectItem value="+1">🇺🇸 +1</SelectItem>
+                <SelectItem value="+46">🇸🇪 +46</SelectItem>
+                <SelectItem value="+47">🇳🇴 +47</SelectItem>
+                <SelectItem value="+45">🇩🇰 +45</SelectItem>
+                <SelectItem value="+49">🇩🇪 +49</SelectItem>
+                <SelectItem value="+33">🇫🇷 +33</SelectItem>
+                <SelectItem value="+34">🇪🇸 +34</SelectItem>
+                <SelectItem value="+39">🇮🇹 +39</SelectItem>
+                <SelectItem value="+31">🇳🇱 +31</SelectItem>
+                <SelectItem value="+61">🇦🇺 +61</SelectItem>
+                <SelectItem value="+91">🇮🇳 +91</SelectItem>
+                <SelectItem value="+86">🇨🇳 +86</SelectItem>
+                <SelectItem value="+81">🇯🇵 +81</SelectItem>
+                <SelectItem value="+82">🇰🇷 +82</SelectItem>
+                <SelectItem value="+55">🇧🇷 +55</SelectItem>
+                <SelectItem value="+353">🇮🇪 +353</SelectItem>
+                <SelectItem value="+41">🇨🇭 +41</SelectItem>
+                <SelectItem value="+43">🇦🇹 +43</SelectItem>
+                <SelectItem value="+48">🇵🇱 +48</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input value={form.phone} onChange={(e) => updateField("phone", e.target.value)} className="flex-1" />
+          </div>
         </div>
         <div className="space-y-1 sm:col-span-2">
           <Label>Address</Label>
