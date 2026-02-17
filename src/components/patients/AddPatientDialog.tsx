@@ -147,6 +147,9 @@ export function AddPatientDialog() {
           email: form.email || null,
           phone: form.phone || null,
           address: form.address || null,
+          post_code: form.post_code || null,
+          city: form.city || null,
+          country: form.country || null,
           tier: (form.tier as any) || "tier_1",
           created_by: user.id,
         })

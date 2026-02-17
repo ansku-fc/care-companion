@@ -338,6 +338,8 @@ export type Database = {
       patients: {
         Row: {
           address: string | null
+          city: string | null
+          country: string | null
           created_at: string
           created_by: string
           date_of_birth: string | null
@@ -351,11 +353,14 @@ export type Database = {
           insurance_provider: string | null
           notes: string | null
           phone: string | null
+          post_code: string | null
           tier: Database["public"]["Enums"]["patient_tier"] | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by: string
           date_of_birth?: string | null
@@ -369,11 +374,14 @@ export type Database = {
           insurance_provider?: string | null
           notes?: string | null
           phone?: string | null
+          post_code?: string | null
           tier?: Database["public"]["Enums"]["patient_tier"] | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by?: string
           date_of_birth?: string | null
@@ -387,6 +395,7 @@ export type Database = {
           insurance_provider?: string | null
           notes?: string | null
           phone?: string | null
+          post_code?: string | null
           tier?: Database["public"]["Enums"]["patient_tier"] | null
           updated_at?: string
         }
