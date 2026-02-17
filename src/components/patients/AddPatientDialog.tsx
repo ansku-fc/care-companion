@@ -88,6 +88,22 @@ export type OnboardingFormData = {
   cancer_screening_breast: boolean | null;
   cancer_screening_cervical: boolean | null;
   cancer_screening_colorectal: boolean | null;
+  // Symptoms
+  symptom_smell: boolean;
+  symptom_vision: boolean;
+  symptom_hearing: boolean;
+  symptom_neurological: boolean;
+  symptom_immune_allergies: boolean;
+  symptom_respiratory: boolean;
+  symptom_skin_rash: boolean;
+  symptom_menstruation_menopause: boolean;
+  symptom_mucous_membranes: boolean;
+  symptom_mobility_restriction: boolean;
+  symptom_kidney_function: boolean;
+  symptom_joint_pain: boolean;
+  symptom_gastrointestinal: boolean;
+  symptom_balance: boolean;
+  symptom_sleep_apnoea: boolean;
 };
 
 const defaultFormData: OnboardingFormData = {
@@ -105,6 +121,11 @@ const defaultFormData: OnboardingFormData = {
   genetic_nervous_system: false, genetic_cardiovascular: false, genetic_melanoma: false, genetic_cancer: false,
   skin_condition: null, infections_per_year: null, vision_acuity: null,
   cancer_screening_breast: null, cancer_screening_cervical: null, cancer_screening_colorectal: null,
+  symptom_smell: false, symptom_vision: false, symptom_hearing: false, symptom_neurological: false,
+  symptom_immune_allergies: false, symptom_respiratory: false, symptom_skin_rash: false,
+  symptom_menstruation_menopause: false, symptom_mucous_membranes: false, symptom_mobility_restriction: false,
+  symptom_kidney_function: false, symptom_joint_pain: false, symptom_gastrointestinal: false,
+  symptom_balance: false, symptom_sleep_apnoea: false,
 };
 
 const STEPS = [
@@ -115,6 +136,7 @@ const STEPS = [
   "Sleep",
   "Mental Health",
   "Current Illnesses",
+  "Symptoms",
   "Previous Illnesses & Genetics",
   "Other Information",
 ];
@@ -223,6 +245,21 @@ export function AddPatientDialog() {
           cancer_screening_breast: form.cancer_screening_breast,
           cancer_screening_cervical: form.cancer_screening_cervical,
           cancer_screening_colorectal: form.cancer_screening_colorectal,
+          symptom_smell: form.symptom_smell,
+          symptom_vision: form.symptom_vision,
+          symptom_hearing: form.symptom_hearing,
+          symptom_neurological: form.symptom_neurological,
+          symptom_immune_allergies: form.symptom_immune_allergies,
+          symptom_respiratory: form.symptom_respiratory,
+          symptom_skin_rash: form.symptom_skin_rash,
+          symptom_menstruation_menopause: form.symptom_menstruation_menopause,
+          symptom_mucous_membranes: form.symptom_mucous_membranes,
+          symptom_mobility_restriction: form.symptom_mobility_restriction,
+          symptom_kidney_function: form.symptom_kidney_function,
+          symptom_joint_pain: form.symptom_joint_pain,
+          symptom_gastrointestinal: form.symptom_gastrointestinal,
+          symptom_balance: form.symptom_balance,
+          symptom_sleep_apnoea: form.symptom_sleep_apnoea,
         });
 
       if (onboardErr) throw onboardErr;

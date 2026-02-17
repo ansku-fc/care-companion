@@ -243,6 +243,28 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
 
   if (step === 7) {
     return (
+      <div className="space-y-4">
+        <BoolField label="Senses: Smell" value={form.symptom_smell} onChange={(v) => updateField("symptom_smell", v)} />
+        <BoolField label="Senses: Vision" value={form.symptom_vision} onChange={(v) => updateField("symptom_vision", v)} />
+        <BoolField label="Senses: Hearing" value={form.symptom_hearing} onChange={(v) => updateField("symptom_hearing", v)} />
+        <BoolField label="Neurological" value={form.symptom_neurological} onChange={(v) => updateField("symptom_neurological", v)} />
+        <BoolField label="Immune Defence or Allergies" value={form.symptom_immune_allergies} onChange={(v) => updateField("symptom_immune_allergies", v)} />
+        <BoolField label="Respiratory" value={form.symptom_respiratory} onChange={(v) => updateField("symptom_respiratory", v)} />
+        <BoolField label="Skin Changes or Rash" value={form.symptom_skin_rash} onChange={(v) => updateField("symptom_skin_rash", v)} />
+        <BoolField label="Menstruation or Menopause" value={form.symptom_menstruation_menopause} onChange={(v) => updateField("symptom_menstruation_menopause", v)} />
+        <BoolField label="Mucous Membranes" value={form.symptom_mucous_membranes} onChange={(v) => updateField("symptom_mucous_membranes", v)} />
+        <BoolField label="Other Mobility Restriction" value={form.symptom_mobility_restriction} onChange={(v) => updateField("symptom_mobility_restriction", v)} />
+        <BoolField label="Kidney Function" value={form.symptom_kidney_function} onChange={(v) => updateField("symptom_kidney_function", v)} />
+        <BoolField label="Joint Pain" value={form.symptom_joint_pain} onChange={(v) => updateField("symptom_joint_pain", v)} />
+        <BoolField label="Gastrointestinal" value={form.symptom_gastrointestinal} onChange={(v) => updateField("symptom_gastrointestinal", v)} />
+        <BoolField label="Balance" value={form.symptom_balance} onChange={(v) => updateField("symptom_balance", v)} />
+        <BoolField label="Sleep Apnoea" value={form.symptom_sleep_apnoea} onChange={(v) => updateField("symptom_sleep_apnoea", v)} />
+      </div>
+    );
+  }
+
+  if (step === 8) {
+    return (
       <div className="space-y-6">
         <div>
           <h4 className="font-medium mb-3">Previous Illnesses</h4>
