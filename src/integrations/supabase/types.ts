@@ -126,6 +126,215 @@ export type Database = {
           },
         ]
       }
+      patient_onboarding: {
+        Row: {
+          age: number | null
+          alcohol_units_per_week: number | null
+          bmi: number | null
+          cancer_screening_breast: boolean | null
+          cancer_screening_cervical: boolean | null
+          cancer_screening_colorectal: boolean | null
+          created_at: string
+          created_by: string
+          deep_sleep_percent: number | null
+          exercise_met_hours: number | null
+          fiber_g_per_day: number | null
+          fish_g_per_day: number | null
+          fruits_vegetables_g_per_day: number | null
+          gad7_score: number | null
+          genetic_cancer: boolean | null
+          genetic_cardiovascular: boolean | null
+          genetic_melanoma: boolean | null
+          genetic_nervous_system: boolean | null
+          height_cm: number | null
+          id: string
+          illness_cancer: boolean | null
+          illness_cancer_notes: string | null
+          illness_cardiovascular: boolean | null
+          illness_cardiovascular_notes: string | null
+          illness_gastrointestinal: boolean | null
+          illness_gastrointestinal_notes: string | null
+          illness_hormone: boolean | null
+          illness_immune: boolean | null
+          illness_kidney: boolean | null
+          illness_kidney_notes: string | null
+          illness_liver: boolean | null
+          illness_mental_health: boolean | null
+          illness_mental_health_notes: string | null
+          illness_musculoskeletal: boolean | null
+          illness_musculoskeletal_notes: string | null
+          illness_neurological: boolean | null
+          illness_senses: boolean | null
+          illness_senses_notes: string | null
+          infections_per_year: number | null
+          insomnia: boolean | null
+          job_strain_perceived: number | null
+          other_substances: boolean | null
+          other_substances_notes: string | null
+          patient_id: string
+          prev_brain_damage: boolean | null
+          prev_cancer: boolean | null
+          prev_osteoporotic_fracture: boolean | null
+          prev_precancerous: boolean | null
+          red_meat_g_per_day: number | null
+          skin_condition: number | null
+          sleep_hours_per_night: number | null
+          sleep_quality: number | null
+          smoking: string | null
+          social_support_perceived: number | null
+          sodium_g_per_day: number | null
+          stress_perceived: number | null
+          substance_use_perceived: number | null
+          sugar_g_per_day: number | null
+          sun_exposure: boolean | null
+          updated_at: string
+          vision_acuity: number | null
+          waist_circumference_cm: number | null
+          waist_to_hip_ratio: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          age?: number | null
+          alcohol_units_per_week?: number | null
+          bmi?: number | null
+          cancer_screening_breast?: boolean | null
+          cancer_screening_cervical?: boolean | null
+          cancer_screening_colorectal?: boolean | null
+          created_at?: string
+          created_by: string
+          deep_sleep_percent?: number | null
+          exercise_met_hours?: number | null
+          fiber_g_per_day?: number | null
+          fish_g_per_day?: number | null
+          fruits_vegetables_g_per_day?: number | null
+          gad7_score?: number | null
+          genetic_cancer?: boolean | null
+          genetic_cardiovascular?: boolean | null
+          genetic_melanoma?: boolean | null
+          genetic_nervous_system?: boolean | null
+          height_cm?: number | null
+          id?: string
+          illness_cancer?: boolean | null
+          illness_cancer_notes?: string | null
+          illness_cardiovascular?: boolean | null
+          illness_cardiovascular_notes?: string | null
+          illness_gastrointestinal?: boolean | null
+          illness_gastrointestinal_notes?: string | null
+          illness_hormone?: boolean | null
+          illness_immune?: boolean | null
+          illness_kidney?: boolean | null
+          illness_kidney_notes?: string | null
+          illness_liver?: boolean | null
+          illness_mental_health?: boolean | null
+          illness_mental_health_notes?: string | null
+          illness_musculoskeletal?: boolean | null
+          illness_musculoskeletal_notes?: string | null
+          illness_neurological?: boolean | null
+          illness_senses?: boolean | null
+          illness_senses_notes?: string | null
+          infections_per_year?: number | null
+          insomnia?: boolean | null
+          job_strain_perceived?: number | null
+          other_substances?: boolean | null
+          other_substances_notes?: string | null
+          patient_id: string
+          prev_brain_damage?: boolean | null
+          prev_cancer?: boolean | null
+          prev_osteoporotic_fracture?: boolean | null
+          prev_precancerous?: boolean | null
+          red_meat_g_per_day?: number | null
+          skin_condition?: number | null
+          sleep_hours_per_night?: number | null
+          sleep_quality?: number | null
+          smoking?: string | null
+          social_support_perceived?: number | null
+          sodium_g_per_day?: number | null
+          stress_perceived?: number | null
+          substance_use_perceived?: number | null
+          sugar_g_per_day?: number | null
+          sun_exposure?: boolean | null
+          updated_at?: string
+          vision_acuity?: number | null
+          waist_circumference_cm?: number | null
+          waist_to_hip_ratio?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          age?: number | null
+          alcohol_units_per_week?: number | null
+          bmi?: number | null
+          cancer_screening_breast?: boolean | null
+          cancer_screening_cervical?: boolean | null
+          cancer_screening_colorectal?: boolean | null
+          created_at?: string
+          created_by?: string
+          deep_sleep_percent?: number | null
+          exercise_met_hours?: number | null
+          fiber_g_per_day?: number | null
+          fish_g_per_day?: number | null
+          fruits_vegetables_g_per_day?: number | null
+          gad7_score?: number | null
+          genetic_cancer?: boolean | null
+          genetic_cardiovascular?: boolean | null
+          genetic_melanoma?: boolean | null
+          genetic_nervous_system?: boolean | null
+          height_cm?: number | null
+          id?: string
+          illness_cancer?: boolean | null
+          illness_cancer_notes?: string | null
+          illness_cardiovascular?: boolean | null
+          illness_cardiovascular_notes?: string | null
+          illness_gastrointestinal?: boolean | null
+          illness_gastrointestinal_notes?: string | null
+          illness_hormone?: boolean | null
+          illness_immune?: boolean | null
+          illness_kidney?: boolean | null
+          illness_kidney_notes?: string | null
+          illness_liver?: boolean | null
+          illness_mental_health?: boolean | null
+          illness_mental_health_notes?: string | null
+          illness_musculoskeletal?: boolean | null
+          illness_musculoskeletal_notes?: string | null
+          illness_neurological?: boolean | null
+          illness_senses?: boolean | null
+          illness_senses_notes?: string | null
+          infections_per_year?: number | null
+          insomnia?: boolean | null
+          job_strain_perceived?: number | null
+          other_substances?: boolean | null
+          other_substances_notes?: string | null
+          patient_id?: string
+          prev_brain_damage?: boolean | null
+          prev_cancer?: boolean | null
+          prev_osteoporotic_fracture?: boolean | null
+          prev_precancerous?: boolean | null
+          red_meat_g_per_day?: number | null
+          skin_condition?: number | null
+          sleep_hours_per_night?: number | null
+          sleep_quality?: number | null
+          smoking?: string | null
+          social_support_perceived?: number | null
+          sodium_g_per_day?: number | null
+          stress_perceived?: number | null
+          substance_use_perceived?: number | null
+          sugar_g_per_day?: number | null
+          sun_exposure?: boolean | null
+          updated_at?: string
+          vision_acuity?: number | null
+          waist_circumference_cm?: number | null
+          waist_to_hip_ratio?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_onboarding_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
