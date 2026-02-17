@@ -1,0 +1,1 @@
+ALTER TABLE public.patients ADD COLUMN tier patient_tier DEFAULT 'tier_1'::patient_tier;
