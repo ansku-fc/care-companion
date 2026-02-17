@@ -1,9 +1,39 @@
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { ArrowDownAZ, LayoutGrid } from "lucide-react";
 import type { OnboardingFormData } from "./AddPatientDialog";
+
+type SortMode = "category" | "alphabetical";
+
+function SortToggle({ mode, onChange }: { mode: SortMode; onChange: (m: SortMode) => void }) {
+  return (
+    <div className="flex gap-1 mb-3">
+      <Button
+        type="button"
+        variant={mode === "category" ? "default" : "outline"}
+        size="sm"
+        className="gap-1.5 text-xs"
+        onClick={() => onChange("category")}
+      >
+        <LayoutGrid className="h-3.5 w-3.5" /> By Category
+      </Button>
+      <Button
+        type="button"
+        variant={mode === "alphabetical" ? "default" : "outline"}
+        size="sm"
+        className="gap-1.5 text-xs"
+        onClick={() => onChange("alphabetical")}
+      >
+        <ArrowDownAZ className="h-3.5 w-3.5" /> A–Z
+      </Button>
+    </div>
+  );
+}
 
 interface Props {
   step: number;
@@ -51,6 +81,62 @@ function BoolField({ label, value, onChange, notesField, notesValue, onNotesChan
 }
 
 export function PatientFormSteps({ step, form, updateField }: Props) {
+  const [illnessSort, setIllnessSort] = useState<SortMode>("category");
+  const [symptomSort, setSymptomSort] = useState<SortMode>("category");
+  const [prevIllnessSort, setPrevIllnessSort] = useState<SortMode>("category");
+
+  const currentIllnesses = useMemo(() => {
+    const items: { label: string; category: string; field: keyof OnboardingFormData; notesField?: keyof OnboardingFormData }[] = [
+      { label: "Senses", category: "Senses", field: "illness_senses", notesField: "illness_senses_notes" },
+      { label: "Neurological", category: "Nervous System", field: "illness_neurological" },
+      { label: "Hormone Function", category: "Hormones", field: "illness_hormone" },
+      { label: "Immune Function & Allergies", category: "Immunity", field: "illness_immune" },
+      { label: "Liver Function", category: "Liver", field: "illness_liver" },
+      { label: "Mental Health", category: "Mental Health", field: "illness_mental_health", notesField: "illness_mental_health_notes" },
+      { label: "Kidney Function", category: "Kidney", field: "illness_kidney", notesField: "illness_kidney_notes" },
+      { label: "Gastrointestinal & Digestion", category: "Gastrointestinal", field: "illness_gastrointestinal", notesField: "illness_gastrointestinal_notes" },
+      { label: "Cardiovascular", category: "Cardiovascular", field: "illness_cardiovascular", notesField: "illness_cardiovascular_notes" },
+      { label: "Cancer", category: "Cancer", field: "illness_cancer", notesField: "illness_cancer_notes" },
+      { label: "Musculoskeletal", category: "Musculoskeletal", field: "illness_musculoskeletal", notesField: "illness_musculoskeletal_notes" },
+    ];
+    if (illnessSort === "alphabetical") return [...items].sort((a, b) => a.label.localeCompare(b.label));
+    return items;
+  }, [illnessSort]);
+
+  const symptoms = useMemo(() => {
+    const items: { label: string; category: string; field: keyof OnboardingFormData }[] = [
+      { label: "Smell", category: "Senses", field: "symptom_smell" },
+      { label: "Vision", category: "Senses", field: "symptom_vision" },
+      { label: "Hearing", category: "Senses", field: "symptom_hearing" },
+      { label: "Neurological", category: "Nervous System", field: "symptom_neurological" },
+      { label: "Immune Defence or Allergies", category: "Immunity", field: "symptom_immune_allergies" },
+      { label: "Respiratory", category: "Respiratory", field: "symptom_respiratory" },
+      { label: "Skin Changes or Rash", category: "Skin", field: "symptom_skin_rash" },
+      { label: "Menstruation or Menopause", category: "Hormones", field: "symptom_menstruation_menopause" },
+      { label: "Mucous Membranes", category: "Mucous", field: "symptom_mucous_membranes" },
+      { label: "Other Mobility Restriction", category: "Musculoskeletal", field: "symptom_mobility_restriction" },
+      { label: "Kidney Function", category: "Kidney", field: "symptom_kidney_function" },
+      { label: "Joint Pain", category: "Musculoskeletal", field: "symptom_joint_pain" },
+      { label: "Gastrointestinal", category: "Gastrointestinal", field: "symptom_gastrointestinal" },
+      { label: "Balance", category: "Nervous System", field: "symptom_balance" },
+      { label: "Sleep Apnoea", category: "Sleep", field: "symptom_sleep_apnoea" },
+    ];
+    if (symptomSort === "alphabetical") return [...items].sort((a, b) => a.label.localeCompare(b.label));
+    // Group by category
+    return [...items].sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
+  }, [symptomSort]);
+
+  const prevIllnesses = useMemo(() => {
+    const items: { label: string; category: string; field: keyof OnboardingFormData; notesField?: keyof OnboardingFormData }[] = [
+      { label: "Brain Damage", category: "Nervous System", field: "prev_brain_damage", notesField: "prev_brain_damage_notes" },
+      { label: "Osteoporotic Fracture", category: "Musculoskeletal", field: "prev_osteoporotic_fracture", notesField: "prev_osteoporotic_fracture_notes" },
+      { label: "Cancer", category: "Cancer", field: "prev_cancer", notesField: "prev_cancer_notes" },
+      { label: "Precancerous Condition", category: "Cancer", field: "prev_precancerous", notesField: "prev_precancerous_notes" },
+    ];
+    if (prevIllnessSort === "alphabetical") return [...items].sort((a, b) => a.label.localeCompare(b.label));
+    return [...items].sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
+  }, [prevIllnessSort]);
+
   const TIER_OPTIONS = [
     { value: "tier_1", label: "Tier 1" },
     { value: "tier_2", label: "Tier 2" },
@@ -253,39 +339,41 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
   if (step === 6) {
     return (
       <div className="space-y-4">
-        <BoolField label="Senses" value={form.illness_senses} onChange={(v) => updateField("illness_senses", v)} notesField notesValue={form.illness_senses_notes} onNotesChange={(v) => updateField("illness_senses_notes", v)} />
-        <BoolField label="Neurological" value={form.illness_neurological} onChange={(v) => updateField("illness_neurological", v)} />
-        <BoolField label="Hormone Function" value={form.illness_hormone} onChange={(v) => updateField("illness_hormone", v)} />
-        <BoolField label="Immune Function & Allergies" value={form.illness_immune} onChange={(v) => updateField("illness_immune", v)} />
-        <BoolField label="Liver Function" value={form.illness_liver} onChange={(v) => updateField("illness_liver", v)} />
-        <BoolField label="Mental Health" value={form.illness_mental_health} onChange={(v) => updateField("illness_mental_health", v)} notesField notesValue={form.illness_mental_health_notes} onNotesChange={(v) => updateField("illness_mental_health_notes", v)} />
-        <BoolField label="Kidney Function" value={form.illness_kidney} onChange={(v) => updateField("illness_kidney", v)} notesField notesValue={form.illness_kidney_notes} onNotesChange={(v) => updateField("illness_kidney_notes", v)} />
-        <BoolField label="Gastrointestinal & Digestion" value={form.illness_gastrointestinal} onChange={(v) => updateField("illness_gastrointestinal", v)} notesField notesValue={form.illness_gastrointestinal_notes} onNotesChange={(v) => updateField("illness_gastrointestinal_notes", v)} />
-        <BoolField label="Cardiovascular" value={form.illness_cardiovascular} onChange={(v) => updateField("illness_cardiovascular", v)} notesField notesValue={form.illness_cardiovascular_notes} onNotesChange={(v) => updateField("illness_cardiovascular_notes", v)} />
-        <BoolField label="Cancer" value={form.illness_cancer} onChange={(v) => updateField("illness_cancer", v)} notesField notesValue={form.illness_cancer_notes} onNotesChange={(v) => updateField("illness_cancer_notes", v)} />
-        <BoolField label="Musculoskeletal" value={form.illness_musculoskeletal} onChange={(v) => updateField("illness_musculoskeletal", v)} notesField notesValue={form.illness_musculoskeletal_notes} onNotesChange={(v) => updateField("illness_musculoskeletal_notes", v)} />
+        <SortToggle mode={illnessSort} onChange={setIllnessSort} />
+        {currentIllnesses.map((item) => (
+          <BoolField
+            key={item.field}
+            label={item.label}
+            value={form[item.field] as boolean}
+            onChange={(v) => updateField(item.field, v)}
+            notesField={!!item.notesField}
+            notesValue={item.notesField ? (form[item.notesField] as string) : undefined}
+            onNotesChange={item.notesField ? (v) => updateField(item.notesField!, v) : undefined}
+          />
+        ))}
       </div>
     );
   }
 
   if (step === 7) {
+    let lastCategory = "";
     return (
       <div className="space-y-4">
-        <BoolField label="Senses: Smell" value={form.symptom_smell} onChange={(v) => updateField("symptom_smell", v)} />
-        <BoolField label="Senses: Vision" value={form.symptom_vision} onChange={(v) => updateField("symptom_vision", v)} />
-        <BoolField label="Senses: Hearing" value={form.symptom_hearing} onChange={(v) => updateField("symptom_hearing", v)} />
-        <BoolField label="Neurological" value={form.symptom_neurological} onChange={(v) => updateField("symptom_neurological", v)} />
-        <BoolField label="Immune Defence or Allergies" value={form.symptom_immune_allergies} onChange={(v) => updateField("symptom_immune_allergies", v)} />
-        <BoolField label="Respiratory" value={form.symptom_respiratory} onChange={(v) => updateField("symptom_respiratory", v)} />
-        <BoolField label="Skin Changes or Rash" value={form.symptom_skin_rash} onChange={(v) => updateField("symptom_skin_rash", v)} />
-        <BoolField label="Menstruation or Menopause" value={form.symptom_menstruation_menopause} onChange={(v) => updateField("symptom_menstruation_menopause", v)} />
-        <BoolField label="Mucous Membranes" value={form.symptom_mucous_membranes} onChange={(v) => updateField("symptom_mucous_membranes", v)} />
-        <BoolField label="Other Mobility Restriction" value={form.symptom_mobility_restriction} onChange={(v) => updateField("symptom_mobility_restriction", v)} />
-        <BoolField label="Kidney Function" value={form.symptom_kidney_function} onChange={(v) => updateField("symptom_kidney_function", v)} />
-        <BoolField label="Joint Pain" value={form.symptom_joint_pain} onChange={(v) => updateField("symptom_joint_pain", v)} />
-        <BoolField label="Gastrointestinal" value={form.symptom_gastrointestinal} onChange={(v) => updateField("symptom_gastrointestinal", v)} />
-        <BoolField label="Balance" value={form.symptom_balance} onChange={(v) => updateField("symptom_balance", v)} />
-        <BoolField label="Sleep Apnoea" value={form.symptom_sleep_apnoea} onChange={(v) => updateField("symptom_sleep_apnoea", v)} />
+        <SortToggle mode={symptomSort} onChange={setSymptomSort} />
+        {symptoms.map((item) => {
+          const showHeader = symptomSort === "category" && item.category !== lastCategory;
+          lastCategory = item.category;
+          return (
+            <div key={item.field}>
+              {showHeader && <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">{item.category}</p>}
+              <BoolField
+                label={item.label}
+                value={form[item.field] as boolean}
+                onChange={(v) => updateField(item.field, v)}
+              />
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -295,11 +383,19 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
       <div className="space-y-6">
         <div>
           <h4 className="font-medium mb-3">Previous Illnesses</h4>
+          <SortToggle mode={prevIllnessSort} onChange={setPrevIllnessSort} />
           <div className="space-y-3">
-            <BoolField label="Brain Damage" value={form.prev_brain_damage} onChange={(v) => updateField("prev_brain_damage", v)} notesField notesValue={form.prev_brain_damage_notes} onNotesChange={(v) => updateField("prev_brain_damage_notes", v)} />
-            <BoolField label="Osteoporotic Fracture" value={form.prev_osteoporotic_fracture} onChange={(v) => updateField("prev_osteoporotic_fracture", v)} notesField notesValue={form.prev_osteoporotic_fracture_notes} onNotesChange={(v) => updateField("prev_osteoporotic_fracture_notes", v)} />
-            <BoolField label="Cancer" value={form.prev_cancer} onChange={(v) => updateField("prev_cancer", v)} notesField notesValue={form.prev_cancer_notes} onNotesChange={(v) => updateField("prev_cancer_notes", v)} />
-            <BoolField label="Precancerous Condition" value={form.prev_precancerous} onChange={(v) => updateField("prev_precancerous", v)} notesField notesValue={form.prev_precancerous_notes} onNotesChange={(v) => updateField("prev_precancerous_notes", v)} />
+            {prevIllnesses.map((item) => (
+              <BoolField
+                key={item.field}
+                label={item.label}
+                value={form[item.field] as boolean}
+                onChange={(v) => updateField(item.field, v)}
+                notesField={!!item.notesField}
+                notesValue={item.notesField ? (form[item.notesField] as string) : undefined}
+                onNotesChange={item.notesField ? (v) => updateField(item.notesField!, v) : undefined}
+              />
+            ))}
           </div>
         </div>
         <div>
@@ -315,7 +411,7 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
     );
   }
 
-  // Step 8 — Other info
+  // Step 9 — Other info
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <NumField label="Skin Condition" suffix="1-10" value={form.skin_condition} onChange={(v) => updateField("skin_condition", v)} min={1} max={10} />
