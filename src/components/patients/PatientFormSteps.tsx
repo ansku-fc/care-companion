@@ -296,10 +296,10 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
         <div>
           <h4 className="font-medium mb-3">Previous Illnesses</h4>
           <div className="space-y-3">
-            <BoolField label="Brain Damage" value={form.prev_brain_damage} onChange={(v) => updateField("prev_brain_damage", v)} />
-            <BoolField label="Osteoporotic Fracture" value={form.prev_osteoporotic_fracture} onChange={(v) => updateField("prev_osteoporotic_fracture", v)} />
-            <BoolField label="Cancer" value={form.prev_cancer} onChange={(v) => updateField("prev_cancer", v)} />
-            <BoolField label="Precancerous Condition" value={form.prev_precancerous} onChange={(v) => updateField("prev_precancerous", v)} />
+            <BoolField label="Brain Damage" value={form.prev_brain_damage} onChange={(v) => updateField("prev_brain_damage", v)} notesField notesValue={form.prev_brain_damage_notes} onNotesChange={(v) => updateField("prev_brain_damage_notes", v)} />
+            <BoolField label="Osteoporotic Fracture" value={form.prev_osteoporotic_fracture} onChange={(v) => updateField("prev_osteoporotic_fracture", v)} notesField notesValue={form.prev_osteoporotic_fracture_notes} onNotesChange={(v) => updateField("prev_osteoporotic_fracture_notes", v)} />
+            <BoolField label="Cancer" value={form.prev_cancer} onChange={(v) => updateField("prev_cancer", v)} notesField notesValue={form.prev_cancer_notes} onNotesChange={(v) => updateField("prev_cancer_notes", v)} />
+            <BoolField label="Precancerous Condition" value={form.prev_precancerous} onChange={(v) => updateField("prev_precancerous", v)} notesField notesValue={form.prev_precancerous_notes} onNotesChange={(v) => updateField("prev_precancerous_notes", v)} />
           </div>
         </div>
         <div>

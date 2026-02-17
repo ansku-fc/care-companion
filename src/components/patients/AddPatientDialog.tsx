@@ -74,9 +74,13 @@ export type OnboardingFormData = {
   illness_musculoskeletal_notes: string;
   // Previous illnesses
   prev_brain_damage: boolean;
+  prev_brain_damage_notes: string;
   prev_osteoporotic_fracture: boolean;
+  prev_osteoporotic_fracture_notes: string;
   prev_cancer: boolean;
+  prev_cancer_notes: string;
   prev_precancerous: boolean;
+  prev_precancerous_notes: string;
   // Genetic
   genetic_nervous_system: boolean;
   genetic_cardiovascular: boolean;
@@ -118,7 +122,7 @@ const defaultFormData: OnboardingFormData = {
   illness_mental_health: false, illness_mental_health_notes: "", illness_kidney: false, illness_kidney_notes: "",
   illness_gastrointestinal: false, illness_gastrointestinal_notes: "", illness_cardiovascular: false, illness_cardiovascular_notes: "",
   illness_cancer: false, illness_cancer_notes: "", illness_musculoskeletal: false, illness_musculoskeletal_notes: "",
-  prev_brain_damage: false, prev_osteoporotic_fracture: false, prev_cancer: false, prev_precancerous: false,
+  prev_brain_damage: false, prev_brain_damage_notes: "", prev_osteoporotic_fracture: false, prev_osteoporotic_fracture_notes: "", prev_cancer: false, prev_cancer_notes: "", prev_precancerous: false, prev_precancerous_notes: "",
   genetic_nervous_system: false, genetic_cardiovascular: false, genetic_melanoma: false, genetic_cancer: false,
   skin_condition: null, infections_per_year: null, vision_acuity: null,
   cancer_screening_breast: null, cancer_screening_cervical: null, cancer_screening_colorectal: null,
@@ -233,9 +237,13 @@ export function AddPatientDialog() {
           illness_musculoskeletal: form.illness_musculoskeletal,
           illness_musculoskeletal_notes: form.illness_musculoskeletal_notes || null,
           prev_brain_damage: form.prev_brain_damage,
+          prev_brain_damage_notes: form.prev_brain_damage_notes || null,
           prev_osteoporotic_fracture: form.prev_osteoporotic_fracture,
+          prev_osteoporotic_fracture_notes: form.prev_osteoporotic_fracture_notes || null,
           prev_cancer: form.prev_cancer,
+          prev_cancer_notes: form.prev_cancer_notes || null,
           prev_precancerous: form.prev_precancerous,
+          prev_precancerous_notes: form.prev_precancerous_notes || null,
           genetic_nervous_system: form.genetic_nervous_system,
           genetic_cardiovascular: form.genetic_cardiovascular,
           genetic_melanoma: form.genetic_melanoma,
