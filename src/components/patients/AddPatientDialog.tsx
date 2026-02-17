@@ -239,11 +239,33 @@ export function AddPatientDialog() {
           Add Patient
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Patient — {STEPS[step]}</DialogTitle>
-          <p className="text-sm text-muted-foreground">Step {step + 1} of {STEPS.length}</p>
         </DialogHeader>
+
+        {/* Step indicator */}
+        <nav className="flex flex-wrap gap-1.5 pb-3 border-b">
+          {STEPS.map((label, i) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => {
+                if (i === 0 || form.full_name.trim()) setStep(i);
+                else toast.error("Patient name is required before skipping ahead");
+              }}
+              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                i === step
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : i < step
+                  ? "bg-muted text-foreground border-border"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/50"
+              }`}
+            >
+              {i + 1}. {label}
+            </button>
+          ))}
+        </nav>
 
         <PatientFormSteps step={step} form={form} updateField={updateField} />
 
@@ -252,6 +274,11 @@ export function AddPatientDialog() {
             Back
           </Button>
           <div className="flex gap-2">
+            {step < STEPS.length - 1 && step > 0 && (
+              <Button variant="ghost" onClick={() => setStep((s) => s + 1)}>
+                Skip
+              </Button>
+            )}
             {step < STEPS.length - 1 ? (
               <Button onClick={() => {
                 if (step === 0 && !form.full_name.trim()) {
