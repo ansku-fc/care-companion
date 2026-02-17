@@ -173,9 +173,13 @@ export type Database = {
           other_substances_notes: string | null
           patient_id: string
           prev_brain_damage: boolean | null
+          prev_brain_damage_notes: string | null
           prev_cancer: boolean | null
+          prev_cancer_notes: string | null
           prev_osteoporotic_fracture: boolean | null
+          prev_osteoporotic_fracture_notes: string | null
           prev_precancerous: boolean | null
+          prev_precancerous_notes: string | null
           red_meat_g_per_day: number | null
           skin_condition: number | null
           sleep_hours_per_night: number | null
@@ -254,9 +258,13 @@ export type Database = {
           other_substances_notes?: string | null
           patient_id: string
           prev_brain_damage?: boolean | null
+          prev_brain_damage_notes?: string | null
           prev_cancer?: boolean | null
+          prev_cancer_notes?: string | null
           prev_osteoporotic_fracture?: boolean | null
+          prev_osteoporotic_fracture_notes?: string | null
           prev_precancerous?: boolean | null
+          prev_precancerous_notes?: string | null
           red_meat_g_per_day?: number | null
           skin_condition?: number | null
           sleep_hours_per_night?: number | null
@@ -335,9 +343,13 @@ export type Database = {
           other_substances_notes?: string | null
           patient_id?: string
           prev_brain_damage?: boolean | null
+          prev_brain_damage_notes?: string | null
           prev_cancer?: boolean | null
+          prev_cancer_notes?: string | null
           prev_osteoporotic_fracture?: boolean | null
+          prev_osteoporotic_fracture_notes?: string | null
           prev_precancerous?: boolean | null
+          prev_precancerous_notes?: string | null
           red_meat_g_per_day?: number | null
           skin_condition?: number | null
           sleep_hours_per_night?: number | null
