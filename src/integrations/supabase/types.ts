@@ -187,6 +187,21 @@ export type Database = {
           substance_use_perceived: number | null
           sugar_g_per_day: number | null
           sun_exposure: boolean | null
+          symptom_balance: boolean | null
+          symptom_gastrointestinal: boolean | null
+          symptom_hearing: boolean | null
+          symptom_immune_allergies: boolean | null
+          symptom_joint_pain: boolean | null
+          symptom_kidney_function: boolean | null
+          symptom_menstruation_menopause: boolean | null
+          symptom_mobility_restriction: boolean | null
+          symptom_mucous_membranes: boolean | null
+          symptom_neurological: boolean | null
+          symptom_respiratory: boolean | null
+          symptom_skin_rash: boolean | null
+          symptom_sleep_apnoea: boolean | null
+          symptom_smell: boolean | null
+          symptom_vision: boolean | null
           updated_at: string
           vision_acuity: number | null
           waist_circumference_cm: number | null
@@ -253,6 +268,21 @@ export type Database = {
           substance_use_perceived?: number | null
           sugar_g_per_day?: number | null
           sun_exposure?: boolean | null
+          symptom_balance?: boolean | null
+          symptom_gastrointestinal?: boolean | null
+          symptom_hearing?: boolean | null
+          symptom_immune_allergies?: boolean | null
+          symptom_joint_pain?: boolean | null
+          symptom_kidney_function?: boolean | null
+          symptom_menstruation_menopause?: boolean | null
+          symptom_mobility_restriction?: boolean | null
+          symptom_mucous_membranes?: boolean | null
+          symptom_neurological?: boolean | null
+          symptom_respiratory?: boolean | null
+          symptom_skin_rash?: boolean | null
+          symptom_sleep_apnoea?: boolean | null
+          symptom_smell?: boolean | null
+          symptom_vision?: boolean | null
           updated_at?: string
           vision_acuity?: number | null
           waist_circumference_cm?: number | null
@@ -319,6 +349,21 @@ export type Database = {
           substance_use_perceived?: number | null
           sugar_g_per_day?: number | null
           sun_exposure?: boolean | null
+          symptom_balance?: boolean | null
+          symptom_gastrointestinal?: boolean | null
+          symptom_hearing?: boolean | null
+          symptom_immune_allergies?: boolean | null
+          symptom_joint_pain?: boolean | null
+          symptom_kidney_function?: boolean | null
+          symptom_menstruation_menopause?: boolean | null
+          symptom_mobility_restriction?: boolean | null
+          symptom_mucous_membranes?: boolean | null
+          symptom_neurological?: boolean | null
+          symptom_respiratory?: boolean | null
+          symptom_skin_rash?: boolean | null
+          symptom_sleep_apnoea?: boolean | null
+          symptom_smell?: boolean | null
+          symptom_vision?: boolean | null
           updated_at?: string
           vision_acuity?: number | null
           waist_circumference_cm?: number | null
