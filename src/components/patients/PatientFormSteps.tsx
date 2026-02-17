@@ -97,6 +97,18 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
           <Input value={form.address} onChange={(e) => updateField("address", e.target.value)} />
         </div>
         <div className="space-y-1">
+          <Label>Post Code</Label>
+          <Input value={form.post_code} onChange={(e) => updateField("post_code", e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label>City</Label>
+          <Input value={form.city} onChange={(e) => updateField("city", e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label>Country</Label>
+          <Input value={form.country} onChange={(e) => updateField("country", e.target.value)} />
+        </div>
+        <div className="space-y-1">
           <Label>Tier</Label>
           <Select value={form.tier} onValueChange={(v) => updateField("tier", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
