@@ -16,6 +16,9 @@ export type OnboardingFormData = {
   email: string;
   phone: string;
   address: string;
+  post_code: string;
+  city: string;
+  country: string;
   tier: string;
   // Basic info
   age: number | null;
@@ -88,7 +91,7 @@ export type OnboardingFormData = {
 };
 
 const defaultFormData: OnboardingFormData = {
-  full_name: "", gender: "", date_of_birth: "", email: "", phone: "", address: "", tier: "tier_1",
+  full_name: "", gender: "", date_of_birth: "", email: "", phone: "", address: "", post_code: "", city: "", country: "", tier: "tier_1",
   age: null, height_cm: null, weight_kg: null, waist_circumference_cm: null, waist_to_hip_ratio: null, bmi: null,
   exercise_met_hours: null, smoking: "no", sun_exposure: null, alcohol_units_per_week: null, other_substances: false, other_substances_notes: "",
   fruits_vegetables_g_per_day: null, fish_g_per_day: null, fiber_g_per_day: null, red_meat_g_per_day: null, sugar_g_per_day: null, sodium_g_per_day: null,
