@@ -82,7 +82,23 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
         </div>
         <div className="space-y-1">
           <Label>Date of Birth</Label>
-          <Input type="date" value={form.date_of_birth} onChange={(e) => updateField("date_of_birth", e.target.value)} />
+          <Input type="date" value={form.date_of_birth} onChange={(e) => {
+            updateField("date_of_birth", e.target.value);
+            if (e.target.value) {
+              const today = new Date();
+              const dob = new Date(e.target.value);
+              let age = today.getFullYear() - dob.getFullYear();
+              const m = today.getMonth() - dob.getMonth();
+              if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+              updateField("age", age >= 0 ? age : null);
+            } else {
+              updateField("age", null);
+            }
+          }} />
+        </div>
+        <div className="space-y-1">
+          <Label>Age</Label>
+          <Input type="number" value={form.age ?? ""} disabled className="bg-muted" />
         </div>
         <div className="space-y-1">
           <Label>Email</Label>
