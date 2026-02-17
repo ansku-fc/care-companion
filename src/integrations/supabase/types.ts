@@ -142,6 +142,7 @@ export type Database = {
           insurance_provider: string | null
           notes: string | null
           phone: string | null
+          tier: Database["public"]["Enums"]["patient_tier"] | null
           updated_at: string
         }
         Insert: {
@@ -159,6 +160,7 @@ export type Database = {
           insurance_provider?: string | null
           notes?: string | null
           phone?: string | null
+          tier?: Database["public"]["Enums"]["patient_tier"] | null
           updated_at?: string
         }
         Update: {
@@ -176,6 +178,7 @@ export type Database = {
           insurance_provider?: string | null
           notes?: string | null
           phone?: string | null
+          tier?: Database["public"]["Enums"]["patient_tier"] | null
           updated_at?: string
         }
         Relationships: []
