@@ -5,14 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Users, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from "recharts";
 
 const HEALTH_CATEGORIES = [
-  "Senses", "Nervous System", "Physical Performance", "Respiratory System",
-  "Hormone Function", "Skin & Mucous Membranes", "Immunity & Allergies",
-  "Body Composition & Nutrition", "Liver Function", "Mental Health",
-  "Kidney Function", "Alcohol & Other Substances", "Cardiovascular System",
-  "Cancer Risk", "Musculoskeletal System", "Sleep",
+  "Senses", "Nervous System", "Physical Performance", "Respiratory",
+  "Hormones", "Skin & Mucous", "Immunity",
+  "Nutrition", "Liver", "Mental Health",
+  "Kidney", "Substances", "Cardiovascular",
+  "Cancer Risk", "Musculoskeletal", "Sleep",
 ];
+
+// Mock radar data: each category has a latest and earlier score (1-10)
+const generateRadarData = () =>
+  HEALTH_CATEGORIES.map((cat) => ({
+    category: cat,
+    latest: Math.floor(Math.random() * 7) + 1,
+    earlier: Math.floor(Math.random() * 7) + 2,
+  }));
 
 const TIER_OPTIONS = [
   { value: "all", label: "All Tiers" },
@@ -136,18 +145,39 @@ const PatientsPage = () => {
               </div>
 
               <h3 className="text-lg font-semibold mb-4">Health Overview</h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {HEALTH_CATEGORIES.map((cat) => (
-                  <Card key={cat} className="cursor-pointer hover:border-primary transition-colors">
-                    <CardContent className="p-4">
-                      <p className="text-sm font-medium">{cat}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="h-2 w-2 rounded-full bg-success" />
-                        <span className="text-xs text-muted-foreground">Normal</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+              <p className="text-sm text-muted-foreground mb-4">
+                Scale: 1 (no action needed) → 10 (immediate action needed)
+              </p>
+              <div className="h-[450px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={generateRadarData()} cx="50%" cy="50%" outerRadius="75%">
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis
+                      dataKey="category"
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    />
+                    <PolarRadiusAxis
+                      angle={90}
+                      domain={[0, 10]}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                    />
+                    <Radar
+                      name="Latest"
+                      dataKey="latest"
+                      stroke="hsl(var(--primary))"
+                      fill="hsl(var(--primary))"
+                      fillOpacity={0.3}
+                    />
+                    <Radar
+                      name="Earlier"
+                      dataKey="earlier"
+                      stroke="hsl(var(--warning))"
+                      fill="hsl(var(--warning))"
+                      fillOpacity={0.15}
+                    />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
