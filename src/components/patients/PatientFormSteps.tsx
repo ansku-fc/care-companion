@@ -92,6 +92,10 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
           <Label>Phone</Label>
           <Input value={form.phone} onChange={(e) => updateField("phone", e.target.value)} />
         </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>Address</Label>
+          <Input value={form.address} onChange={(e) => updateField("address", e.target.value)} />
+        </div>
         <div className="space-y-1">
           <Label>Tier</Label>
           <Select value={form.tier} onValueChange={(v) => updateField("tier", v)}>
