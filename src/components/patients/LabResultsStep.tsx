@@ -23,6 +23,9 @@ export type LabResultsData = {
   tsh_mu_l: number | null;
   testosterone_estrogen_abnormal: boolean | null;
   apoe_e4: boolean | null;
+  pef_percent: number | null;
+  fev1_percent: number | null;
+  fvc_percent: number | null;
   source: "manual" | "file_upload" | "tandem";
   source_filename: string | null;
   _file_content: string | null;
@@ -44,6 +47,9 @@ export const defaultLabResults: LabResultsData = {
   tsh_mu_l: null,
   testosterone_estrogen_abnormal: null,
   apoe_e4: null,
+  pef_percent: null,
+  fev1_percent: null,
+  fvc_percent: null,
   source: "manual",
   source_filename: null,
   _file_content: null,
@@ -290,6 +296,17 @@ export function LabResultsStep({ data, onChange }: Props) {
           <div className="flex items-center justify-between">
             <Label>APOE ε4</Label>
             <Switch checked={data.apoe_e4 ?? false} onCheckedChange={(v) => update("apoe_e4", v)} />
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-medium text-sm mb-3 text-muted-foreground uppercase tracking-wide">
+            Spirometry
+          </h4>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <NumField label="PEF" suffix="%" value={data.pef_percent} onChange={(v) => update("pef_percent", v)} step={0.1} />
+            <NumField label="FEV1" suffix="%" value={data.fev1_percent} onChange={(v) => update("fev1_percent", v)} step={0.1} />
+            <NumField label="FVC" suffix="%" value={data.fvc_percent} onChange={(v) => update("fvc_percent", v)} step={0.1} />
           </div>
         </div>
       </div>

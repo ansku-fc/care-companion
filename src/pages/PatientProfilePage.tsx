@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -692,6 +693,67 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
   labResults: Tables<"patient_lab_results">[];
   onLabResultsAdded: () => void;
 }) {
+  const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
+
+  const categories = [
+    {
+      title: "Cardiovascular & Metabolic Health",
+      rows: [
+        { label: "LDL", unit: "mmol/l", key: "ldl_mmol_l" as const },
+        { label: "HbA1c", unit: "mmol/mol", key: "hba1c_mmol_mol" as const },
+        { label: "RR / Blood Pressure", unit: "mmHg", key: "_bp" as const },
+      ],
+    },
+    {
+      title: "Liver Function",
+      rows: [
+        { label: "ALAT", unit: "U/l", key: "alat_u_l" as const },
+        { label: "AFOS / ALP", unit: "U/l", key: "afos_alp_u_l" as const },
+        { label: "GT", unit: "U/l", key: "gt_u_l" as const },
+        { label: "ALAT / ASAT ratio", unit: "", key: "alat_asat_ratio" as const },
+      ],
+    },
+    {
+      title: "Kidney Function",
+      rows: [
+        { label: "eGFR", unit: "ml/min/1.73 m²", key: "egfr" as const },
+        { label: "Cystatin C", unit: "mg/l", key: "cystatin_c" as const },
+        { label: "U-Alb/Krea, abnormal", unit: "0/1", key: "u_alb_krea_abnormal" as const },
+      ],
+    },
+    {
+      title: "Endocrine & Hormonal Health",
+      rows: [
+        { label: "TSH", unit: "mU/l", key: "tsh_mu_l" as const },
+        { label: "Testosterone / Estrogen, abnormal", unit: "0/1", key: "testosterone_estrogen_abnormal" as const },
+      ],
+    },
+    {
+      title: "Genetics & Risk Markers",
+      rows: [
+        { label: "APOE ε4", unit: "0/1", key: "apoe_e4" as const },
+      ],
+    },
+    {
+      title: "Spirometry",
+      rows: [
+        { label: "PEF", unit: "%", key: "pef_percent" as const },
+        { label: "FEV1", unit: "%", key: "fev1_percent" as const },
+        { label: "FVC", unit: "%", key: "fvc_percent" as const },
+      ],
+    },
+  ];
+
+  const getCellValue = (lab: Tables<"patient_lab_results">, key: string): string => {
+    if (key === "_bp") {
+      return lab.blood_pressure_systolic != null ? `${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic}` : "—";
+    }
+    const val = (lab as any)[key];
+    if (val === null || val === undefined) return "—";
+    if (typeof val === "boolean") return val ? "1" : "0";
+    return String(val);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -702,33 +764,50 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
         <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
       </div>
 
-      {labResults.length === 0 ? (
+      {sorted.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             No lab results yet. Click "Add Lab Results" to add the first entry.
           </CardContent>
         </Card>
       ) : (
-        labResults.map((lab) => (
-          <Card key={lab.id}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{lab.result_date} — {lab.source === "manual" ? "Manual Entry" : lab.source_filename || lab.source}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-                <div><dt className="text-muted-foreground">LDL</dt><dd>{lab.ldl_mmol_l ? `${lab.ldl_mmol_l} mmol/L` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">HbA1c</dt><dd>{lab.hba1c_mmol_mol ? `${lab.hba1c_mmol_mol} mmol/mol` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">BP</dt><dd>{lab.blood_pressure_systolic ? `${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic}` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">ALAT</dt><dd>{lab.alat_u_l ? `${lab.alat_u_l} U/L` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">AFOS/ALP</dt><dd>{lab.afos_alp_u_l ? `${lab.afos_alp_u_l} U/L` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">GT</dt><dd>{lab.gt_u_l ? `${lab.gt_u_l} U/L` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">eGFR</dt><dd>{lab.egfr ?? "—"}</dd></div>
-                <div><dt className="text-muted-foreground">Cystatin C</dt><dd>{lab.cystatin_c ?? "—"}</dd></div>
-                <div><dt className="text-muted-foreground">TSH</dt><dd>{lab.tsh_mu_l ? `${lab.tsh_mu_l} mU/L` : "—"}</dd></div>
-              </dl>
-            </CardContent>
-          </Card>
-        ))
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[200px]">Marker</TableHead>
+                    <TableHead className="min-w-[80px]">Unit</TableHead>
+                    {sorted.map((lab) => (
+                      <TableHead key={lab.id} className="min-w-[100px] text-center">{lab.result_date}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categories.map((cat) => (
+                    <>
+                      <TableRow key={cat.title}>
+                        <TableCell colSpan={2 + sorted.length} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2">
+                          {cat.title}
+                        </TableCell>
+                      </TableRow>
+                      {cat.rows.map((row) => (
+                        <TableRow key={row.key}>
+                          <TableCell className="font-medium text-sm">{row.label}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{row.unit}</TableCell>
+                          {sorted.map((lab) => (
+                            <TableCell key={lab.id} className="text-center text-sm">{getCellValue(lab, row.key)}</TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
