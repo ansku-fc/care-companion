@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
-  Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone,
+  Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
   Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save
 } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer } from "recharts";
@@ -136,6 +136,16 @@ const PatientProfilePage = () => {
               Health Overview
             </button>
 
+            <button
+              onClick={() => setActiveSection("lab_results")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <FlaskConical className="h-4 w-4" />
+              Lab Results
+            </button>
+
             <Separator className="my-2" />
             <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Health Dimensions</p>
 
@@ -175,6 +185,8 @@ const PatientProfilePage = () => {
             onSelectDimension={(key) => setActiveSection(key)}
             onPatientUpdate={(updated) => setPatient(updated)}
           />
+        ) : activeSection === "lab_results" ? (
+          <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} />
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -672,6 +684,53 @@ function HealthDimensionView({
       </CardHeader>
       <CardContent>{renderContent()}</CardContent>
     </Card>
+  );
+}
+
+function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
+  patientId: string;
+  labResults: Tables<"patient_lab_results">[];
+  onLabResultsAdded: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <FlaskConical className="h-5 w-5 text-primary" />
+          Lab Results
+        </h2>
+        <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+      </div>
+
+      {labResults.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No lab results yet. Click "Add Lab Results" to add the first entry.
+          </CardContent>
+        </Card>
+      ) : (
+        labResults.map((lab) => (
+          <Card key={lab.id}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{lab.result_date} — {lab.source === "manual" ? "Manual Entry" : lab.source_filename || lab.source}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                <div><dt className="text-muted-foreground">LDL</dt><dd>{lab.ldl_mmol_l ? `${lab.ldl_mmol_l} mmol/L` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">HbA1c</dt><dd>{lab.hba1c_mmol_mol ? `${lab.hba1c_mmol_mol} mmol/mol` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">BP</dt><dd>{lab.blood_pressure_systolic ? `${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic}` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">ALAT</dt><dd>{lab.alat_u_l ? `${lab.alat_u_l} U/L` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">AFOS/ALP</dt><dd>{lab.afos_alp_u_l ? `${lab.afos_alp_u_l} U/L` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">GT</dt><dd>{lab.gt_u_l ? `${lab.gt_u_l} U/L` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">eGFR</dt><dd>{lab.egfr ?? "—"}</dd></div>
+                <div><dt className="text-muted-foreground">Cystatin C</dt><dd>{lab.cystatin_c ?? "—"}</dd></div>
+                <div><dt className="text-muted-foreground">TSH</dt><dd>{lab.tsh_mu_l ? `${lab.tsh_mu_l} mU/L` : "—"}</dd></div>
+              </dl>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
   );
 }
 
