@@ -6,10 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save
 } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
@@ -163,10 +166,12 @@ const PatientProfilePage = () => {
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} />
         ) : activeSection === "health_overview" ? (
           <HealthOverviewView
+            patient={patient}
             onboarding={onboarding}
             labResults={labResults}
             healthCategories={healthCategories}
             onSelectDimension={(key) => setActiveSection(key)}
+            onPatientUpdate={(updated) => setPatient(updated)}
           />
         ) : (
           <HealthDimensionView
@@ -282,17 +287,38 @@ function computeRadarData(
 }
 
 function HealthOverviewView({
-  onboarding, labResults, healthCategories, onSelectDimension,
+  patient, onboarding, labResults, healthCategories, onSelectDimension, onPatientUpdate,
 }: {
+  patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
   onSelectDimension: (key: string) => void;
+  onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
   const radarData = useMemo(
     () => computeRadarData(onboarding, labResults, healthCategories),
     [onboarding, labResults, healthCategories],
   );
+
+  const [summary, setSummary] = useState((patient as any).health_summary || "");
+  const [recommendations, setRecommendations] = useState((patient as any).health_recommendations || "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("patients")
+      .update({ health_summary: summary, health_recommendations: recommendations } as any)
+      .eq("id", patient.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save");
+    } else {
+      toast.success("Saved successfully");
+      onPatientUpdate({ ...patient, health_summary: summary, health_recommendations: recommendations } as any);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -339,6 +365,41 @@ function HealthOverviewView({
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Write a clinical summary of the patient's overall health status..."
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            className="min-h-[120px]"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recommendations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Write recommendations for the patient's care plan..."
+            value={recommendations}
+            onChange={(e) => setRecommendations(e.target.value)}
+            className="min-h-[120px]"
+          />
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Save className="h-4 w-4" />
+          {saving ? "Saving..." : "Save"}
+        </Button>
+      </div>
     </div>
   );
 }

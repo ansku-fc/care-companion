@@ -488,6 +488,8 @@ export type Database = {
           emergency_contact_phone: string | null
           full_name: string
           gender: string | null
+          health_recommendations: string | null
+          health_summary: string | null
           id: string
           insurance_number: string | null
           insurance_provider: string | null
@@ -509,6 +511,8 @@ export type Database = {
           emergency_contact_phone?: string | null
           full_name: string
           gender?: string | null
+          health_recommendations?: string | null
+          health_summary?: string | null
           id?: string
           insurance_number?: string | null
           insurance_provider?: string | null
@@ -530,6 +534,8 @@ export type Database = {
           emergency_contact_phone?: string | null
           full_name?: string
           gender?: string | null
+          health_recommendations?: string | null
+          health_summary?: string | null
           id?: string
           insurance_number?: string | null
           insurance_provider?: string | null
