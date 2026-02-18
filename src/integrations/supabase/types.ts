@@ -138,11 +138,14 @@ export type Database = {
           created_by: string
           cystatin_c: number | null
           egfr: number | null
+          fev1_percent: number | null
+          fvc_percent: number | null
           gt_u_l: number | null
           hba1c_mmol_mol: number | null
           id: string
           ldl_mmol_l: number | null
           patient_id: string
+          pef_percent: number | null
           result_date: string
           source: string
           source_filename: string | null
@@ -162,11 +165,14 @@ export type Database = {
           created_by: string
           cystatin_c?: number | null
           egfr?: number | null
+          fev1_percent?: number | null
+          fvc_percent?: number | null
           gt_u_l?: number | null
           hba1c_mmol_mol?: number | null
           id?: string
           ldl_mmol_l?: number | null
           patient_id: string
+          pef_percent?: number | null
           result_date?: string
           source?: string
           source_filename?: string | null
@@ -186,11 +192,14 @@ export type Database = {
           created_by?: string
           cystatin_c?: number | null
           egfr?: number | null
+          fev1_percent?: number | null
+          fvc_percent?: number | null
           gt_u_l?: number | null
           hba1c_mmol_mol?: number | null
           id?: string
           ldl_mmol_l?: number | null
           patient_id?: string
+          pef_percent?: number | null
           result_date?: string
           source?: string
           source_filename?: string | null
