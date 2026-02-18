@@ -13,9 +13,9 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X
 } from "lucide-react";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer } from "recharts";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 
@@ -688,11 +688,29 @@ function HealthDimensionView({
   );
 }
 
+const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: string }> = {
+  ldl_mmol_l: { high: 3.0, label: "LDL" },
+  hba1c_mmol_mol: { high: 42, label: "HbA1c" },
+  blood_pressure_systolic: { high: 140, label: "Systolic BP" },
+  blood_pressure_diastolic: { high: 90, label: "Diastolic BP" },
+  alat_u_l: { high: 50, label: "ALAT" },
+  afos_alp_u_l: { low: 35, high: 105, label: "AFOS/ALP" },
+  gt_u_l: { high: 60, label: "GT" },
+  alat_asat_ratio: { high: 1.0, label: "ALAT/ASAT ratio" },
+  egfr: { low: 60, label: "eGFR" },
+  cystatin_c: { high: 1.03, label: "Cystatin C" },
+  tsh_mu_l: { low: 0.4, high: 4.0, label: "TSH" },
+  pef_percent: { low: 80, label: "PEF" },
+  fev1_percent: { low: 80, label: "FEV1" },
+  fvc_percent: { low: 80, label: "FVC" },
+};
+
 function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
   patientId: string;
   labResults: Tables<"patient_lab_results">[];
   onLabResultsAdded: () => void;
 }) {
+  const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
 
   const categories = [
@@ -754,60 +772,185 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
     return String(val);
   };
 
+  const handleRowClick = (key: string, label: string, unit: string) => {
+    // For BP, open systolic chart
+    if (key === "_bp") {
+      setSelectedMarker({ key: "blood_pressure_systolic", label: "Blood Pressure (Systolic)", unit: "mmHg" });
+    } else if (key === "u_alb_krea_abnormal" || key === "testosterone_estrogen_abnormal" || key === "apoe_e4") {
+      // Boolean markers - no chart
+      return;
+    } else {
+      setSelectedMarker({ key, label, unit });
+    }
+  };
+
+  // Build chart data for selected marker
+  const chartData = useMemo(() => {
+    if (!selectedMarker) return [];
+    const chronological = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
+    return chronological
+      .map((lab) => {
+        const val = (lab as any)[selectedMarker.key];
+        if (val === null || val === undefined) return null;
+        return { date: lab.result_date, value: Number(val) };
+      })
+      .filter(Boolean) as { date: string; value: number }[];
+  }, [selectedMarker, labResults]);
+
+  const ref = selectedMarker ? REFERENCE_VALUES[selectedMarker.key] : null;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <FlaskConical className="h-5 w-5 text-primary" />
-          Lab Results
-        </h2>
-        <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+    <div className="flex gap-4">
+      <div className={`space-y-4 transition-all ${selectedMarker ? "flex-1 min-w-0" : "w-full"}`}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <FlaskConical className="h-5 w-5 text-primary" />
+            Lab Results
+          </h2>
+          <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+        </div>
+
+        {sorted.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              No lab results yet. Click "Add Lab Results" to add the first entry.
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">Marker</TableHead>
+                      <TableHead className="min-w-[80px]">Unit</TableHead>
+                      {sorted.map((lab) => (
+                        <TableHead key={lab.id} className="min-w-[100px] text-center">{lab.result_date}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map((cat) => (
+                      <>
+                        <TableRow key={cat.title}>
+                          <TableCell colSpan={2 + sorted.length} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2">
+                            {cat.title}
+                          </TableCell>
+                        </TableRow>
+                        {cat.rows.map((row) => (
+                          <TableRow
+                            key={row.key}
+                            className={`cursor-pointer hover:bg-muted/30 transition-colors ${selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic") ? "bg-primary/5" : ""}`}
+                            onClick={() => handleRowClick(row.key, row.label, row.unit)}
+                          >
+                            <TableCell className="font-medium text-sm">{row.label}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{row.unit}</TableCell>
+                            {sorted.map((lab) => (
+                              <TableCell key={lab.id} className="text-center text-sm">{getCellValue(lab, row.key)}</TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {sorted.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            No lab results yet. Click "Add Lab Results" to add the first entry.
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Marker</TableHead>
-                    <TableHead className="min-w-[80px]">Unit</TableHead>
-                    {sorted.map((lab) => (
-                      <TableHead key={lab.id} className="min-w-[100px] text-center">{lab.result_date}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {categories.map((cat) => (
-                    <>
-                      <TableRow key={cat.title}>
-                        <TableCell colSpan={2 + sorted.length} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2">
-                          {cat.title}
-                        </TableCell>
-                      </TableRow>
-                      {cat.rows.map((row) => (
-                        <TableRow key={row.key}>
-                          <TableCell className="font-medium text-sm">{row.label}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{row.unit}</TableCell>
-                          {sorted.map((lab) => (
-                            <TableCell key={lab.id} className="text-center text-sm">{getCellValue(lab, row.key)}</TableCell>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </>
-                  ))}
-                </TableBody>
-              </Table>
+      {/* Chart Panel */}
+      {selectedMarker && (
+        <div className="w-[400px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200">
+          <div className="flex items-center justify-between p-4 border-b">
+            <div>
+              <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
+              {selectedMarker.unit && (
+                <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-4 flex-1">
+            {chartData.length < 1 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
+            ) : (
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      domain={['auto', 'auto']}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--background))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    {ref?.high != null && (
+                      <ReferenceLine
+                        y={ref.high}
+                        stroke="hsl(var(--destructive))"
+                        strokeDasharray="5 5"
+                        label={{ value: `High (${ref.high})`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }}
+                      />
+                    )}
+                    {ref?.low != null && (
+                      <ReferenceLine
+                        y={ref.low}
+                        stroke="hsl(var(--chart-4, 43 74% 66%))"
+                        strokeDasharray="5 5"
+                        label={{ value: `Low (${ref.low})`, position: "right", fontSize: 10, fill: "hsl(var(--chart-4, 43 74% 66%))" }}
+                      />
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {ref && (
+              <div className="mt-4 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
+                <div className="flex gap-4 text-xs">
+                  {ref.low != null && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: "hsl(43 74% 66%)" }} />
+                      <span className="text-muted-foreground">Low: {ref.low}</span>
+                    </div>
+                  )}
+                  {ref.high != null && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: "hsl(var(--destructive))" }} />
+                      <span className="text-muted-foreground">High: {ref.high}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
