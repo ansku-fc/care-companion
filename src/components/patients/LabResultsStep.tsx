@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, CloudDownload } from "lucide-react";
 import { toast } from "sonner";
 
 export type LabResultsData = {
@@ -23,7 +23,7 @@ export type LabResultsData = {
   tsh_mu_l: number | null;
   testosterone_estrogen_abnormal: boolean | null;
   apoe_e4: boolean | null;
-  source: "manual" | "file_upload";
+  source: "manual" | "file_upload" | "tandem";
   source_filename: string | null;
   _file_content: string | null;
 };
@@ -113,12 +113,13 @@ interface Props {
 export function LabResultsStep({ data, onChange }: Props) {
   const [tab, setTab] = useState<string>("manual");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tandemFileInputRef = useRef<HTMLInputElement>(null);
 
   const update = (field: keyof LabResultsData, value: any) => {
     onChange({ ...data, [field]: value });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, sourceType: "file_upload" | "tandem" = "file_upload") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -129,23 +130,21 @@ export function LabResultsStep({ data, onChange }: Props) {
     }
 
     if (ext === "pdf") {
-      // For PDFs we can't parse client-side easily; store filename and notify user
       onChange({
         ...data,
-        source: "file_upload",
+        source: sourceType,
         source_filename: file.name,
       });
       toast.info("PDF uploaded. Please verify or fill in the values manually.");
       return;
     }
 
-    // Read text/html files
     const text = await file.text();
     const parsed = parseLabText(text);
     onChange({
       ...data,
       ...parsed,
-      source: "file_upload",
+      source: sourceType,
       source_filename: file.name,
       _file_content: null,
     });
@@ -164,12 +163,15 @@ export function LabResultsStep({ data, onChange }: Props) {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="manual" className="gap-1.5">
             <FileText className="h-3.5 w-3.5" /> Manual Entry
           </TabsTrigger>
           <TabsTrigger value="upload" className="gap-1.5">
             <Upload className="h-3.5 w-3.5" /> Upload File
+          </TabsTrigger>
+          <TabsTrigger value="tandem" className="gap-1.5">
+            <CloudDownload className="h-3.5 w-3.5" /> Upload from Tandem
           </TabsTrigger>
         </TabsList>
 
@@ -181,7 +183,7 @@ export function LabResultsStep({ data, onChange }: Props) {
             ref={fileInputRef}
             type="file"
             accept=".pdf,.txt,.html"
-            onChange={handleFileUpload}
+            onChange={(e) => handleFileUpload(e, "file_upload")}
             className="hidden"
           />
           <Button
@@ -191,9 +193,34 @@ export function LabResultsStep({ data, onChange }: Props) {
             className="gap-2"
           >
             <Upload className="h-4 w-4" />
-            {data.source_filename ? `Uploaded: ${data.source_filename}` : "Choose File"}
+            {data.source === "file_upload" && data.source_filename ? `Uploaded: ${data.source_filename}` : "Choose File"}
           </Button>
-          {data.source_filename && (
+          {data.source === "file_upload" && data.source_filename && (
+            <p className="text-xs text-muted-foreground">Review the values below and correct as needed.</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="tandem" className="space-y-3 pt-2">
+          <p className="text-sm text-muted-foreground">
+            Upload a lab report exported from Tandem (.pdf, .txt, or .html). Values will be auto-extracted where possible.
+          </p>
+          <input
+            ref={tandemFileInputRef}
+            type="file"
+            accept=".pdf,.txt,.html"
+            onChange={(e) => handleFileUpload(e, "tandem")}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => tandemFileInputRef.current?.click()}
+            className="gap-2"
+          >
+            <CloudDownload className="h-4 w-4" />
+            {data.source === "tandem" && data.source_filename ? `Uploaded: ${data.source_filename}` : "Choose Tandem File"}
+          </Button>
+          {data.source === "tandem" && data.source_filename && (
             <p className="text-xs text-muted-foreground">Review the values below and correct as needed.</p>
           )}
         </TabsContent>
