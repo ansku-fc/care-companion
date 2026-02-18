@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
@@ -711,6 +712,8 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
   onLabResultsAdded: () => void;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
+  const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
+  const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
   const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
 
   const categories = [
@@ -797,7 +800,10 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
       .filter(Boolean) as { date: string; value: number }[];
   }, [selectedMarker, labResults]);
 
-  const ref = selectedMarker ? REFERENCE_VALUES[selectedMarker.key] : null;
+  const ref = selectedMarker ? {
+    ...REFERENCE_VALUES[selectedMarker.key],
+    ...customRefs[selectedMarker.key],
+  } : null;
 
   return (
     <div className="flex gap-4">
@@ -930,25 +936,59 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
                 </ResponsiveContainer>
               </div>
             )}
-            {ref && (
-              <div className="mt-4 space-y-1">
+            {selectedMarker && (
+              <div className="mt-4 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
-                <div className="flex gap-4 text-xs">
-                  {ref.low != null && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: "hsl(43 74% 66%)" }} />
-                      <span className="text-muted-foreground">Low: {ref.low}</span>
-                    </div>
-                  )}
-                  {ref.high != null && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: "hsl(var(--destructive))" }} />
-                      <span className="text-muted-foreground">High: {ref.high}</span>
-                    </div>
-                  )}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Low</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="—"
+                      className="h-8 text-xs"
+                      value={ref?.low ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? undefined : Number(e.target.value);
+                        setCustomRefs((prev) => ({
+                          ...prev,
+                          [selectedMarker.key]: { ...prev[selectedMarker.key], low: val },
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">High</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="—"
+                      className="h-8 text-xs"
+                      value={ref?.high ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? undefined : Number(e.target.value);
+                        setCustomRefs((prev) => ({
+                          ...prev,
+                          [selectedMarker.key]: { ...prev[selectedMarker.key], high: val },
+                        }));
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             )}
+            <div className="mt-4">
+              <Label className="text-xs">Doctor Notes</Label>
+              <Textarea
+                placeholder="Add notes about this marker..."
+                className="mt-1 min-h-[80px] text-xs resize-none"
+                value={markerNotes[selectedMarker?.key || ""] || ""}
+                onChange={(e) => {
+                  if (!selectedMarker) return;
+                  setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
