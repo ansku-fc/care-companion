@@ -16,7 +16,7 @@ import {
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
   Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X
 } from "lucide-react";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from "recharts";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ReferenceArea } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 
@@ -935,6 +935,15 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                       dot={{ fill: "hsl(var(--primary))", r: 4 }}
                       activeDot={{ r: 6 }}
                     />
+                    {ref?.low != null && ref?.high != null && (
+                      <ReferenceArea
+                        y1={ref.low}
+                        y2={ref.high}
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.08}
+                        label={{ value: "Normal range", position: "insideTopLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      />
+                    )}
                     {ref?.high != null && (
                       <ReferenceLine
                         y={ref.high}
