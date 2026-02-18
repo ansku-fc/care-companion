@@ -188,7 +188,7 @@ const PatientProfilePage = () => {
             onPatientUpdate={(updated) => setPatient(updated)}
           />
         ) : activeSection === "lab_results" ? (
-          <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} />
+          <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} />
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -689,6 +689,24 @@ function HealthDimensionView({
   );
 }
 
+// Mapping from lab marker key to health dimension keys
+const MARKER_DIMENSIONS: Record<string, string[]> = {
+  ldl_mmol_l: ["cardiovascular", "nervous_system"],
+  hba1c_mmol_mol: ["cardiovascular", "nutrition"],
+  blood_pressure_systolic: ["cardiovascular", "kidney"],
+  blood_pressure_diastolic: ["cardiovascular", "kidney"],
+  alat_u_l: ["liver"],
+  afos_alp_u_l: ["liver", "musculoskeletal"],
+  gt_u_l: ["liver", "substances"],
+  alat_asat_ratio: ["liver"],
+  egfr: ["kidney"],
+  cystatin_c: ["kidney"],
+  tsh_mu_l: ["hormones"],
+  pef_percent: ["respiratory"],
+  fev1_percent: ["respiratory"],
+  fvc_percent: ["respiratory"],
+};
+
 const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: string }> = {
   ldl_mmol_l: { high: 3.0, label: "LDL" },
   hba1c_mmol_mol: { high: 42, label: "HbA1c" },
@@ -706,10 +724,11 @@ const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: str
   fvc_percent: { low: 80, label: "FVC" },
 };
 
-function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
+function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDimension }: {
   patientId: string;
   labResults: Tables<"patient_lab_results">[];
   onLabResultsAdded: () => void;
+  onNavigateDimension: (section: string) => void;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
@@ -989,6 +1008,28 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded }: {
                 }}
               />
             </div>
+            {selectedMarker && MARKER_DIMENSIONS[selectedMarker.key] && (
+              <div className="mt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
+                    const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
+                    if (!dim) return null;
+                    const Icon = dim.icon;
+                    return (
+                      <button
+                        key={dimKey}
+                        onClick={() => onNavigateDimension(dimKey)}
+                        className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                      >
+                        <Icon className="h-3 w-3" />
+                        {dim.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
