@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { Separator } from "@/components/ui/separator";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone,
-  Moon, Pill, Activity, Ribbon, Sparkles
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar
 } from "lucide-react";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
 
 const HEALTH_DIMENSIONS = [
@@ -45,6 +46,7 @@ const PatientProfilePage = () => {
   const [patient, setPatient] = useState<Tables<"patients"> | null>(null);
   const [onboarding, setOnboarding] = useState<Tables<"patient_onboarding"> | null>(null);
   const [labResults, setLabResults] = useState<Tables<"patient_lab_results">[]>([]);
+  const [healthCategories, setHealthCategories] = useState<Tables<"patient_health_categories">[]>([]);
   const [activeSection, setActiveSection] = useState<SidebarSection>("details");
   const [loading, setLoading] = useState(true);
 
@@ -52,14 +54,16 @@ const PatientProfilePage = () => {
     if (!id) return;
     const fetchData = async () => {
       setLoading(true);
-      const [patientRes, onboardingRes, labRes] = await Promise.all([
+      const [patientRes, onboardingRes, labRes, healthCatRes] = await Promise.all([
         supabase.from("patients").select("*").eq("id", id).single(),
         supabase.from("patient_onboarding").select("*").eq("patient_id", id).maybeSingle(),
         supabase.from("patient_lab_results").select("*").eq("patient_id", id).order("result_date", { ascending: false }),
+        supabase.from("patient_health_categories").select("*").eq("patient_id", id),
       ]);
       setPatient(patientRes.data);
       setOnboarding(onboardingRes.data);
       setLabResults(labRes.data || []);
+      setHealthCategories(healthCatRes.data || []);
       setLoading(false);
     };
     fetchData();
@@ -117,6 +121,16 @@ const PatientProfilePage = () => {
               Patient Details
             </button>
 
+            <button
+              onClick={() => setActiveSection("health_overview")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "health_overview" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <Radar className="h-4 w-4" />
+              Health Overview
+            </button>
+
             <Separator className="my-2" />
             <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Health Dimensions</p>
 
@@ -147,6 +161,13 @@ const PatientProfilePage = () => {
 
         {activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} />
+        ) : activeSection === "health_overview" ? (
+          <HealthOverviewView
+            onboarding={onboarding}
+            labResults={labResults}
+            healthCategories={healthCategories}
+            onSelectDimension={(key) => setActiveSection(key)}
+          />
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -159,6 +180,168 @@ const PatientProfilePage = () => {
     </div>
   );
 };
+
+// Compute a simple score (1-10) for each health dimension based on onboarding + lab data
+function computeRadarData(
+  onboarding: Tables<"patient_onboarding"> | null,
+  labResults: Tables<"patient_lab_results">[],
+  healthCategories: Tables<"patient_health_categories">[],
+) {
+  const lab = labResults[0] || null;
+  const catMap = new Map(healthCategories.map((c) => [c.category.toLowerCase(), c]));
+
+  return HEALTH_DIMENSIONS.map((dim) => {
+    const stored = catMap.get(dim.label.toLowerCase());
+    if (stored) {
+      const statusScores: Record<string, number> = { normal: 2, monitor: 4, attention: 6, warning: 8, critical: 10 };
+      return { category: dim.label, score: statusScores[stored.status] ?? 3 };
+    }
+
+    let score = 1;
+    if (!onboarding && !lab) return { category: dim.label, score };
+
+    switch (dim.key) {
+      case "senses":
+        if (onboarding?.illness_senses) score += 3;
+        if (onboarding?.symptom_smell || onboarding?.symptom_vision || onboarding?.symptom_hearing) score += 2;
+        break;
+      case "nervous_system":
+        if (onboarding?.illness_neurological) score += 3;
+        if (onboarding?.symptom_neurological || onboarding?.symptom_balance) score += 2;
+        if (onboarding?.prev_brain_damage) score += 2;
+        break;
+      case "physical_performance":
+        if (onboarding?.exercise_met_hours != null && onboarding.exercise_met_hours < 5) score += 3;
+        if (onboarding?.symptom_mobility_restriction) score += 2;
+        break;
+      case "respiratory":
+        if (onboarding?.symptom_respiratory) score += 3;
+        if (onboarding?.symptom_sleep_apnoea) score += 2;
+        if (onboarding?.smoking === "yes") score += 2;
+        break;
+      case "hormones":
+        if (onboarding?.illness_hormone) score += 3;
+        if (lab?.testosterone_estrogen_abnormal) score += 2;
+        if (lab?.tsh_mu_l && (Number(lab.tsh_mu_l) < 0.4 || Number(lab.tsh_mu_l) > 4.0)) score += 2;
+        break;
+      case "skin_mucous":
+        if (onboarding?.symptom_skin_rash || onboarding?.symptom_mucous_membranes) score += 3;
+        if (onboarding?.skin_condition && onboarding.skin_condition > 3) score += 2;
+        break;
+      case "immunity":
+        if (onboarding?.illness_immune) score += 3;
+        if (onboarding?.symptom_immune_allergies) score += 2;
+        if (onboarding?.infections_per_year && Number(onboarding.infections_per_year) > 4) score += 2;
+        break;
+      case "nutrition":
+        if (onboarding?.bmi && (Number(onboarding.bmi) > 30 || Number(onboarding.bmi) < 18.5)) score += 3;
+        if (onboarding?.symptom_gastrointestinal) score += 2;
+        break;
+      case "liver":
+        if (onboarding?.illness_liver) score += 3;
+        if (lab?.alat_u_l && Number(lab.alat_u_l) > 50) score += 2;
+        if (lab?.gt_u_l && Number(lab.gt_u_l) > 60) score += 2;
+        break;
+      case "mental_health":
+        if (onboarding?.illness_mental_health) score += 3;
+        if (onboarding?.gad7_score && onboarding.gad7_score > 10) score += 3;
+        if (onboarding?.stress_perceived && onboarding.stress_perceived > 7) score += 2;
+        break;
+      case "kidney":
+        if (onboarding?.illness_kidney) score += 3;
+        if (lab?.egfr && Number(lab.egfr) < 60) score += 3;
+        if (lab?.u_alb_krea_abnormal) score += 2;
+        break;
+      case "substances":
+        if (onboarding?.alcohol_units_per_week && Number(onboarding.alcohol_units_per_week) > 14) score += 3;
+        if (onboarding?.smoking === "yes") score += 2;
+        if (onboarding?.other_substances) score += 2;
+        break;
+      case "cardiovascular":
+        if (onboarding?.illness_cardiovascular) score += 3;
+        if (lab?.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) score += 2;
+        if (lab?.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 140) score += 2;
+        break;
+      case "cancer_risk":
+        if (onboarding?.illness_cancer || onboarding?.prev_cancer) score += 4;
+        if (onboarding?.genetic_cancer || onboarding?.genetic_melanoma) score += 2;
+        break;
+      case "musculoskeletal":
+        if (onboarding?.illness_musculoskeletal) score += 3;
+        if (onboarding?.symptom_joint_pain) score += 2;
+        if (onboarding?.prev_osteoporotic_fracture) score += 2;
+        break;
+      case "sleep":
+        if (onboarding?.insomnia) score += 3;
+        if (onboarding?.sleep_quality && onboarding.sleep_quality < 4) score += 2;
+        if (onboarding?.symptom_sleep_apnoea) score += 2;
+        break;
+    }
+    return { category: dim.label, score: Math.min(score, 10) };
+  });
+}
+
+function HealthOverviewView({
+  onboarding, labResults, healthCategories, onSelectDimension,
+}: {
+  onboarding: Tables<"patient_onboarding"> | null;
+  labResults: Tables<"patient_lab_results">[];
+  healthCategories: Tables<"patient_health_categories">[];
+  onSelectDimension: (key: string) => void;
+}) {
+  const radarData = useMemo(
+    () => computeRadarData(onboarding, labResults, healthCategories),
+    [onboarding, labResults, healthCategories],
+  );
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Radar className="h-5 w-5 text-primary" />
+            Health Overview
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Scale: 1 (no action needed) → 10 (immediate action needed). Click a dimension label to see details.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[500px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis
+                  dataKey="category"
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, cursor: "pointer" }}
+                  onClick={(e: any) => {
+                    if (e?.value) {
+                      const dim = HEALTH_DIMENSIONS.find((d) => d.label === e.value);
+                      if (dim) onSelectDimension(dim.key);
+                    }
+                  }}
+                />
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, 10]}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                />
+                <RechartsRadar
+                  name="Risk Score"
+                  dataKey="score"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.3}
+                />
+                <Legend />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function PatientDetailsView({
   patient, onboarding, age, labResults,
