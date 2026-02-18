@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { PatientFormSteps } from "./PatientFormSteps";
+import { LabResultsStep, defaultLabResults, type LabResultsData } from "./LabResultsStep";
 
 export type OnboardingFormData = {
   // Patient basics
@@ -144,6 +145,7 @@ const STEPS = [
   "Symptoms",
   "Previous Illnesses & Genetics",
   "Other Information",
+  "Lab Results",
 ];
 
 export function AddPatientDialog() {
@@ -151,6 +153,7 @@ export function AddPatientDialog() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<OnboardingFormData>({ ...defaultFormData });
   const [saving, setSaving] = useState(false);
+  const [labResults, setLabResults] = useState<LabResultsData>({ ...defaultLabResults });
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -273,9 +276,46 @@ export function AddPatientDialog() {
 
       if (onboardErr) throw onboardErr;
 
+      // 3. Create lab results if any values provided
+      const hasLabData = labResults.ldl_mmol_l !== null || labResults.hba1c_mmol_mol !== null ||
+        labResults.blood_pressure_systolic !== null || labResults.alat_u_l !== null ||
+        labResults.afos_alp_u_l !== null || labResults.gt_u_l !== null || labResults.alat_asat_ratio !== null ||
+        labResults.egfr !== null || labResults.cystatin_c !== null || labResults.u_alb_krea_abnormal !== null ||
+        labResults.tsh_mu_l !== null || labResults.testosterone_estrogen_abnormal !== null ||
+        labResults.apoe_e4 !== null || labResults.blood_pressure_diastolic !== null ||
+        labResults.source === "file_upload";
+
+      if (hasLabData) {
+        const { error: labErr } = await supabase
+          .from("patient_lab_results")
+          .insert({
+            patient_id: patient.id,
+            created_by: user.id,
+            result_date: labResults.result_date,
+            source: labResults.source,
+            source_filename: labResults.source_filename,
+            ldl_mmol_l: labResults.ldl_mmol_l,
+            hba1c_mmol_mol: labResults.hba1c_mmol_mol,
+            blood_pressure_systolic: labResults.blood_pressure_systolic,
+            blood_pressure_diastolic: labResults.blood_pressure_diastolic,
+            alat_u_l: labResults.alat_u_l,
+            afos_alp_u_l: labResults.afos_alp_u_l,
+            gt_u_l: labResults.gt_u_l,
+            alat_asat_ratio: labResults.alat_asat_ratio,
+            egfr: labResults.egfr,
+            cystatin_c: labResults.cystatin_c,
+            u_alb_krea_abnormal: labResults.u_alb_krea_abnormal,
+            tsh_mu_l: labResults.tsh_mu_l,
+            testosterone_estrogen_abnormal: labResults.testosterone_estrogen_abnormal,
+            apoe_e4: labResults.apoe_e4,
+          });
+        if (labErr) throw labErr;
+      }
+
       toast.success("Patient created successfully");
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       setForm({ ...defaultFormData });
+      setLabResults({ ...defaultLabResults });
       setStep(0);
       setOpen(false);
     } catch (e: any) {
@@ -286,7 +326,7 @@ export function AddPatientDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setStep(0); setForm({ ...defaultFormData }); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setStep(0); setForm({ ...defaultFormData }); setLabResults({ ...defaultLabResults }); } }}>
       <DialogTrigger asChild>
         <Button className="gap-1.5">
           <Plus className="h-4 w-4" />
@@ -321,7 +361,11 @@ export function AddPatientDialog() {
           ))}
         </nav>
 
-        <PatientFormSteps step={step} form={form} updateField={updateField} />
+        {step <= 9 ? (
+          <PatientFormSteps step={step} form={form} updateField={updateField} />
+        ) : (
+          <LabResultsStep data={labResults} onChange={setLabResults} />
+        )}
 
         <div className="flex justify-between pt-4 border-t">
           <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0}>
