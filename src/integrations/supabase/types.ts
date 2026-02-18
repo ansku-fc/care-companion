@@ -126,6 +126,89 @@ export type Database = {
           },
         ]
       }
+      patient_lab_results: {
+        Row: {
+          afos_alp_u_l: number | null
+          alat_asat_ratio: number | null
+          alat_u_l: number | null
+          apoe_e4: boolean | null
+          blood_pressure_diastolic: number | null
+          blood_pressure_systolic: number | null
+          created_at: string
+          created_by: string
+          cystatin_c: number | null
+          egfr: number | null
+          gt_u_l: number | null
+          hba1c_mmol_mol: number | null
+          id: string
+          ldl_mmol_l: number | null
+          patient_id: string
+          result_date: string
+          source: string
+          source_filename: string | null
+          testosterone_estrogen_abnormal: boolean | null
+          tsh_mu_l: number | null
+          u_alb_krea_abnormal: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          afos_alp_u_l?: number | null
+          alat_asat_ratio?: number | null
+          alat_u_l?: number | null
+          apoe_e4?: boolean | null
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          created_at?: string
+          created_by: string
+          cystatin_c?: number | null
+          egfr?: number | null
+          gt_u_l?: number | null
+          hba1c_mmol_mol?: number | null
+          id?: string
+          ldl_mmol_l?: number | null
+          patient_id: string
+          result_date?: string
+          source?: string
+          source_filename?: string | null
+          testosterone_estrogen_abnormal?: boolean | null
+          tsh_mu_l?: number | null
+          u_alb_krea_abnormal?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          afos_alp_u_l?: number | null
+          alat_asat_ratio?: number | null
+          alat_u_l?: number | null
+          apoe_e4?: boolean | null
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          created_at?: string
+          created_by?: string
+          cystatin_c?: number | null
+          egfr?: number | null
+          gt_u_l?: number | null
+          hba1c_mmol_mol?: number | null
+          id?: string
+          ldl_mmol_l?: number | null
+          patient_id?: string
+          result_date?: string
+          source?: string
+          source_filename?: string | null
+          testosterone_estrogen_abnormal?: boolean | null
+          tsh_mu_l?: number | null
+          u_alb_krea_abnormal?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_lab_results_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_onboarding: {
         Row: {
           age: number | null
