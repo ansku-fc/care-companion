@@ -85,6 +85,7 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
   const [illnessCategoryFilter, setIllnessCategoryFilter] = useState("all");
   const [symptomSort, setSymptomSort] = useState<SortMode>("category");
   const [prevIllnessSort, setPrevIllnessSort] = useState<SortMode>("category");
+  const [prevIllnessCategoryFilter, setPrevIllnessCategoryFilter] = useState("all");
 
   const allCurrentIllnesses: { label: string; category: string; field: keyof OnboardingFormData; notesField?: keyof OnboardingFormData }[] = [
     { label: "Senses", category: "Senses", field: "illness_senses", notesField: "illness_senses_notes" },
@@ -134,16 +135,29 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
     return [...items].sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
   }, [symptomSort]);
 
-  const prevIllnesses = useMemo(() => {
-    const items: { label: string; category: string; field: keyof OnboardingFormData; notesField?: keyof OnboardingFormData }[] = [
-      { label: "Brain Damage", category: "Nervous System", field: "prev_brain_damage", notesField: "prev_brain_damage_notes" },
-      { label: "Osteoporotic Fracture", category: "Musculoskeletal", field: "prev_osteoporotic_fracture", notesField: "prev_osteoporotic_fracture_notes" },
-      { label: "Cancer", category: "Cancer", field: "prev_cancer", notesField: "prev_cancer_notes" },
-      { label: "Precancerous Condition", category: "Cancer", field: "prev_precancerous", notesField: "prev_precancerous_notes" },
+  const allPrevIllnesses: { label: string; category: string; field: keyof OnboardingFormData; notesField?: keyof OnboardingFormData }[] = [
+    { label: "Brain Damage", category: "Senses", field: "prev_brain_damage", notesField: "prev_brain_damage_notes" },
+    { label: "Osteoporotic Fracture", category: "Musculoskeletal System", field: "prev_osteoporotic_fracture", notesField: "prev_osteoporotic_fracture_notes" },
+    { label: "Cancer", category: "Cancer", field: "prev_cancer", notesField: "prev_cancer_notes" },
+    { label: "Precancerous Condition", category: "Cancer", field: "prev_precancerous", notesField: "prev_precancerous_notes" },
+  ];
+
+  const prevIllnessCategories = useMemo(() => {
+    const userCats = [
+      "Alcohol & Other Substances", "Body Composition & Nutrition", "Cancer",
+      "Cardiovascular", "Hormone Function", "Immune Defence & Allergies",
+      "Kidney Function", "Liver Function", "Musculoskeletal System",
+      "Physical Performance", "Respiratory System", "Senses",
+      "Skin & Mucous Membranes", "Sleep",
     ];
+    return [{ value: "all", label: "Show All" }, ...userCats.map((c) => ({ value: c, label: c }))];
+  }, []);
+
+  const prevIllnesses = useMemo(() => {
+    let items = prevIllnessCategoryFilter === "all" ? allPrevIllnesses : allPrevIllnesses.filter((i) => i.category === prevIllnessCategoryFilter);
     if (prevIllnessSort === "alphabetical") return [...items].sort((a, b) => a.label.localeCompare(b.label));
     return [...items].sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
-  }, [prevIllnessSort]);
+  }, [prevIllnessSort, prevIllnessCategoryFilter]);
 
   const TIER_OPTIONS = [
     { value: "tier_1", label: "Tier 1" },
@@ -403,7 +417,19 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
       <div className="space-y-6">
         <div>
           <h4 className="font-medium mb-3">Previous Illnesses</h4>
-          <SortToggle mode={prevIllnessSort} onChange={setPrevIllnessSort} />
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <Select value={prevIllnessCategoryFilter} onValueChange={setPrevIllnessCategoryFilter}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                {prevIllnessCategories.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <SortToggle mode={prevIllnessSort} onChange={setPrevIllnessSort} />
+          </div>
           <div className="space-y-3">
             {prevIllnesses.map((item) => (
               <BoolField
