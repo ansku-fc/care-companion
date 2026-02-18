@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import CalendarPage from "./pages/CalendarPage";
 import TasksPage from "./pages/TasksPage";
 import PatientsPage from "./pages/PatientsPage";
+import PatientProfilePage from "./pages/PatientProfilePage";
 import ClinicalHoursPage from "./pages/ClinicalHoursPage";
 import NotesPage from "./pages/NotesPage";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const AppRoutes = () => (
     <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
     <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
     <Route path="/patients" element={<ProtectedRoute><PatientsPage /></ProtectedRoute>} />
+    <Route path="/patients/:id" element={<ProtectedRoute><PatientProfilePage /></ProtectedRoute>} />
     <Route path="/clinical-hours" element={<ProtectedRoute><ClinicalHoursPage /></ProtectedRoute>} />
     <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />

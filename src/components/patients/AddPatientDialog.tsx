@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -156,6 +157,7 @@ export function AddPatientDialog() {
   const [labResults, setLabResults] = useState<LabResultsData>({ ...defaultLabResults });
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const updateField = (field: keyof OnboardingFormData, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -314,10 +316,12 @@ export function AddPatientDialog() {
 
       toast.success("Patient created successfully");
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      const patientId = patient.id;
       setForm({ ...defaultFormData });
       setLabResults({ ...defaultLabResults });
       setStep(0);
       setOpen(false);
+      navigate(`/patients/${patientId}`);
     } catch (e: any) {
       toast.error(e.message || "Failed to create patient");
     } finally {
