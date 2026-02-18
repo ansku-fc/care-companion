@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Search, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 const TIER_OPTIONS = [
   { value: "all", label: "All Tiers" },
@@ -23,24 +25,29 @@ const TIER_OPTIONS = [
 type SortField = "name" | "date";
 type SortDir = "asc" | "desc";
 
-const mockPatients = [
-  { id: "1", name: "Sarah Johnson", age: 34, gender: "F", lastVisit: "Feb 15, 2026", status: "Active", tier: "tier_1", createdAt: "2025-01-10" },
-  { id: "2", name: "Mark Davis", age: 52, gender: "M", lastVisit: "Feb 14, 2026", status: "Active", tier: "tier_2", createdAt: "2024-06-22" },
-  { id: "3", name: "Emma Wilson", age: 28, gender: "F", lastVisit: "Feb 10, 2026", status: "Active", tier: "children", createdAt: "2025-11-03" },
-  { id: "4", name: "James Brown", age: 67, gender: "M", lastVisit: "Feb 8, 2026", status: "Active", tier: "tier_3", createdAt: "2023-08-15" },
-  { id: "5", name: "Lisa Chen", age: 41, gender: "F", lastVisit: "Feb 5, 2026", status: "Inactive", tier: "acute", createdAt: "2025-09-01" },
-];
-
 const PatientsPage = () => {
   const navigate = useNavigate();
+  const [patients, setPatients] = useState<Tables<"patients">[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
+  const fetchPatients = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("patients").select("*").order("full_name");
+    setPatients(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+
   const filtered = useMemo(() => {
-    let list = mockPatients.filter((p) =>
-      p.name.toLowerCase().includes(search.toLowerCase())
+    let list = patients.filter((p) =>
+      p.full_name.toLowerCase().includes(search.toLowerCase())
     );
     if (tierFilter !== "all") {
       list = list.filter((p) => p.tier === tierFilter);
@@ -48,14 +55,14 @@ const PatientsPage = () => {
     list.sort((a, b) => {
       let cmp = 0;
       if (sortField === "name") {
-        cmp = a.name.localeCompare(b.name);
+        cmp = a.full_name.localeCompare(b.full_name);
       } else {
-        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [search, tierFilter, sortField, sortDir]);
+  }, [patients, search, tierFilter, sortField, sortDir]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -68,6 +75,14 @@ const PatientsPage = () => {
 
   const tierLabel = (tier: string) =>
     TIER_OPTIONS.find((t) => t.value === tier)?.label ?? tier;
+
+  const getAge = (dob: string | null) => {
+    if (!dob) return null;
+    return Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
+  };
+
+  const getInitials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase();
 
   return (
     <div className="space-y-6">
@@ -109,31 +124,41 @@ const PatientsPage = () => {
         </Button>
       </div>
 
-      <div className="space-y-2">
-        {filtered.map((patient) => (
-          <Card
-            key={patient.id}
-            className="cursor-pointer hover:border-primary transition-colors"
-            onClick={() => navigate(`/patients/${patient.id}`)}
-          >
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary">{patient.name.split(" ").map((n) => n[0]).join("")}</span>
-                </div>
-                <div>
-                  <p className="font-medium">{patient.name}</p>
-                  <p className="text-sm text-muted-foreground">Age {patient.age} • {patient.gender} • Last visit: {patient.lastVisit}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">{tierLabel(patient.tier)}</Badge>
-                <Badge variant={patient.status === "Active" ? "default" : "secondary"}>{patient.status}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {loading ? (
+        <p className="text-muted-foreground">Loading patients...</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-muted-foreground">No patients found.</p>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((patient) => {
+            const age = getAge(patient.date_of_birth);
+            return (
+              <Card
+                key={patient.id}
+                className="cursor-pointer hover:border-primary transition-colors"
+                onClick={() => navigate(`/patients/${patient.id}`)}
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-sm font-medium text-primary">{getInitials(patient.full_name)}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{patient.full_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {age != null ? `Age ${age}` : ""}{age != null && patient.gender ? " • " : ""}{patient.gender || ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {patient.tier && <Badge variant="outline" className="text-xs">{tierLabel(patient.tier)}</Badge>}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
