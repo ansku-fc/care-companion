@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
+import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 
 const HEALTH_DIMENSIONS = [
   { key: "senses", label: "Senses", icon: Eye },
@@ -53,22 +54,23 @@ const PatientProfilePage = () => {
   const [activeSection, setActiveSection] = useState<SidebarSection>("details");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = async () => {
     if (!id) return;
-    const fetchData = async () => {
-      setLoading(true);
-      const [patientRes, onboardingRes, labRes, healthCatRes] = await Promise.all([
-        supabase.from("patients").select("*").eq("id", id).single(),
-        supabase.from("patient_onboarding").select("*").eq("patient_id", id).maybeSingle(),
-        supabase.from("patient_lab_results").select("*").eq("patient_id", id).order("result_date", { ascending: false }),
-        supabase.from("patient_health_categories").select("*").eq("patient_id", id),
-      ]);
-      setPatient(patientRes.data);
-      setOnboarding(onboardingRes.data);
-      setLabResults(labRes.data || []);
-      setHealthCategories(healthCatRes.data || []);
-      setLoading(false);
-    };
+    setLoading(true);
+    const [patientRes, onboardingRes, labRes, healthCatRes] = await Promise.all([
+      supabase.from("patients").select("*").eq("id", id).single(),
+      supabase.from("patient_onboarding").select("*").eq("patient_id", id).maybeSingle(),
+      supabase.from("patient_lab_results").select("*").eq("patient_id", id).order("result_date", { ascending: false }),
+      supabase.from("patient_health_categories").select("*").eq("patient_id", id),
+    ]);
+    setPatient(patientRes.data);
+    setOnboarding(onboardingRes.data);
+    setLabResults(labRes.data || []);
+    setHealthCategories(healthCatRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchData();
   }, [id]);
 
@@ -163,7 +165,7 @@ const PatientProfilePage = () => {
         </Button>
 
         {activeSection === "details" ? (
-          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} />
+          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} />
         ) : activeSection === "health_overview" ? (
           <HealthOverviewView
             patient={patient}
@@ -407,12 +409,13 @@ function HealthOverviewView({
 }
 
 function PatientDetailsView({
-  patient, onboarding, age, labResults,
+  patient, onboarding, age, labResults, onLabResultsAdded,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   age: number | null | undefined;
   labResults: Tables<"patient_lab_results">[];
+  onLabResultsAdded: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -449,10 +452,15 @@ function PatientDetailsView({
         </Card>
       )}
 
-      {labResults.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Latest Lab Results</CardTitle></CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Lab Results</CardTitle>
+            <AddLabResultsDialog patientId={patient.id} onSaved={onLabResultsAdded} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {labResults.length > 0 ? (
             <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
               <div><dt className="text-muted-foreground">Date</dt><dd>{labResults[0].result_date}</dd></div>
               <div><dt className="text-muted-foreground">LDL</dt><dd>{labResults[0].ldl_mmol_l ? `${labResults[0].ldl_mmol_l} mmol/L` : "—"}</dd></div>
@@ -461,9 +469,11 @@ function PatientDetailsView({
               <div><dt className="text-muted-foreground">eGFR</dt><dd>{labResults[0].egfr ?? "—"}</dd></div>
               <div><dt className="text-muted-foreground">TSH</dt><dd>{labResults[0].tsh_mu_l ? `${labResults[0].tsh_mu_l} mU/L` : "—"}</dd></div>
             </dl>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-sm text-muted-foreground">No lab results yet.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
