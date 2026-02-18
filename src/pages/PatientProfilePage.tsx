@@ -321,19 +321,19 @@ function HealthOverviewView({
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <Card className="xl:row-span-2">
+        <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Radar className="h-5 w-5 text-primary" />
             Health Overview
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Scale: 1 (no action needed) → 10 (immediate action needed). Click a dimension label to see details.
+          <p className="text-xs text-muted-foreground">
+            1 = no action needed → 10 = immediate action. Click a label for details.
           </p>
         </CardHeader>
         <CardContent>
-          <div className="h-[500px] w-full">
+          <div className="h-[480px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
                 <PolarGrid stroke="hsl(var(--border))" />
@@ -366,39 +366,41 @@ function HealthOverviewView({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Write a clinical summary of the patient's overall health status..."
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            className="min-h-[120px]"
-          />
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-4">
+        <Card className="flex-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              placeholder="Write a clinical summary of the patient's overall health status..."
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              className="min-h-[140px] resize-none"
+            />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recommendations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Write recommendations for the patient's care plan..."
-            value={recommendations}
-            onChange={(e) => setRecommendations(e.target.value)}
-            className="min-h-[120px]"
-          />
-        </CardContent>
-      </Card>
+        <Card className="flex-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Recommendations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              placeholder="Write recommendations for the patient's care plan..."
+              value={recommendations}
+              onChange={(e) => setRecommendations(e.target.value)}
+              className="min-h-[140px] resize-none"
+            />
+          </CardContent>
+        </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
-          <Save className="h-4 w-4" />
-          {saving ? "Saving..." : "Save"}
-        </Button>
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </div>
     </div>
   );
