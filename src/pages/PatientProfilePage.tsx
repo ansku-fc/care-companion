@@ -917,7 +917,18 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                     />
                     <YAxis
                       tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      domain={['auto', 'auto']}
+                      domain={[
+                        (dataMin: number) => {
+                          const low = ref?.low;
+                          const min = low != null ? Math.min(dataMin, low) : dataMin;
+                          return Math.floor(min * 0.9);
+                        },
+                        (dataMax: number) => {
+                          const high = ref?.high;
+                          const max = high != null ? Math.max(dataMax, high) : dataMax;
+                          return Math.ceil(max * 1.1);
+                        },
+                      ]}
                     />
                     <Tooltip
                       contentStyle={{
@@ -935,10 +946,10 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                       dot={{ fill: "hsl(var(--primary))", r: 4 }}
                       activeDot={{ r: 6 }}
                     />
-                    {ref?.low != null && ref?.high != null && (
+                    {(ref?.low != null || ref?.high != null) && (
                       <ReferenceArea
-                        y1={ref.low}
-                        y2={ref.high}
+                        y1={ref?.low ?? 0}
+                        y2={ref?.high ?? (ref?.low != null ? ref.low * 2 : undefined)}
                         fill="hsl(var(--primary))"
                         fillOpacity={0.08}
                         label={{ value: "Normal range", position: "insideTopLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
