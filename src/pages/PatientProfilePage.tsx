@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,8 @@ const PatientProfilePage = () => {
   const [onboarding, setOnboarding] = useState<Tables<"patient_onboarding"> | null>(null);
   const [labResults, setLabResults] = useState<Tables<"patient_lab_results">[]>([]);
   const [healthCategories, setHealthCategories] = useState<Tables<"patient_health_categories">[]>([]);
+  const [visitNotes, setVisitNotes] = useState<Tables<"visit_notes">[]>([]);
+  const [appointments, setAppointments] = useState<Tables<"appointments">[]>([]);
   const [activeSection, setActiveSection] = useState<SidebarSection>("details");
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
@@ -61,16 +64,20 @@ const PatientProfilePage = () => {
   const fetchData = async () => {
     if (!id) return;
     setLoading(true);
-    const [patientRes, onboardingRes, labRes, healthCatRes] = await Promise.all([
+    const [patientRes, onboardingRes, labRes, healthCatRes, visitNotesRes, appointmentsRes] = await Promise.all([
       supabase.from("patients").select("*").eq("id", id).single(),
       supabase.from("patient_onboarding").select("*").eq("patient_id", id).maybeSingle(),
       supabase.from("patient_lab_results").select("*").eq("patient_id", id).order("result_date", { ascending: false }),
       supabase.from("patient_health_categories").select("*").eq("patient_id", id),
+      supabase.from("visit_notes").select("*").eq("patient_id", id).order("visit_date", { ascending: false }),
+      supabase.from("appointments").select("*").eq("patient_id", id).order("start_time", { ascending: false }),
     ]);
     setPatient(patientRes.data);
     setOnboarding(onboardingRes.data);
     setLabResults(labRes.data || []);
     setHealthCategories(healthCatRes.data || []);
+    setVisitNotes(visitNotesRes.data || []);
+    setAppointments(appointmentsRes.data || []);
     setLoading(false);
   };
 
@@ -179,7 +186,7 @@ const PatientProfilePage = () => {
         </Button>
 
         {activeSection === "details" ? (
-          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} />
+          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
         ) : activeSection === "health_overview" ? (
           <HealthOverviewView
             patient={patient}
@@ -454,76 +461,133 @@ function HealthOverviewView({
 }
 
 function PatientDetailsView({
-  patient, onboarding, age, labResults, onLabResultsAdded,
+  patient, onboarding, age, labResults, onLabResultsAdded, visitNotes, appointments,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   age: number | null | undefined;
   labResults: Tables<"patient_lab_results">[];
   onLabResultsAdded: () => void;
+  visitNotes: Tables<"visit_notes">[];
+  appointments: Tables<"appointments">[];
 }) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Full Name</dt><dd className="font-medium">{patient.full_name}</dd></div>
-            <div><dt className="text-muted-foreground">Gender</dt><dd>{patient.gender || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Date of Birth</dt><dd>{patient.date_of_birth || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Age</dt><dd>{age ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Email</dt><dd>{patient.email || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Phone</dt><dd>{patient.phone || "—"}</dd></div>
-            <div className="col-span-2"><dt className="text-muted-foreground">Address</dt><dd>{[patient.address, patient.post_code, patient.city, patient.country].filter(Boolean).join(", ") || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Tier</dt><dd>{patient.tier ? (TIER_LABELS[patient.tier] || patient.tier) : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Date Joined</dt><dd>{new Date(patient.created_at).toLocaleDateString()}</dd></div>
-            <div><dt className="text-muted-foreground">Insurance</dt><dd>{patient.insurance_provider || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Emergency Contact</dt><dd>{patient.emergency_contact_name ? `${patient.emergency_contact_name} (${patient.emergency_contact_phone || ""})` : "—"}</dd></div>
-          </dl>
-        </CardContent>
-      </Card>
+    <Tabs defaultValue="personal" className="space-y-4">
+      <TabsList className="w-full">
+        <TabsTrigger value="personal" className="flex-1">Personal Information</TabsTrigger>
+        <TabsTrigger value="contact" className="flex-1">Contact Details</TabsTrigger>
+        <TabsTrigger value="visits" className="flex-1">Visit History</TabsTrigger>
+      </TabsList>
 
-      {onboarding && (
+      <TabsContent value="personal">
         <Card>
-          <CardHeader><CardTitle className="text-lg">Biometrics</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-              <div><dt className="text-muted-foreground">Height</dt><dd>{onboarding.height_cm ? `${onboarding.height_cm} cm` : "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Weight</dt><dd>{onboarding.weight_kg ? `${onboarding.weight_kg} kg` : "—"}</dd></div>
-              <div><dt className="text-muted-foreground">BMI</dt><dd>{onboarding.bmi ?? "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Waist</dt><dd>{onboarding.waist_circumference_cm ? `${onboarding.waist_circumference_cm} cm` : "—"}</dd></div>
-              <div><dt className="text-muted-foreground">W/H Ratio</dt><dd>{onboarding.waist_to_hip_ratio ?? "—"}</dd></div>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div><dt className="text-muted-foreground">Full Name</dt><dd className="font-medium">{patient.full_name}</dd></div>
+              <div><dt className="text-muted-foreground">Gender</dt><dd>{patient.gender || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Date of Birth</dt><dd>{patient.date_of_birth || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Age</dt><dd>{age ?? "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Tier</dt><dd>{patient.tier ? (TIER_LABELS[patient.tier] || patient.tier) : "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Date Joined</dt><dd>{new Date(patient.created_at).toLocaleDateString()}</dd></div>
+              <div><dt className="text-muted-foreground">Insurance</dt><dd>{patient.insurance_provider || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Insurance #</dt><dd>{patient.insurance_number || "—"}</dd></div>
             </dl>
           </CardContent>
         </Card>
-      )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Lab Results</CardTitle>
-            <AddLabResultsDialog patientId={patient.id} onSaved={onLabResultsAdded} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {labResults.length > 0 ? (
-            <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-              <div><dt className="text-muted-foreground">Date</dt><dd>{labResults[0].result_date}</dd></div>
-              <div><dt className="text-muted-foreground">LDL</dt><dd>{labResults[0].ldl_mmol_l ? `${labResults[0].ldl_mmol_l} mmol/L` : "—"}</dd></div>
-              <div><dt className="text-muted-foreground">HbA1c</dt><dd>{labResults[0].hba1c_mmol_mol ? `${labResults[0].hba1c_mmol_mol} mmol/mol` : "—"}</dd></div>
-              <div><dt className="text-muted-foreground">BP</dt><dd>{labResults[0].blood_pressure_systolic ? `${labResults[0].blood_pressure_systolic}/${labResults[0].blood_pressure_diastolic}` : "—"}</dd></div>
-              <div><dt className="text-muted-foreground">eGFR</dt><dd>{labResults[0].egfr ?? "—"}</dd></div>
-              <div><dt className="text-muted-foreground">TSH</dt><dd>{labResults[0].tsh_mu_l ? `${labResults[0].tsh_mu_l} mU/L` : "—"}</dd></div>
+        {onboarding && (
+          <Card className="mt-4">
+            <CardHeader><CardTitle className="text-lg">Biometrics</CardTitle></CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                <div><dt className="text-muted-foreground">Height</dt><dd>{onboarding.height_cm ? `${onboarding.height_cm} cm` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">Weight</dt><dd>{onboarding.weight_kg ? `${onboarding.weight_kg} kg` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">BMI</dt><dd>{onboarding.bmi ?? "—"}</dd></div>
+                <div><dt className="text-muted-foreground">Waist</dt><dd>{onboarding.waist_circumference_cm ? `${onboarding.waist_circumference_cm} cm` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">W/H Ratio</dt><dd>{onboarding.waist_to_hip_ratio ?? "—"}</dd></div>
+              </dl>
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+
+      <TabsContent value="contact">
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Contact Details</CardTitle></CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div><dt className="text-muted-foreground">Email</dt><dd>{patient.email || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Phone</dt><dd>{patient.phone || "—"}</dd></div>
+              <div className="col-span-2"><dt className="text-muted-foreground">Address</dt><dd>{[patient.address, patient.post_code, patient.city, patient.country].filter(Boolean).join(", ") || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Emergency Contact</dt><dd>{patient.emergency_contact_name ? `${patient.emergency_contact_name} (${patient.emergency_contact_phone || ""})` : "—"}</dd></div>
             </dl>
-          ) : (
-            <p className="text-sm text-muted-foreground">No lab results yet.</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="visits">
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Visit History</CardTitle></CardHeader>
+          <CardContent>
+            {visitNotes.length === 0 && appointments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No visit history yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {appointments.map((appt) => (
+                  <div key={appt.id} className="flex items-start justify-between border-b pb-3 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{appt.title}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{appt.appointment_type.replace("_", " ")}</p>
+                      {appt.notes && <p className="text-xs text-muted-foreground mt-1">{appt.notes}</p>}
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
+                      {new Date(appt.start_time).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+                {visitNotes.map((vn) => (
+                  <div key={vn.id} className="flex items-start justify-between border-b pb-3 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{vn.chief_complaint || "Visit Note"}</p>
+                      {vn.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{vn.notes}</p>}
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
+                      {new Date(vn.visit_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-4">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Lab Results</CardTitle>
+              <AddLabResultsDialog patientId={patient.id} onSaved={onLabResultsAdded} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {labResults.length > 0 ? (
+              <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                <div><dt className="text-muted-foreground">Date</dt><dd>{labResults[0].result_date}</dd></div>
+                <div><dt className="text-muted-foreground">LDL</dt><dd>{labResults[0].ldl_mmol_l ? `${labResults[0].ldl_mmol_l} mmol/L` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">HbA1c</dt><dd>{labResults[0].hba1c_mmol_mol ? `${labResults[0].hba1c_mmol_mol} mmol/mol` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">BP</dt><dd>{labResults[0].blood_pressure_systolic ? `${labResults[0].blood_pressure_systolic}/${labResults[0].blood_pressure_diastolic}` : "—"}</dd></div>
+                <div><dt className="text-muted-foreground">eGFR</dt><dd>{labResults[0].egfr ?? "—"}</dd></div>
+                <div><dt className="text-muted-foreground">TSH</dt><dd>{labResults[0].tsh_mu_l ? `${labResults[0].tsh_mu_l} mU/L` : "—"}</dd></div>
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">No lab results yet.</p>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
   );
 }
-
 function HealthDimensionView({
   dimensionKey, patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
 }: {
