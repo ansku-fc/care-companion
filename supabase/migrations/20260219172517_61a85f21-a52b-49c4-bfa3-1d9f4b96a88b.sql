@@ -1,0 +1,1 @@
+ALTER TABLE public.patient_health_categories ADD COLUMN recommendations text;

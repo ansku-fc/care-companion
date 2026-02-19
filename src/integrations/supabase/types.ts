@@ -93,6 +93,7 @@ export type Database = {
           category: string
           id: string
           patient_id: string
+          recommendations: string | null
           status: string
           summary: string | null
           updated_at: string
@@ -102,6 +103,7 @@ export type Database = {
           category: string
           id?: string
           patient_id: string
+          recommendations?: string | null
           status?: string
           summary?: string | null
           updated_at?: string
@@ -111,6 +113,7 @@ export type Database = {
           category?: string
           id?: string
           patient_id?: string
+          recommendations?: string | null
           status?: string
           summary?: string | null
           updated_at?: string
