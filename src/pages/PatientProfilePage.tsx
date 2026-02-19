@@ -327,6 +327,14 @@ function HealthOverviewView({
   const [recommendations, setRecommendations] = useState((patient as any).health_recommendations || "");
   const [saving, setSaving] = useState(false);
 
+  // Auto-linked dimension notes
+  const dimensionNotes = healthCategories
+    .filter((c) => c.summary?.trim())
+    .map((c) => `[${c.category.charAt(0).toUpperCase() + c.category.slice(1)}] ${c.summary!.trim()}`);
+  const dimensionRecommendations = healthCategories
+    .filter((c) => (c as any).recommendations?.trim())
+    .map((c) => `[${c.category.charAt(0).toUpperCase() + c.category.slice(1)}] ${(c as any).recommendations.trim()}`);
+
   const handleSave = async () => {
     setSaving(true);
     const { error } = await supabase
@@ -400,6 +408,14 @@ function HealthOverviewView({
               onChange={(e) => setSummary(e.target.value)}
               className="min-h-[140px] resize-none"
             />
+            {dimensionNotes.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Auto-linked from Health Dimensions</p>
+                <div className="rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap text-foreground">
+                  {dimensionNotes.join("\n")}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -414,6 +430,14 @@ function HealthOverviewView({
               onChange={(e) => setRecommendations(e.target.value)}
               className="min-h-[140px] resize-none"
             />
+            {dimensionRecommendations.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Auto-linked from Health Dimensions</p>
+                <div className="rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap text-foreground">
+                  {dimensionRecommendations.join("\n")}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -733,7 +757,7 @@ function CardiovascularDimensionView({
   // Doctor summary & recommendations (local state, editable)
   const cvCategory = healthCategories.find((c) => c.category.toLowerCase() === "cardiovascular");
   const [cvSummary, setCvSummary] = useState(cvCategory?.summary || "");
-  const [cvRecommendations, setCvRecommendations] = useState("");
+  const [cvRecommendations, setCvRecommendations] = useState((cvCategory as any)?.recommendations || "");
   const [saving, setSaving] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
@@ -778,9 +802,10 @@ function CardiovascularDimensionView({
         patient_id: patient.id,
         category: "cardiovascular",
         summary: cvSummary,
+        recommendations: cvRecommendations,
         status: cvCategory?.status || "normal",
         updated_by: (await supabase.auth.getUser()).data.user?.id || "",
-      }, { onConflict: "patient_id,category" });
+      } as any, { onConflict: "patient_id,category" });
     setSaving(false);
     if (error) {
       toast.error("Failed to save");
