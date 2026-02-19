@@ -16,7 +16,8 @@ import {
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
   Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X
 } from "lucide-react";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ReferenceArea } from "recharts";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer } from "recharts";
+import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 
@@ -904,76 +905,17 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
             {chartData.length < 1 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
             ) : (
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      domain={[
-                        (dataMin: number) => {
-                          const low = ref?.low;
-                          const min = low != null ? Math.min(dataMin, low) : dataMin;
-                          return Math.floor(min * 0.9);
-                        },
-                        (dataMax: number) => {
-                          const high = ref?.high;
-                          const max = high != null ? Math.max(dataMax, high) : dataMax;
-                          return Math.ceil(max * 1.1);
-                        },
-                      ]}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--background))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))", r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                    {(ref?.low != null || ref?.high != null) && (
-                      <ReferenceArea
-                        y1={ref?.low ?? 0}
-                        y2={ref?.high ?? (ref?.low != null ? ref.low * 2 : undefined)}
-                        fill="hsl(var(--primary))"
-                        fillOpacity={0.08}
-                        label={{ value: "Normal range", position: "insideTopLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                      />
-                    )}
-                    {ref?.high != null && (
-                      <ReferenceLine
-                        y={ref.high}
-                        stroke="hsl(var(--destructive))"
-                        strokeDasharray="5 5"
-                        label={{ value: `High (${ref.high})`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }}
-                      />
-                    )}
-                    {ref?.low != null && (
-                      <ReferenceLine
-                        y={ref.low}
-                        stroke="hsl(var(--chart-4, 43 74% 66%))"
-                        strokeDasharray="5 5"
-                        label={{ value: `Low (${ref.low})`, position: "right", fontSize: 10, fill: "hsl(var(--chart-4, 43 74% 66%))" }}
-                      />
-                    )}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <DraggableReferenceChart
+                chartData={chartData}
+                refValues={ref}
+                onRefChange={(newRef) => {
+                  if (!selectedMarker) return;
+                  setCustomRefs((prev) => ({
+                    ...prev,
+                    [selectedMarker.key]: { ...prev[selectedMarker.key], ...newRef },
+                  }));
+                }}
+              />
             )}
             {selectedMarker && (
               <div className="mt-4 space-y-3">
