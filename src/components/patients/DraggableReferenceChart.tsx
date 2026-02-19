@@ -24,54 +24,57 @@ export function DraggableReferenceChart({
 }: DraggableReferenceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<"low" | "high" | null>(null);
-  const yScaleRef = useRef<{ min: number; max: number; top: number; bottom: number } | null>(null);
+  const [yScale, setYScale] = useState<{ min: number; max: number; top: number; bottom: number } | null>(null);
 
-  // Compute Y domain that includes ref values
+  // Keep latest onRefChange in a ref to avoid stale closures
+  const onRefChangeRef = useRef(onRefChange);
+  onRefChangeRef.current = onRefChange;
+  const refValuesRef = useRef(refValues);
+  refValuesRef.current = refValues;
+
   const dataValues = chartData.map((d) => d.value);
   const dataMin = Math.min(...dataValues);
   const dataMax = Math.max(...dataValues);
-  const yMin = Math.floor(
-    Math.min(dataMin, refValues?.low ?? dataMin) * 0.85
-  );
-  const yMax = Math.ceil(
-    Math.max(dataMax, refValues?.high ?? dataMax) * 1.15
-  );
+  const yMin = Math.floor(Math.min(dataMin, refValues?.low ?? dataMin) * 0.85);
+  const yMax = Math.ceil(Math.max(dataMax, refValues?.high ?? dataMax) * 1.15);
 
-  const yToValue = useCallback(
-    (clientY: number) => {
-      const scale = yScaleRef.current;
-      if (!scale) return null;
-      const ratio = (clientY - scale.top) / (scale.bottom - scale.top);
-      // top = max, bottom = min
-      const val = scale.max - ratio * (scale.max - scale.min);
-      return Math.round(val * 10) / 10;
-    },
-    []
-  );
+  const calibrateScale = useCallback(() => {
+    if (!containerRef.current) return;
+    const plotArea = containerRef.current.querySelector(".recharts-cartesian-grid");
+    if (!plotArea) return;
+    const plotRect = plotArea.getBoundingClientRect();
+    setYScale({ min: yMin, max: yMax, top: plotRect.top, bottom: plotRect.bottom });
+  }, [yMin, yMax]);
 
-  const handleMouseDown = useCallback(
-    (which: "low" | "high") => (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDragging(which);
-    },
-    []
-  );
+  // Recalibrate on mount, resize, and data changes
+  useEffect(() => {
+    const timer = setTimeout(calibrateScale, 150);
+    window.addEventListener("resize", calibrateScale);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", calibrateScale);
+    };
+  }, [calibrateScale, chartData, refValues]);
 
+  // Drag logic using window events
   useEffect(() => {
     if (!dragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const val = yToValue(e.clientY);
-      if (val == null) return;
+      const scale = yScale;
+      if (!scale || scale.bottom === scale.top) return;
+      const ratio = (e.clientY - scale.top) / (scale.bottom - scale.top);
+      const val = Math.round((scale.max - ratio * (scale.max - scale.min)) * 10) / 10;
+      const rv = refValuesRef.current;
+
       if (dragging === "high") {
-        const low = refValues?.low;
+        const low = rv?.low;
         const clamped = low != null ? Math.max(val, low + 0.1) : val;
-        onRefChange({ high: clamped });
+        onRefChangeRef.current({ high: Math.round(clamped * 10) / 10 });
       } else {
-        const high = refValues?.high;
+        const high = rv?.high;
         const clamped = high != null ? Math.min(val, high - 0.1) : val;
-        onRefChange({ low: Math.max(0, clamped) });
+        onRefChangeRef.current({ low: Math.max(0, Math.round(clamped * 10) / 10) });
       }
     };
 
@@ -83,41 +86,21 @@ export function DraggableReferenceChart({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [dragging, refValues, onRefChange, yToValue]);
-
-  // Capture the Y axis pixel coordinates after render
-  const handleChartUpdate = useCallback(() => {
-    if (!containerRef.current) return;
-    // Find the recharts y-axis ticks to calibrate
-    const svg = containerRef.current.querySelector("svg");
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    // The chart area is inside the margins: top=10, bottom=10+60(xaxis)
-    // We use the plotArea approach
-    const plotArea = svg.querySelector(".recharts-cartesian-grid");
-    if (plotArea) {
-      const plotRect = plotArea.getBoundingClientRect();
-      yScaleRef.current = {
-        min: yMin,
-        max: yMax,
-        top: plotRect.top,
-        bottom: plotRect.bottom,
-      };
-    }
-  }, [yMin, yMax]);
-
-  useEffect(() => {
-    // Recalculate on resize
-    const timer = setTimeout(handleChartUpdate, 100);
-    window.addEventListener("resize", handleChartUpdate);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("resize", handleChartUpdate);
-    };
-  }, [handleChartUpdate, chartData]);
+  }, [dragging, yScale]);
 
   const low = refValues?.low;
   const high = refValues?.high;
+
+  // Compute drag handle positions relative to container
+  const getHandleTop = (value: number): number | null => {
+    if (!yScale || !containerRef.current) return null;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const ratio = (yScale.max - value) / (yScale.max - yScale.min);
+    return yScale.top + ratio * (yScale.bottom - yScale.top) - containerRect.top;
+  };
+
+  const highTop = high != null ? getHandleTop(high) : null;
+  const lowTop = low != null ? getHandleTop(low) : null;
 
   return (
     <div
@@ -128,8 +111,7 @@ export function DraggableReferenceChart({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{ top: 10, right: 50, left: 0, bottom: 10 }}
-          onMouseMove={handleChartUpdate}
+          margin={{ top: 10, right: 55, left: 0, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis
@@ -159,7 +141,6 @@ export function DraggableReferenceChart({
             dot={{ fill: "hsl(var(--primary))", r: 4 }}
             activeDot={{ r: 6 }}
           />
-          {/* Shaded normal range */}
           {(low != null || high != null) && (
             <ReferenceArea
               y1={low ?? yMin}
@@ -169,7 +150,6 @@ export function DraggableReferenceChart({
               ifOverflow="extendDomain"
             />
           )}
-          {/* High reference line - draggable */}
           {high != null && (
             <ReferenceLine
               y={high}
@@ -177,7 +157,7 @@ export function DraggableReferenceChart({
               strokeWidth={2}
               strokeDasharray="6 3"
               label={{
-                value: `▲ High: ${high}`,
+                value: `High: ${high}`,
                 position: "right",
                 fontSize: 11,
                 fill: "hsl(var(--destructive))",
@@ -185,7 +165,6 @@ export function DraggableReferenceChart({
               }}
             />
           )}
-          {/* Low reference line - draggable */}
           {low != null && (
             <ReferenceLine
               y={low}
@@ -193,7 +172,7 @@ export function DraggableReferenceChart({
               strokeWidth={2}
               strokeDasharray="6 3"
               label={{
-                value: `▼ Low: ${low}`,
+                value: `Low: ${low}`,
                 position: "right",
                 fontSize: 11,
                 fill: "hsl(45 93% 47%)",
@@ -204,26 +183,32 @@ export function DraggableReferenceChart({
         </LineChart>
       </ResponsiveContainer>
 
-      {/* Invisible drag handles overlaid on the reference lines */}
-      {high != null && yScaleRef.current && (
-        <DragHandle
-          value={high}
-          scale={yScaleRef.current}
-          containerRef={containerRef}
-          color="hsl(var(--destructive))"
-          onMouseDown={handleMouseDown("high")}
-          label="Drag to adjust high"
-        />
+      {/* Drag handles */}
+      {highTop != null && (
+        <div
+          className="absolute left-0 right-0"
+          style={{ top: highTop - 8, height: 16, cursor: "ns-resize", zIndex: 10 }}
+          onMouseDown={(e) => { e.preventDefault(); setDragging("high"); }}
+          title="Drag to adjust high reference"
+        >
+          <div className="absolute left-10 top-1/2 -translate-y-1/2 flex gap-0.5">
+            <div className="w-5 h-[2px] rounded bg-destructive" />
+            <div className="w-5 h-[2px] rounded bg-destructive translate-y-[3px]" />
+          </div>
+        </div>
       )}
-      {low != null && yScaleRef.current && (
-        <DragHandle
-          value={low}
-          scale={yScaleRef.current}
-          containerRef={containerRef}
-          color="hsl(45 93% 47%)"
-          onMouseDown={handleMouseDown("low")}
-          label="Drag to adjust low"
-        />
+      {lowTop != null && (
+        <div
+          className="absolute left-0 right-0"
+          style={{ top: lowTop - 8, height: 16, cursor: "ns-resize", zIndex: 10 }}
+          onMouseDown={(e) => { e.preventDefault(); setDragging("low"); }}
+          title="Drag to adjust low reference"
+        >
+          <div className="absolute left-10 top-1/2 -translate-y-1/2 flex gap-0.5">
+            <div className="w-5 h-[2px] rounded" style={{ backgroundColor: "hsl(45 93% 47%)" }} />
+            <div className="w-5 h-[2px] rounded translate-y-[3px]" style={{ backgroundColor: "hsl(45 93% 47%)" }} />
+          </div>
+        </div>
       )}
 
       {(low != null || high != null) && (
@@ -232,54 +217,6 @@ export function DraggableReferenceChart({
           Normal range — drag lines to adjust
         </div>
       )}
-    </div>
-  );
-}
-
-function DragHandle({
-  value,
-  scale,
-  containerRef,
-  color,
-  onMouseDown,
-  label,
-}: {
-  value: number;
-  scale: { min: number; max: number; top: number; bottom: number };
-  containerRef: React.RefObject<HTMLDivElement>;
-  color: string;
-  onMouseDown: (e: React.MouseEvent) => void;
-  label: string;
-}) {
-  const container = containerRef.current;
-  if (!container) return null;
-
-  const containerRect = container.getBoundingClientRect();
-  const ratio = (scale.max - value) / (scale.max - scale.min);
-  const pixelY = scale.top + ratio * (scale.bottom - scale.top) - containerRect.top;
-
-  return (
-    <div
-      className="absolute left-0 right-0 flex items-center justify-center"
-      style={{
-        top: pixelY - 6,
-        height: 12,
-        cursor: "ns-resize",
-        zIndex: 10,
-      }}
-      onMouseDown={onMouseDown}
-      title={label}
-    >
-      {/* Wider invisible hit area */}
-      <div className="absolute inset-0 opacity-0" />
-      {/* Small drag grip indicator on the left */}
-      <div
-        className="absolute left-8 flex flex-col items-center gap-px"
-        style={{ pointerEvents: "none" }}
-      >
-        <div className="w-4 h-[2px] rounded" style={{ backgroundColor: color }} />
-        <div className="w-4 h-[2px] rounded" style={{ backgroundColor: color }} />
-      </div>
     </div>
   );
 }
