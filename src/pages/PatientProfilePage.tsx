@@ -476,6 +476,7 @@ function PatientDetailsView({
             <div><dt className="text-muted-foreground">Phone</dt><dd>{patient.phone || "—"}</dd></div>
             <div className="col-span-2"><dt className="text-muted-foreground">Address</dt><dd>{[patient.address, patient.post_code, patient.city, patient.country].filter(Boolean).join(", ") || "—"}</dd></div>
             <div><dt className="text-muted-foreground">Tier</dt><dd>{patient.tier ? (TIER_LABELS[patient.tier] || patient.tier) : "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Date Joined</dt><dd>{new Date(patient.created_at).toLocaleDateString()}</dd></div>
             <div><dt className="text-muted-foreground">Insurance</dt><dd>{patient.insurance_provider || "—"}</dd></div>
             <div><dt className="text-muted-foreground">Emergency Contact</dt><dd>{patient.emergency_contact_name ? `${patient.emergency_contact_name} (${patient.emergency_contact_phone || ""})` : "—"}</dd></div>
           </dl>
