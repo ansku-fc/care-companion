@@ -909,10 +909,11 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                 chartData={chartData}
                 refValues={ref}
                 onRefChange={(newRef) => {
-                  if (!selectedMarker) return;
+                  const key = selectedMarker?.key;
+                  if (!key) return;
                   setCustomRefs((prev) => ({
                     ...prev,
-                    [selectedMarker.key]: { ...prev[selectedMarker.key], ...newRef },
+                    [key]: { ...(REFERENCE_VALUES[key] || {}), ...prev[key], ...newRef },
                   }));
                 }}
               />
