@@ -795,6 +795,24 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
     return String(val);
   };
 
+  const isOutOfRange = (key: string, lab: Tables<"patient_lab_results">): "high" | "low" | null => {
+    const refKey = key === "_bp" ? "blood_pressure_systolic" : key;
+    const ref = { ...REFERENCE_VALUES[refKey], ...customRefs[refKey] };
+    if (!ref) return null;
+    let val: number | null = null;
+    if (key === "_bp") {
+      val = lab.blood_pressure_systolic;
+    } else {
+      const raw = (lab as any)[key];
+      if (raw === null || raw === undefined || typeof raw === "boolean") return null;
+      val = Number(raw);
+    }
+    if (val === null || isNaN(val)) return null;
+    if (ref.high != null && val > ref.high) return "high";
+    if (ref.low != null && val < ref.low) return "low";
+    return null;
+  };
+
   const handleRowClick = (key: string, label: string, unit: string) => {
     // For BP, open systolic chart
     if (key === "_bp") {
@@ -872,9 +890,16 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                           >
                             <TableCell className="font-medium text-sm">{row.label}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{row.unit}</TableCell>
-                            {sorted.map((lab) => (
-                              <TableCell key={lab.id} className="text-center text-sm">{getCellValue(lab, row.key)}</TableCell>
-                            ))}
+                            {sorted.map((lab) => {
+                              const oor = isOutOfRange(row.key, lab);
+                              return (
+                                <TableCell key={lab.id} className={`text-center text-sm ${oor === "high" ? "text-destructive font-semibold" : oor === "low" ? "text-amber-600 font-semibold" : ""}`}>
+                                  {getCellValue(lab, row.key)}
+                                  {oor === "high" && " ▲"}
+                                  {oor === "low" && " ▼"}
+                                </TableCell>
+                              );
+                            })}
                           </TableRow>
                         ))}
                       </>
