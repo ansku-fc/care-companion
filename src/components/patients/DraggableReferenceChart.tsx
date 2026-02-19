@@ -24,6 +24,7 @@ export function DraggableReferenceChart({
 }: DraggableReferenceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<"low" | "high" | null>(null);
+  const [yScale, setYScale] = useState<{ min: number; max: number; top: number; bottom: number } | null>(null);
   const yScaleRef = useRef<{ min: number; max: number; top: number; bottom: number } | null>(null);
 
   // Compute Y domain that includes ref values
@@ -97,12 +98,14 @@ export function DraggableReferenceChart({
     const plotArea = svg.querySelector(".recharts-cartesian-grid");
     if (plotArea) {
       const plotRect = plotArea.getBoundingClientRect();
-      yScaleRef.current = {
+      const newScale = {
         min: yMin,
         max: yMax,
         top: plotRect.top,
         bottom: plotRect.bottom,
       };
+      yScaleRef.current = newScale;
+      setYScale(newScale);
     }
   }, [yMin, yMax]);
 
@@ -205,20 +208,20 @@ export function DraggableReferenceChart({
       </ResponsiveContainer>
 
       {/* Invisible drag handles overlaid on the reference lines */}
-      {high != null && yScaleRef.current && (
+      {high != null && yScale && (
         <DragHandle
           value={high}
-          scale={yScaleRef.current}
+          scale={yScale}
           containerRef={containerRef}
           color="hsl(var(--destructive))"
           onMouseDown={handleMouseDown("high")}
           label="Drag to adjust high"
         />
       )}
-      {low != null && yScaleRef.current && (
+      {low != null && yScale && (
         <DragHandle
           value={low}
-          scale={yScaleRef.current}
+          scale={yScale}
           containerRef={containerRef}
           color="hsl(45 93% 47%)"
           onMouseDown={handleMouseDown("low")}
