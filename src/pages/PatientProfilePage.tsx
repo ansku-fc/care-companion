@@ -16,7 +16,7 @@ import {
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
   Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X
 } from "lucide-react";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer } from "recharts";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
 import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
@@ -196,6 +196,7 @@ const PatientProfilePage = () => {
             patient={patient}
             onboarding={onboarding}
             labResults={labResults}
+            healthCategories={healthCategories}
           />
         )}
       </div>
@@ -494,17 +495,29 @@ function PatientDetailsView({
 }
 
 function HealthDimensionView({
-  dimensionKey, patient, onboarding, labResults,
+  dimensionKey, patient, onboarding, labResults, healthCategories,
 }: {
   dimensionKey: string;
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
+  healthCategories: Tables<"patient_health_categories">[];
 }) {
   const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimensionKey);
   if (!dim) return null;
   const Icon = dim.icon;
   const lab = labResults[0] || null;
+
+  if (dimensionKey === "cardiovascular") {
+    return (
+      <CardiovascularDimensionView
+        patient={patient}
+        onboarding={onboarding}
+        labResults={labResults}
+        healthCategories={healthCategories}
+      />
+    );
+  }
 
   const renderContent = () => {
     switch (dimensionKey) {
@@ -687,6 +700,173 @@ function HealthDimensionView({
       </CardHeader>
       <CardContent>{renderContent()}</CardContent>
     </Card>
+  );
+}
+
+function CardiovascularDimensionView({
+  patient, onboarding, labResults, healthCategories,
+}: {
+  patient: Tables<"patients">;
+  onboarding: Tables<"patient_onboarding"> | null;
+  labResults: Tables<"patient_lab_results">[];
+  healthCategories: Tables<"patient_health_categories">[];
+}) {
+  // Compute cardiovascular risk index
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const cvScore = radarData.find((d) => d.category === "Cardiovascular")?.score ?? 1;
+
+  const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
+
+  // Onboarding risk factors table
+  const riskFactors = [
+    { label: "Waist-Hip Ratio", value: onboarding?.waist_to_hip_ratio != null ? String(onboarding.waist_to_hip_ratio) : "—" },
+    { label: "Exercise, MET (hours/week)", value: onboarding?.exercise_met_hours != null ? String(onboarding.exercise_met_hours) : "—" },
+    { label: "Smoking", value: onboarding?.smoking ?? "—" },
+    { label: "Genetic Predisposition", value: onboarding?.genetic_cardiovascular ? "Yes" : "No" },
+    { label: "Previous Illness", value: onboarding?.illness_cardiovascular ? "Yes" : "No" },
+  ];
+
+  const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
+
+  // Chart data for each marker
+  const ldlData = sorted.filter((l) => l.ldl_mmol_l != null).map((l) => ({ date: l.result_date, value: Number(l.ldl_mmol_l) }));
+  const bpData = sorted.filter((l) => l.blood_pressure_systolic != null).map((l) => ({ date: l.result_date, systolic: Number(l.blood_pressure_systolic), diastolic: Number(l.blood_pressure_diastolic) }));
+  const hba1cData = sorted.filter((l) => l.hba1c_mmol_mol != null).map((l) => ({ date: l.result_date, value: Number(l.hba1c_mmol_mol) }));
+
+  const scoreColor = cvScore <= 3 ? "text-green-600" : cvScore <= 6 ? "text-amber-600" : "text-destructive";
+  const scoreBg = cvScore <= 3 ? "bg-green-100" : cvScore <= 6 ? "bg-amber-100" : "bg-red-100";
+
+  return (
+    <div className="space-y-6">
+      {/* Header with index */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <HeartPulse className="h-5 w-5 text-primary" />
+              Cardiovascular System
+            </CardTitle>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
+              <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
+              <span className={`text-lg font-bold ${scoreColor}`}>{cvScore}/10</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">1 = no action needed → 10 = immediate action</p>
+        </CardHeader>
+      </Card>
+
+      {/* Risk factors table */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Risk Factors from Onboarding</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Factor</TableHead>
+                <TableHead>Value</TableHead>
+                <TableHead>Recorded</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {riskFactors.map((f) => (
+                <TableRow key={f.label}>
+                  <TableCell className="font-medium text-sm">{f.label}</TableCell>
+                  <TableCell className="text-sm">{f.value}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
+                </TableRow>
+              ))}
+              {onboarding?.illness_cardiovascular_notes && (
+                <TableRow>
+                  <TableCell className="font-medium text-sm">Previous Illness Notes</TableCell>
+                  <TableCell colSpan={2} className="text-sm">{onboarding.illness_cardiovascular_notes}</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* LDL Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">LDL (mmol/L)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {ldlData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={ldlData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <ReferenceArea y1={0} y2={3.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="LDL" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-8 text-center">No LDL data available.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Blood Pressure Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Blood Pressure (mmHg)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {bpData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={bpData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <ReferenceArea y1={60} y2={140} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                    <Line type="monotone" dataKey="systolic" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} name="Systolic" />
+                    <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="Diastolic" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-8 text-center">No BP data available.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* HbA1c Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">HbA1c (mmol/mol)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hba1cData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={hba1cData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <ReferenceArea y1={0} y2={42} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="HbA1c" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-8 text-center">No HbA1c data available.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
