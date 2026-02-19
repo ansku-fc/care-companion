@@ -201,6 +201,7 @@ const PatientProfilePage = () => {
             markerNotes={markerNotes}
             setMarkerNotes={setMarkerNotes}
             onNavigateDimension={setActiveSection}
+            onDataChanged={fetchData}
           />
         )}
       </div>
@@ -523,7 +524,7 @@ function PatientDetailsView({
 }
 
 function HealthDimensionView({
-  dimensionKey, patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension,
+  dimensionKey, patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
 }: {
   dimensionKey: string;
   patient: Tables<"patients">;
@@ -533,6 +534,7 @@ function HealthDimensionView({
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   onNavigateDimension: (section: string) => void;
+  onDataChanged?: () => void;
 }) {
   const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimensionKey);
   if (!dim) return null;
@@ -549,6 +551,7 @@ function HealthDimensionView({
         markerNotes={markerNotes}
         setMarkerNotes={setMarkerNotes}
         onNavigateDimension={onNavigateDimension}
+        onDataChanged={onDataChanged}
       />
     );
   }
@@ -738,7 +741,7 @@ function HealthDimensionView({
 }
 
 function CardiovascularDimensionView({
-  patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension,
+  patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
@@ -747,6 +750,7 @@ function CardiovascularDimensionView({
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   onNavigateDimension: (section: string) => void;
+  onDataChanged?: () => void;
 }) {
   // Compute cardiovascular risk index
   const radarData = computeRadarData(onboarding, labResults, healthCategories);
@@ -811,6 +815,7 @@ function CardiovascularDimensionView({
       toast.error("Failed to save");
     } else {
       toast.success("Saved successfully");
+      onDataChanged?.();
     }
   };
 
