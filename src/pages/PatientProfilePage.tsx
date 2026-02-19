@@ -199,6 +199,8 @@ const PatientProfilePage = () => {
             labResults={labResults}
             healthCategories={healthCategories}
             markerNotes={markerNotes}
+            setMarkerNotes={setMarkerNotes}
+            onNavigateDimension={setActiveSection}
           />
         )}
       </div>
@@ -497,7 +499,7 @@ function PatientDetailsView({
 }
 
 function HealthDimensionView({
-  dimensionKey, patient, onboarding, labResults, healthCategories, markerNotes,
+  dimensionKey, patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension,
 }: {
   dimensionKey: string;
   patient: Tables<"patients">;
@@ -505,6 +507,8 @@ function HealthDimensionView({
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
   markerNotes: Record<string, string>;
+  setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onNavigateDimension: (section: string) => void;
 }) {
   const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimensionKey);
   if (!dim) return null;
@@ -519,6 +523,8 @@ function HealthDimensionView({
         labResults={labResults}
         healthCategories={healthCategories}
         markerNotes={markerNotes}
+        setMarkerNotes={setMarkerNotes}
+        onNavigateDimension={onNavigateDimension}
       />
     );
   }
@@ -708,13 +714,15 @@ function HealthDimensionView({
 }
 
 function CardiovascularDimensionView({
-  patient, onboarding, labResults, healthCategories, markerNotes,
+  patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
   markerNotes: Record<string, string>;
+  setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onNavigateDimension: (section: string) => void;
 }) {
   // Compute cardiovascular risk index
   const radarData = computeRadarData(onboarding, labResults, healthCategories);
@@ -727,6 +735,8 @@ function CardiovascularDimensionView({
   const [cvSummary, setCvSummary] = useState(cvCategory?.summary || "");
   const [cvRecommendations, setCvRecommendations] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
+  const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
 
   // Auto-populate linked marker notes into summary
   const linkedMarkerKeys = ["ldl_mmol_l", "hba1c_mmol_mol", "blood_pressure_systolic"];
@@ -880,82 +890,213 @@ function CardiovascularDimensionView({
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* LDL Chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">LDL (mmol/L)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {ldlData.length > 0 ? (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={ldlData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <ReferenceArea y1={0} y2={3.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="LDL" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground py-8 text-center">No LDL data available.</p>
-            )}
-          </CardContent>
-        </Card>
+      <div className="flex gap-4">
+        <div className={`grid grid-cols-1 ${selectedMarker ? "xl:grid-cols-2" : "xl:grid-cols-3"} gap-4 flex-1 min-w-0`}>
+          {/* LDL Chart */}
+          <Card
+            className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "ldl_mmol_l" ? "border-primary" : ""}`}
+            onClick={() => setSelectedMarker({ key: "ldl_mmol_l", label: "LDL", unit: "mmol/L" })}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">LDL (mmol/L)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ldlData.length > 0 ? (
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={ldlData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <ReferenceArea y1={0} y2={3.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                      <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="LDL" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground py-8 text-center">No LDL data available.</p>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Blood Pressure Chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Blood Pressure (mmHg)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {bpData.length > 0 ? (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={bpData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <ReferenceArea y1={60} y2={140} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                    <Line type="monotone" dataKey="systolic" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} name="Systolic" />
-                    <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="Diastolic" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground py-8 text-center">No BP data available.</p>
-            )}
-          </CardContent>
-        </Card>
+          {/* Blood Pressure Chart */}
+          <Card
+            className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "blood_pressure_systolic" ? "border-primary" : ""}`}
+            onClick={() => setSelectedMarker({ key: "blood_pressure_systolic", label: "Blood Pressure (Systolic)", unit: "mmHg" })}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Blood Pressure (mmHg)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {bpData.length > 0 ? (
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={bpData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <ReferenceArea y1={60} y2={140} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                      <Line type="monotone" dataKey="systolic" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} name="Systolic" />
+                      <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="Diastolic" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground py-8 text-center">No BP data available.</p>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* HbA1c Chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">HbA1c (mmol/mol)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {hba1cData.length > 0 ? (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={hba1cData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <ReferenceArea y1={0} y2={42} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="HbA1c" />
-                  </LineChart>
-                </ResponsiveContainer>
+          {/* HbA1c Chart */}
+          <Card
+            className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "hba1c_mmol_mol" ? "border-primary" : ""}`}
+            onClick={() => setSelectedMarker({ key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" })}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">HbA1c (mmol/mol)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hba1cData.length > 0 ? (
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={hba1cData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <ReferenceArea y1={0} y2={42} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                      <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="HbA1c" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground py-8 text-center">No HbA1c data available.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Detail Panel */}
+        {selectedMarker && (() => {
+          const detailChartData = sorted
+            .map((lab) => {
+              const val = (lab as any)[selectedMarker.key];
+              if (val === null || val === undefined) return null;
+              return { date: lab.result_date, value: Number(val) };
+            })
+            .filter(Boolean) as { date: string; value: number }[];
+
+          const ref = {
+            ...REFERENCE_VALUES[selectedMarker.key],
+            ...customRefs[selectedMarker.key],
+          };
+
+          return (
+            <div className="w-[400px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200">
+              <div className="flex items-center justify-between p-4 border-b">
+                <div>
+                  <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
+                  {selectedMarker.unit && (
+                    <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+                  )}
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground py-8 text-center">No HbA1c data available.</p>
-            )}
-          </CardContent>
-        </Card>
+              <div className="p-4 flex-1 overflow-auto">
+                {detailChartData.length < 1 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
+                ) : (
+                  <DraggableReferenceChart
+                    chartData={detailChartData}
+                    refValues={ref}
+                    onRefChange={(newRef) => {
+                      setCustomRefs((prev) => ({
+                        ...prev,
+                        [selectedMarker.key]: { ...(REFERENCE_VALUES[selectedMarker.key] || {}), ...prev[selectedMarker.key], ...newRef },
+                      }));
+                    }}
+                  />
+                )}
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Low</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="—"
+                        className="h-8 text-xs"
+                        value={ref?.low ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? undefined : Number(e.target.value);
+                          setCustomRefs((prev) => ({
+                            ...prev,
+                            [selectedMarker.key]: { ...prev[selectedMarker.key], low: val },
+                          }));
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">High</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="—"
+                        className="h-8 text-xs"
+                        value={ref?.high ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? undefined : Number(e.target.value);
+                          setCustomRefs((prev) => ({
+                            ...prev,
+                            [selectedMarker.key]: { ...prev[selectedMarker.key], high: val },
+                          }));
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Label className="text-xs">Doctor Notes</Label>
+                  <Textarea
+                    placeholder="Add notes about this marker..."
+                    className="mt-1 min-h-[80px] text-xs resize-none"
+                    value={markerNotes[selectedMarker.key] || ""}
+                    onChange={(e) => {
+                      setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
+                    }}
+                  />
+                </div>
+                {MARKER_DIMENSIONS[selectedMarker.key] && (
+                  <div className="mt-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
+                        const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
+                        if (!dim) return null;
+                        const DimIcon = dim.icon;
+                        return (
+                          <button
+                            key={dimKey}
+                            onClick={() => onNavigateDimension(dimKey)}
+                            className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                          >
+                            <DimIcon className="h-3 w-3" />
+                            {dim.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
