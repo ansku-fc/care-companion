@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -825,6 +825,19 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
     ...customRefs[selectedMarker.key],
   } : null;
 
+  // Stable callback using refs to avoid stale closures during drag
+  const selectedMarkerRef = useRef(selectedMarker);
+  useEffect(() => { selectedMarkerRef.current = selectedMarker; }, [selectedMarker]);
+
+  const handleRefChange = useCallback((newRef: { low?: number; high?: number }) => {
+    const marker = selectedMarkerRef.current;
+    if (!marker) return;
+    setCustomRefs((prev) => ({
+      ...prev,
+      [marker.key]: { ...prev[marker.key], ...newRef },
+    }));
+  }, []);
+
   return (
     <div className="flex gap-4">
       <div className={`space-y-4 transition-all ${selectedMarker ? "flex-1 min-w-0" : "w-full"}`}>
@@ -908,13 +921,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
               <DraggableReferenceChart
                 chartData={chartData}
                 refValues={ref}
-                onRefChange={(newRef) => {
-                  if (!selectedMarker) return;
-                  setCustomRefs((prev) => ({
-                    ...prev,
-                    [selectedMarker.key]: { ...prev[selectedMarker.key], ...newRef },
-                  }));
-                }}
+                onRefChange={handleRefChange}
               />
             )}
             {selectedMarker && (
