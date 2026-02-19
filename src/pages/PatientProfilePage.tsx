@@ -56,6 +56,7 @@ const PatientProfilePage = () => {
   const [healthCategories, setHealthCategories] = useState<Tables<"patient_health_categories">[]>([]);
   const [activeSection, setActiveSection] = useState<SidebarSection>("details");
   const [loading, setLoading] = useState(true);
+  const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
   const fetchData = async () => {
     if (!id) return;
@@ -189,7 +190,7 @@ const PatientProfilePage = () => {
             onPatientUpdate={(updated) => setPatient(updated)}
           />
         ) : activeSection === "lab_results" ? (
-          <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} />
+          <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -197,6 +198,7 @@ const PatientProfilePage = () => {
             onboarding={onboarding}
             labResults={labResults}
             healthCategories={healthCategories}
+            markerNotes={markerNotes}
           />
         )}
       </div>
@@ -495,13 +497,14 @@ function PatientDetailsView({
 }
 
 function HealthDimensionView({
-  dimensionKey, patient, onboarding, labResults, healthCategories,
+  dimensionKey, patient, onboarding, labResults, healthCategories, markerNotes,
 }: {
   dimensionKey: string;
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
+  markerNotes: Record<string, string>;
 }) {
   const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimensionKey);
   if (!dim) return null;
@@ -515,6 +518,7 @@ function HealthDimensionView({
         onboarding={onboarding}
         labResults={labResults}
         healthCategories={healthCategories}
+        markerNotes={markerNotes}
       />
     );
   }
@@ -704,18 +708,38 @@ function HealthDimensionView({
 }
 
 function CardiovascularDimensionView({
-  patient, onboarding, labResults, healthCategories,
+  patient, onboarding, labResults, healthCategories, markerNotes,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
+  markerNotes: Record<string, string>;
 }) {
   // Compute cardiovascular risk index
   const radarData = computeRadarData(onboarding, labResults, healthCategories);
   const cvScore = radarData.find((d) => d.category === "Cardiovascular")?.score ?? 1;
 
   const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
+
+  // Doctor summary & recommendations (local state, editable)
+  const cvCategory = healthCategories.find((c) => c.category.toLowerCase() === "cardiovascular");
+  const [cvSummary, setCvSummary] = useState(cvCategory?.summary || "");
+  const [cvRecommendations, setCvRecommendations] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Auto-populate linked marker notes into summary
+  const linkedMarkerKeys = ["ldl_mmol_l", "hba1c_mmol_mol", "blood_pressure_systolic"];
+  const autoNotes = linkedMarkerKeys
+    .filter((k) => markerNotes[k]?.trim())
+    .map((k) => {
+      const label = REFERENCE_VALUES[k]?.label || k;
+      return `[${label}] ${markerNotes[k].trim()}`;
+    });
+
+  const autoNotesBlock = autoNotes.length > 0
+    ? autoNotes.join("\n")
+    : "";
 
   // Onboarding risk factors table
   const riskFactors = [
@@ -736,6 +760,25 @@ function CardiovascularDimensionView({
   const scoreColor = cvScore <= 3 ? "text-green-600" : cvScore <= 6 ? "text-amber-600" : "text-destructive";
   const scoreBg = cvScore <= 3 ? "bg-green-100" : cvScore <= 6 ? "bg-amber-100" : "bg-red-100";
 
+  const handleSaveCv = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("patient_health_categories")
+      .upsert({
+        patient_id: patient.id,
+        category: "cardiovascular",
+        summary: cvSummary,
+        status: cvCategory?.status || "normal",
+        updated_by: (await supabase.auth.getUser()).data.user?.id || "",
+      }, { onConflict: "patient_id,category" });
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save");
+    } else {
+      toast.success("Saved successfully");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with index */}
@@ -755,38 +798,86 @@ function CardiovascularDimensionView({
         </CardHeader>
       </Card>
 
-      {/* Risk factors table */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Risk Factors from Onboarding</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Factor</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead>Recorded</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {riskFactors.map((f) => (
-                <TableRow key={f.label}>
-                  <TableCell className="font-medium text-sm">{f.label}</TableCell>
-                  <TableCell className="text-sm">{f.value}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
-                </TableRow>
-              ))}
-              {onboarding?.illness_cardiovascular_notes && (
-                <TableRow>
-                  <TableCell className="font-medium text-sm">Previous Illness Notes</TableCell>
-                  <TableCell colSpan={2} className="text-sm">{onboarding.illness_cardiovascular_notes}</TableCell>
-                </TableRow>
+      {/* Summary / Recommendations + Risk Factors side by side */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Doctor's Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write a clinical summary for the cardiovascular dimension..."
+                value={cvSummary}
+                onChange={(e) => setCvSummary(e.target.value)}
+                className="min-h-[120px] resize-none"
+              />
+              {autoNotesBlock && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Auto-linked Lab Notes</p>
+                  <div className="rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap text-foreground">
+                    {autoNotesBlock}
+                  </div>
+                </div>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recommendations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write recommendations for the cardiovascular care plan..."
+                value={cvRecommendations}
+                onChange={(e) => setCvRecommendations(e.target.value)}
+                className="min-h-[120px] resize-none"
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button onClick={handleSaveCv} disabled={saving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Risk factors table */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Risk Factors from Onboarding</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Factor</TableHead>
+                  <TableHead>Value</TableHead>
+                  <TableHead>Recorded</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {riskFactors.map((f) => (
+                  <TableRow key={f.label}>
+                    <TableCell className="font-medium text-sm">{f.label}</TableCell>
+                    <TableCell className="text-sm">{f.value}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
+                  </TableRow>
+                ))}
+                {onboarding?.illness_cardiovascular_notes && (
+                  <TableRow>
+                    <TableCell className="font-medium text-sm">Previous Illness Notes</TableCell>
+                    <TableCell colSpan={2} className="text-sm">{onboarding.illness_cardiovascular_notes}</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -905,15 +996,16 @@ const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: str
   fvc_percent: { low: 80, label: "FVC" },
 };
 
-function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDimension }: {
+function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes }: {
   patientId: string;
   labResults: Tables<"patient_lab_results">[];
   onLabResultsAdded: () => void;
   onNavigateDimension: (section: string) => void;
+  markerNotes: Record<string, string>;
+  setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
-  const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
   const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
 
   const categories = [
