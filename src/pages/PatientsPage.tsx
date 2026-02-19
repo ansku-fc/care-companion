@@ -147,6 +147,8 @@ const PatientsPage = () => {
                       <p className="font-medium">{patient.full_name}</p>
                       <p className="text-sm text-muted-foreground">
                         {age != null ? `Age ${age}` : ""}{age != null && patient.gender ? " • " : ""}{patient.gender || ""}
+                        {(age != null || patient.gender) && patient.created_at ? " • " : ""}
+                        {patient.created_at ? `Joined ${new Date(patient.created_at).toLocaleDateString()}` : ""}
                       </p>
                     </div>
                   </div>
