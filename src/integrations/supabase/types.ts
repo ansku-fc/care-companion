@@ -25,6 +25,8 @@ export type Database = {
           is_labs: boolean
           is_nurse_visit: boolean
           is_onboarding: boolean
+          lab_package: string | null
+          lab_tests_selected: Json | null
           notes: string | null
           patient_id: string
           provider_id: string
@@ -44,6 +46,8 @@ export type Database = {
           is_labs?: boolean
           is_nurse_visit?: boolean
           is_onboarding?: boolean
+          lab_package?: string | null
+          lab_tests_selected?: Json | null
           notes?: string | null
           patient_id: string
           provider_id: string
@@ -63,6 +67,8 @@ export type Database = {
           is_labs?: boolean
           is_nurse_visit?: boolean
           is_onboarding?: boolean
+          lab_package?: string | null
+          lab_tests_selected?: Json | null
           notes?: string | null
           patient_id?: string
           provider_id?: string
