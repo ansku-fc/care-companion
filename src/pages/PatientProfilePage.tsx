@@ -217,13 +217,14 @@ const PatientProfilePage = () => {
             onboarding={onboarding}
             labResults={labResults}
             healthCategories={healthCategories}
+            appointments={appointments}
             onSelectDimension={(key) => setActiveSection(key)}
             onPatientUpdate={(updated) => setPatient(updated)}
           />
         ) : activeSection === "lab_results" ? (
           <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
         ) : activeSection === "reports" ? (
-          <ReportsListView patient={patient} onboarding={onboarding} labResults={labResults} healthCategories={healthCategories} />
+          <ReportsListView patient={patient} onboarding={onboarding} labResults={labResults} healthCategories={healthCategories} appointments={appointments} />
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -343,12 +344,13 @@ function computeRadarData(
 }
 
 function HealthOverviewView({
-  patient, onboarding, labResults, healthCategories, onSelectDimension, onPatientUpdate,
+  patient, onboarding, labResults, healthCategories, appointments, onSelectDimension, onPatientUpdate,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
+  appointments: Tables<"appointments">[];
   onSelectDimension: (key: string) => void;
   onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
@@ -550,6 +552,7 @@ function HealthOverviewView({
         labResults={labResults}
         healthCategories={healthCategories}
         radarData={radarData}
+        appointments={appointments}
         draftId={editingDraftId}
         onDraftSaved={fetchReports}
       />
@@ -558,11 +561,12 @@ function HealthOverviewView({
 }
 
 // Reports listing subpage
-function ReportsListView({ patient, onboarding, labResults, healthCategories }: {
+function ReportsListView({ patient, onboarding, labResults, healthCategories, appointments }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
+  appointments: Tables<"appointments">[];
 }) {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -671,6 +675,7 @@ function ReportsListView({ patient, onboarding, labResults, healthCategories }: 
         labResults={labResults}
         healthCategories={healthCategories}
         radarData={radarData}
+        appointments={appointments}
         draftId={editingDraftId}
         onDraftSaved={fetchReports}
       />

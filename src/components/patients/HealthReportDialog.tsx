@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Printer, ZoomIn, ZoomOut, FileText, Save } from "lucide-react";
+import { Printer, ZoomIn, ZoomOut, FileText, Save, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,9 +39,18 @@ interface HealthReportDialogProps {
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
   radarData: { category: string; score: number }[];
+  appointments?: Tables<"appointments">[];
   draftId?: string | null;
   onDraftSaved?: () => void;
 }
+
+const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
+  consultation: "Consultation",
+  follow_up: "Follow-up",
+  procedure: "Procedure",
+  check_up: "Check-up",
+  urgent: "Urgent",
+};
 
 function getRiskFactors(key: string, onboarding: Tables<"patient_onboarding"> | null): { label: string; value: string }[] {
   if (!onboarding) return [];
@@ -216,7 +225,7 @@ function InlineEdit({ value, onChange, placeholder, minH = "60px" }: {
 }
 
 export function HealthReportDialog({
-  open, onOpenChange, patient, onboarding, labResults, healthCategories, radarData, draftId, onDraftSaved,
+  open, onOpenChange, patient, onboarding, labResults, healthCategories, radarData, appointments = [], draftId, onDraftSaved,
 }: HealthReportDialogProps) {
   const { user } = useAuth();
   const printRef = useRef<HTMLDivElement>(null);
@@ -455,6 +464,18 @@ export function HealthReportDialog({
                     </button>
                   );
                 })}
+                <button
+                  onClick={() => scrollToPage("annual-plan")}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left",
+                    activePageKey === "annual-plan"
+                      ? "bg-white/15 text-white font-medium"
+                      : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                  )}
+                >
+                  <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+                  Annual Health Plan
+                </button>
               </div>
             </ScrollArea>
           </div>
@@ -616,6 +637,90 @@ export function HealthReportDialog({
                 </div>
               );
             })}
+
+            {/* Annual Health Plan Page */}
+            <div data-page="annual-plan" style={pageStyle}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
+                <h2 style={{ fontSize: 17, margin: 0 }}>Annual Health Plan</h2>
+                <span style={{ fontSize: 11, color: "#888" }}>{new Date().getFullYear()}</span>
+              </div>
+
+              <p style={{ fontSize: 11, color: "#666", marginBottom: 20 }}>
+                Scheduled appointments and follow-ups for {patient.full_name}.
+              </p>
+
+              {(() => {
+                const now = new Date();
+                const upcoming = [...appointments]
+                  .filter(a => new Date(a.start_time) >= now)
+                  .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+                if (upcoming.length === 0) {
+                  return (
+                    <div style={{ textAlign: "center", padding: 40, color: "#bbb", fontSize: 12, fontStyle: "italic" }}>
+                      No upcoming appointments scheduled.
+                    </div>
+                  );
+                }
+
+                return (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 4 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Date</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Time</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Appointment</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Type</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {upcoming.map(appt => {
+                        const start = new Date(appt.start_time);
+                        const end = new Date(appt.end_time);
+                        const tags: string[] = [];
+                        if (appt.visit_modality === "remote") tags.push("Remote");
+                        if (appt.is_home_visit) tags.push("Home Visit");
+                        if (appt.is_onboarding) tags.push("Onboarding");
+                        if (appt.is_nurse_visit) tags.push("Nurse");
+                        if (appt.is_labs) tags.push("Labs");
+                        if (appt.is_external_specialist) {
+                          tags.push(`Specialist${appt.specialist_name ? `: ${appt.specialist_name}` : ""}`);
+                        }
+                        return (
+                          <tr key={appt.id}>
+                            <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", whiteSpace: "nowrap", fontWeight: 500 }}>
+                              {start.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                            </td>
+                            <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", whiteSpace: "nowrap", color: "#555" }}>
+                              {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – {end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </td>
+                            <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", fontWeight: 500 }}>
+                              {appt.title}
+                            </td>
+                            <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0" }}>
+                              <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 10, fontSize: 10, fontWeight: 500, background: "#f3f4f6", color: "#374151" }}>
+                                {APPOINTMENT_TYPE_LABELS[appt.appointment_type] || appt.appointment_type}
+                              </span>
+                            </td>
+                            <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", fontSize: 10, color: "#888" }}>
+                              {tags.join(" · ") || "In-Person"}
+                              {appt.notes ? ` — ${appt.notes}` : ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
+
+              {/* Page footer */}
+              <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
+                <span>{patient.full_name} — Health Report</span>
+                <span>Annual Health Plan</span>
+              </div>
+            </div>
           </div>
           </div>
         </div>
