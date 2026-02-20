@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Printer, ZoomIn, ZoomOut, FileText, Save, CalendarDays } from "lucide-react";
+import { Printer, ZoomIn, ZoomOut, FileText, Save, CalendarDays, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -262,6 +262,7 @@ export function HealthReportDialog({
   const [overviewSummary, setOverviewSummary] = useState(patient.health_summary || "");
   const [overviewRecs, setOverviewRecs] = useState(patient.health_recommendations || "");
   const [dimTexts, setDimTexts] = useState<Record<string, { summary: string; recommendations: string }>>(defaultDimTexts);
+  const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(new Set());
 
   // Load draft data if draftId provided
   useEffect(() => {
@@ -596,42 +597,67 @@ export function HealthReportDialog({
                       <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Lab Trends</div>
                       <div style={{ display: "grid", gridTemplateColumns: labMarkers.length === 1 ? "1fr" : "1fr 1fr", gap: 12 }}>
                         {labMarkers.map(m => {
+                          const chartKey = `${dim.key}_${m.dbKey}`;
+                          const isHidden = hiddenCharts.has(chartKey);
                           const chartData = buildChartData(labResults, m);
                           const latestVal = (latestLab as any)?.[m.dbKey];
                           const hasSecondary = !!m.secondaryKey;
                           return (
-                            <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "10px 12px" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                            <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "10px 12px", opacity: isHidden ? 0.5 : 1 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                                 <span style={{ fontSize: 11, fontWeight: 600 }}>{m.label} {m.unit && `(${m.unit})`}</span>
-                                {latestVal != null && (
-                                  <span style={{ fontSize: 13, fontWeight: 700 }}>{String(latestVal)}</span>
-                                )}
-                              </div>
-                              {chartData.length > 0 ? (
-                                <div style={{ height: 120 }}>
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
-                                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                                      <XAxis dataKey="date" tick={{ fontSize: 8 }} />
-                                      <YAxis tick={{ fontSize: 8 }} />
-                                      <Tooltip contentStyle={{ fontSize: 10 }} />
-                                      {m.refLow != null && m.refHigh != null && (
-                                        <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
-                                      )}
-                                      {hasSecondary ? (
-                                        <>
-                                          <Line type="monotone" dataKey="primary" stroke="#ef4444" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
-                                          <Line type="monotone" dataKey="secondary" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.secondaryLabel} />
-                                        </>
-                                      ) : (
-                                        <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
-                                      )}
-                                    </LineChart>
-                                  </ResponsiveContainer>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  {latestVal != null && (
+                                    <span style={{ fontSize: 13, fontWeight: 700 }}>{String(latestVal)}</span>
+                                  )}
+                                  <button
+                                    onClick={() => setHiddenCharts(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(chartKey)) next.delete(chartKey); else next.add(chartKey);
+                                      return next;
+                                    })}
+                                    title={isHidden ? "Show in report" : "Hide from report"}
+                                    className="print:hidden"
+                                    style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: isHidden ? "#ccc" : "#666" }}
+                                  >
+                                    {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                  </button>
                                 </div>
-                              ) : (
-                                <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 10, fontStyle: "italic" }}>
-                                  No data available
+                              </div>
+                              {!isHidden && (
+                                <>
+                                  {chartData.length > 0 ? (
+                                    <div style={{ height: 120 }}>
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
+                                          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                                          <XAxis dataKey="date" tick={{ fontSize: 8 }} />
+                                          <YAxis tick={{ fontSize: 8 }} />
+                                          <Tooltip contentStyle={{ fontSize: 10 }} />
+                                          {m.refLow != null && m.refHigh != null && (
+                                            <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
+                                          )}
+                                          {hasSecondary ? (
+                                            <>
+                                              <Line type="monotone" dataKey="primary" stroke="#ef4444" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
+                                              <Line type="monotone" dataKey="secondary" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.secondaryLabel} />
+                                            </>
+                                          ) : (
+                                            <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
+                                          )}
+                                        </LineChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                  ) : (
+                                    <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 10, fontStyle: "italic" }}>
+                                      No data available
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {isHidden && (
+                                <div style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: 10, fontStyle: "italic" }}>
+                                  Hidden from report
                                 </div>
                               )}
                             </div>
