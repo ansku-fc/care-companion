@@ -592,80 +592,94 @@ export function HealthReportDialog({
                   )}
 
                   {/* Lab Charts */}
-                  {labMarkers.length > 0 && (
+                  {labMarkers.length > 0 && (() => {
+                    const visibleMarkers = labMarkers.filter(m => !hiddenCharts.has(`${dim.key}_${m.dbKey}`));
+                    const hiddenMarkersList = labMarkers.filter(m => hiddenCharts.has(`${dim.key}_${m.dbKey}`));
+                    return (
                     <div className="section" style={{ marginBottom: 14 }}>
-                      <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Lab Trends</div>
-                      <div style={{ display: "grid", gridTemplateColumns: labMarkers.length === 1 ? "1fr" : "1fr 1fr", gap: 12 }}>
-                        {labMarkers.map(m => {
-                          const chartKey = `${dim.key}_${m.dbKey}`;
-                          const isHidden = hiddenCharts.has(chartKey);
-                          const chartData = buildChartData(labResults, m);
-                          const latestVal = (latestLab as any)?.[m.dbKey];
-                          const hasSecondary = !!m.secondaryKey;
-                          return (
-                            <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "10px 12px", opacity: isHidden ? 0.5 : 1 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                                <span style={{ fontSize: 11, fontWeight: 600 }}>{m.label} {m.unit && `(${m.unit})`}</span>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                  {latestVal != null && (
-                                    <span style={{ fontSize: 13, fontWeight: 700 }}>{String(latestVal)}</span>
-                                  )}
-                                  <button
-                                    onClick={() => setHiddenCharts(prev => {
-                                      const next = new Set(prev);
-                                      if (next.has(chartKey)) next.delete(chartKey); else next.add(chartKey);
-                                      return next;
-                                    })}
-                                    title={isHidden ? "Show in report" : "Hide from report"}
-                                    className="print:hidden"
-                                    style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: isHidden ? "#ccc" : "#666" }}
-                                  >
-                                    {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                                  </button>
-                                </div>
-                              </div>
-                              {!isHidden && (
-                                <>
-                                  {chartData.length > 0 ? (
-                                    <div style={{ height: 120 }}>
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
-                                          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                                          <XAxis dataKey="date" tick={{ fontSize: 8 }} />
-                                          <YAxis tick={{ fontSize: 8 }} />
-                                          <Tooltip contentStyle={{ fontSize: 10 }} />
-                                          {m.refLow != null && m.refHigh != null && (
-                                            <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
-                                          )}
-                                          {hasSecondary ? (
-                                            <>
-                                              <Line type="monotone" dataKey="primary" stroke="#ef4444" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
-                                              <Line type="monotone" dataKey="secondary" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.secondaryLabel} />
-                                            </>
-                                          ) : (
-                                            <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
-                                          )}
-                                        </LineChart>
-                                      </ResponsiveContainer>
-                                    </div>
-                                  ) : (
-                                    <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 10, fontStyle: "italic" }}>
-                                      No data available
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                              {isHidden && (
-                                <div style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: 10, fontStyle: "italic" }}>
-                                  Hidden from report
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>Lab Trends</div>
+                        {hiddenMarkersList.length > 0 && (
+                          <span style={{ fontSize: 9, color: "#bbb" }}>{hiddenMarkersList.length} chart{hiddenMarkersList.length > 1 ? "s" : ""} hidden</span>
+                        )}
                       </div>
+                      {/* Visible charts grid */}
+                      {visibleMarkers.length > 0 && (
+                        <div style={{ display: "grid", gridTemplateColumns: visibleMarkers.length === 1 ? "1fr" : "1fr 1fr", gap: 12 }}>
+                          {visibleMarkers.map(m => {
+                            const chartData = buildChartData(labResults, m);
+                            const latestVal = (latestLab as any)?.[m.dbKey];
+                            const hasSecondary = !!m.secondaryKey;
+                            return (
+                              <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "10px 12px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 600 }}>{m.label} {m.unit && `(${m.unit})`}</span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    {latestVal != null && (
+                                      <span style={{ fontSize: 13, fontWeight: 700 }}>{String(latestVal)}</span>
+                                    )}
+                                    <button
+                                      onClick={() => setHiddenCharts(prev => { const next = new Set(prev); next.add(`${dim.key}_${m.dbKey}`); return next; })}
+                                      title="Hide from report"
+                                      className="print:hidden"
+                                      style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "#666" }}
+                                    >
+                                      <Eye className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                                {chartData.length > 0 ? (
+                                  <div style={{ height: 120 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                                        <XAxis dataKey="date" tick={{ fontSize: 8 }} />
+                                        <YAxis tick={{ fontSize: 8 }} />
+                                        <Tooltip contentStyle={{ fontSize: 10 }} />
+                                        {m.refLow != null && m.refHigh != null && (
+                                          <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
+                                        )}
+                                        {hasSecondary ? (
+                                          <>
+                                            <Line type="monotone" dataKey="primary" stroke="#ef4444" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
+                                            <Line type="monotone" dataKey="secondary" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.secondaryLabel} />
+                                          </>
+                                        ) : (
+                                          <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
+                                        )}
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                ) : (
+                                  <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 10, fontStyle: "italic" }}>
+                                    No data available
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {/* Hidden charts - compact restore buttons */}
+                      {hiddenMarkersList.length > 0 && (
+                        <div className="print:hidden" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: visibleMarkers.length > 0 ? 8 : 0 }}>
+                          {hiddenMarkersList.map(m => (
+                            <button
+                              key={m.dbKey}
+                              onClick={() => setHiddenCharts(prev => { const next = new Set(prev); next.delete(`${dim.key}_${m.dbKey}`); return next; })}
+                              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", border: "1px dashed #ddd", borderRadius: 4, background: "none", cursor: "pointer", fontSize: 10, color: "#999" }}
+                            >
+                              <EyeOff className="h-3 w-3" />
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    );
+                  })()}
+
+
 
                   {/* Page footer */}
                   <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
