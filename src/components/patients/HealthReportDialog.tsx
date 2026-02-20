@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Printer, ZoomIn, ZoomOut, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
 
 const HEALTH_DIMENSIONS = [
@@ -149,13 +150,12 @@ function getRiskFactors(key: string, onboarding: Tables<"patient_onboarding"> | 
   return map[key]?.() ?? [];
 }
 
-function getLabMarkers(key: string): { dbKey: string; label: string; unit: string }[] {
-  const map: Record<string, { dbKey: string; label: string; unit: string }[]> = {
+function getLabMarkers(key: string): { dbKey: string; label: string; unit: string; refLow?: number; refHigh?: number; secondaryKey?: string; secondaryLabel?: string }[] {
+  const map: Record<string, { dbKey: string; label: string; unit: string; refLow?: number; refHigh?: number; secondaryKey?: string; secondaryLabel?: string }[]> = {
     cardiovascular: [
-      { dbKey: "ldl_mmol_l", label: "LDL", unit: "mmol/L" },
-      { dbKey: "blood_pressure_systolic", label: "BP Systolic", unit: "mmHg" },
-      { dbKey: "blood_pressure_diastolic", label: "BP Diastolic", unit: "mmHg" },
-      { dbKey: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" },
+      { dbKey: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refLow: 0, refHigh: 3.0 },
+      { dbKey: "blood_pressure_systolic", label: "Blood Pressure", unit: "mmHg", refLow: 60, refHigh: 140, secondaryKey: "blood_pressure_diastolic", secondaryLabel: "Diastolic" },
+      { dbKey: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42 },
     ],
     liver: [
       { dbKey: "alat_u_l", label: "ALAT", unit: "U/L" },
@@ -177,6 +177,22 @@ function getLabMarkers(key: string): { dbKey: string; label: string; unit: strin
     ],
   };
   return map[key] ?? [];
+}
+
+function buildChartData(labResults: Tables<"patient_lab_results">[], marker: ReturnType<typeof getLabMarkers>[number]) {
+  const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
+  if (marker.secondaryKey) {
+    return sorted
+      .filter(l => (l as any)[marker.dbKey] != null)
+      .map(l => ({
+        date: l.result_date,
+        primary: Number((l as any)[marker.dbKey]),
+        secondary: (l as any)[marker.secondaryKey!] != null ? Number((l as any)[marker.secondaryKey!]) : undefined,
+      }));
+  }
+  return sorted
+    .filter(l => (l as any)[marker.dbKey] != null)
+    .map(l => ({ date: l.result_date, value: Number((l as any)[marker.dbKey]) }));
 }
 
 // Editable text area styled to blend into the A4 page
@@ -473,17 +489,50 @@ export function HealthReportDialog({
                     </div>
                   )}
 
-                  {/* Lab Values */}
-                  {labMarkers.length > 0 && latestLab && (
+                  {/* Lab Charts */}
+                  {labMarkers.length > 0 && (
                     <div className="section" style={{ marginBottom: 14 }}>
-                      <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Latest Lab Values</div>
-                      <div className="lab-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6, marginTop: 6 }}>
+                      <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Lab Trends</div>
+                      <div style={{ display: "grid", gridTemplateColumns: labMarkers.length === 1 ? "1fr" : "1fr 1fr", gap: 12 }}>
                         {labMarkers.map(m => {
-                          const val = (latestLab as any)[m.dbKey];
+                          const chartData = buildChartData(labResults, m);
+                          const latestVal = (latestLab as any)?.[m.dbKey];
+                          const hasSecondary = !!m.secondaryKey;
                           return (
-                            <div key={m.dbKey} className="lab-item" style={{ padding: "6px 10px", border: "1px solid #e5e5e5", borderRadius: 4 }}>
-                              <div className="lab-label" style={{ color: "#666", fontSize: 9 }}>{m.label} {m.unit && `(${m.unit})`}</div>
-                              <div className="lab-val" style={{ fontWeight: 600, fontSize: 13 }}>{val != null ? String(val) : "—"}</div>
+                            <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "10px 12px" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                                <span style={{ fontSize: 11, fontWeight: 600 }}>{m.label} {m.unit && `(${m.unit})`}</span>
+                                {latestVal != null && (
+                                  <span style={{ fontSize: 13, fontWeight: 700 }}>{String(latestVal)}</span>
+                                )}
+                              </div>
+                              {chartData.length > 0 ? (
+                                <div style={{ height: 120 }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                                      <XAxis dataKey="date" tick={{ fontSize: 8 }} />
+                                      <YAxis tick={{ fontSize: 8 }} />
+                                      <Tooltip contentStyle={{ fontSize: 10 }} />
+                                      {m.refLow != null && m.refHigh != null && (
+                                        <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
+                                      )}
+                                      {hasSecondary ? (
+                                        <>
+                                          <Line type="monotone" dataKey="primary" stroke="#ef4444" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
+                                          <Line type="monotone" dataKey="secondary" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.secondaryLabel} />
+                                        </>
+                                      ) : (
+                                        <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
+                                      )}
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              ) : (
+                                <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 10, fontStyle: "italic" }}>
+                                  No data available
+                                </div>
+                              )}
                             </div>
                           );
                         })}
