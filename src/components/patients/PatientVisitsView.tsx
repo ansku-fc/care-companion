@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Plus, ArrowRight } from "lucide-react";
+import { Calendar, Clock, Plus, ArrowRight, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { VisitConsultationView } from "./VisitConsultationView";
 
@@ -69,36 +69,78 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
             <p className="text-sm text-muted-foreground">No upcoming visits scheduled.</p>
           ) : (
             <div className="space-y-3">
-              {upcomingAppointments.map((appt) => (
-                <div
-                  key={appt.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer group"
-                  onClick={() => setActiveVisit({ mode: "appointment", appointment: appt })}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium truncate">{appt.title}</p>
-                      <Badge variant="outline" className="text-xs capitalize shrink-0">
-                        {APPOINTMENT_TYPE_LABELS[appt.appointment_type] || appt.appointment_type}
-                      </Badge>
+              {upcomingAppointments.map((appt) => {
+                const a = appt as any;
+                return (
+                  <div
+                    key={appt.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer group"
+                    onClick={() => setActiveVisit({ mode: "appointment", appointment: appt })}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium truncate">{appt.title}</p>
+                        <Badge variant="outline" className="text-xs capitalize shrink-0">
+                          {APPOINTMENT_TYPE_LABELS[appt.appointment_type] || appt.appointment_type}
+                        </Badge>
+                        {a.visit_modality === "remote" ? (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <Video className="h-3 w-3" /> Remote
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <MapPin className="h-3 w-3" /> In-Person
+                          </Badge>
+                        )}
+                        {a.is_home_visit && (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <Home className="h-3 w-3" /> Home Visit
+                          </Badge>
+                        )}
+                        {a.is_onboarding && (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <UserCheck className="h-3 w-3" /> Onboarding
+                          </Badge>
+                        )}
+                        {a.is_nurse_visit && (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <Stethoscope className="h-3 w-3" /> Nurse
+                          </Badge>
+                        )}
+                        {a.is_labs && (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <FlaskConical className="h-3 w-3" /> Labs
+                          </Badge>
+                        )}
+                        {a.is_external_specialist && (
+                          <Badge className="text-xs gap-1 shrink-0 bg-accent text-accent-foreground border-transparent">
+                            External Specialist
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(appt.start_time).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(appt.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {" — "}
+                          {new Date(appt.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      {a.is_external_specialist && (a.specialist_name || a.specialist_location) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {a.specialist_name}{a.specialist_name && a.specialist_location ? " · " : ""}{a.specialist_location}
+                        </p>
+                      )}
+                      {appt.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{appt.notes}</p>}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(appt.start_time).toLocaleDateString()}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(appt.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        {" — "}
-                        {new Date(appt.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                    {appt.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{appt.notes}</p>}
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2" />
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
