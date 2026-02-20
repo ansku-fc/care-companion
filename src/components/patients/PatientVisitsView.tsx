@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Plus, ArrowRight, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope } from "lucide-react";
+import { Calendar, Clock, Plus, Play, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { VisitConsultationView } from "./VisitConsultationView";
 
@@ -137,7 +137,17 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
                       )}
                       {appt.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{appt.notes}</p>}
                     </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2" />
+                    <Button
+                      size="lg"
+                      className="shrink-0 ml-4 gap-2 font-semibold"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveVisit({ mode: "appointment", appointment: appt });
+                      }}
+                    >
+                      <Play className="h-4 w-4" />
+                      Start Consultation
+                    </Button>
                   </div>
                 );
               })}
