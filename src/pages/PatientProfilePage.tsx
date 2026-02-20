@@ -22,6 +22,7 @@ import { DraggableReferenceChart } from "@/components/patients/DraggableReferenc
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
+import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 
 const HEALTH_DIMENSIONS = [
   { key: "senses", label: "Senses", icon: Eye },
@@ -347,6 +348,7 @@ function HealthOverviewView({
   const [summary, setSummary] = useState((patient as any).health_summary || "");
   const [recommendations, setRecommendations] = useState((patient as any).health_recommendations || "");
   const [saving, setSaving] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Auto-linked dimension notes
   const dimensionNotes = healthCategories
@@ -462,13 +464,27 @@ function HealthOverviewView({
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setReportOpen(true)} className="gap-2">
+            <FlaskConical className="h-4 w-4" />
+            Generate Report
+          </Button>
           <Button onClick={handleSave} disabled={saving} className="gap-2">
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
+
+      <HealthReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        patient={patient}
+        onboarding={onboarding}
+        labResults={labResults}
+        healthCategories={healthCategories}
+        radarData={radarData}
+      />
     </div>
   );
 }
