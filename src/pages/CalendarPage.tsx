@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope, Clock, Play, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const CalendarPage = () => {
+  const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
@@ -109,8 +111,8 @@ const CalendarPage = () => {
                   <div className="flex items-start justify-between">
                     <p className="font-medium text-sm">{a.title}</p>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Start appointment" onClick={() => toast({ title: "Appointment started", description: `Started: ${a.title}` })}>
-                        <Play className="h-3 w-3 text-green-600" />
+                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Start appointment" onClick={() => navigate(`/patients/${a.patient_id}`)}>
+                        <Play className="h-3 w-3 text-primary" />
                       </Button>
                       <Button size="icon" variant="ghost" className="h-6 w-6" title="Edit" onClick={() => { setEditingAppointment(a); setDialogOpen(true); }}>
                         <Pencil className="h-3 w-3" />
