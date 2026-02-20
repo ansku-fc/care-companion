@@ -66,6 +66,8 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
   const [notes, setNotes] = useState("");
   const [fastingRequired, setFastingRequired] = useState(false);
   const [sendInvite, setSendInvite] = useState(false);
+  const [labPackage, setLabPackage] = useState("custom");
+  const [selectedLabTests, setSelectedLabTests] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -106,6 +108,8 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
     setNotes("");
     setFastingRequired(false);
     setSendInvite(false);
+    setLabPackage("custom");
+    setSelectedLabTests([]);
   };
 
   const handleSubmit = async () => {
@@ -138,6 +142,8 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
       specialist_name: isExternalSpecialist ? specialistName : null,
       specialist_location: isExternalSpecialist ? specialistLocation : null,
       notes: prepNotes || null,
+      lab_package: isLabs ? labPackage : null,
+      lab_tests_selected: isLabs ? selectedLabTests : null,
     });
     setLoading(false);
 
@@ -244,6 +250,58 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
               <div className="space-y-1.5">
                 <Label htmlFor="specLoc">Location</Label>
                 <Input id="specLoc" value={specialistLocation} onChange={(e) => setSpecialistLocation(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* Lab Package & Tests */}
+          {isLabs && (
+            <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+              <Label className="text-sm font-medium">Lab Configuration</Label>
+              <Select value={labPackage} onValueChange={(v) => {
+                setLabPackage(v);
+                if (v === "basic") setSelectedLabTests(["blood_pressure", "hba1c", "ldl"]);
+                else if (v === "comprehensive") setSelectedLabTests(["blood_pressure", "hba1c", "ldl", "liver", "kidney", "thyroid"]);
+                else if (v === "metabolic") setSelectedLabTests(["hba1c", "ldl", "liver"]);
+                else if (v === "hormone") setSelectedLabTests(["thyroid", "testosterone_estrogen"]);
+                else if (v === "custom") setSelectedLabTests([]);
+              }}>
+                <SelectTrigger><SelectValue placeholder="Select package" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="basic">Basic (BP, HbA1c, LDL)</SelectItem>
+                  <SelectItem value="comprehensive">Comprehensive (All core)</SelectItem>
+                  <SelectItem value="metabolic">Metabolic (HbA1c, LDL, Liver)</SelectItem>
+                  <SelectItem value="hormone">Hormone (Thyroid, Sex hormones)</SelectItem>
+                  <SelectItem value="custom">Custom selection</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: "blood_pressure", label: "Blood Pressure" },
+                  { key: "hba1c", label: "HbA1c" },
+                  { key: "ldl", label: "LDL Cholesterol" },
+                  { key: "liver", label: "Liver (ALAT, GT, AFOS)" },
+                  { key: "kidney", label: "Kidney (eGFR, Cystatin C)" },
+                  { key: "thyroid", label: "TSH (Thyroid)" },
+                  { key: "testosterone_estrogen", label: "Sex Hormones" },
+                  { key: "lung_function", label: "Lung Function (FEV1, FVC, PEF)" },
+                  { key: "apoe", label: "ApoE ε4" },
+                  { key: "u_alb_krea", label: "U-Alb/Krea" },
+                ].map((test) => (
+                  <label key={test.key} className="flex items-center gap-2 text-xs">
+                    <Checkbox
+                      checked={selectedLabTests.includes(test.key)}
+                      onCheckedChange={(checked) => {
+                        setLabPackage("custom");
+                        setSelectedLabTests((prev) =>
+                          checked ? [...prev, test.key] : prev.filter((t) => t !== test.key)
+                        );
+                      }}
+                    />
+                    {test.label}
+                  </label>
+                ))}
               </div>
             </div>
           )}
