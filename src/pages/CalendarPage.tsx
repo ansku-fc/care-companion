@@ -57,6 +57,7 @@ const CalendarPage = () => {
               mode="single"
               selected={date}
               onSelect={setDate}
+              showWeekNumber
               className="rounded-md border w-full"
               modifiers={{ hasAppointment: appointmentDates }}
               modifiersClassNames={{ hasAppointment: "bg-primary/10 font-semibold" }}
