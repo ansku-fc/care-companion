@@ -1,12 +1,15 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Printer, ZoomIn, ZoomOut, FileText } from "lucide-react";
+import { Printer, ZoomIn, ZoomOut, FileText, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 const HEALTH_DIMENSIONS = [
@@ -36,6 +39,8 @@ interface HealthReportDialogProps {
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
   radarData: { category: string; score: number }[];
+  draftId?: string | null;
+  onDraftSaved?: () => void;
 }
 
 function getRiskFactors(key: string, onboarding: Tables<"patient_onboarding"> | null): { label: string; value: string }[] {
@@ -211,10 +216,13 @@ function InlineEdit({ value, onChange, placeholder, minH = "60px" }: {
 }
 
 export function HealthReportDialog({
-  open, onOpenChange, patient, onboarding, labResults, healthCategories, radarData,
+  open, onOpenChange, patient, onboarding, labResults, healthCategories, radarData, draftId, onDraftSaved,
 }: HealthReportDialogProps) {
+  const { user } = useAuth();
   const printRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.6);
+  const [saving, setSaving] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
 
   const pagesContainerRef = useRef<HTMLDivElement>(null);
   const [activePageKey, setActivePageKey] = useState<string>("overview");
@@ -227,23 +235,75 @@ export function HealthReportDialog({
     }
   }, []);
 
-  const [overviewSummary, setOverviewSummary] = useState(patient.health_summary || "");
-  const [overviewRecs, setOverviewRecs] = useState(patient.health_recommendations || "");
-
   const catMap = useMemo(() => {
     const m: Record<string, Tables<"patient_health_categories">> = {};
     healthCategories.forEach(c => { m[c.category.toLowerCase()] = c; });
     return m;
   }, [healthCategories]);
 
-  const [dimTexts, setDimTexts] = useState<Record<string, { summary: string; recommendations: string }>>(() => {
+  const defaultDimTexts = useMemo(() => {
     const init: Record<string, { summary: string; recommendations: string }> = {};
     HEALTH_DIMENSIONS.forEach(d => {
       const cat = catMap[d.label.toLowerCase()];
       init[d.key] = { summary: cat?.summary || "", recommendations: cat?.recommendations || "" };
     });
     return init;
-  });
+  }, [catMap]);
+
+  const [overviewSummary, setOverviewSummary] = useState(patient.health_summary || "");
+  const [overviewRecs, setOverviewRecs] = useState(patient.health_recommendations || "");
+  const [dimTexts, setDimTexts] = useState<Record<string, { summary: string; recommendations: string }>>(defaultDimTexts);
+
+  // Load draft data if draftId provided
+  useEffect(() => {
+    if (!open) return;
+    setCurrentDraftId(draftId || null);
+    if (draftId) {
+      supabase.from("health_reports").select("*").eq("id", draftId).single().then(({ data }) => {
+        if (data) {
+          setOverviewSummary((data as any).overview_summary || "");
+          setOverviewRecs((data as any).overview_recommendations || "");
+          const dt = (data as any).dimension_texts as Record<string, { summary: string; recommendations: string }> | null;
+          if (dt && typeof dt === "object") setDimTexts({ ...defaultDimTexts, ...dt });
+        }
+      });
+    } else {
+      setOverviewSummary(patient.health_summary || "");
+      setOverviewRecs(patient.health_recommendations || "");
+      setDimTexts(defaultDimTexts);
+    }
+  }, [open, draftId]);
+
+  const handleSaveDraft = async () => {
+    if (!user) return;
+    setSaving(true);
+    const payload = {
+      patient_id: patient.id,
+      created_by: user.id,
+      title: `Health Report — ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`,
+      status: "draft",
+      overview_summary: overviewSummary,
+      overview_recommendations: overviewRecs,
+      dimension_texts: dimTexts as any,
+    };
+
+    let error;
+    if (currentDraftId) {
+      const res = await supabase.from("health_reports").update(payload as any).eq("id", currentDraftId);
+      error = res.error;
+    } else {
+      const res = await supabase.from("health_reports").insert(payload as any).select("id").single();
+      error = res.error;
+      if (res.data) setCurrentDraftId((res.data as any).id);
+    }
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save draft");
+    } else {
+      toast.success("Draft saved");
+      onDraftSaved?.();
+    }
+  };
 
   const updateDimText = (key: string, field: "summary" | "recommendations", value: string) => {
     setDimTexts(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
@@ -347,6 +407,10 @@ export function HealthReportDialog({
               <ZoomIn className="h-4 w-4" />
             </Button>
             <div className="w-px h-5 bg-white/20 mx-1" />
+            <Button size="sm" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-none h-7 text-xs" onClick={handleSaveDraft} disabled={saving}>
+              <Save className="h-3.5 w-3.5" />
+              {saving ? "Saving..." : "Save Draft"}
+            </Button>
             <Button size="sm" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-none h-7 text-xs" onClick={handlePrint}>
               <Printer className="h-3.5 w-3.5" />
               Export PDF

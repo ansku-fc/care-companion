@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2
 } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
 import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
@@ -169,6 +169,16 @@ const PatientProfilePage = () => {
               Lab Results
             </button>
 
+            <button
+              onClick={() => setActiveSection("reports")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "reports" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              Reports
+            </button>
+
             <Separator className="my-2" />
             <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Health Dimensions</p>
 
@@ -212,6 +222,8 @@ const PatientProfilePage = () => {
           />
         ) : activeSection === "lab_results" ? (
           <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
+        ) : activeSection === "reports" ? (
+          <ReportsListView patient={patient} onboarding={onboarding} labResults={labResults} healthCategories={healthCategories} />
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -349,6 +361,19 @@ function HealthOverviewView({
   const [recommendations, setRecommendations] = useState((patient as any).health_recommendations || "");
   const [saving, setSaving] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [savedReports, setSavedReports] = useState<any[]>([]);
+
+  const fetchReports = async () => {
+    const { data } = await supabase
+      .from("health_reports")
+      .select("*")
+      .eq("patient_id", patient.id)
+      .order("updated_at", { ascending: false });
+    setSavedReports(data || []);
+  };
+
+  useEffect(() => { fetchReports(); }, [patient.id]);
 
   // Auto-linked dimension notes
   const dimensionNotes = healthCategories
@@ -371,6 +396,16 @@ function HealthOverviewView({
       toast.success("Saved successfully");
       onPatientUpdate({ ...patient, health_summary: summary, health_recommendations: recommendations } as any);
     }
+  };
+
+  const openNewReport = () => {
+    setEditingDraftId(null);
+    setReportOpen(true);
+  };
+
+  const openDraft = (id: string) => {
+    setEditingDraftId(id);
+    setReportOpen(true);
   };
 
   return (
@@ -465,7 +500,7 @@ function HealthOverviewView({
         </Card>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setReportOpen(true)} className="gap-2">
+          <Button variant="outline" onClick={openNewReport} className="gap-2">
             <FlaskConical className="h-4 w-4" />
             Generate Report
           </Button>
@@ -476,6 +511,37 @@ function HealthOverviewView({
         </div>
       </div>
 
+      {/* Saved Reports */}
+      {savedReports.length > 0 && (
+        <Card className="xl:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileText className="h-4 w-4 text-primary" />
+              Saved Report Drafts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {savedReports.slice(0, 3).map((r: any) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => openDraft(r.id)}
+                >
+                  <div>
+                    <p className="text-sm font-medium">{r.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.status === "draft" ? "Draft" : "Final"} · Updated {new Date(r.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <Badge variant={r.status === "draft" ? "secondary" : "default"}>{r.status}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <HealthReportDialog
         open={reportOpen}
         onOpenChange={setReportOpen}
@@ -484,6 +550,129 @@ function HealthOverviewView({
         labResults={labResults}
         healthCategories={healthCategories}
         radarData={radarData}
+        draftId={editingDraftId}
+        onDraftSaved={fetchReports}
+      />
+    </div>
+  );
+}
+
+// Reports listing subpage
+function ReportsListView({ patient, onboarding, labResults, healthCategories }: {
+  patient: Tables<"patients">;
+  onboarding: Tables<"patient_onboarding"> | null;
+  labResults: Tables<"patient_lab_results">[];
+  healthCategories: Tables<"patient_health_categories">[];
+}) {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+
+  const radarData = useMemo(
+    () => computeRadarData(onboarding, labResults, healthCategories),
+    [onboarding, labResults, healthCategories],
+  );
+
+  const fetchReports = async () => {
+    const { data } = await supabase
+      .from("health_reports")
+      .select("*")
+      .eq("patient_id", patient.id)
+      .order("updated_at", { ascending: false });
+    setReports(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchReports(); }, [patient.id]);
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const { error } = await supabase.from("health_reports").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete report");
+    } else {
+      toast.success("Report deleted");
+      fetchReports();
+    }
+  };
+
+  const openDraft = (id: string) => {
+    setEditingDraftId(id);
+    setReportOpen(true);
+  };
+
+  const openNewReport = () => {
+    setEditingDraftId(null);
+    setReportOpen(true);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Health Reports
+          </h2>
+          <p className="text-sm text-muted-foreground">All saved report drafts for {patient.full_name}</p>
+        </div>
+        <Button onClick={openNewReport} className="gap-2">
+          <FlaskConical className="h-4 w-4" />
+          New Report
+        </Button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">Loading reports...</p>
+      ) : reports.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No reports yet. Generate your first report from the Health Overview.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {reports.map((r: any) => (
+            <Card
+              key={r.id}
+              className="cursor-pointer hover:border-primary/40 transition-colors"
+              onClick={() => openDraft(r.id)}
+            >
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{r.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Created {new Date(r.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      {" · "}Updated {new Date(r.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={r.status === "draft" ? "secondary" : "default"}>{r.status}</Badge>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => handleDelete(r.id, e)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <HealthReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        patient={patient}
+        onboarding={onboarding}
+        labResults={labResults}
+        healthCategories={healthCategories}
+        radarData={radarData}
+        draftId={editingDraftId}
+        onDraftSaved={fetchReports}
       />
     </div>
   );
