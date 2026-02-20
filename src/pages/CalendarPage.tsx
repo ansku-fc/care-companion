@@ -1,17 +1,46 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { useState } from "react";
-import { CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope, Clock } from "lucide-react";
+import { CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope, Clock, Play, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddAppointmentDialog } from "@/components/calendar/AddAppointmentDialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, parseISO } from "date-fns";
+import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const CalendarPage = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("appointments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast({ title: "Appointment cancelled" });
+      setCancelId(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
 
   const { data: appointments = [] } = useQuery({
     queryKey: ["appointments"],
@@ -79,6 +108,17 @@ const CalendarPage = () => {
                 <div key={a.id} className="border rounded-lg p-3 space-y-2">
                   <div className="flex items-start justify-between">
                     <p className="font-medium text-sm">{a.title}</p>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Start appointment" onClick={() => toast({ title: "Appointment started", description: `Started: ${a.title}` })}>
+                        <Play className="h-3 w-3 text-green-600" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Edit" onClick={() => { setEditingAppointment(a); setDialogOpen(true); }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Cancel" onClick={() => setCancelId(a.id)}>
+                        <X className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -117,7 +157,25 @@ const CalendarPage = () => {
         </Card>
       </div>
 
-      <AddAppointmentDialog open={dialogOpen} onOpenChange={setDialogOpen} selectedDate={date} />
+      <AddAppointmentDialog
+        open={dialogOpen}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingAppointment(null); }}
+        selectedDate={date}
+        editingAppointment={editingAppointment}
+      />
+
+      <AlertDialog open={!!cancelId} onOpenChange={(open) => !open && setCancelId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel appointment?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this appointment.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep</AlertDialogCancel>
+            <AlertDialogAction onClick={() => cancelId && cancelMutation.mutate(cancelId)}>Cancel Appointment</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
