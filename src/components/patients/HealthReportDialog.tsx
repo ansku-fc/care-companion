@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Printer, ZoomIn, ZoomOut, FileText, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -478,11 +478,15 @@ export function HealthReportDialog({
 
               <div style={{ height: 1, background: "#e5e5e5", margin: "0 0 20px" }} />
 
-              <div className="radar-placeholder" style={{ textAlign: "center", padding: 16, color: "#888", fontStyle: "italic", fontSize: 11, border: "1px dashed #ddd", borderRadius: 6, marginBottom: 20 }}>
-                Health Dimension Risk Scores
-                <div style={{ marginTop: 8, fontSize: 10, lineHeight: 1.8 }}>
-                  {radarData.map(d => `${d.category}: ${d.score}/10`).join(" · ")}
-                </div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+                <ResponsiveContainer width={460} height={340}>
+                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                    <PolarGrid stroke="#e5e5e5" />
+                    <PolarAngleAxis dataKey="category" tick={{ fontSize: 9, fill: "#555" }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fontSize: 8, fill: "#999" }} />
+                    <Radar name="Risk" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} strokeWidth={2} />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
 
               <div className="section" style={{ marginBottom: 16 }}>
