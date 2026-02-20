@@ -476,6 +476,18 @@ export function HealthReportDialog({
                   <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                   Annual Health Plan
                 </button>
+                <button
+                  onClick={() => scrollToPage("medications")}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left",
+                    activePageKey === "medications"
+                      ? "bg-white/15 text-white font-medium"
+                      : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                  )}
+                >
+                  <FileText className="h-3.5 w-3.5 shrink-0" />
+                  Medications
+                </button>
               </div>
             </ScrollArea>
           </div>
@@ -719,6 +731,53 @@ export function HealthReportDialog({
               <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
                 <span>{patient.full_name} — Health Report</span>
                 <span>Annual Health Plan</span>
+              </div>
+            </div>
+
+            {/* Medications Page */}
+            <div data-page="medications" style={pageStyle}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
+                <h2 style={{ fontSize: 17, margin: 0 }}>Current Medications</h2>
+              </div>
+
+              <p style={{ fontSize: 11, color: "#666", marginBottom: 20 }}>
+                Active prescriptions for {patient.full_name}.
+              </p>
+
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 4 }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Medication</th>
+                    <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Dose</th>
+                    <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Prescribed</th>
+                    <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "2px solid #e5e5e5", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Indication</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { name: "Atorvastatin", dose: "20 mg once daily", prescribed: "12 Jan 2025", indication: "Hypercholesterolaemia" },
+                    { name: "Metformin", dose: "500 mg twice daily", prescribed: "3 Mar 2024", indication: "Type 2 Diabetes Mellitus" },
+                    { name: "Lisinopril", dose: "10 mg once daily", prescribed: "18 Jun 2024", indication: "Hypertension" },
+                    { name: "Omeprazole", dose: "20 mg once daily", prescribed: "7 Sep 2025", indication: "Gastroesophageal reflux disease" },
+                    { name: "Levothyroxine", dose: "50 µg once daily", prescribed: "22 Nov 2024", indication: "Hypothyroidism" },
+                    { name: "Vitamin D3", dose: "2000 IU once daily", prescribed: "5 Feb 2025", indication: "Vitamin D deficiency" },
+                    { name: "Aspirin", dose: "100 mg once daily", prescribed: "14 Apr 2024", indication: "Cardiovascular risk reduction" },
+                    { name: "Sertraline", dose: "50 mg once daily", prescribed: "29 Aug 2025", indication: "Generalised anxiety disorder" },
+                  ].map((med, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", fontWeight: 500 }}>{med.name}</td>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", color: "#555" }}>{med.dose}</td>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", whiteSpace: "nowrap", color: "#555" }}>{med.prescribed}</td>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0", color: "#555" }}>{med.indication}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Page footer */}
+              <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
+                <span>{patient.full_name} — Health Report</span>
+                <span>Medications</span>
               </div>
             </div>
           </div>
