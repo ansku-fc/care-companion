@@ -29,6 +29,7 @@ interface AddAppointmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
+  editingAppointment?: any;
 }
 
 interface PatientOption {
@@ -42,7 +43,7 @@ interface NurseOption {
   full_name: string;
 }
 
-export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAppointmentDialogProps) {
+export function AddAppointmentDialog({ open, onOpenChange, selectedDate, editingAppointment }: AddAppointmentDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -92,6 +93,25 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
     fetchData();
   }, [open]);
 
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (!editingAppointment) return;
+    setTitle(editingAppointment.title || "");
+    setPatientId(editingAppointment.patient_id || "");
+    setVisitModality(editingAppointment.is_home_visit ? "home_visit" : editingAppointment.visit_modality || "in_person");
+    setIsOnboarding(editingAppointment.is_onboarding || false);
+    setIsNurseVisit(editingAppointment.is_nurse_visit || false);
+    setIsLabs(editingAppointment.is_labs || false);
+    setIsExternalSpecialist(editingAppointment.is_external_specialist || false);
+    setSpecialistName(editingAppointment.specialist_name || "");
+    setSpecialistLocation(editingAppointment.specialist_location || "");
+    setStartTime(editingAppointment.start_time ? format(new Date(editingAppointment.start_time), "HH:mm") : "09:00");
+    setEndTime(editingAppointment.end_time ? format(new Date(editingAppointment.end_time), "HH:mm") : "10:00");
+    setNotes(editingAppointment.notes || "");
+    setLabPackage(editingAppointment.lab_package || "custom");
+    setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
+  }, [editingAppointment]);
+
   const resetForm = () => {
     setTitle("");
     setPatientId("");
@@ -126,8 +146,7 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
       fastingRequired ? "⚠️ Fasting required before this visit." : "",
     ].filter(Boolean).join("\n\n");
 
-    setLoading(true);
-    const { error } = await supabase.from("appointments").insert({
+    const payload = {
       title,
       patient_id: patientId,
       provider_id: providerId,
@@ -144,7 +163,15 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
       notes: prepNotes || null,
       lab_package: isLabs ? labPackage : null,
       lab_tests_selected: isLabs ? selectedLabTests : null,
-    });
+    };
+
+    setLoading(true);
+    let error;
+    if (editingAppointment) {
+      ({ error } = await supabase.from("appointments").update(payload).eq("id", editingAppointment.id));
+    } else {
+      ({ error } = await supabase.from("appointments").insert(payload));
+    }
     setLoading(false);
 
     if (error) {
@@ -156,7 +183,7 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
       toast({ title: "Note", description: "Calendar invite sending requires email integration (not yet configured)." });
     }
 
-    toast({ title: "Appointment created" });
+    toast({ title: editingAppointment ? "Appointment updated" : "Appointment created" });
     queryClient.invalidateQueries({ queryKey: ["appointments"] });
     resetForm();
     onOpenChange(false);
@@ -166,7 +193,7 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Appointment</DialogTitle>
+          <DialogTitle>{editingAppointment ? "Edit Appointment" : "New Appointment"}</DialogTitle>
           <DialogDescription>
             {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
           </DialogDescription>
@@ -340,7 +367,7 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate }: AddAp
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Creating..." : "Create Appointment"}
+            {loading ? "Saving..." : editingAppointment ? "Update Appointment" : "Create Appointment"}
           </Button>
         </DialogFooter>
       </DialogContent>
