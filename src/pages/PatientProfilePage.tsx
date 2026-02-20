@@ -15,12 +15,13 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar
 } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
 import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
+import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 
 const HEALTH_DIMENSIONS = [
   { key: "senses", label: "Senses", icon: Eye },
@@ -148,6 +149,16 @@ const PatientProfilePage = () => {
             </button>
 
             <button
+              onClick={() => setActiveSection("visits")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "visits" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <Calendar className="h-4 w-4" />
+              Visits
+            </button>
+
+            <button
               onClick={() => setActiveSection("lab_results")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
@@ -187,6 +198,8 @@ const PatientProfilePage = () => {
 
         {activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
+        ) : activeSection === "visits" ? (
+          <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
         ) : activeSection === "health_overview" ? (
           <HealthOverviewView
             patient={patient}
