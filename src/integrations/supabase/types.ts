@@ -118,6 +118,53 @@ export type Database = {
         }
         Relationships: []
       }
+      health_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          dimension_texts: Json
+          id: string
+          overview_recommendations: string | null
+          overview_summary: string | null
+          patient_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          dimension_texts?: Json
+          id?: string
+          overview_recommendations?: string | null
+          overview_summary?: string | null
+          patient_id: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          dimension_texts?: Json
+          id?: string
+          overview_recommendations?: string | null
+          overview_summary?: string | null
+          patient_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_reports_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_health_categories: {
         Row: {
           category: string
