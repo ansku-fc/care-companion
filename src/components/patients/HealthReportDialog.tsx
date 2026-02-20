@@ -1,9 +1,11 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, ZoomIn, ZoomOut } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Printer, ZoomIn, ZoomOut, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 const HEALTH_DIMENSIONS = [
@@ -198,6 +200,17 @@ export function HealthReportDialog({
   const printRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.6);
 
+  const pagesContainerRef = useRef<HTMLDivElement>(null);
+  const [activePageKey, setActivePageKey] = useState<string>("overview");
+
+  const scrollToPage = useCallback((key: string) => {
+    const el = pagesContainerRef.current?.querySelector(`[data-page="${key}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActivePageKey(key);
+    }
+  }, []);
+
   const [overviewSummary, setOverviewSummary] = useState(patient.health_summary || "");
   const [overviewRecs, setOverviewRecs] = useState(patient.health_recommendations || "");
 
@@ -325,13 +338,54 @@ export function HealthReportDialog({
           </div>
         </div>
 
-        {/* Pages container */}
-        <div className="flex-1 overflow-auto" style={{ background: "#525659" }}>
-          <div
-            ref={printRef}
-            className="flex flex-col items-center py-8"
-            style={{ transform: `scale(${zoom})`, transformOrigin: "top center", minWidth: A4_W }}
-          >
+        {/* Body: Sidebar + Pages */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Navigation Sidebar */}
+          <div className="w-56 shrink-0 bg-[#3b3b3b] border-r border-[#2a2a2a] flex flex-col">
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-0.5">
+                <button
+                  onClick={() => scrollToPage("overview")}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left",
+                    activePageKey === "overview"
+                      ? "bg-white/15 text-white font-medium"
+                      : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                  )}
+                >
+                  <FileText className="h-3.5 w-3.5 shrink-0" />
+                  Health Overview
+                </button>
+                {HEALTH_DIMENSIONS.map(dim => {
+                  const score = radarData.find(d => d.category === dim.label)?.score ?? 0;
+                  const dotColor = score <= 3 ? "bg-green-400" : score <= 6 ? "bg-yellow-400" : "bg-red-400";
+                  return (
+                    <button
+                      key={dim.key}
+                      onClick={() => scrollToPage(dim.key)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left",
+                        activePageKey === dim.key
+                          ? "bg-white/15 text-white font-medium"
+                          : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                      )}
+                    >
+                      <span className={cn("h-2 w-2 rounded-full shrink-0", dotColor)} />
+                      {dim.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Pages */}
+          <div ref={pagesContainerRef} className="flex-1 overflow-auto" style={{ background: "#525659" }}>
+            <div
+              ref={printRef}
+              className="flex flex-col items-center py-8"
+              style={{ transform: `scale(${zoom})`, transformOrigin: "top center", minWidth: A4_W }}
+            >
             {/* Page 1: Overview */}
             <div data-page="overview" style={pageStyle}>
               <h1 style={{ fontSize: 22, marginBottom: 2 }}>{patient.full_name}</h1>
@@ -445,6 +499,7 @@ export function HealthReportDialog({
                 </div>
               );
             })}
+          </div>
           </div>
         </div>
       </DialogContent>
