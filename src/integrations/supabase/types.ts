@@ -20,33 +20,57 @@ export type Database = {
           created_at: string
           end_time: string
           id: string
+          is_external_specialist: boolean
+          is_home_visit: boolean
+          is_labs: boolean
+          is_nurse_visit: boolean
+          is_onboarding: boolean
           notes: string | null
           patient_id: string
           provider_id: string
+          specialist_location: string | null
+          specialist_name: string | null
           start_time: string
           title: string
+          visit_modality: string
         }
         Insert: {
           appointment_type?: Database["public"]["Enums"]["appointment_type"]
           created_at?: string
           end_time: string
           id?: string
+          is_external_specialist?: boolean
+          is_home_visit?: boolean
+          is_labs?: boolean
+          is_nurse_visit?: boolean
+          is_onboarding?: boolean
           notes?: string | null
           patient_id: string
           provider_id: string
+          specialist_location?: string | null
+          specialist_name?: string | null
           start_time: string
           title: string
+          visit_modality?: string
         }
         Update: {
           appointment_type?: Database["public"]["Enums"]["appointment_type"]
           created_at?: string
           end_time?: string
           id?: string
+          is_external_specialist?: boolean
+          is_home_visit?: boolean
+          is_labs?: boolean
+          is_nurse_visit?: boolean
+          is_onboarding?: boolean
           notes?: string | null
           patient_id?: string
           provider_id?: string
+          specialist_location?: string | null
+          specialist_name?: string | null
           start_time?: string
           title?: string
+          visit_modality?: string
         }
         Relationships: [
           {
