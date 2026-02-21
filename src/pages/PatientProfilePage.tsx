@@ -202,7 +202,7 @@ const PatientProfilePage = () => {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 flex flex-col ${activeSection === "lab_results" ? "overflow-hidden" : "overflow-auto"}`}>
         <Button variant="ghost" size="sm" onClick={() => navigate("/patients")} className="gap-1.5 mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Patients
         </Button>
@@ -1697,16 +1697,16 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   } : null;
 
   return (
-    <div className="flex gap-4 min-w-0">
-      <div className={`space-y-4 transition-all min-w-0 ${selectedMarker ? "flex-1" : "w-full"}`}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <FlaskConical className="h-5 w-5 text-primary" />
-            Lab Results
-          </h2>
-          <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
-        </div>
-
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between mb-4 shrink-0">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <FlaskConical className="h-5 w-5 text-primary" />
+          Lab Results
+        </h2>
+        <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+      </div>
+      <div className="flex gap-4 min-h-0 flex-1">
+        <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
@@ -1714,11 +1714,11 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
             </CardContent>
           </Card>
         ) : (
-          <Card className="overflow-hidden">
-            <CardContent className="p-0">
-              <div className="flex">
+          <Card className="overflow-hidden flex-1 min-h-0 flex flex-col">
+            <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
+              <div className="flex min-h-0 flex-1">
                 {/* Fixed left columns: Marker + Unit */}
-                <div className="shrink-0 border-r">
+                <div className="shrink-0 border-r overflow-y-auto">
                   <table className="text-sm border-collapse">
                     <thead>
                       <tr className="border-b">
@@ -1794,23 +1794,23 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
             </CardContent>
           </Card>
         )}
-      </div>
+        </div>
 
-      {/* Chart Panel */}
-      {selectedMarker && (
-        <div className="w-[400px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200">
-          <div className="flex items-center justify-between p-4 border-b">
-            <div>
-              <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
-              {selectedMarker.unit && (
-                <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
-              )}
+        {/* Chart Panel */}
+        {selectedMarker && (
+          <div className="w-[350px] shrink-0 border rounded-lg bg-card flex flex-col min-h-0 overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b shrink-0">
+              <div>
+                <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
+                {selectedMarker.unit && (
+                  <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+                )}
+              </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="p-4 flex-1">
+            <div className="p-4 flex-1">
             {chartData.length < 1 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
             ) : (
@@ -1905,6 +1905,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
