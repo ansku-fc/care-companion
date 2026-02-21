@@ -1579,7 +1579,17 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
-  const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
+  // Dummy lab results for demo columns
+  const dummyLabs: Partial<Tables<"patient_lab_results">>[] = [
+    { id: "dummy-1", result_date: "2024-03-15", ldl_mmol_l: 3.8, hba1c_mmol_mol: 42, blood_pressure_systolic: 135, blood_pressure_diastolic: 88, alat_u_l: 28, afos_alp_u_l: 72, gt_u_l: 38, alat_asat_ratio: 0.9, egfr: 88, cystatin_c: 0.95, u_alb_krea_abnormal: false, tsh_mu_l: 2.1, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 92, fev1_percent: 89, fvc_percent: 91 },
+    { id: "dummy-2", result_date: "2024-06-20", ldl_mmol_l: 3.5, hba1c_mmol_mol: 40, blood_pressure_systolic: 128, blood_pressure_diastolic: 82, alat_u_l: 32, afos_alp_u_l: 68, gt_u_l: 42, alat_asat_ratio: 1.0, egfr: 91, cystatin_c: 0.88, u_alb_krea_abnormal: false, tsh_mu_l: 1.8, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 94, fev1_percent: 91, fvc_percent: 93 },
+    { id: "dummy-3", result_date: "2024-09-10", ldl_mmol_l: 3.2, hba1c_mmol_mol: 38, blood_pressure_systolic: 122, blood_pressure_diastolic: 78, alat_u_l: 25, afos_alp_u_l: 65, gt_u_l: 35, alat_asat_ratio: 0.85, egfr: 94, cystatin_c: 0.82, u_alb_krea_abnormal: false, tsh_mu_l: 2.3, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 96, fev1_percent: 93, fvc_percent: 95 },
+    { id: "dummy-4", result_date: "2024-12-05", ldl_mmol_l: 2.9, hba1c_mmol_mol: 36, blood_pressure_systolic: 118, blood_pressure_diastolic: 75, alat_u_l: 22, afos_alp_u_l: 60, gt_u_l: 30, alat_asat_ratio: 0.8, egfr: 97, cystatin_c: 0.78, u_alb_krea_abnormal: false, tsh_mu_l: 2.0, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 98, fev1_percent: 95, fvc_percent: 96 },
+  ];
+
+  const allLabs = [...labResults, ...dummyLabs.filter(d => !labResults.some(r => r.id === d.id))] as Tables<"patient_lab_results">[];
+  // Chronological: oldest first (left), newest last (right)
+  const sorted = [...allLabs].sort((a, b) => a.result_date.localeCompare(b.result_date));
 
   const categories = [
     {
@@ -1705,14 +1715,14 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         ) : (
           <Card>
             <CardContent className="p-0">
-              <div className="overflow-auto">
-                <Table>
+              <div className="overflow-x-auto">
+                <Table className="border-collapse">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[200px]">Marker</TableHead>
-                      <TableHead className="min-w-[80px]">Unit</TableHead>
+                      <TableHead className="min-w-[180px] sticky left-0 z-20 bg-card">Marker</TableHead>
+                      <TableHead className="min-w-[70px] sticky left-[180px] z-20 bg-card border-r">Unit</TableHead>
                       {sorted.map((lab) => (
-                        <TableHead key={lab.id} className="min-w-[100px] text-center">{lab.result_date}</TableHead>
+                        <TableHead key={lab.id} className="min-w-[100px] text-center whitespace-nowrap">{lab.result_date}</TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
@@ -1730,12 +1740,12 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                             className={`cursor-pointer hover:bg-muted/30 transition-colors ${selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic") ? "bg-primary/5" : ""}`}
                             onClick={() => handleRowClick(row.key, row.label, row.unit)}
                           >
-                            <TableCell className="font-medium text-sm">{row.label}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{row.unit}</TableCell>
+                            <TableCell className="font-medium text-sm sticky left-0 z-10 bg-card">{row.label}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground sticky left-[180px] z-10 bg-card border-r">{row.unit}</TableCell>
                             {sorted.map((lab) => {
                               const oor = isOutOfRange(row.key, lab);
                               return (
-                                <TableCell key={lab.id} className={`text-center text-sm ${oor === "high" ? "text-destructive font-semibold" : oor === "low" ? "text-amber-600 font-semibold" : ""}`}>
+                                <TableCell key={lab.id} className={`text-center text-sm whitespace-nowrap ${oor === "high" ? "text-destructive font-semibold" : oor === "low" ? "text-amber-600 font-semibold" : ""}`}>
                                   {getCellValue(lab, row.key)}
                                   {oor === "high" && " ▲"}
                                   {oor === "low" && " ▼"}
