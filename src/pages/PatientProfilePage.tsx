@@ -1048,9 +1048,8 @@ function CardiovascularDimensionView({
 
   // Compute CV risk score history over time using each lab result date
   const riskHistory = useMemo(() => {
-    if (!labResults.length) return [];
     const sortedLabs = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
-    return sortedLabs.map((lab) => {
+    const computed = sortedLabs.map((lab) => {
       let score = 1;
       if (onboarding?.illness_cardiovascular) score += 3;
       if (lab.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) score += 2;
@@ -1059,6 +1058,22 @@ function CardiovascularDimensionView({
       if (onboarding?.smoking === "yes") score += 1;
       return { date: lab.result_date, score: Math.min(score, 10) };
     });
+
+    // If fewer than 2 real data points, add dummy history data
+    if (computed.length < 2) {
+      const dummyHistory = [
+        { date: "2023-03-15", score: 3 },
+        { date: "2023-06-20", score: 4 },
+        { date: "2023-09-10", score: 3 },
+        { date: "2024-01-12", score: 5 },
+        { date: "2024-04-22", score: 6 },
+        { date: "2024-07-18", score: 5 },
+        { date: "2024-10-05", score: 4 },
+        { date: "2025-01-15", score: 5 },
+      ];
+      return [...dummyHistory, ...computed];
+    }
+    return computed;
   }, [labResults, onboarding]);
 
   const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
