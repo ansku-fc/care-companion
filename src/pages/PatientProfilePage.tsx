@@ -1697,8 +1697,8 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   } : null;
 
   return (
-    <div className="flex gap-4">
-      <div className={`space-y-4 transition-all ${selectedMarker ? "flex-1 min-w-0" : "w-full"}`}>
+    <div className="flex gap-4 min-w-0">
+      <div className={`space-y-4 transition-all min-w-0 ${selectedMarker ? "flex-1" : "w-full"}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-primary" />
@@ -1716,8 +1716,8 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         ) : (
           <Card className="overflow-hidden">
             <CardContent className="p-0">
-              <div className="overflow-x-auto max-h-[calc(100vh-220px)]">
-                <Table className="border-collapse">
+              <div className="overflow-x-auto">
+                <table className="w-full caption-bottom text-sm border-collapse">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[180px] sticky left-0 z-20 bg-card">Marker</TableHead>
@@ -1758,7 +1758,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                       </>
                     ))}
                   </TableBody>
-                </Table>
+                </table>
               </div>
             </CardContent>
           </Card>
