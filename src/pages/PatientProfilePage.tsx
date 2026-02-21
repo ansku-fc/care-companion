@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1716,49 +1716,80 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         ) : (
           <Card className="overflow-hidden">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full caption-bottom text-sm border-collapse">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[180px] sticky left-0 z-20 bg-card">Marker</TableHead>
-                      <TableHead className="min-w-[70px] sticky left-[180px] z-20 bg-card border-r">Unit</TableHead>
-                      {sorted.map((lab) => (
-                        <TableHead key={lab.id} className="min-w-[100px] text-center whitespace-nowrap">{lab.result_date}</TableHead>
+              <div className="flex">
+                {/* Fixed left columns: Marker + Unit */}
+                <div className="shrink-0 border-r">
+                  <table className="text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[180px]">Marker</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[70px]">Unit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {categories.map((cat) => (
+                        <React.Fragment key={cat.title}>
+                          <tr className="border-b">
+                            <td colSpan={2} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2 px-4">
+                              {cat.title}
+                            </td>
+                          </tr>
+                          {cat.rows.map((row) => (
+                            <tr
+                              key={row.key}
+                              className={`border-b cursor-pointer hover:bg-muted/30 transition-colors ${selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic") ? "bg-primary/5" : ""}`}
+                              onClick={() => handleRowClick(row.key, row.label, row.unit)}
+                            >
+                              <td className="p-4 align-middle font-medium text-sm">{row.label}</td>
+                              <td className="p-4 align-middle text-xs text-muted-foreground">{row.unit}</td>
+                            </tr>
+                          ))}
+                        </React.Fragment>
                       ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {categories.map((cat) => (
-                      <>
-                        <TableRow key={cat.title}>
-                          <TableCell colSpan={2 + sorted.length} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2">
-                            {cat.title}
-                          </TableCell>
-                        </TableRow>
-                        {cat.rows.map((row) => (
-                          <TableRow
-                            key={row.key}
-                            className={`cursor-pointer hover:bg-muted/30 transition-colors ${selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic") ? "bg-primary/5" : ""}`}
-                            onClick={() => handleRowClick(row.key, row.label, row.unit)}
-                          >
-                            <TableCell className="font-medium text-sm sticky left-0 z-10 bg-card">{row.label}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground sticky left-[180px] z-10 bg-card border-r">{row.unit}</TableCell>
-                            {sorted.map((lab) => {
-                              const oor = isOutOfRange(row.key, lab);
-                              return (
-                                <TableCell key={lab.id} className={`text-center text-sm whitespace-nowrap ${oor === "high" ? "text-destructive font-semibold" : oor === "low" ? "text-amber-600 font-semibold" : ""}`}>
-                                  {getCellValue(lab, row.key)}
-                                  {oor === "high" && " ▲"}
-                                  {oor === "low" && " ▼"}
-                                </TableCell>
-                              );
-                            })}
-                          </TableRow>
+                    </tbody>
+                  </table>
+                </div>
+                {/* Scrollable right columns: date values */}
+                <div className="overflow-x-auto flex-1 min-w-0">
+                  <table className="text-sm border-collapse w-max">
+                    <thead>
+                      <tr className="border-b">
+                        {sorted.map((lab) => (
+                          <th key={lab.id} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] whitespace-nowrap">{lab.result_date}</th>
                         ))}
-                      </>
-                    ))}
-                  </TableBody>
-                </table>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {categories.map((cat) => (
+                        <React.Fragment key={cat.title}>
+                          <tr className="border-b">
+                            <td colSpan={sorted.length} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2 px-4">
+                              &nbsp;
+                            </td>
+                          </tr>
+                          {cat.rows.map((row) => (
+                            <tr
+                              key={row.key}
+                              className={`border-b cursor-pointer hover:bg-muted/30 transition-colors ${selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic") ? "bg-primary/5" : ""}`}
+                              onClick={() => handleRowClick(row.key, row.label, row.unit)}
+                            >
+                              {sorted.map((lab) => {
+                                const oor = isOutOfRange(row.key, lab);
+                                return (
+                                  <td key={lab.id} className={`p-4 align-middle text-center text-sm whitespace-nowrap ${oor === "high" ? "text-destructive font-semibold" : oor === "low" ? "text-amber-600 font-semibold" : ""}`}>
+                                    {getCellValue(lab, row.key)}
+                                    {oor === "high" && " ▲"}
+                                    {oor === "low" && " ▼"}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </CardContent>
           </Card>
