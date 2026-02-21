@@ -1693,7 +1693,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
 
   const chartData = useMemo(() => {
     if (!selectedMarker) return [];
-    const chronological = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
+    const chronological = [...sorted];
     return chronological
       .map((lab) => {
         const val = (lab as any)[selectedMarker.key];
@@ -1701,7 +1701,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         return { date: lab.result_date, value: Number(val) };
       })
       .filter(Boolean) as { date: string; value: number }[];
-  }, [selectedMarker, labResults]);
+  }, [selectedMarker, sorted]);
 
   const ref = selectedMarker ? {
     ...REFERENCE_VALUES[selectedMarker.key],
