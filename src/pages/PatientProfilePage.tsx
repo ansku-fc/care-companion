@@ -1579,6 +1579,18 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
+  const leftScrollRef = React.useRef<HTMLDivElement>(null);
+  const rightScrollRef = React.useRef<HTMLDivElement>(null);
+  const isSyncing = React.useRef(false);
+
+  const syncScroll = (source: "left" | "right") => {
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+    const from = source === "left" ? leftScrollRef.current : rightScrollRef.current;
+    const to = source === "left" ? rightScrollRef.current : leftScrollRef.current;
+    if (from && to) to.scrollTop = from.scrollTop;
+    isSyncing.current = false;
+  };
   // Dummy lab results for demo columns
   const dummyLabs: Partial<Tables<"patient_lab_results">>[] = [
     { id: "dummy-0", result_date: "2023-11-28", ldl_mmol_l: 4.1, hba1c_mmol_mol: 45, blood_pressure_systolic: 142, blood_pressure_diastolic: 92, alat_u_l: 35, afos_alp_u_l: 78, gt_u_l: 45, alat_asat_ratio: 1.1, egfr: 82, cystatin_c: 1.02, u_alb_krea_abnormal: false, tsh_mu_l: 2.5, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 88, fev1_percent: 85, fvc_percent: 87 },
@@ -1716,11 +1728,11 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         ) : (
           <Card className="overflow-hidden flex-1 min-h-0 flex flex-col">
             <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
-              <div className="flex min-h-0 flex-1">
+              <div className="flex min-h-0 flex-1 overflow-hidden">
                 {/* Fixed left columns: Marker + Unit */}
-                <div className="shrink-0 border-r overflow-y-auto">
+                <div ref={leftScrollRef} onScroll={() => syncScroll("left")} className="shrink-0 border-r overflow-y-auto">
                   <table className="text-sm border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 z-10 bg-card">
                       <tr className="border-b">
                         <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[180px]">Marker</th>
                         <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[70px]">Unit</th>
@@ -1750,9 +1762,9 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                   </table>
                 </div>
                 {/* Scrollable right columns: date values */}
-                <div className="overflow-x-auto flex-1 min-w-0">
+                <div ref={rightScrollRef} onScroll={() => syncScroll("right")} className="overflow-auto flex-1 min-w-0">
                   <table className="text-sm border-collapse w-max">
-                    <thead>
+                    <thead className="sticky top-0 z-10 bg-card">
                       <tr className="border-b">
                         {sorted.map((lab) => (
                           <th key={lab.id} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] whitespace-nowrap">{lab.result_date}</th>
