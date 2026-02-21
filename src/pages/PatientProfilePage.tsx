@@ -1044,6 +1044,23 @@ function CardiovascularDimensionView({
   const radarData = computeRadarData(onboarding, labResults, healthCategories);
   const cvScore = radarData.find((d) => d.category === "Cardiovascular")?.score ?? 1;
 
+  const [showRiskHistory, setShowRiskHistory] = useState(false);
+
+  // Compute CV risk score history over time using each lab result date
+  const riskHistory = useMemo(() => {
+    if (!labResults.length) return [];
+    const sortedLabs = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
+    return sortedLabs.map((lab) => {
+      let score = 1;
+      if (onboarding?.illness_cardiovascular) score += 3;
+      if (lab.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) score += 2;
+      if (lab.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 140) score += 2;
+      if (onboarding?.genetic_cardiovascular) score += 1;
+      if (onboarding?.smoking === "yes") score += 1;
+      return { date: lab.result_date, score: Math.min(score, 10) };
+    });
+  }, [labResults, onboarding]);
+
   const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
 
   // Doctor summary & recommendations (local state, editable)
@@ -1119,13 +1136,47 @@ function CardiovascularDimensionView({
               <HeartPulse className="h-5 w-5 text-primary" />
               Cardiovascular System
             </CardTitle>
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
-              <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-              <span className={`text-lg font-bold ${scoreColor}`}>{cvScore}/10</span>
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
+                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
+                <span className={`text-lg font-bold ${scoreColor}`}>{cvScore}/10</span>
+              </div>
+              <Button
+                variant={showRiskHistory ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => setShowRiskHistory(!showRiskHistory)}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                {showRiskHistory ? "Hide History" : "Show History"}
+              </Button>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">1 = no action needed → 10 = immediate action</p>
         </CardHeader>
+
+        {showRiskHistory && (
+          <CardContent className="pt-0">
+            {riskHistory.length > 1 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={riskHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(value: number) => [`${value}/10`, "Risk Index"]} />
+                    <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} label={{ value: "Low", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} label={{ value: "Medium", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} label={{ value: "High", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5 }} activeDot={{ r: 7 }} name="Risk Index" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">Not enough data points to show history. At least 2 lab results are needed.</p>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       {/* Main layout: left = summary/notes always visible, right = sub-tab content */}
