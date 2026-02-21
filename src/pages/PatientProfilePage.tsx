@@ -1183,7 +1183,7 @@ function CardiovascularDimensionView({
                     <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} label={{ value: "Low", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                     <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} label={{ value: "Medium", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                     <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} label={{ value: "High", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5 }} activeDot={{ r: 7 }} name="Risk Index" />
+                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} activeDot={{ r: 7, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} name="Risk Index" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
