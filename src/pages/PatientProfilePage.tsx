@@ -15,8 +15,10 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
 import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
 import type { Tables } from "@/integrations/supabase/types";
@@ -696,6 +698,8 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [careTeam, setCareTeam] = useState<any[]>([]);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", category: "", priority: "", status: "", due_date: "" });
 
   useEffect(() => {
     const fetchOverviewData = async () => {
@@ -731,6 +735,39 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const roleOrder: Record<string, number> = { personal_doctor: 0, nurse: 1, external_specialist: 2 };
   const sortedTeam = [...careTeam].sort((a, b) => (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9));
 
+  const openEditTask = (task: any) => {
+    setEditingTask(task);
+    setEditForm({
+      title: task.title || "",
+      description: task.description || "",
+      category: task.category || "",
+      priority: task.priority || "medium",
+      status: task.status || "todo",
+      due_date: task.due_date || "",
+    });
+  };
+
+  const handleSaveTask = async () => {
+    if (!editingTask) return;
+    const { error } = await supabase.from("tasks").update({
+      title: editForm.title,
+      description: editForm.description,
+      category: editForm.category as any,
+      priority: editForm.priority as any,
+      status: editForm.status as any,
+      due_date: editForm.due_date || null,
+    }).eq("id", editingTask.id);
+    if (error) {
+      toast.error("Failed to update task");
+    } else {
+      toast.success("Task updated");
+      setEditingTask(null);
+      // Re-fetch tasks
+      const { data } = await supabase.from("tasks").select("*").eq("patient_id", patient.id).in("status", ["todo", "in_progress"]).order("due_date", { ascending: true });
+      setTasks(data || []);
+    }
+  };
+
   return (
     <div className="space-y-6 p-1">
       <div>
@@ -764,7 +801,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                 </TableHeader>
                 <TableBody>
                   {tasks.map((task) => (
-                    <TableRow key={task.id}>
+                    <TableRow key={task.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEditTask(task)}>
                       <TableCell>
                         <div className={`h-3 w-3 rounded-full border ${task.status === "in_progress" ? "bg-primary border-primary" : "border-muted-foreground"}`} />
                       </TableCell>
@@ -788,6 +825,9 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                         }`}>
                           {task.priority}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -943,6 +983,72 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           </CardContent>
         </Card>
       </div>
+
+      {/* Task Edit Dialog */}
+      <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input value={editForm.title} onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea value={editForm.description} onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={editForm.category} onValueChange={(v) => setEditForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="clinical_review">Labs</SelectItem>
+                    <SelectItem value="client_communication">Follow-up</SelectItem>
+                    <SelectItem value="care_coordination">Referral</SelectItem>
+                    <SelectItem value="documentation_reporting">Visit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={editForm.priority} onValueChange={(v) => setEditForm(f => ({ ...f, priority: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={editForm.status} onValueChange={(v) => setEditForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Due Date</Label>
+                <Input type="date" value={editForm.due_date} onChange={(e) => setEditForm(f => ({ ...f, due_date: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTask(null)}>Cancel</Button>
+            <Button onClick={handleSaveTask}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
