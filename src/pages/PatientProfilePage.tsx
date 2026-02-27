@@ -718,7 +718,11 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
     fetchOverviewData();
   }, [patient.id]);
 
-  const recentLabs = (labResults || []).slice(0, 3);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const sortedLabs = [...(labResults || [])].sort((a, b) => new Date(b.result_date).getTime() - new Date(a.result_date).getTime());
+  const recentLabs = sortedLabs.filter(l => new Date(l.result_date) >= thirtyDaysAgo);
+  const olderLabs = sortedLabs.filter(l => new Date(l.result_date) < thirtyDaysAgo);
 
   const taskCategoryLabels: Record<string, string> = {
     clinical_review: "Labs",
@@ -907,47 +911,94 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <FlaskConical className="h-4 w-4 text-primary" />
-              Recent Lab Results
+              Lab Results
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {recentLabs.length === 0 ? (
+            {sortedLabs.length === 0 ? (
               <p className="text-sm text-muted-foreground italic">No lab results available.</p>
             ) : (
-              <div className="space-y-2">
-                {recentLabs.map((lab) => {
-                  const flags: string[] = [];
-                  if (lab.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) flags.push(`LDL ${lab.ldl_mmol_l} ▲`);
-                  if (lab.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 130) flags.push(`BP ${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic} ▲`);
-                  if (lab.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42) flags.push(`HbA1c ${lab.hba1c_mmol_mol} ▲`);
+              <div className="space-y-3">
+                {/* Recent labs - highlighted */}
+                {recentLabs.length > 0 && (
+                  <div className="space-y-2">
+                    {recentLabs.length > 0 && olderLabs.length > 0 && (
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">New</p>
+                    )}
+                    {recentLabs.map((lab) => {
+                      const flags: { label: string; level: "high" | "low" }[] = [];
+                      if (lab.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) flags.push({ label: `LDL ${lab.ldl_mmol_l} ▲`, level: "high" });
+                      if (lab.ldl_mmol_l && Number(lab.ldl_mmol_l) < 1.0) flags.push({ label: `LDL ${lab.ldl_mmol_l} ▼`, level: "low" });
+                      if (lab.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 130) flags.push({ label: `BP ${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic} ▲`, level: "high" });
+                      if (lab.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42) flags.push({ label: `HbA1c ${lab.hba1c_mmol_mol} ▲`, level: "high" });
+                      if (lab.egfr && Number(lab.egfr) < 60) flags.push({ label: `eGFR ${lab.egfr} ▼`, level: "low" });
+                      if (lab.alat_u_l && Number(lab.alat_u_l) > 50) flags.push({ label: `ALAT ${lab.alat_u_l} ▲`, level: "high" });
+                      if (lab.tsh_mu_l && (Number(lab.tsh_mu_l) < 0.4 || Number(lab.tsh_mu_l) > 4.0)) flags.push({ label: `TSH ${lab.tsh_mu_l} ${Number(lab.tsh_mu_l) > 4.0 ? "▲" : "▼"}`, level: Number(lab.tsh_mu_l) > 4.0 ? "high" : "low" });
+                      const needsAttention = flags.length > 0;
 
-                  return (
-                    <button
-                      key={lab.id}
-                      onClick={() => onSelectSection("lab_results")}
-                      className="w-full text-left p-2 rounded-md bg-muted/40 hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">
-                          {new Date(lab.result_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                        </span>
-                        <span className="text-xs text-muted-foreground capitalize">{lab.source}</span>
-                      </div>
-                      {flags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {flags.map((f, i) => (
-                            <Badge key={i} variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">{f}</Badge>
-                          ))}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-                {(labResults || []).length > 3 && (
-                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => onSelectSection("lab_results")}>
-                    View all lab results →
-                  </Button>
+                      return (
+                        <button
+                          key={lab.id}
+                          onClick={() => onSelectSection("lab_results")}
+                          className={`w-full text-left p-3 rounded-md border transition-colors ${needsAttention ? "border-destructive/30 bg-destructive/5 hover:bg-destructive/10" : "border-primary/20 bg-primary/5 hover:bg-primary/10"}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold">
+                                {new Date(lab.result_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                              {needsAttention && (
+                                <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/30">
+                                  Needs attention
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground capitalize">{lab.source}</span>
+                          </div>
+                          {flags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {flags.map((f, i) => (
+                                <Badge key={i} variant="outline" className={`text-xs ${f.level === "high" ? "bg-destructive/10 text-destructive border-destructive/30" : "bg-amber-500/10 text-amber-700 border-amber-200"}`}>
+                                  {f.label}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
+
+                {/* Older labs - muted */}
+                {olderLabs.length > 0 && (
+                  <div className="space-y-1.5">
+                    {recentLabs.length > 0 && (
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-1">Previous</p>
+                    )}
+                    {olderLabs.slice(0, 5).map((lab) => (
+                      <button
+                        key={lab.id}
+                        onClick={() => onSelectSection("lab_results")}
+                        className="w-full text-left p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(lab.result_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                          </span>
+                          <span className="text-xs text-muted-foreground/60 capitalize">{lab.source}</span>
+                        </div>
+                      </button>
+                    ))}
+                    {olderLabs.length > 5 && (
+                      <p className="text-xs text-muted-foreground text-center">+{olderLabs.length - 5} more</p>
+                    )}
+                  </div>
+                )}
+
+                <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => onSelectSection("lab_results")}>
+                  View all lab results →
+                </Button>
               </div>
             )}
           </CardContent>
