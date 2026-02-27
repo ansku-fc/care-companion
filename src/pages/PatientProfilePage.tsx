@@ -208,7 +208,7 @@ const PatientProfilePage = () => {
         </Button>
 
         {activeSection === "overview" ? (
-          <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} onSelectSection={setActiveSection} />
+          <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} labResults={labResults} onSelectSection={setActiveSection} />
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
         ) : activeSection === "visits" ? (
@@ -684,32 +684,52 @@ function ReportsListView({ patient, onboarding, labResults, healthCategories, ap
 }
 
 // Care Coordination Overview - doctor's landing view
-function CareOverviewView({ patient, appointments, visitNotes, healthCategories, onSelectSection }: {
+function CareOverviewView({ patient, appointments, visitNotes, healthCategories, labResults, onSelectSection }: {
   patient: Tables<"patients">;
   appointments: Tables<"appointments">[];
   visitNotes: Tables<"visit_notes">[];
   healthCategories: Tables<"patient_health_categories">[];
+  labResults: Tables<"patient_lab_results">[];
   onSelectSection: (key: string) => void;
 }) {
-  const upcomingAppointments = appointments
-    .filter((a) => new Date(a.start_time) >= new Date())
-    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-    .slice(0, 5);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [diagnoses, setDiagnoses] = useState<any[]>([]);
+  const [medications, setMedications] = useState<any[]>([]);
+  const [careTeam, setCareTeam] = useState<any[]>([]);
 
-  const recentVisits = visitNotes.slice(0, 3);
+  useEffect(() => {
+    const fetchOverviewData = async () => {
+      const [tasksRes, diagRes, medRes, teamRes] = await Promise.all([
+        supabase.from("tasks").select("*").eq("patient_id", patient.id).in("status", ["todo", "in_progress"]).order("due_date", { ascending: true }),
+        supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
+        supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
+        supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
+      ]);
+      setTasks(tasksRes.data || []);
+      setDiagnoses(diagRes.data || []);
+      setMedications(medRes.data || []);
+      setCareTeam(teamRes.data || []);
+    };
+    fetchOverviewData();
+  }, [patient.id]);
 
-  const attentionCategories = healthCategories
-    .filter((c) => ["warning", "critical", "attention"].includes(c.status))
-    .sort((a, b) => {
-      const order: Record<string, number> = { critical: 0, warning: 1, attention: 2 };
-      return (order[a.status] ?? 3) - (order[b.status] ?? 3);
-    });
+  const recentLabs = (labResults || []).slice(0, 3);
 
-  const statusColors: Record<string, string> = {
-    critical: "bg-destructive text-destructive-foreground",
-    warning: "bg-orange-500/15 text-orange-700 border-orange-200",
-    attention: "bg-yellow-500/15 text-yellow-700 border-yellow-200",
+  const taskCategoryLabels: Record<string, string> = {
+    clinical_review: "Labs",
+    client_communication: "Follow-up",
+    care_coordination: "Referral",
+    documentation_reporting: "Visit",
   };
+
+  const roleLabels: Record<string, string> = {
+    personal_doctor: "Personal Doctor",
+    nurse: "Nurse",
+    external_specialist: "External Specialist",
+  };
+
+  const roleOrder: Record<string, number> = { personal_doctor: 0, nurse: 1, external_specialist: 2 };
+  const sortedTeam = [...careTeam].sort((a, b) => (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9));
 
   return (
     <div className="space-y-6 p-1">
@@ -719,63 +739,88 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Items Needing Attention */}
-        <Card>
+        {/* 1. Tasks To-Do List */}
+        <Card className="xl:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="h-4 w-4 text-destructive" />
-              Needs Attention
+              <Activity className="h-4 w-4 text-primary" />
+              Tasks
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {attentionCategories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">All health dimensions are within normal range.</p>
+            {tasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No open tasks for this patient.</p>
             ) : (
-              <div className="space-y-2">
-                {attentionCategories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      const dim = HEALTH_DIMENSIONS.find((d) => d.label.toLowerCase() === cat.category.toLowerCase());
-                      if (dim) onSelectSection(dim.key);
-                    }}
-                    className="w-full flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors text-left"
-                  >
-                    <span className="text-sm font-medium">{cat.category}</span>
-                    <Badge variant="outline" className={statusColors[cat.status] || ""}>
-                      {cat.status}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-8"></TableHead>
+                    <TableHead>Task</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Assigned To</TableHead>
+                    <TableHead>Priority</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tasks.map((task) => (
+                    <TableRow key={task.id}>
+                      <TableCell>
+                        <div className={`h-3 w-3 rounded-full border ${task.status === "in_progress" ? "bg-primary border-primary" : "border-muted-foreground"}`} />
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">{task.title}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {taskCategoryLabels[task.category] || task.category.replace("_", " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {task.assigned_to ? "Assigned" : "Unassigned"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-xs capitalize ${
+                          task.priority === "urgent" ? "bg-destructive/10 text-destructive border-destructive/30" :
+                          task.priority === "high" ? "bg-orange-500/10 text-orange-700 border-orange-200" :
+                          ""
+                        }`}>
+                          {task.priority}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
 
-        {/* Upcoming Appointments */}
+        {/* 2. Active Diagnoses */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary" />
-              Upcoming Appointments
+              <Stethoscope className="h-4 w-4 text-primary" />
+              Active Diagnoses
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {upcomingAppointments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming appointments.</p>
+            {diagnoses.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No active diagnoses recorded.</p>
             ) : (
               <div className="space-y-2">
-                {upcomingAppointments.map((apt) => (
-                  <div key={apt.id} className="flex items-center justify-between p-2 rounded-md bg-muted/40">
+                {diagnoses.map((d) => (
+                  <div key={d.id} className="flex items-start justify-between p-2 rounded-md bg-muted/40">
                     <div>
-                      <p className="text-sm font-medium">{apt.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(apt.start_time).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                        {" · "}
-                        {new Date(apt.start_time).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
+                      <p className="text-sm font-medium">{d.diagnosis}</p>
+                      {d.icd_code && <span className="text-xs text-muted-foreground">ICD: {d.icd_code}</span>}
                     </div>
-                    <Badge variant="outline" className="text-xs capitalize">{apt.appointment_type.replace("_", " ")}</Badge>
+                    {d.diagnosed_date && (
+                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                        {new Date(d.diagnosed_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -783,33 +828,80 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           </CardContent>
         </Card>
 
-        {/* Recent Visits */}
+        {/* 3. Active Medications */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              Recent Visits
+              <Pill className="h-4 w-4 text-primary" />
+              Active Medications
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {recentVisits.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No visit notes recorded.</p>
+            {medications.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No active medications recorded.</p>
             ) : (
               <div className="space-y-2">
-                {recentVisits.map((v) => (
-                  <div key={v.id} className="p-2 rounded-md bg-muted/40">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium">{v.chief_complaint || "Visit"}</p>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(v.visit_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                      </span>
+                {medications.map((m) => (
+                  <div key={m.id} className="p-2 rounded-md bg-muted/40">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{m.medication_name}</p>
+                      {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
                     </div>
-                    {v.notes && <p className="text-xs text-muted-foreground line-clamp-2">{v.notes}</p>}
+                    <div className="flex gap-2 mt-0.5">
+                      {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
+                      {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                    </div>
                   </div>
                 ))}
-                {visitNotes.length > 3 && (
-                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => onSelectSection("visits")}>
-                    View all visits →
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 4. New Lab Results */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FlaskConical className="h-4 w-4 text-primary" />
+              Recent Lab Results
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentLabs.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No lab results available.</p>
+            ) : (
+              <div className="space-y-2">
+                {recentLabs.map((lab) => {
+                  const flags: string[] = [];
+                  if (lab.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) flags.push(`LDL ${lab.ldl_mmol_l} ▲`);
+                  if (lab.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 130) flags.push(`BP ${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic} ▲`);
+                  if (lab.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42) flags.push(`HbA1c ${lab.hba1c_mmol_mol} ▲`);
+
+                  return (
+                    <button
+                      key={lab.id}
+                      onClick={() => onSelectSection("lab_results")}
+                      className="w-full text-left p-2 rounded-md bg-muted/40 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">
+                          {new Date(lab.result_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        </span>
+                        <span className="text-xs text-muted-foreground capitalize">{lab.source}</span>
+                      </div>
+                      {flags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {flags.map((f, i) => (
+                            <Badge key={i} variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">{f}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+                {(labResults || []).length > 3 && (
+                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => onSelectSection("lab_results")}>
+                    View all lab results →
                   </Button>
                 )}
               </div>
@@ -817,19 +909,36 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           </CardContent>
         </Card>
 
-        {/* Quick Summary */}
+        {/* 5. Care Team */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Patient Summary
+              <Users className="h-4 w-4 text-primary" />
+              Care Team
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {patient.health_summary ? (
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{patient.health_summary}</p>
+            {sortedTeam.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No care team members assigned.</p>
             ) : (
-              <p className="text-sm text-muted-foreground italic">No summary available. Add one in the Health Report section.</p>
+              <div className="space-y-2">
+                {sortedTeam.map((member) => (
+                  <div key={member.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/40">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{member.member_name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">{roleLabels[member.role] || member.role}</span>
+                        {member.specialty && (
+                          <span className="text-xs text-muted-foreground">· {member.specialty}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>

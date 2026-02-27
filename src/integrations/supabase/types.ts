@@ -165,6 +165,106 @@ export type Database = {
           },
         ]
       }
+      patient_care_team: {
+        Row: {
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          is_active: boolean
+          member_name: string
+          patient_id: string
+          phone: string | null
+          role: string
+          specialty: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          member_name: string
+          patient_id: string
+          phone?: string | null
+          role: string
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          member_name?: string
+          patient_id?: string
+          phone?: string | null
+          role?: string
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_care_team_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_diagnoses: {
+        Row: {
+          created_at: string
+          created_by: string
+          diagnosed_date: string | null
+          diagnosis: string
+          icd_code: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          diagnosed_date?: string | null
+          diagnosis: string
+          icd_code?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          diagnosed_date?: string | null
+          diagnosis?: string
+          icd_code?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_diagnoses_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_health_categories: {
         Row: {
           category: string
@@ -291,6 +391,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "patient_lab_results_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_medications: {
+        Row: {
+          created_at: string
+          created_by: string
+          dose: string | null
+          end_date: string | null
+          frequency: string | null
+          id: string
+          indication: string | null
+          medication_name: string
+          patient_id: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          dose?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          indication?: string | null
+          medication_name: string
+          patient_id: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          dose?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          indication?: string | null
+          medication_name?: string
+          patient_id?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_medications_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
