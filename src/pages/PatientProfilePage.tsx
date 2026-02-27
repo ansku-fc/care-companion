@@ -61,6 +61,7 @@ const PatientProfilePage = () => {
   const [healthCategories, setHealthCategories] = useState<Tables<"patient_health_categories">[]>([]);
   const [visitNotes, setVisitNotes] = useState<Tables<"visit_notes">[]>([]);
   const [appointments, setAppointments] = useState<Tables<"appointments">[]>([]);
+  const [patientTasks, setPatientTasks] = useState<any[]>([]);
   const [activeSection, setActiveSection] = useState<SidebarSection>("overview");
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
@@ -68,13 +69,14 @@ const PatientProfilePage = () => {
   const fetchData = async () => {
     if (!id) return;
     setLoading(true);
-    const [patientRes, onboardingRes, labRes, healthCatRes, visitNotesRes, appointmentsRes] = await Promise.all([
+    const [patientRes, onboardingRes, labRes, healthCatRes, visitNotesRes, appointmentsRes, tasksRes] = await Promise.all([
       supabase.from("patients").select("*").eq("id", id).single(),
       supabase.from("patient_onboarding").select("*").eq("patient_id", id).maybeSingle(),
       supabase.from("patient_lab_results").select("*").eq("patient_id", id).order("result_date", { ascending: false }),
       supabase.from("patient_health_categories").select("*").eq("patient_id", id),
       supabase.from("visit_notes").select("*").eq("patient_id", id).order("visit_date", { ascending: false }),
       supabase.from("appointments").select("*").eq("patient_id", id).order("start_time", { ascending: false }),
+      supabase.from("tasks").select("*").eq("patient_id", id).in("status", ["todo", "in_progress"]).order("due_date", { ascending: true }),
     ]);
     setPatient(patientRes.data);
     setOnboarding(onboardingRes.data);
@@ -82,6 +84,7 @@ const PatientProfilePage = () => {
     setHealthCategories(healthCatRes.data || []);
     setVisitNotes(visitNotesRes.data || []);
     setAppointments(appointmentsRes.data || []);
+    setPatientTasks(tasksRes.data || []);
     setLoading(false);
   };
 
@@ -145,6 +148,8 @@ const PatientProfilePage = () => {
               const thirtyDaysAgo = new Date();
               thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
               const hasNewLabs = labResults.some(l => new Date(l.result_date) >= thirtyDaysAgo);
+              const hasLabReviewTasks = patientTasks.some(t => t.category === "clinical_review" && ["todo", "in_progress"].includes(t.status));
+              const labNotification = hasNewLabs || hasLabReviewTasks;
               return (
                 <button
                   onClick={() => setActiveSection("lab_results")}
@@ -154,7 +159,7 @@ const PatientProfilePage = () => {
                 >
                   <FlaskConical className="h-4 w-4" />
                   Lab Results
-                  {hasNewLabs && (
+                  {labNotification && (
                     <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                       !
                     </span>
@@ -222,7 +227,7 @@ const PatientProfilePage = () => {
         </Button>
 
         {activeSection === "overview" ? (
-          <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} labResults={labResults} onSelectSection={setActiveSection} />
+          <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} labResults={labResults} onSelectSection={setActiveSection} tasks={patientTasks} onTasksChanged={fetchData} />
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
         ) : activeSection === "visits" ? (
@@ -698,16 +703,17 @@ function ReportsListView({ patient, onboarding, labResults, healthCategories, ap
 }
 
 // Care Coordination Overview - doctor's landing view
-function CareOverviewView({ patient, appointments, visitNotes, healthCategories, labResults, onSelectSection }: {
+function CareOverviewView({ patient, appointments, visitNotes, healthCategories, labResults, onSelectSection, tasks, onTasksChanged }: {
   patient: Tables<"patients">;
   appointments: Tables<"appointments">[];
   visitNotes: Tables<"visit_notes">[];
   healthCategories: Tables<"patient_health_categories">[];
   labResults: Tables<"patient_lab_results">[];
   onSelectSection: (key: string) => void;
+  tasks: any[];
+  onTasksChanged: () => void;
 }) {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<any[]>([]);
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [careTeam, setCareTeam] = useState<any[]>([]);
@@ -716,13 +722,11 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
 
   useEffect(() => {
     const fetchOverviewData = async () => {
-      const [tasksRes, diagRes, medRes, teamRes] = await Promise.all([
-        supabase.from("tasks").select("*").eq("patient_id", patient.id).in("status", ["todo", "in_progress"]).order("due_date", { ascending: true }),
+      const [diagRes, medRes, teamRes] = await Promise.all([
         supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
         supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
         supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
       ]);
-      setTasks(tasksRes.data || []);
       setDiagnoses(diagRes.data || []);
       setMedications(medRes.data || []);
       setCareTeam(teamRes.data || []);
@@ -779,9 +783,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
     } else {
       toast.success("Task updated");
       setEditingTask(null);
-      // Re-fetch tasks
-      const { data } = await supabase.from("tasks").select("*").eq("patient_id", patient.id).in("status", ["todo", "in_progress"]).order("due_date", { ascending: true });
-      setTasks(data || []);
+      onTasksChanged();
     }
   };
 
