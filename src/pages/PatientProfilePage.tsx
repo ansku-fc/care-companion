@@ -59,7 +59,7 @@ const PatientProfilePage = () => {
   const [healthCategories, setHealthCategories] = useState<Tables<"patient_health_categories">[]>([]);
   const [visitNotes, setVisitNotes] = useState<Tables<"visit_notes">[]>([]);
   const [appointments, setAppointments] = useState<Tables<"appointments">[]>([]);
-  const [activeSection, setActiveSection] = useState<SidebarSection>("details");
+  const [activeSection, setActiveSection] = useState<SidebarSection>("overview");
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
@@ -130,23 +130,23 @@ const PatientProfilePage = () => {
         <ScrollArea className="flex-1">
           <div className="p-2">
             <button
-              onClick={() => setActiveSection("details")}
+              onClick={() => setActiveSection("overview")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                activeSection === "details" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                activeSection === "overview" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
               }`}
             >
-              <Users className="h-4 w-4" />
-              Patient Details
+              <Stethoscope className="h-4 w-4" />
+              Overview
             </button>
 
             <button
-              onClick={() => setActiveSection("health_overview")}
+              onClick={() => setActiveSection("lab_results")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                activeSection === "health_overview" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
               }`}
             >
-              <Radar className="h-4 w-4" />
-              Health Report
+              <FlaskConical className="h-4 w-4" />
+              Lab Results
             </button>
 
             <button
@@ -160,13 +160,23 @@ const PatientProfilePage = () => {
             </button>
 
             <button
-              onClick={() => setActiveSection("lab_results")}
+              onClick={() => setActiveSection("health_overview")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                activeSection === "health_overview" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
               }`}
             >
-              <FlaskConical className="h-4 w-4" />
-              Lab Results
+              <Radar className="h-4 w-4" />
+              Health Report
+            </button>
+
+            <button
+              onClick={() => setActiveSection("details")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "details" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Patient Details
             </button>
 
             <Separator className="my-2" />
@@ -197,7 +207,9 @@ const PatientProfilePage = () => {
           <ArrowLeft className="h-4 w-4" /> Back to Patients
         </Button>
 
-        {activeSection === "details" ? (
+        {activeSection === "overview" ? (
+          <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} onSelectSection={setActiveSection} />
+        ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
@@ -667,6 +679,161 @@ function ReportsListView({ patient, onboarding, labResults, healthCategories, ap
         draftId={editingDraftId}
         onDraftSaved={fetchReports}
       />
+    </div>
+  );
+}
+
+// Care Coordination Overview - doctor's landing view
+function CareOverviewView({ patient, appointments, visitNotes, healthCategories, onSelectSection }: {
+  patient: Tables<"patients">;
+  appointments: Tables<"appointments">[];
+  visitNotes: Tables<"visit_notes">[];
+  healthCategories: Tables<"patient_health_categories">[];
+  onSelectSection: (key: string) => void;
+}) {
+  const upcomingAppointments = appointments
+    .filter((a) => new Date(a.start_time) >= new Date())
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+    .slice(0, 5);
+
+  const recentVisits = visitNotes.slice(0, 3);
+
+  const attentionCategories = healthCategories
+    .filter((c) => ["warning", "critical", "attention"].includes(c.status))
+    .sort((a, b) => {
+      const order: Record<string, number> = { critical: 0, warning: 1, attention: 2 };
+      return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+    });
+
+  const statusColors: Record<string, string> = {
+    critical: "bg-destructive text-destructive-foreground",
+    warning: "bg-orange-500/15 text-orange-700 border-orange-200",
+    attention: "bg-yellow-500/15 text-yellow-700 border-yellow-200",
+  };
+
+  return (
+    <div className="space-y-6 p-1">
+      <div>
+        <h2 className="text-xl font-semibold">{patient.full_name}</h2>
+        <p className="text-sm text-muted-foreground">Care Coordination Overview</p>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Items Needing Attention */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4 text-destructive" />
+              Needs Attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {attentionCategories.length === 0 ? (
+              <p className="text-sm text-muted-foreground">All health dimensions are within normal range.</p>
+            ) : (
+              <div className="space-y-2">
+                {attentionCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      const dim = HEALTH_DIMENSIONS.find((d) => d.label.toLowerCase() === cat.category.toLowerCase());
+                      if (dim) onSelectSection(dim.key);
+                    }}
+                    className="w-full flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors text-left"
+                  >
+                    <span className="text-sm font-medium">{cat.category}</span>
+                    <Badge variant="outline" className={statusColors[cat.status] || ""}>
+                      {cat.status}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Appointments */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" />
+              Upcoming Appointments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {upcomingAppointments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No upcoming appointments.</p>
+            ) : (
+              <div className="space-y-2">
+                {upcomingAppointments.map((apt) => (
+                  <div key={apt.id} className="flex items-center justify-between p-2 rounded-md bg-muted/40">
+                    <div>
+                      <p className="text-sm font-medium">{apt.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(apt.start_time).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {" · "}
+                        {new Date(apt.start_time).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-xs capitalize">{apt.appointment_type.replace("_", " ")}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Visits */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Recent Visits
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentVisits.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No visit notes recorded.</p>
+            ) : (
+              <div className="space-y-2">
+                {recentVisits.map((v) => (
+                  <div key={v.id} className="p-2 rounded-md bg-muted/40">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium">{v.chief_complaint || "Visit"}</p>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(v.visit_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                    {v.notes && <p className="text-xs text-muted-foreground line-clamp-2">{v.notes}</p>}
+                  </div>
+                ))}
+                {visitNotes.length > 3 && (
+                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => onSelectSection("visits")}>
+                    View all visits →
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Summary */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Patient Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {patient.health_summary ? (
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{patient.health_summary}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No summary available. Add one in the Health Report section.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
