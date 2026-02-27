@@ -146,7 +146,7 @@ const PatientProfilePage = () => {
               }`}
             >
               <Radar className="h-4 w-4" />
-              Health Overview
+              Health Report
             </button>
 
             <button
@@ -167,16 +167,6 @@ const PatientProfilePage = () => {
             >
               <FlaskConical className="h-4 w-4" />
               Lab Results
-            </button>
-
-            <button
-              onClick={() => setActiveSection("reports")}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                activeSection === "reports" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-              }`}
-            >
-              <FileText className="h-4 w-4" />
-              Reports
             </button>
 
             <Separator className="my-2" />
@@ -223,8 +213,6 @@ const PatientProfilePage = () => {
           />
         ) : activeSection === "lab_results" ? (
           <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
-        ) : activeSection === "reports" ? (
-          <ReportsListView patient={patient} onboarding={onboarding} labResults={labResults} healthCategories={healthCategories} appointments={appointments} />
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -416,7 +404,7 @@ function HealthOverviewView({
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Radar className="h-5 w-5 text-primary" />
-            Health Overview
+            Health Report
           </CardTitle>
           <p className="text-xs text-muted-foreground">
             1 = no action needed → 10 = immediate action. Click a label for details.
