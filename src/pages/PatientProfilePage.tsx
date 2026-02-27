@@ -694,6 +694,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   labResults: Tables<"patient_lab_results">[];
   onSelectSection: (key: string) => void;
 }) {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
@@ -834,6 +835,9 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                 </TableBody>
               </Table>
             )}
+            <Button variant="ghost" size="sm" className="w-full text-xs mt-2" onClick={() => navigate("/tasks")}>
+              See all tasks →
+            </Button>
           </CardContent>
         </Card>
 
