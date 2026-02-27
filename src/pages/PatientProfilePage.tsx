@@ -141,15 +141,27 @@ const PatientProfilePage = () => {
               Overview
             </button>
 
-            <button
-              onClick={() => setActiveSection("lab_results")}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-              }`}
-            >
-              <FlaskConical className="h-4 w-4" />
-              Lab Results
-            </button>
+            {(() => {
+              const thirtyDaysAgo = new Date();
+              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+              const hasNewLabs = labResults.some(l => new Date(l.result_date) >= thirtyDaysAgo);
+              return (
+                <button
+                  onClick={() => setActiveSection("lab_results")}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                  }`}
+                >
+                  <FlaskConical className="h-4 w-4" />
+                  Lab Results
+                  {hasNewLabs && (
+                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                      !
+                    </span>
+                  )}
+                </button>
+              );
+            })()}
 
             <button
               onClick={() => setActiveSection("visits")}
