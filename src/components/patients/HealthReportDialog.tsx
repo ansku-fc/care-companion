@@ -263,6 +263,11 @@ export function HealthReportDialog({
   const [overviewRecs, setOverviewRecs] = useState(patient.health_recommendations || "");
   const [dimTexts, setDimTexts] = useState<Record<string, { summary: string; recommendations: string }>>(defaultDimTexts);
   const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(new Set());
+  const [objectives, setObjectives] = useState<{ title: string; description: string; timeline: string }[]>([
+    { title: "", description: "", timeline: "6 months" },
+    { title: "", description: "", timeline: "6 months" },
+    { title: "", description: "", timeline: "12 months" },
+  ]);
 
   // Load draft data if draftId provided
   useEffect(() => {
@@ -270,12 +275,18 @@ export function HealthReportDialog({
     setCurrentDraftId(draftId || null);
     if (draftId) {
       supabase.from("health_reports").select("*").eq("id", draftId).single().then(({ data }) => {
-        if (data) {
-          setOverviewSummary((data as any).overview_summary || "");
-          setOverviewRecs((data as any).overview_recommendations || "");
-          const dt = (data as any).dimension_texts as Record<string, { summary: string; recommendations: string }> | null;
-          if (dt && typeof dt === "object") setDimTexts({ ...defaultDimTexts, ...dt });
-        }
+          if (data) {
+            setOverviewSummary((data as any).overview_summary || "");
+            setOverviewRecs((data as any).overview_recommendations || "");
+            const dt = (data as any).dimension_texts as Record<string, any> | null;
+            if (dt && typeof dt === "object") {
+              if (dt.__objectives && Array.isArray(dt.__objectives)) {
+                setObjectives(dt.__objectives);
+              }
+              const { __objectives, ...rest } = dt;
+              setDimTexts({ ...defaultDimTexts, ...rest });
+            }
+          }
       });
     } else {
       setOverviewSummary(patient.health_summary || "");
@@ -294,7 +305,7 @@ export function HealthReportDialog({
       status: "draft",
       overview_summary: overviewSummary,
       overview_recommendations: overviewRecs,
-      dimension_texts: dimTexts as any,
+      dimension_texts: { ...dimTexts, __objectives: objectives } as any,
     };
 
     let error;
@@ -446,6 +457,17 @@ export function HealthReportDialog({
                   <FileText className="h-3.5 w-3.5 shrink-0" />
                   Health Overview
                 </button>
+                <button
+                  onClick={() => scrollToPage("objectives")}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left pl-7",
+                    activePageKey === "objectives"
+                      ? "bg-white/15 text-white font-medium"
+                      : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                  )}
+                >
+                  Your Objectives
+                </button>
                 {HEALTH_DIMENSIONS.map(dim => {
                   const score = radarData.find(d => d.category === dim.label)?.score ?? 0;
                   const dotColor = score <= 3 ? "bg-green-400" : score <= 6 ? "bg-yellow-400" : "bg-red-400";
@@ -533,6 +555,61 @@ export function HealthReportDialog({
               <div className="section" style={{ marginBottom: 16 }}>
                 <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Overall Recommendations</div>
                 <InlineEdit value={overviewRecs} onChange={setOverviewRecs} placeholder="Write overall recommendations..." minH="80px" />
+              </div>
+            </div>
+
+            {/* Page 2: Your Objectives */}
+            <div data-page="objectives" style={pageStyle}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
+                <h2 style={{ fontSize: 17, margin: 0 }}>Your Objectives</h2>
+                <span style={{ fontSize: 11, color: "#888" }}>Next 6–12 Months</span>
+              </div>
+
+              <p style={{ fontSize: 11, color: "#666", marginBottom: 24 }}>
+                The following health objectives have been identified for {patient.full_name} based on current assessments, lab results, and clinical priorities.
+              </p>
+
+              {objectives.map((obj, i) => (
+                <div key={i} style={{ marginBottom: 24, padding: "16px 20px", border: "1px solid #e5e5e5", borderRadius: 8, background: "#fafafa" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "50%", background: "#3b82f6", color: "white", fontSize: 13, fontWeight: 700 }}>
+                      {i + 1}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <InlineEdit
+                        value={obj.title}
+                        onChange={v => setObjectives(prev => prev.map((o, j) => j === i ? { ...o, title: v } : o))}
+                        placeholder={`Objective ${i + 1} title (e.g., "Improve cardiovascular health")`}
+                        minH="22px"
+                      />
+                    </div>
+                    <select
+                      value={obj.timeline}
+                      onChange={e => setObjectives(prev => prev.map((o, j) => j === i ? { ...o, timeline: e.target.value } : o))}
+                      style={{ fontSize: 10, border: "1px solid #ddd", borderRadius: 4, padding: "2px 6px", color: "#666", background: "white" }}
+                    >
+                      <option value="3 months">3 months</option>
+                      <option value="6 months">6 months</option>
+                      <option value="9 months">9 months</option>
+                      <option value="12 months">12 months</option>
+                    </select>
+                  </div>
+                  <div style={{ paddingLeft: 36 }}>
+                    <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Description & Action Plan</div>
+                    <InlineEdit
+                      value={obj.description}
+                      onChange={v => setObjectives(prev => prev.map((o, j) => j === i ? { ...o, description: v } : o))}
+                      placeholder="Describe the objective, target outcomes, and specific actions to achieve it..."
+                      minH="60px"
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {/* Page footer */}
+              <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
+                <span>{patient.full_name} — Health Report</span>
+                <span>Your Objectives</span>
               </div>
             </div>
 
