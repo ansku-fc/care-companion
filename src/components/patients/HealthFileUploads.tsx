@@ -61,7 +61,6 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const [uploading, setUploading] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState("");
-  const [dimensionDraft, setDimensionDraft] = useState<string | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
   const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null);
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
@@ -130,46 +129,9 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
     setSavingNotes(true);
     const { error } = await supabase.from("patient_health_files").update({
       notes: notesDraft || null,
-      health_dimension: dimensionDraft || null,
     }).eq("id", fileId);
     if (error) toast.error("Failed to save notes");
-    else {
-      // If dimension is tagged, also update the health category with these notes
-      if (dimensionDraft) {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          const { data: existing } = await supabase
-            .from("patient_health_categories")
-            .select("*")
-            .eq("patient_id", patientId)
-            .eq("category", dimensionDraft)
-            .maybeSingle();
-
-          const file = files.find(f => f.id === fileId);
-          const notePrefix = `[${file?.file_name || "File"}]: `;
-          const noteEntry = notePrefix + (notesDraft || "No notes");
-
-          if (existing) {
-            const currentSummary = existing.summary || "";
-            const updatedSummary = currentSummary ? `${currentSummary}\n\n${noteEntry}` : noteEntry;
-            await supabase.from("patient_health_categories").update({
-              summary: updatedSummary,
-              updated_by: userData.user.id,
-            }).eq("id", existing.id);
-          } else {
-            await supabase.from("patient_health_categories").insert({
-              patient_id: patientId,
-              category: dimensionDraft,
-              summary: noteEntry,
-              updated_by: userData.user.id,
-            });
-          }
-        }
-      }
-      toast.success("Notes saved");
-      fetchFiles();
-      setEditingNotes(null);
-    }
+    else { toast.success("Notes saved"); fetchFiles(); setEditingNotes(null); }
     setSavingNotes(false);
   };
 
@@ -344,7 +306,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                   </h4>
                   {editingNotes !== selectedFile.id && (
                     <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
-                      onClick={() => { setEditingNotes(selectedFile.id); setNotesDraft(selectedFile.notes || ""); setDimensionDraft(selectedFile.health_dimension || null); }}
+                      onClick={() => { setEditingNotes(selectedFile.id); setNotesDraft(selectedFile.notes || ""); }}
                     >
                       <Pencil className="h-3 w-3" /> Edit
                     </Button>
@@ -359,20 +321,6 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                       value={notesDraft}
                       onChange={e => setNotesDraft(e.target.value)}
                     />
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-muted-foreground">Tag Health Dimension</label>
-                      <Select value={dimensionDraft || "none"} onValueChange={v => setDimensionDraft(v === "none" ? null : v)}>
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Select dimension..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No dimension</SelectItem>
-                          {HEALTH_DIMENSIONS.map(d => (
-                            <SelectItem key={d} value={d}>{d}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                     <div className="flex gap-2 justify-end">
                       <Button variant="ghost" size="sm" onClick={() => setEditingNotes(null)}>
                         <X className="h-3.5 w-3.5 mr-1" /> Cancel
@@ -384,20 +332,56 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                     </div>
                   </div>
                 ) : selectedFile.notes ? (
-                  <div className="space-y-2">
-                    <div className="bg-muted/50 rounded-md p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                      {selectedFile.notes}
-                    </div>
-                    {selectedFile.health_dimension && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">Tagged:</span>
-                        <Badge variant="secondary" className="text-xs">{selectedFile.health_dimension}</Badge>
-                      </div>
-                    )}
+                  <div className="bg-muted/50 rounded-md p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    {selectedFile.notes}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit to add clinical notes.</p>
                 )}
+              </div>
+
+              {/* Health Dimension tagging - always visible */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Health Dimension</label>
+                <Select
+                  value={selectedFile.health_dimension || "none"}
+                  onValueChange={async (v) => {
+                    const newDim = v === "none" ? null : v;
+                    const { error } = await supabase.from("patient_health_files").update({ health_dimension: newDim }).eq("id", selectedFile.id);
+                    if (error) { toast.error("Failed to update dimension"); return; }
+                    // Transfer notes to health category if tagging
+                    if (newDim && selectedFile.notes) {
+                      const { data: userData } = await supabase.auth.getUser();
+                      if (userData.user) {
+                        const { data: existing } = await supabase
+                          .from("patient_health_categories")
+                          .select("*")
+                          .eq("patient_id", patientId)
+                          .eq("category", newDim)
+                          .maybeSingle();
+                        const noteEntry = `[${selectedFile.file_name}]: ${selectedFile.notes}`;
+                        if (existing) {
+                          const updated = existing.summary ? `${existing.summary}\n\n${noteEntry}` : noteEntry;
+                          await supabase.from("patient_health_categories").update({ summary: updated, updated_by: userData.user.id }).eq("id", existing.id);
+                        } else {
+                          await supabase.from("patient_health_categories").insert({ patient_id: patientId, category: newDim, summary: noteEntry, updated_by: userData.user.id });
+                        }
+                      }
+                    }
+                    toast.success(newDim ? `Tagged to ${newDim}` : "Dimension removed");
+                    fetchFiles();
+                  }}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Select dimension..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No dimension</SelectItem>
+                    {HEALTH_DIMENSIONS.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
