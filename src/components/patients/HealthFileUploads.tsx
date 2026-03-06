@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, Trash2, Download, Camera, Radio, HeartPulse, Watch, Apple, FlaskConical, Loader2, FileText, Pencil, Save, X, Maximize2 } from "lucide-react";
+import demoMole1 from "@/assets/demo-mole-1.jpg";
+import demoMole2 from "@/assets/demo-mole-2.jpg";
+import demoMole3 from "@/assets/demo-mole-3.jpg";
 
 export type HealthDataTab = "lab_results" | "mole_image" | "radiology" | "ekg" | "oura" | "apple_health";
 
