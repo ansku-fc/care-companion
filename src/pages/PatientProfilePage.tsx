@@ -159,7 +159,7 @@ const PatientProfilePage = () => {
                   }`}
                 >
                   <FlaskConical className="h-4 w-4" />
-                  Lab Results
+                  Health Data
                   {labNotification && (
                     <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                       !
