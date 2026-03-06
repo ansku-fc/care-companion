@@ -165,6 +165,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   };
 
   const handleFullscreen = async (file: HealthFile) => {
+    if (DEMO_MOLE_THUMBNAILS[file.id]) { setFullscreenUrl(DEMO_MOLE_THUMBNAILS[file.id]); return; }
     const { data, error } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 120);
     if (error || !data?.signedUrl) { toast.error("Failed to load image"); return; }
     setFullscreenUrl(data.signedUrl);
