@@ -222,7 +222,7 @@ const PatientProfilePage = () => {
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col ${activeSection === "lab_results" ? "overflow-hidden" : "overflow-auto"}`}>
+      <div className={`flex-1 flex flex-col overflow-auto`}>
         <Button variant="ghost" size="sm" onClick={() => navigate("/patients")} className="gap-1.5 mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Patients
         </Button>
