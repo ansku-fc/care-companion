@@ -61,7 +61,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const [uploading, setUploading] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState("");
-  const [dimensionDraft, setDimensionDraft] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null);
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
