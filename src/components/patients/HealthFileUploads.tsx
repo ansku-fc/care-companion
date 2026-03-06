@@ -54,6 +54,8 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const [notesDraft, setNotesDraft] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [expandedFile, setExpandedFile] = useState<string | null>(null);
+  const [expandedPreviewUrl, setExpandedPreviewUrl] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const fetchFiles = async () => {
