@@ -25,7 +25,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
-import { HealthFileUploads } from "@/components/patients/HealthFileUploads";
+import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 
 const HEALTH_DIMENSIONS = [
   { key: "senses", label: "Senses", icon: Eye },
