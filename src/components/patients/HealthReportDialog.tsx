@@ -268,7 +268,16 @@ export function HealthReportDialog({
     { title: "", description: "", timeline: "6 months" },
     { title: "", description: "", timeline: "12 months" },
   ]);
-  const [skinMarkers, setSkinMarkers] = useState<{ x: number; y: number; label: string; notes: string; side: "front" | "back" }[]>([]);
+  // Load skin markers from dashboard health categories data
+  const skinMarkers = useMemo(() => {
+    const skinCat = healthCategories.find(c => c.category.toLowerCase() === "skin & mucous");
+    if (!skinCat?.summary) return [];
+    try {
+      const match = skinCat.summary.match(/__SKIN_MARKERS__(.+)__END_MARKERS__/s);
+      if (match) return JSON.parse(match[1]) as { x: number; y: number; label: string; notes: string; side: "front" | "back" }[];
+    } catch {}
+    return [];
+  }, [healthCategories]);
   const [skinView, setSkinView] = useState<"front" | "back">("front");
 
   // Load draft data if draftId provided
@@ -285,9 +294,7 @@ export function HealthReportDialog({
               if (dt.__objectives && Array.isArray(dt.__objectives)) {
                 setObjectives(dt.__objectives);
               }
-              if (dt.__skinMarkers && Array.isArray(dt.__skinMarkers)) {
-                setSkinMarkers(dt.__skinMarkers);
-              }
+              // Skin markers now come from dashboard, skip __skinMarkers from draft
               const { __objectives, __skinMarkers, ...rest } = dt;
               setDimTexts({ ...defaultDimTexts, ...rest });
             }
@@ -310,7 +317,7 @@ export function HealthReportDialog({
       status: "draft",
       overview_summary: overviewSummary,
       overview_recommendations: overviewRecs,
-      dimension_texts: { ...dimTexts, __objectives: objectives, __skinMarkers: skinMarkers } as any,
+      dimension_texts: { ...dimTexts, __objectives: objectives } as any,
     };
 
     let error;
@@ -816,13 +823,7 @@ export function HealthReportDialog({
                     viewBox="0 0 200 500"
                     width={320}
                     height={500}
-                    style={{ cursor: "crosshair", border: "1px solid #e5e5e5", borderRadius: 8, background: "#fafafa" }}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = ((e.clientX - rect.left) / rect.width) * 200;
-                      const y = ((e.clientY - rect.top) / rect.height) * 500;
-                      setSkinMarkers(prev => [...prev, { x, y, label: `#${prev.filter(m => m.side === skinView).length + 1}`, notes: "", side: skinView }]);
-                    }}
+                    style={{ border: "1px solid #e5e5e5", borderRadius: 8, background: "#fafafa" }}
                   >
                     {/* Body outline */}
                     {skinView === "front" ? (
@@ -911,7 +912,7 @@ export function HealthReportDialog({
                     )}
                     {/* Markers for current view */}
                     {skinMarkers.filter(m => m.side === skinView).map((m, i) => (
-                      <g key={i} onClick={(e) => { e.stopPropagation(); setSkinMarkers(prev => prev.filter((_, j) => j !== prev.indexOf(m))); }} style={{ cursor: "pointer" }}>
+                      <g key={i}>
                         <circle cx={m.x} cy={m.y} r="6" fill="#ef4444" fillOpacity="0.8" stroke="#fff" strokeWidth="1.5" />
                         <text x={m.x} y={m.y + 3.5} textAnchor="middle" fontSize="7" fill="white" fontWeight="700">{m.label.replace("#", "")}</text>
                       </g>
@@ -938,17 +939,10 @@ export function HealthReportDialog({
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                               <span style={{ fontSize: 9, color: "#888", textTransform: "uppercase" }}>{m.side}</span>
-                              <button
-                                onClick={() => setSkinMarkers(prev => prev.filter((_, j) => j !== i))}
-                                style={{ marginLeft: "auto", fontSize: 9, color: "#999", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
-                              >Remove</button>
                             </div>
-                            <InlineEdit
-                              value={m.notes}
-                              onChange={v => setSkinMarkers(prev => prev.map((mk, j) => j === i ? { ...mk, notes: v } : mk))}
-                              placeholder="Finding description and recommended follow-up..."
-                              minH="28px"
-                            />
+                            <div style={{ fontSize: 11, color: "#1a1a1a", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                              {m.notes || <span style={{ color: "#bbb", fontStyle: "italic" }}>No description</span>}
+                            </div>
                           </div>
                         </div>
                       ))}
