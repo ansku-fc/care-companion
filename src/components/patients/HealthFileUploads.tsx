@@ -129,46 +129,9 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
     setSavingNotes(true);
     const { error } = await supabase.from("patient_health_files").update({
       notes: notesDraft || null,
-      health_dimension: dimensionDraft || null,
     }).eq("id", fileId);
     if (error) toast.error("Failed to save notes");
-    else {
-      // If dimension is tagged, also update the health category with these notes
-      if (dimensionDraft) {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          const { data: existing } = await supabase
-            .from("patient_health_categories")
-            .select("*")
-            .eq("patient_id", patientId)
-            .eq("category", dimensionDraft)
-            .maybeSingle();
-
-          const file = files.find(f => f.id === fileId);
-          const notePrefix = `[${file?.file_name || "File"}]: `;
-          const noteEntry = notePrefix + (notesDraft || "No notes");
-
-          if (existing) {
-            const currentSummary = existing.summary || "";
-            const updatedSummary = currentSummary ? `${currentSummary}\n\n${noteEntry}` : noteEntry;
-            await supabase.from("patient_health_categories").update({
-              summary: updatedSummary,
-              updated_by: userData.user.id,
-            }).eq("id", existing.id);
-          } else {
-            await supabase.from("patient_health_categories").insert({
-              patient_id: patientId,
-              category: dimensionDraft,
-              summary: noteEntry,
-              updated_by: userData.user.id,
-            });
-          }
-        }
-      }
-      toast.success("Notes saved");
-      fetchFiles();
-      setEditingNotes(null);
-    }
+    else { toast.success("Notes saved"); fetchFiles(); setEditingNotes(null); }
     setSavingNotes(false);
   };
 
