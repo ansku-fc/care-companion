@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, Trash2, Download, Camera, Radio, HeartPulse, Watch, Apple, FlaskConical, Loader2, FileText, Pencil, Save, X, Maximize2 } from "lucide-react";
+import demoMole1 from "@/assets/demo-mole-1.jpg";
+import demoMole2 from "@/assets/demo-mole-2.jpg";
+import demoMole3 from "@/assets/demo-mole-3.jpg";
 
 export type HealthDataTab = "lab_results" | "mole_image" | "radiology" | "ekg" | "oura" | "apple_health";
 
@@ -68,26 +71,52 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  const DEMO_MOLE_FILES: HealthFile[] = [
+    { id: "demo-mole-1", file_category: "mole_image", file_name: "left_forearm_mole_01.jpg", file_path: "", file_size: 245000, notes: "Regular borders, uniform brown color. 4mm diameter. Monitor at next visit.", health_dimension: "Skin & Mucous Membranes", created_at: "2025-09-15T10:30:00Z" },
+    { id: "demo-mole-2", file_category: "mole_image", file_name: "upper_back_nevus_02.jpg", file_path: "", file_size: 312000, notes: "Irregular pigment network noted. Recommend follow-up dermoscopy in 3 months.", health_dimension: "Cancer Risk", created_at: "2025-11-02T14:15:00Z" },
+    { id: "demo-mole-3", file_category: "mole_image", file_name: "right_shoulder_lesion_03.jpg", file_path: "", file_size: 198000, notes: null, health_dimension: null, created_at: "2026-01-20T09:45:00Z" },
+  ];
+
+  const DEMO_MOLE_THUMBNAILS: Record<string, string> = {
+    "demo-mole-1": demoMole1,
+    "demo-mole-2": demoMole2,
+    "demo-mole-3": demoMole3,
+  };
+
   const fetchFiles = async () => {
     const { data } = await supabase
       .from("patient_health_files")
       .select("*")
       .eq("patient_id", patientId)
       .order("created_at", { ascending: false });
-    if (data) setFiles(data as HealthFile[]);
+    const realFiles = (data || []) as HealthFile[];
+    const hasMoleFiles = realFiles.some(f => f.file_category === "mole_image");
+    setFiles(hasMoleFiles ? realFiles : [...realFiles, ...DEMO_MOLE_FILES]);
   };
 
   useEffect(() => { fetchFiles(); }, [patientId]);
 
   // Generate thumbnails for image files
   useEffect(() => {
-    const imageFiles = files.filter(f => isImageFile(f.file_name) && !thumbnailUrls[f.id]);
-    if (imageFiles.length === 0) return;
+    const imageFiles = files.filter(f => isImageFile(f.file_name) && !thumbnailUrls[f.id] && !DEMO_MOLE_THUMBNAILS[f.id]);
+    if (imageFiles.length === 0) {
+      // Set demo thumbnails
+      const demoUrls: Record<string, string> = {};
+      for (const f of files) {
+        if (DEMO_MOLE_THUMBNAILS[f.id] && !thumbnailUrls[f.id]) demoUrls[f.id] = DEMO_MOLE_THUMBNAILS[f.id];
+      }
+      if (Object.keys(demoUrls).length > 0) setThumbnailUrls(prev => ({ ...prev, ...demoUrls }));
+      return;
+    }
     const loadThumbnails = async () => {
       const urls: Record<string, string> = {};
       for (const file of imageFiles) {
         const { data } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 600);
         if (data?.signedUrl) urls[file.id] = data.signedUrl;
+      }
+      // Also add demo thumbnails
+      for (const f of files) {
+        if (DEMO_MOLE_THUMBNAILS[f.id]) urls[f.id] = DEMO_MOLE_THUMBNAILS[f.id];
       }
       setThumbnailUrls(prev => ({ ...prev, ...urls }));
     };
@@ -114,18 +143,21 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   };
 
   const handleDelete = async (file: HealthFile) => {
+    if (file.id.startsWith("demo-")) { toast.info("Cannot delete demo files"); return; }
     await supabase.storage.from("patient-health-files").remove([file.file_path]);
     const { error } = await supabase.from("patient_health_files").delete().eq("id", file.id);
     if (error) toast.error("Failed to delete file"); else { toast.success("File deleted"); setExpandedFile(null); fetchFiles(); }
   };
 
   const handleDownload = async (file: HealthFile) => {
+    if (file.id.startsWith("demo-") && DEMO_MOLE_THUMBNAILS[file.id]) { window.open(DEMO_MOLE_THUMBNAILS[file.id], "_blank"); return; }
     const { data, error } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 60);
     if (error || !data?.signedUrl) { toast.error("Failed to generate download link"); return; }
     window.open(data.signedUrl, "_blank");
   };
 
   const handleSaveNotes = async (fileId: string) => {
+    if (fileId.startsWith("demo-")) { toast.info("Cannot edit demo file notes"); setEditingNotes(null); return; }
     setSavingNotes(true);
     const { error } = await supabase.from("patient_health_files").update({
       notes: notesDraft || null,
@@ -136,6 +168,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   };
 
   const handleFullscreen = async (file: HealthFile) => {
+    if (DEMO_MOLE_THUMBNAILS[file.id]) { setFullscreenUrl(DEMO_MOLE_THUMBNAILS[file.id]); return; }
     const { data, error } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 120);
     if (error || !data?.signedUrl) { toast.error("Failed to load image"); return; }
     setFullscreenUrl(data.signedUrl);
@@ -147,6 +180,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
     if (expandedFile === file.id) { setExpandedFile(null); setExpandedPreviewUrl(null); return; }
     setExpandedFile(file.id);
     if (isImageFile(file.file_name)) {
+      if (DEMO_MOLE_THUMBNAILS[file.id]) { setExpandedPreviewUrl(DEMO_MOLE_THUMBNAILS[file.id]); return; }
       const { data } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 300);
       if (data?.signedUrl) setExpandedPreviewUrl(data.signedUrl);
     } else { setExpandedPreviewUrl(null); }
