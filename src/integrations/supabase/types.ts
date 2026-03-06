@@ -306,6 +306,53 @@ export type Database = {
           },
         ]
       }
+      patient_health_files: {
+        Row: {
+          created_at: string
+          created_by: string
+          file_category: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          notes: string | null
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          file_category: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          file_category?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_health_files_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_lab_results: {
         Row: {
           afos_alp_u_l: number | null

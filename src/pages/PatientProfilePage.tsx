@@ -25,6 +25,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
+import { HealthFileUploads } from "@/components/patients/HealthFileUploads";
 
 const HEALTH_DIMENSIONS = [
   { key: "senses", label: "Senses", icon: Eye },
@@ -221,7 +222,7 @@ const PatientProfilePage = () => {
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col ${activeSection === "lab_results" ? "overflow-hidden" : "overflow-auto"}`}>
+      <div className={`flex-1 flex flex-col overflow-auto`}>
         <Button variant="ghost" size="sm" onClick={() => navigate("/patients")} className="gap-1.5 mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Patients
         </Button>
@@ -2664,15 +2665,15 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   } : null;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center justify-between mb-4 shrink-0">
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FlaskConical className="h-5 w-5 text-primary" />
           Lab Results
         </h2>
         <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
       </div>
-      <div className="flex gap-4 min-h-0 flex-1">
+      <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "60vh" }}>
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
           <Card>
@@ -2873,6 +2874,9 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         </div>
       )}
       </div>
+
+      {/* Health Data Uploads */}
+      <HealthFileUploads patientId={patientId} />
     </div>
   );
 }
