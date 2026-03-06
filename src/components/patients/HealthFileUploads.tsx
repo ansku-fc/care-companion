@@ -136,6 +136,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
 
   const categoryFiles = (cat: string) => files.filter(f => f.file_category === cat);
   const activeCat = FILE_CATEGORIES.find(c => c.key === activeTab);
+  const selectedFile = expandedFile ? files.find(f => f.id === expandedFile) : null;
 
   return (
     <div className="flex flex-col gap-4">
