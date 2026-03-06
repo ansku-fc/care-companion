@@ -157,6 +157,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   };
 
   const handleSaveNotes = async (fileId: string) => {
+    if (fileId.startsWith("demo-")) { toast.info("Cannot edit demo file notes"); setEditingNotes(null); return; }
     setSavingNotes(true);
     const { error } = await supabase.from("patient_health_files").update({
       notes: notesDraft || null,
