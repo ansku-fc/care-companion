@@ -212,7 +212,10 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
             <div className="space-y-3">
               {categoryFiles(activeCat.key).map(file => (
                 <div key={file.id} className="rounded-lg border bg-muted/30 overflow-hidden">
-                  <div className="flex items-center gap-3 p-3">
+                  <div
+                    className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleExpandFile(file)}
+                  >
                     <activeCat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.file_name}</p>
@@ -220,55 +223,75 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                         {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    {isImageFile(file.file_name) && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePreview(file)} title="Preview">
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
+                    {file.notes && expandedFile !== file.id && (
+                      <Badge variant="outline" className="text-[10px] shrink-0">Has Notes</Badge>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(file)}>
-                      <Download className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="icon" className="h-8 w-8"
-                      onClick={() => {
-                        if (editingNotes === file.id) { setEditingNotes(null); }
-                        else { setEditingNotes(file.id); setNotesDraft(file.notes || ""); }
-                      }}
-                      title="Notes"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(file)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(file)}>
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(file)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
 
-                  {/* Notes display / edit */}
-                  {file.notes && editingNotes !== file.id && (
-                    <div className="px-3 pb-3 pt-0">
-                      <div className="bg-muted/50 rounded-md p-2.5 text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">Doctor Notes: </span>
-                        {file.notes}
-                      </div>
-                    </div>
-                  )}
+                  {/* Expanded detail view */}
+                  {expandedFile === file.id && (
+                    <div className="border-t px-4 py-4 space-y-4 bg-background">
+                      {/* Image preview */}
+                      {isImageFile(file.file_name) && expandedPreviewUrl && (
+                        <div className="rounded-lg overflow-hidden bg-black flex items-center justify-center">
+                          <img
+                            src={expandedPreviewUrl}
+                            alt={file.file_name}
+                            className="max-h-[400px] w-auto object-contain"
+                          />
+                        </div>
+                      )}
 
-                  {editingNotes === file.id && (
-                    <div className="px-3 pb-3 pt-0 space-y-2">
-                      <Textarea
-                        placeholder="Add doctor notes for this file..."
-                        className="min-h-[80px] text-xs resize-none"
-                        value={notesDraft}
-                        onChange={e => setNotesDraft(e.target.value)}
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="ghost" size="sm" onClick={() => setEditingNotes(null)}>
-                          <X className="h-3.5 w-3.5 mr-1" /> Cancel
-                        </Button>
-                        <Button size="sm" disabled={savingNotes} onClick={() => handleSaveNotes(file.id)}>
-                          {savingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                          Save Notes
-                        </Button>
+                      {/* Doctor notes section */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            Doctor Notes
+                          </h4>
+                          {editingNotes !== file.id && (
+                            <Button
+                              variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                              onClick={() => { setEditingNotes(file.id); setNotesDraft(file.notes || ""); }}
+                            >
+                              <Pencil className="h-3 w-3" /> Edit
+                            </Button>
+                          )}
+                        </div>
+
+                        {editingNotes === file.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              placeholder="Add clinical notes for this file..."
+                              className="min-h-[100px] text-sm resize-none"
+                              value={notesDraft}
+                              onChange={e => setNotesDraft(e.target.value)}
+                            />
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="ghost" size="sm" onClick={() => setEditingNotes(null)}>
+                                <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                              </Button>
+                              <Button size="sm" disabled={savingNotes} onClick={() => handleSaveNotes(file.id)}>
+                                {savingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                                Save Notes
+                              </Button>
+                            </div>
+                          </div>
+                        ) : file.notes ? (
+                          <div className="bg-muted/50 rounded-md p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                            {file.notes}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit to add clinical notes.</p>
+                        )}
                       </div>
                     </div>
                   )}
