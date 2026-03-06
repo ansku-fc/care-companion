@@ -143,12 +143,14 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   };
 
   const handleDelete = async (file: HealthFile) => {
+    if (file.id.startsWith("demo-")) { toast.info("Cannot delete demo files"); return; }
     await supabase.storage.from("patient-health-files").remove([file.file_path]);
     const { error } = await supabase.from("patient_health_files").delete().eq("id", file.id);
     if (error) toast.error("Failed to delete file"); else { toast.success("File deleted"); setExpandedFile(null); fetchFiles(); }
   };
 
   const handleDownload = async (file: HealthFile) => {
+    if (file.id.startsWith("demo-") && DEMO_MOLE_THUMBNAILS[file.id]) { window.open(DEMO_MOLE_THUMBNAILS[file.id], "_blank"); return; }
     const { data, error } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 60);
     if (error || !data?.signedUrl) { toast.error("Failed to generate download link"); return; }
     window.open(data.signedUrl, "_blank");
