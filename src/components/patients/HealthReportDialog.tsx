@@ -268,6 +268,8 @@ export function HealthReportDialog({
     { title: "", description: "", timeline: "6 months" },
     { title: "", description: "", timeline: "12 months" },
   ]);
+  const [skinMarkers, setSkinMarkers] = useState<{ x: number; y: number; label: string; notes: string; side: "front" | "back" }[]>([]);
+  const [skinView, setSkinView] = useState<"front" | "back">("front");
 
   // Load draft data if draftId provided
   useEffect(() => {
@@ -283,7 +285,10 @@ export function HealthReportDialog({
               if (dt.__objectives && Array.isArray(dt.__objectives)) {
                 setObjectives(dt.__objectives);
               }
-              const { __objectives, ...rest } = dt;
+              if (dt.__skinMarkers && Array.isArray(dt.__skinMarkers)) {
+                setSkinMarkers(dt.__skinMarkers);
+              }
+              const { __objectives, __skinMarkers, ...rest } = dt;
               setDimTexts({ ...defaultDimTexts, ...rest });
             }
           }
@@ -305,7 +310,7 @@ export function HealthReportDialog({
       status: "draft",
       overview_summary: overviewSummary,
       overview_recommendations: overviewRecs,
-      dimension_texts: { ...dimTexts, __objectives: objectives } as any,
+      dimension_texts: { ...dimTexts, __objectives: objectives, __skinMarkers: skinMarkers } as any,
     };
 
     let error;
@@ -472,19 +477,36 @@ export function HealthReportDialog({
                   const score = radarData.find(d => d.category === dim.label)?.score ?? 0;
                   const dotColor = score <= 3 ? "bg-green-400" : score <= 6 ? "bg-yellow-400" : "bg-red-400";
                   return (
-                    <button
-                      key={dim.key}
-                      onClick={() => scrollToPage(dim.key)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left",
-                        activePageKey === dim.key
-                          ? "bg-white/15 text-white font-medium"
-                          : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                    <div key={dim.key}>
+                      <button
+                        onClick={() => scrollToPage(dim.key)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left",
+                          activePageKey === dim.key
+                            ? "bg-white/15 text-white font-medium"
+                            : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                        )}
+                      >
+                        <span className={cn("h-2 w-2 rounded-full shrink-0", dotColor)} />
+                        {dim.label}
+                      </button>
+                      {dim.key === "skin_mucous" && (
+                        <button
+                          onClick={() => scrollToPage("skin-map")}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left pl-7",
+                            activePageKey === "skin-map"
+                              ? "bg-white/15 text-white font-medium"
+                              : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                          )}
+                        >
+                          Skin Map
+                          {skinMarkers.length > 0 && (
+                            <span className="ml-auto text-[10px] text-white/50">{skinMarkers.length}</span>
+                          )}
+                        </button>
                       )}
-                    >
-                      <span className={cn("h-2 w-2 rounded-full shrink-0", dotColor)} />
-                      {dim.label}
-                    </button>
+                    </div>
                   );
                 })}
                 <button
@@ -766,6 +788,181 @@ export function HealthReportDialog({
                 </div>
               );
             })}
+
+            {/* Skin Map Page */}
+            <div data-page="skin-map" style={pageStyle}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
+                <h2 style={{ fontSize: 17, margin: 0 }}>Skin Map</h2>
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button
+                    onClick={() => setSkinView("front")}
+                    style={{ fontSize: 10, padding: "3px 10px", borderRadius: 4, border: "1px solid #ddd", background: skinView === "front" ? "#3b82f6" : "white", color: skinView === "front" ? "white" : "#666", cursor: "pointer", fontWeight: 600 }}
+                  >Front</button>
+                  <button
+                    onClick={() => setSkinView("back")}
+                    style={{ fontSize: 10, padding: "3px 10px", borderRadius: 4, border: "1px solid #ddd", background: skinView === "back" ? "#3b82f6" : "white", color: skinView === "back" ? "white" : "#666", cursor: "pointer", fontWeight: 600 }}
+                  >Back</button>
+                </div>
+              </div>
+
+              <p style={{ fontSize: 11, color: "#666", marginBottom: 16 }}>
+                Click on the body to mark moles or skin changes that require attention. Click a marker to remove it.
+              </p>
+
+              <div style={{ display: "flex", gap: 20 }}>
+                {/* Body SVG */}
+                <div style={{ flex: "0 0 320px", position: "relative" }}>
+                  <svg
+                    viewBox="0 0 200 500"
+                    width={320}
+                    height={500}
+                    style={{ cursor: "crosshair", border: "1px solid #e5e5e5", borderRadius: 8, background: "#fafafa" }}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 200;
+                      const y = ((e.clientY - rect.top) / rect.height) * 500;
+                      setSkinMarkers(prev => [...prev, { x, y, label: `#${prev.filter(m => m.side === skinView).length + 1}`, notes: "", side: skinView }]);
+                    }}
+                  >
+                    {/* Body outline */}
+                    {skinView === "front" ? (
+                      <g fill="none" stroke="#ccc" strokeWidth="1.5">
+                        {/* Head */}
+                        <ellipse cx="100" cy="45" rx="22" ry="28" />
+                        {/* Neck */}
+                        <line x1="92" y1="73" x2="92" y2="90" />
+                        <line x1="108" y1="73" x2="108" y2="90" />
+                        {/* Shoulders & Torso */}
+                        <path d="M92,90 L60,100 L45,120 L40,180 L38,200" />
+                        <path d="M108,90 L140,100 L155,120 L160,180 L162,200" />
+                        {/* Arms left */}
+                        <path d="M45,120 L30,160 L22,200 L18,240 L15,260" />
+                        <path d="M40,180 L28,170" />
+                        {/* Arms right */}
+                        <path d="M155,120 L170,160 L178,200 L182,240 L185,260" />
+                        <path d="M160,180 L172,170" />
+                        {/* Torso sides */}
+                        <path d="M38,200 L42,260 L48,290 L55,310" />
+                        <path d="M162,200 L158,260 L152,290 L145,310" />
+                        {/* Waist to hips */}
+                        <path d="M55,310 L60,320 L65,340" />
+                        <path d="M145,310 L140,320 L135,340" />
+                        {/* Chest/belly lines */}
+                        <line x1="80" y1="130" x2="80" y2="135" stroke="#ddd" strokeWidth="0.8" />
+                        <line x1="120" y1="130" x2="120" y2="135" stroke="#ddd" strokeWidth="0.8" />
+                        <ellipse cx="100" cy="240" rx="12" ry="4" stroke="#ddd" strokeWidth="0.8" />
+                        {/* Legs */}
+                        <path d="M65,340 L62,380 L58,430 L55,470 L50,495" />
+                        <path d="M135,340 L138,380 L142,430 L145,470 L150,495" />
+                        {/* Inner legs */}
+                        <path d="M95,340 L92,380 L90,430 L88,470 L85,495" />
+                        <path d="M105,340 L108,380 L110,430 L112,470 L115,495" />
+                        {/* Center line */}
+                        <line x1="100" y1="90" x2="100" y2="340" stroke="#eee" strokeWidth="0.5" strokeDasharray="4,4" />
+                        {/* Facial features */}
+                        <circle cx="92" cy="40" r="2" fill="#ddd" stroke="none" />
+                        <circle cx="108" cy="40" r="2" fill="#ddd" stroke="none" />
+                        <path d="M95,52 Q100,57 105,52" stroke="#ddd" strokeWidth="0.8" />
+                        {/* Hands */}
+                        <ellipse cx="14" cy="264" rx="5" ry="8" stroke="#ddd" strokeWidth="0.8" />
+                        <ellipse cx="186" cy="264" rx="5" ry="8" stroke="#ddd" strokeWidth="0.8" />
+                        {/* Feet */}
+                        <ellipse cx="67" cy="497" rx="20" ry="5" stroke="#ddd" strokeWidth="0.8" />
+                        <ellipse cx="133" cy="497" rx="20" ry="5" stroke="#ddd" strokeWidth="0.8" />
+                        <text x="100" y="15" textAnchor="middle" fontSize="9" fill="#bbb">FRONT</text>
+                      </g>
+                    ) : (
+                      <g fill="none" stroke="#ccc" strokeWidth="1.5">
+                        {/* Head */}
+                        <ellipse cx="100" cy="45" rx="22" ry="28" />
+                        {/* Neck */}
+                        <line x1="92" y1="73" x2="92" y2="90" />
+                        <line x1="108" y1="73" x2="108" y2="90" />
+                        {/* Shoulders & Back */}
+                        <path d="M92,90 L60,100 L45,120 L40,180 L38,200" />
+                        <path d="M108,90 L140,100 L155,120 L160,180 L162,200" />
+                        {/* Arms */}
+                        <path d="M45,120 L30,160 L22,200 L18,240 L15,260" />
+                        <path d="M155,120 L170,160 L178,200 L182,240 L185,260" />
+                        {/* Back sides */}
+                        <path d="M38,200 L42,260 L48,290 L55,310" />
+                        <path d="M162,200 L158,260 L152,290 L145,310" />
+                        {/* Spine */}
+                        <line x1="100" y1="90" x2="100" y2="320" stroke="#ddd" strokeWidth="0.8" strokeDasharray="3,3" />
+                        {/* Shoulder blades */}
+                        <ellipse cx="78" cy="140" rx="14" ry="20" stroke="#ddd" strokeWidth="0.6" />
+                        <ellipse cx="122" cy="140" rx="14" ry="20" stroke="#ddd" strokeWidth="0.6" />
+                        {/* Buttocks */}
+                        <path d="M55,310 L60,320 L65,340" />
+                        <path d="M145,310 L140,320 L135,340" />
+                        <path d="M80,320 Q100,340 120,320" stroke="#ddd" strokeWidth="0.8" />
+                        {/* Legs */}
+                        <path d="M65,340 L62,380 L58,430 L55,470 L50,495" />
+                        <path d="M135,340 L138,380 L142,430 L145,470 L150,495" />
+                        <path d="M95,340 L92,380 L90,430 L88,470 L85,495" />
+                        <path d="M105,340 L108,380 L110,430 L112,470 L115,495" />
+                        {/* Hands & feet */}
+                        <ellipse cx="14" cy="264" rx="5" ry="8" stroke="#ddd" strokeWidth="0.8" />
+                        <ellipse cx="186" cy="264" rx="5" ry="8" stroke="#ddd" strokeWidth="0.8" />
+                        <ellipse cx="67" cy="497" rx="20" ry="5" stroke="#ddd" strokeWidth="0.8" />
+                        <ellipse cx="133" cy="497" rx="20" ry="5" stroke="#ddd" strokeWidth="0.8" />
+                        <text x="100" y="15" textAnchor="middle" fontSize="9" fill="#bbb">BACK</text>
+                      </g>
+                    )}
+                    {/* Markers for current view */}
+                    {skinMarkers.filter(m => m.side === skinView).map((m, i) => (
+                      <g key={i} onClick={(e) => { e.stopPropagation(); setSkinMarkers(prev => prev.filter((_, j) => j !== prev.indexOf(m))); }} style={{ cursor: "pointer" }}>
+                        <circle cx={m.x} cy={m.y} r="6" fill="#ef4444" fillOpacity="0.8" stroke="#fff" strokeWidth="1.5" />
+                        <text x={m.x} y={m.y + 3.5} textAnchor="middle" fontSize="7" fill="white" fontWeight="700">{m.label.replace("#", "")}</text>
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+
+                {/* Markers list */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+                    Marked Areas ({skinMarkers.length})
+                  </div>
+                  {skinMarkers.length === 0 ? (
+                    <div style={{ color: "#bbb", fontSize: 11, fontStyle: "italic", padding: "20px 0" }}>
+                      No markers placed yet. Click on the body diagram to add skin findings.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {skinMarkers.map((m, i) => (
+                        <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "8px 10px", border: "1px solid #e5e5e5", borderRadius: 6, background: "#fafafa" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: "50%", background: "#ef4444", color: "white", fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>
+                            {m.label.replace("#", "")}
+                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                              <span style={{ fontSize: 9, color: "#888", textTransform: "uppercase" }}>{m.side}</span>
+                              <button
+                                onClick={() => setSkinMarkers(prev => prev.filter((_, j) => j !== i))}
+                                style={{ marginLeft: "auto", fontSize: 9, color: "#999", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                              >Remove</button>
+                            </div>
+                            <InlineEdit
+                              value={m.notes}
+                              onChange={v => setSkinMarkers(prev => prev.map((mk, j) => j === i ? { ...mk, notes: v } : mk))}
+                              placeholder="Description (e.g., irregular 4mm mole, monitor for changes)..."
+                              minH="28px"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Page footer */}
+              <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
+                <span>{patient.full_name} — Health Report</span>
+                <span>Skin Map</span>
+              </div>
+            </div>
 
             {/* Annual Health Plan Page */}
             <div data-page="annual-plan" style={pageStyle}>
