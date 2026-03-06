@@ -1283,6 +1283,18 @@ function HealthDimensionView({
     );
   }
 
+  if (dimensionKey === "skin_mucous") {
+    return (
+      <SkinMucousDimensionView
+        patient={patient}
+        onboarding={onboarding}
+        labResults={labResults}
+        healthCategories={healthCategories}
+        onDataChanged={onDataChanged}
+      />
+    );
+  }
+
   const renderContent = () => {
     switch (dimensionKey) {
       case "senses":
@@ -1464,6 +1476,444 @@ function HealthDimensionView({
       </CardHeader>
       <CardContent>{renderContent()}</CardContent>
     </Card>
+  );
+}
+
+function SkinMucousDimensionView({
+  patient, onboarding, labResults, healthCategories, onDataChanged,
+}: {
+  patient: Tables<"patients">;
+  onboarding: Tables<"patient_onboarding"> | null;
+  labResults: Tables<"patient_lab_results">[];
+  healthCategories: Tables<"patient_health_categories">[];
+  onDataChanged?: () => void;
+}) {
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const skinScore = radarData.find((d) => d.category === "Skin & Mucous")?.score ?? 1;
+
+  const [showRiskHistory, setShowRiskHistory] = useState(false);
+  const [subTab, setSubTab] = useState<"risk_factors" | "skin_map" | "total_risk">("risk_factors");
+
+  const skinCategory = healthCategories.find((c) => c.category.toLowerCase() === "skin & mucous" || c.category.toLowerCase() === "skin_mucous");
+  const [summary, setSummary] = useState(skinCategory?.summary || "");
+  const [recommendations, setRecommendations] = useState(skinCategory?.recommendations || "");
+  const [saving, setSaving] = useState(false);
+
+  // Skin markers stored in health category recommendations as JSON when prefixed with __SKIN_MARKERS__
+  type SkinMarker = { x: number; y: number; label: string; notes: string; side: "front" | "back" };
+  const [skinMarkers, setSkinMarkers] = useState<SkinMarker[]>(() => {
+    try {
+      const raw = skinCategory?.summary || "";
+      const markerMatch = raw.match(/__SKIN_MARKERS__(.+)__END_MARKERS__/s);
+      if (markerMatch) return JSON.parse(markerMatch[1]);
+    } catch {}
+    return [];
+  });
+  const [skinView, setSkinView] = useState<"front" | "back">("front");
+
+  // Extract clean summary (without marker data)
+  const cleanSummary = useMemo(() => {
+    return summary.replace(/__SKIN_MARKERS__.*__END_MARKERS__/s, "").trim();
+  }, [summary]);
+  const [editSummary, setEditSummary] = useState(cleanSummary);
+
+  const scoreColor = skinScore <= 3 ? "text-green-600" : skinScore <= 6 ? "text-amber-600" : "text-destructive";
+  const scoreBg = skinScore <= 3 ? "bg-green-100" : skinScore <= 6 ? "bg-amber-100" : "bg-red-100";
+
+  const riskHistory = useMemo(() => {
+    // Simple history based on score
+    const dummyHistory = [
+      { date: "2023-06-15", score: 2 },
+      { date: "2023-12-10", score: 3 },
+      { date: "2024-06-20", score: 2 },
+      { date: "2024-12-05", score: skinScore },
+    ];
+    return dummyHistory;
+  }, [skinScore]);
+
+  const riskFactors = [
+    { label: "Skin Condition (1-10)", value: onboarding?.skin_condition != null ? String(onboarding.skin_condition) : "—" },
+    { label: "Skin Rash", value: onboarding?.symptom_skin_rash ? "Yes" : "No" },
+    { label: "Mucous Membrane Issues", value: onboarding?.symptom_mucous_membranes ? "Yes" : "No" },
+    { label: "Sun Exposure", value: onboarding?.sun_exposure ? "Yes" : "No" },
+    { label: "Genetic Melanoma Risk", value: onboarding?.genetic_melanoma ? "Yes" : "No" },
+  ];
+
+  const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
+
+  const handleSave = async () => {
+    setSaving(true);
+    const markersJson = skinMarkers.length > 0 ? `\n__SKIN_MARKERS__${JSON.stringify(skinMarkers)}__END_MARKERS__` : "";
+    const { error } = await supabase
+      .from("patient_health_categories")
+      .upsert({
+        patient_id: patient.id,
+        category: "skin_mucous",
+        summary: editSummary + markersJson,
+        recommendations,
+        status: skinCategory?.status || "normal",
+        updated_by: (await supabase.auth.getUser()).data.user?.id || "",
+      } as any, { onConflict: "patient_id,category" });
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save");
+    } else {
+      toast.success("Saved successfully");
+      onDataChanged?.();
+    }
+  };
+
+  const visibleMarkers = skinMarkers.filter((m) => m.side === skinView);
+
+  const handleBodyClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 200;
+    const y = ((e.clientY - rect.top) / rect.height) * 500;
+    setSkinMarkers((prev) => [
+      ...prev,
+      { x, y, label: `#${prev.length + 1}`, notes: "", side: skinView },
+    ]);
+  };
+
+  const removeMarker = (idx: number) => {
+    setSkinMarkers((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // SVG body outline
+  const BodySvg = ({ side }: { side: "front" | "back" }) => (
+    <svg
+      viewBox="0 0 200 500"
+      className="w-full h-full cursor-crosshair"
+      onClick={handleBodyClick}
+      style={{ maxHeight: 440 }}
+    >
+      {/* Head */}
+      <ellipse cx="100" cy="45" rx="28" ry="35" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      {/* Neck */}
+      <rect x="90" y="78" width="20" height="20" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" rx="4" />
+      {/* Torso */}
+      <path d={side === "front"
+        ? "M60,98 Q55,130 55,180 Q55,230 65,260 L135,260 Q145,230 145,180 Q145,130 140,98 Z"
+        : "M60,98 Q55,130 55,180 Q55,230 65,260 L135,260 Q145,230 145,180 Q145,130 140,98 Z"
+      } fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      {/* Left arm */}
+      <path d="M60,100 Q30,120 22,180 Q18,210 20,250 Q18,270 25,280" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      {/* Right arm */}
+      <path d="M140,100 Q170,120 178,180 Q182,210 180,250 Q182,270 175,280" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      {/* Left leg */}
+      <path d="M75,260 Q70,320 68,380 Q66,420 65,460 Q62,475 60,490" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      {/* Right leg */}
+      <path d="M125,260 Q130,320 132,380 Q134,420 135,460 Q138,475 140,490" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      {/* Center line for back view */}
+      {side === "back" && (
+        <line x1="100" y1="98" x2="100" y2="260" stroke="hsl(var(--border))" strokeWidth="0.5" strokeDasharray="4 4" />
+      )}
+      {/* Markers */}
+      {visibleMarkers.map((m, i) => {
+        const globalIdx = skinMarkers.indexOf(m);
+        return (
+          <g key={globalIdx}>
+            <circle
+              cx={m.x} cy={m.y} r="10"
+              fill="hsl(var(--destructive))" fillOpacity="0.2"
+              stroke="hsl(var(--destructive))" strokeWidth="1.5"
+              className="cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); removeMarker(globalIdx); }}
+            />
+            <text
+              x={m.x} y={m.y + 4}
+              textAnchor="middle" fontSize="9" fontWeight="bold"
+              fill="hsl(var(--destructive))"
+              className="pointer-events-none select-none"
+            >
+              {globalIdx + 1}
+            </text>
+          </g>
+        );
+      })}
+      {/* Label */}
+      <text x="100" y="16" textAnchor="middle" fontSize="11" fill="hsl(var(--muted-foreground))" fontWeight="500">
+        {side === "front" ? "Front" : "Back"}
+      </text>
+    </svg>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Header with index */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Droplets className="h-5 w-5 text-primary" />
+              Skin & Mucous Membranes
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
+                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
+                <span className={`text-lg font-bold ${scoreColor}`}>{skinScore}/10</span>
+              </div>
+              <Button
+                variant={showRiskHistory ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => setShowRiskHistory(!showRiskHistory)}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                {showRiskHistory ? "Hide History" : "Show History"}
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">1 = no action needed → 10 = immediate action</p>
+        </CardHeader>
+
+        {showRiskHistory && (
+          <CardContent className="pt-0">
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={riskHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(value: number) => [`${value}/10`, "Risk Index"]} />
+                  <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} />
+                  <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} />
+                  <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} />
+                  <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} activeDot={{ r: 7 }} name="Risk Index" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Main layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* Left column - summary & recommendations */}
+        <div className="flex flex-col gap-4">
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Doctor's Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write a clinical summary for skin & mucous membranes..."
+                value={editSummary}
+                onChange={(e) => setEditSummary(e.target.value)}
+                className="min-h-[120px] resize-none"
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recommendations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write recommendations for skin care..."
+                value={recommendations}
+                onChange={(e) => setRecommendations(e.target.value)}
+                className="min-h-[120px] resize-none"
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={saving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Right column - sub-tabs */}
+        <div className="xl:col-span-2 flex flex-col gap-4">
+          <div className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground gap-1">
+            {(["risk_factors", "skin_map", "total_risk"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setSubTab(tab)}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
+                  subTab === tab ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                }`}
+              >
+                {tab === "risk_factors" ? "Risk Factors" : tab === "skin_map" ? `Skin Map (${skinMarkers.length})` : "Total Risk"}
+              </button>
+            ))}
+          </div>
+
+          {subTab === "risk_factors" && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Risk Factors from Onboarding</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Factor</TableHead>
+                      <TableHead>Value</TableHead>
+                      <TableHead>Recorded</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {riskFactors.map((f) => (
+                      <TableRow key={f.label}>
+                        <TableCell className="font-medium text-sm">{f.label}</TableCell>
+                        <TableCell className="text-sm">{f.value}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {subTab === "skin_map" && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Skin Findings Map</CardTitle>
+                  <div className="flex gap-1">
+                    <Button
+                      variant={skinView === "front" ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setSkinView("front")}
+                    >
+                      Front
+                    </Button>
+                    <Button
+                      variant={skinView === "back" ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setSkinView("back")}
+                    >
+                      Back
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Click on the body to mark moles or skin changes. Click a marker to remove it.</p>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-6">
+                  {/* Body diagram */}
+                  <div className="w-[220px] shrink-0 border rounded-lg p-3 bg-muted/20">
+                    <BodySvg side={skinView} />
+                  </div>
+
+                  {/* Markers list */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                      Marked Areas ({skinMarkers.length})
+                    </p>
+                    {skinMarkers.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic py-6">
+                        No markers placed yet. Click on the body diagram to add skin findings.
+                      </p>
+                    ) : (
+                      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-2">
+                        {skinMarkers.map((m, i) => (
+                          <div key={i} className="flex items-start gap-3 border rounded-md p-3 bg-card">
+                            <div className="flex items-center justify-center h-7 w-7 rounded-full bg-destructive/10 text-destructive text-xs font-bold shrink-0">
+                              {i + 1}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[10px]">{m.side}</Badge>
+                                <button
+                                  onClick={() => removeMarker(i)}
+                                  className="ml-auto text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <Textarea
+                                placeholder="Description (e.g., irregular 4mm mole, monitor for changes)..."
+                                value={m.notes}
+                                onChange={(e) => setSkinMarkers((prev) => prev.map((mk, j) => j === i ? { ...mk, notes: e.target.value } : mk))}
+                                className="min-h-[60px] text-xs resize-none"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {subTab === "total_risk" && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Total Skin & Mucous Risk Assessment</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className={`flex items-center justify-center h-20 w-20 rounded-full ${scoreBg}`}>
+                    <span className={`text-3xl font-bold ${scoreColor}`}>{skinScore}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">Risk Score: {skinScore}/10</p>
+                    <p className="text-sm text-muted-foreground">
+                      {skinScore <= 3 ? "Low risk — continue monitoring" : skinScore <= 6 ? "Moderate risk — consider intervention" : "High risk — action recommended"}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <p className="text-sm font-medium mb-2">Contributing Factors</p>
+                  <div className="space-y-2 text-sm">
+                    {onboarding?.symptom_skin_rash && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="destructive" className="text-xs">High</Badge>
+                        <span>Active skin rash reported</span>
+                      </div>
+                    )}
+                    {onboarding?.symptom_mucous_membranes && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="destructive" className="text-xs">High</Badge>
+                        <span>Mucous membrane issues</span>
+                      </div>
+                    )}
+                    {onboarding?.skin_condition != null && Number(onboarding.skin_condition) > 3 && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">Moderate</Badge>
+                        <span>Elevated skin condition score: {onboarding.skin_condition}/10</span>
+                      </div>
+                    )}
+                    {onboarding?.sun_exposure && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">Moderate</Badge>
+                        <span>Regular sun exposure reported</span>
+                      </div>
+                    )}
+                    {onboarding?.genetic_melanoma && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="destructive" className="text-xs">High</Badge>
+                        <span>Genetic melanoma risk</span>
+                      </div>
+                    )}
+                    {skinMarkers.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">Info</Badge>
+                        <span>{skinMarkers.length} skin finding{skinMarkers.length !== 1 ? "s" : ""} mapped for monitoring</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
