@@ -25,7 +25,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
-import { HealthFileUploads } from "@/components/patients/HealthFileUploads";
+import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 
 const HEALTH_DIMENSIONS = [
   { key: "senses", label: "Senses", icon: Eye },
@@ -2534,6 +2534,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
+  const [healthDataTab, setHealthDataTab] = useState<HealthDataTab>("lab_results");
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
@@ -2665,18 +2666,24 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   } : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FlaskConical className="h-5 w-5 text-primary" />
           Health Data
         </h2>
-        <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+        {healthDataTab === "lab_results" && (
+          <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+        )}
       </div>
 
-      {/* Health Data Uploads - moved to top */}
-      <HealthFileUploads patientId={patientId} />
-
+      <HealthFileUploads
+        patientId={patientId}
+        activeTab={healthDataTab}
+        onTabChange={setHealthDataTab}
+        labResultsCount={sorted.length}
+      >
+      {/* Lab results content - rendered as children when lab_results tab is active */}
       <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "60vh" }}>
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
@@ -2878,6 +2885,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         </div>
       )}
       </div>
+      </HealthFileUploads>
     </div>
   );
 }
