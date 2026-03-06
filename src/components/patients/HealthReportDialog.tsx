@@ -792,7 +792,7 @@ export function HealthReportDialog({
             {/* Skin Map Page */}
             <div data-page="skin-map" style={pageStyle}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
-                <h2 style={{ fontSize: 17, margin: 0 }}>Skin Map</h2>
+                <h2 style={{ fontSize: 17, margin: 0 }}>Your Skin Health Overview</h2>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button
                     onClick={() => setSkinView("front")}
@@ -806,7 +806,7 @@ export function HealthReportDialog({
               </div>
 
               <p style={{ fontSize: 11, color: "#666", marginBottom: 16 }}>
-                Click on the body to mark moles or skin changes that require attention. Click a marker to remove it.
+                The diagram below highlights areas of your skin that your care team has identified for monitoring. Each numbered marker corresponds to a finding described on the right.
               </p>
 
               <div style={{ display: "flex", gap: 20 }}>
@@ -922,11 +922,11 @@ export function HealthReportDialog({
                 {/* Markers list */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-                    Marked Areas ({skinMarkers.length})
+                    Areas to Monitor ({skinMarkers.length})
                   </div>
                   {skinMarkers.length === 0 ? (
                     <div style={{ color: "#bbb", fontSize: 11, fontStyle: "italic", padding: "20px 0" }}>
-                      No markers placed yet. Click on the body diagram to add skin findings.
+                      No areas of concern have been identified at this time.
                     </div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -946,7 +946,7 @@ export function HealthReportDialog({
                             <InlineEdit
                               value={m.notes}
                               onChange={v => setSkinMarkers(prev => prev.map((mk, j) => j === i ? { ...mk, notes: v } : mk))}
-                              placeholder="Description (e.g., irregular 4mm mole, monitor for changes)..."
+                              placeholder="Finding description and recommended follow-up..."
                               minH="28px"
                             />
                           </div>
@@ -960,7 +960,7 @@ export function HealthReportDialog({
               {/* Page footer */}
               <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
                 <span>{patient.full_name} — Health Report</span>
-                <span>Skin Map</span>
+                <span>Skin Health Overview</span>
               </div>
             </div>
 
