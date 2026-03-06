@@ -2885,6 +2885,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         </div>
       )}
       </div>
+      </HealthFileUploads>
     </div>
   );
 }
