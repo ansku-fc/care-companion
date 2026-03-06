@@ -2878,9 +2878,6 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         </div>
       )}
       </div>
-
-      {/* Health Data Uploads */}
-      <HealthFileUploads patientId={patientId} />
     </div>
   );
 }
