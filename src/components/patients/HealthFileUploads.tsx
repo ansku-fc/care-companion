@@ -306,7 +306,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                   </h4>
                   {editingNotes !== selectedFile.id && (
                     <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
-                      onClick={() => { setEditingNotes(selectedFile.id); setNotesDraft(selectedFile.notes || ""); setDimensionDraft(selectedFile.health_dimension || null); }}
+                      onClick={() => { setEditingNotes(selectedFile.id); setNotesDraft(selectedFile.notes || ""); }}
                     >
                       <Pencil className="h-3 w-3" /> Edit
                     </Button>
