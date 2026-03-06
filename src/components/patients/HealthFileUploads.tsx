@@ -177,6 +177,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
     if (expandedFile === file.id) { setExpandedFile(null); setExpandedPreviewUrl(null); return; }
     setExpandedFile(file.id);
     if (isImageFile(file.file_name)) {
+      if (DEMO_MOLE_THUMBNAILS[file.id]) { setExpandedPreviewUrl(DEMO_MOLE_THUMBNAILS[file.id]); return; }
       const { data } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 300);
       if (data?.signedUrl) setExpandedPreviewUrl(data.signedUrl);
     } else { setExpandedPreviewUrl(null); }
