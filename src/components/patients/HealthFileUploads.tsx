@@ -50,6 +50,10 @@ interface Props {
 export function HealthFileUploads({ patientId, activeTab, onTabChange, labResultsCount, children }: Props) {
   const [files, setFiles] = useState<HealthFile[]>([]);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const fetchFiles = async () => {
@@ -96,11 +100,40 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
     window.open(data.signedUrl, "_blank");
   };
 
+  const handleSaveNotes = async (fileId: string) => {
+    setSavingNotes(true);
+    const { error } = await supabase.from("patient_health_files").update({ notes: notesDraft || null }).eq("id", fileId);
+    if (error) toast.error("Failed to save notes");
+    else { toast.success("Notes saved"); fetchFiles(); setEditingNotes(null); }
+    setSavingNotes(false);
+  };
+
+  const handlePreview = async (file: HealthFile) => {
+    const { data, error } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 120);
+    if (error || !data?.signedUrl) { toast.error("Failed to load preview"); return; }
+    setPreviewUrl(data.signedUrl);
+  };
+
+  const isImageFile = (name: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+  const isPdfFile = (name: string) => /\.pdf$/i.test(name);
+
   const categoryFiles = (cat: string) => files.filter(f => f.file_category === cat);
   const activeCat = FILE_CATEGORIES.find(c => c.key === activeTab);
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Preview modal */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-8" onClick={() => setPreviewUrl(null)}>
+          <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="absolute -top-10 right-0 text-white hover:bg-white/20" onClick={() => setPreviewUrl(null)}>
+              <X className="h-5 w-5" />
+            </Button>
+            <img src={previewUrl} alt="Preview" className="w-full h-auto max-h-[85vh] object-contain rounded-lg" />
+          </div>
+        </div>
+      )}
+
       {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-lg bg-muted overflow-x-auto">
         {ALL_TABS.map(tab => {
@@ -159,22 +192,69 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
               No {activeCat.label.toLowerCase()} uploaded yet
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {categoryFiles(activeCat.key).map(file => (
-                <div key={file.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                  <activeCat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{file.file_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString()}
-                    </p>
+                <div key={file.id} className="rounded-lg border bg-muted/30 overflow-hidden">
+                  <div className="flex items-center gap-3 p-3">
+                    <activeCat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{file.file_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {isImageFile(file.file_name) && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePreview(file)} title="Preview">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(file)}>
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon" className="h-8 w-8"
+                      onClick={() => {
+                        if (editingNotes === file.id) { setEditingNotes(null); }
+                        else { setEditingNotes(file.id); setNotesDraft(file.notes || ""); }
+                      }}
+                      title="Notes"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(file)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(file)}>
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(file)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+
+                  {/* Notes display / edit */}
+                  {file.notes && editingNotes !== file.id && (
+                    <div className="px-3 pb-3 pt-0">
+                      <div className="bg-muted/50 rounded-md p-2.5 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">Doctor Notes: </span>
+                        {file.notes}
+                      </div>
+                    </div>
+                  )}
+
+                  {editingNotes === file.id && (
+                    <div className="px-3 pb-3 pt-0 space-y-2">
+                      <Textarea
+                        placeholder="Add doctor notes for this file..."
+                        className="min-h-[80px] text-xs resize-none"
+                        value={notesDraft}
+                        onChange={e => setNotesDraft(e.target.value)}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="ghost" size="sm" onClick={() => setEditingNotes(null)}>
+                          <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                        </Button>
+                        <Button size="sm" disabled={savingNotes} onClick={() => handleSaveNotes(file.id)}>
+                          {savingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                          Save Notes
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
