@@ -1,13 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, Trash2, Download, Camera, Radio, HeartPulse, Watch, Apple, FlaskConical, Loader2, FileText, Pencil, Save, X, Eye } from "lucide-react";
+import { Upload, Trash2, Download, Camera, Radio, HeartPulse, Watch, Apple, FlaskConical, Loader2, FileText, Pencil, Save, X, Maximize2 } from "lucide-react";
 
 export type HealthDataTab = "lab_results" | "mole_image" | "radiology" | "ekg" | "oura" | "apple_health";
+
+const HEALTH_DIMENSIONS = [
+  "Senses", "Nervous System", "Physical Performance", "Respiratory System",
+  "Hormone Function", "Skin & Mucous Membranes", "Immunity & Allergies",
+  "Body Composition & Nutrition", "Liver Function", "Mental Health",
+  "Kidney Function", "Alcohol & Other Substances", "Cardiovascular System",
+  "Cancer Risk", "Musculoskeletal System", "Sleep",
+] as const;
 
 interface HealthFile {
   id: string;
@@ -16,6 +24,7 @@ interface HealthFile {
   file_path: string;
   file_size: number | null;
   notes: string | null;
+  health_dimension: string | null;
   created_at: string;
 }
 
@@ -44,7 +53,7 @@ interface Props {
   activeTab: HealthDataTab;
   onTabChange: (tab: HealthDataTab) => void;
   labResultsCount?: number;
-  children?: React.ReactNode; // lab results content rendered when lab_results tab active
+  children?: React.ReactNode;
 }
 
 export function HealthFileUploads({ patientId, activeTab, onTabChange, labResultsCount, children }: Props) {
@@ -52,10 +61,12 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const [uploading, setUploading] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState("");
+  const [dimensionDraft, setDimensionDraft] = useState<string | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null);
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [expandedPreviewUrl, setExpandedPreviewUrl] = useState<string | null>(null);
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const fetchFiles = async () => {
@@ -69,17 +80,30 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
 
   useEffect(() => { fetchFiles(); }, [patientId]);
 
+  // Generate thumbnails for image files
+  useEffect(() => {
+    const imageFiles = files.filter(f => isImageFile(f.file_name) && !thumbnailUrls[f.id]);
+    if (imageFiles.length === 0) return;
+    const loadThumbnails = async () => {
+      const urls: Record<string, string> = {};
+      for (const file of imageFiles) {
+        const { data } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 600);
+        if (data?.signedUrl) urls[file.id] = data.signedUrl;
+      }
+      setThumbnailUrls(prev => ({ ...prev, ...urls }));
+    };
+    loadThumbnails();
+  }, [files]);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(category);
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) { toast.error("Not authenticated"); setUploading(null); return; }
-
     const filePath = `${patientId}/${category}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage.from("patient-health-files").upload(filePath, file);
     if (uploadError) { toast.error("Upload failed: " + uploadError.message); setUploading(null); return; }
-
     const { error: dbError } = await supabase.from("patient_health_files").insert({
       patient_id: patientId, created_by: userData.user.id,
       file_category: category, file_name: file.name, file_path: filePath, file_size: file.size,
@@ -93,7 +117,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const handleDelete = async (file: HealthFile) => {
     await supabase.storage.from("patient-health-files").remove([file.file_path]);
     const { error } = await supabase.from("patient_health_files").delete().eq("id", file.id);
-    if (error) toast.error("Failed to delete file"); else { toast.success("File deleted"); fetchFiles(); }
+    if (error) toast.error("Failed to delete file"); else { toast.success("File deleted"); setExpandedFile(null); fetchFiles(); }
   };
 
   const handleDownload = async (file: HealthFile) => {
@@ -104,34 +128,66 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
 
   const handleSaveNotes = async (fileId: string) => {
     setSavingNotes(true);
-    const { error } = await supabase.from("patient_health_files").update({ notes: notesDraft || null }).eq("id", fileId);
+    const { error } = await supabase.from("patient_health_files").update({
+      notes: notesDraft || null,
+      health_dimension: dimensionDraft || null,
+    }).eq("id", fileId);
     if (error) toast.error("Failed to save notes");
-    else { toast.success("Notes saved"); fetchFiles(); setEditingNotes(null); }
+    else {
+      // If dimension is tagged, also update the health category with these notes
+      if (dimensionDraft) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          const { data: existing } = await supabase
+            .from("patient_health_categories")
+            .select("*")
+            .eq("patient_id", patientId)
+            .eq("category", dimensionDraft)
+            .maybeSingle();
+
+          const file = files.find(f => f.id === fileId);
+          const notePrefix = `[${file?.file_name || "File"}]: `;
+          const noteEntry = notePrefix + (notesDraft || "No notes");
+
+          if (existing) {
+            const currentSummary = existing.summary || "";
+            const updatedSummary = currentSummary ? `${currentSummary}\n\n${noteEntry}` : noteEntry;
+            await supabase.from("patient_health_categories").update({
+              summary: updatedSummary,
+              updated_by: userData.user.id,
+            }).eq("id", existing.id);
+          } else {
+            await supabase.from("patient_health_categories").insert({
+              patient_id: patientId,
+              category: dimensionDraft,
+              summary: noteEntry,
+              updated_by: userData.user.id,
+            });
+          }
+        }
+      }
+      toast.success("Notes saved");
+      fetchFiles();
+      setEditingNotes(null);
+    }
     setSavingNotes(false);
   };
 
-  const handlePreview = async (file: HealthFile) => {
+  const handleFullscreen = async (file: HealthFile) => {
     const { data, error } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 120);
-    if (error || !data?.signedUrl) { toast.error("Failed to load preview"); return; }
-    setPreviewUrl(data.signedUrl);
+    if (error || !data?.signedUrl) { toast.error("Failed to load image"); return; }
+    setFullscreenUrl(data.signedUrl);
   };
 
   const isImageFile = (name: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
-  const isPdfFile = (name: string) => /\.pdf$/i.test(name);
 
   const handleExpandFile = async (file: HealthFile) => {
-    if (expandedFile === file.id) {
-      setExpandedFile(null);
-      setExpandedPreviewUrl(null);
-      return;
-    }
+    if (expandedFile === file.id) { setExpandedFile(null); setExpandedPreviewUrl(null); return; }
     setExpandedFile(file.id);
     if (isImageFile(file.file_name)) {
       const { data } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 300);
       if (data?.signedUrl) setExpandedPreviewUrl(data.signedUrl);
-    } else {
-      setExpandedPreviewUrl(null);
-    }
+    } else { setExpandedPreviewUrl(null); }
   };
 
   const categoryFiles = (cat: string) => files.filter(f => f.file_category === cat);
@@ -140,14 +196,14 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Preview modal */}
-      {previewUrl && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-8" onClick={() => setPreviewUrl(null)}>
-          <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={e => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="absolute -top-10 right-0 text-white hover:bg-white/20" onClick={() => setPreviewUrl(null)}>
+      {/* Fullscreen modal */}
+      {fullscreenUrl && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setFullscreenUrl(null)}>
+          <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-white hover:bg-white/20 z-10" onClick={() => setFullscreenUrl(null)}>
               <X className="h-5 w-5" />
             </Button>
-            <img src={previewUrl} alt="Preview" className="w-full h-auto max-h-[85vh] object-contain rounded-lg" />
+            <img src={fullscreenUrl} alt="Full screen preview" className="max-w-full max-h-full object-contain" />
           </div>
         </div>
       )}
@@ -163,40 +219,32 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
               key={tab.key}
               onClick={() => onTabChange(tab.key)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
-                isActive
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
               {tab.label}
-              {count > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-[10px]">{count}</Badge>
-              )}
+              {count > 0 && <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-[10px]">{count}</Badge>}
             </button>
           );
         })}
       </div>
 
       {/* Content */}
-      {activeTab === "lab_results" ? (
-        children
-      ) : activeCat ? (
+      {activeTab === "lab_results" ? children : activeCat ? (
         <div className="flex gap-4">
-          {/* File list - left side */}
-          <div className={`space-y-3 ${selectedFile ? 'w-1/3 min-w-[240px]' : 'w-full'} shrink-0 transition-all`}>
+          {/* File list */}
+          <div className={`space-y-3 ${selectedFile ? 'w-1/3 min-w-[260px]' : 'w-full'} shrink-0 transition-all`}>
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{activeCat.description}</p>
               <div>
                 <input
                   ref={el => { fileInputRefs.current[activeCat.key] = el; }}
-                  type="file"
-                  accept={activeCat.accept}
+                  type="file" accept={activeCat.accept}
                   onChange={(e) => handleUpload(e, activeCat.key)}
                   className="hidden"
                 />
-                <Button
-                  variant="outline" size="sm" className="gap-1.5"
+                <Button variant="outline" size="sm" className="gap-1.5"
                   disabled={uploading === activeCat.key}
                   onClick={() => fileInputRefs.current[activeCat.key]?.click()}
                 >
@@ -221,17 +269,29 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                     }`}
                     onClick={() => handleExpandFile(file)}
                   >
-                    <div className="flex items-center gap-3 p-3">
-                      <activeCat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex items-start gap-3 p-3">
+                      {/* Thumbnail */}
+                      {isImageFile(file.file_name) && thumbnailUrls[file.id] ? (
+                        <div className="w-12 h-12 rounded-md overflow-hidden bg-black shrink-0">
+                          <img src={thumbnailUrls[file.id]} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
+                          <activeCat.icon className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{file.file_name}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString()}
                         </p>
+                        {file.notes && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{file.notes}</p>
+                        )}
+                        {file.health_dimension && (
+                          <Badge variant="outline" className="text-[10px] mt-1">{file.health_dimension}</Badge>
+                        )}
                       </div>
-                      {file.notes && expandedFile !== file.id && (
-                        <Badge variant="outline" className="text-[10px] shrink-0">Notes</Badge>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -239,12 +299,17 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
             )}
           </div>
 
-          {/* Detail panel - right side */}
+          {/* Detail panel */}
           {selectedFile && (
             <div className="flex-1 min-w-0 rounded-lg border bg-background p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold truncate">{selectedFile.file_name}</h3>
                 <div className="flex items-center gap-1 shrink-0">
+                  {isImageFile(selectedFile.file_name) && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleFullscreen(selectedFile)} title="Full screen">
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(selectedFile)}>
                     <Download className="h-3.5 w-3.5" />
                   </Button>
@@ -257,14 +322,16 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                 </div>
               </div>
 
-              {/* Image preview */}
+              {/* Image preview with fullscreen button */}
               {isImageFile(selectedFile.file_name) && expandedPreviewUrl && (
-                <div className="rounded-lg overflow-hidden bg-black flex items-center justify-center">
-                  <img
-                    src={expandedPreviewUrl}
-                    alt={selectedFile.file_name}
-                    className="max-h-[400px] w-auto object-contain"
-                  />
+                <div
+                  className="rounded-lg overflow-hidden bg-black flex items-center justify-center relative group cursor-pointer"
+                  onClick={() => handleFullscreen(selectedFile)}
+                >
+                  <img src={expandedPreviewUrl} alt={selectedFile.file_name} className="max-h-[400px] w-auto object-contain" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <Maximize2 className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                 </div>
               )}
 
@@ -276,9 +343,8 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                     Doctor Notes
                   </h4>
                   {editingNotes !== selectedFile.id && (
-                    <Button
-                      variant="ghost" size="sm" className="h-7 text-xs gap-1"
-                      onClick={() => { setEditingNotes(selectedFile.id); setNotesDraft(selectedFile.notes || ""); }}
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                      onClick={() => { setEditingNotes(selectedFile.id); setNotesDraft(selectedFile.notes || ""); setDimensionDraft(selectedFile.health_dimension || null); }}
                     >
                       <Pencil className="h-3 w-3" /> Edit
                     </Button>
@@ -286,13 +352,27 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                 </div>
 
                 {editingNotes === selectedFile.id ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Textarea
                       placeholder="Add clinical notes for this file..."
                       className="min-h-[100px] text-sm resize-none"
                       value={notesDraft}
                       onChange={e => setNotesDraft(e.target.value)}
                     />
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Tag Health Dimension</label>
+                      <Select value={dimensionDraft || "none"} onValueChange={v => setDimensionDraft(v === "none" ? null : v)}>
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Select dimension..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No dimension</SelectItem>
+                          {HEALTH_DIMENSIONS.map(d => (
+                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="flex gap-2 justify-end">
                       <Button variant="ghost" size="sm" onClick={() => setEditingNotes(null)}>
                         <X className="h-3.5 w-3.5 mr-1" /> Cancel
@@ -304,8 +384,16 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
                     </div>
                   </div>
                 ) : selectedFile.notes ? (
-                  <div className="bg-muted/50 rounded-md p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                    {selectedFile.notes}
+                  <div className="space-y-2">
+                    <div className="bg-muted/50 rounded-md p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                      {selectedFile.notes}
+                    </div>
+                    {selectedFile.health_dimension && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">Tagged:</span>
+                        <Badge variant="secondary" className="text-xs">{selectedFile.health_dimension}</Badge>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit to add clinical notes.</p>
