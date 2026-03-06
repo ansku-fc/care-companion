@@ -98,13 +98,25 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
 
   // Generate thumbnails for image files
   useEffect(() => {
-    const imageFiles = files.filter(f => isImageFile(f.file_name) && !thumbnailUrls[f.id]);
-    if (imageFiles.length === 0) return;
+    const imageFiles = files.filter(f => isImageFile(f.file_name) && !thumbnailUrls[f.id] && !DEMO_MOLE_THUMBNAILS[f.id]);
+    if (imageFiles.length === 0) {
+      // Set demo thumbnails
+      const demoUrls: Record<string, string> = {};
+      for (const f of files) {
+        if (DEMO_MOLE_THUMBNAILS[f.id] && !thumbnailUrls[f.id]) demoUrls[f.id] = DEMO_MOLE_THUMBNAILS[f.id];
+      }
+      if (Object.keys(demoUrls).length > 0) setThumbnailUrls(prev => ({ ...prev, ...demoUrls }));
+      return;
+    }
     const loadThumbnails = async () => {
       const urls: Record<string, string> = {};
       for (const file of imageFiles) {
         const { data } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 600);
         if (data?.signedUrl) urls[file.id] = data.signedUrl;
+      }
+      // Also add demo thumbnails
+      for (const f of files) {
+        if (DEMO_MOLE_THUMBNAILS[f.id]) urls[f.id] = DEMO_MOLE_THUMBNAILS[f.id];
       }
       setThumbnailUrls(prev => ({ ...prev, ...urls }));
     };
