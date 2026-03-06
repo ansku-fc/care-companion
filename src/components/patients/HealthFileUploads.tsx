@@ -181,122 +181,135 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
       {activeTab === "lab_results" ? (
         children
       ) : activeCat ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{activeCat.description}</p>
-            <div>
-              <input
-                ref={el => { fileInputRefs.current[activeCat.key] = el; }}
-                type="file"
-                accept={activeCat.accept}
-                onChange={(e) => handleUpload(e, activeCat.key)}
-                className="hidden"
-              />
-              <Button
-                variant="outline" size="sm" className="gap-1.5"
-                disabled={uploading === activeCat.key}
-                onClick={() => fileInputRefs.current[activeCat.key]?.click()}
-              >
-                {uploading === activeCat.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Upload
-              </Button>
+        <div className="flex gap-4">
+          {/* File list - left side */}
+          <div className={`space-y-3 ${selectedFile ? 'w-1/3 min-w-[240px]' : 'w-full'} shrink-0 transition-all`}>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{activeCat.description}</p>
+              <div>
+                <input
+                  ref={el => { fileInputRefs.current[activeCat.key] = el; }}
+                  type="file"
+                  accept={activeCat.accept}
+                  onChange={(e) => handleUpload(e, activeCat.key)}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline" size="sm" className="gap-1.5"
+                  disabled={uploading === activeCat.key}
+                  onClick={() => fileInputRefs.current[activeCat.key]?.click()}
+                >
+                  {uploading === activeCat.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Upload
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {categoryFiles(activeCat.key).length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-lg">
-              <activeCat.icon className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              No {activeCat.label.toLowerCase()} uploaded yet
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {categoryFiles(activeCat.key).map(file => (
-                <div key={file.id} className="rounded-lg border bg-muted/30 overflow-hidden">
+            {categoryFiles(activeCat.key).length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-lg">
+                <activeCat.icon className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                No {activeCat.label.toLowerCase()} uploaded yet
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {categoryFiles(activeCat.key).map(file => (
                   <div
-                    className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    key={file.id}
+                    className={`rounded-lg border overflow-hidden cursor-pointer transition-colors ${
+                      expandedFile === file.id ? 'bg-accent border-accent-foreground/20' : 'bg-muted/30 hover:bg-muted/50'
+                    }`}
                     onClick={() => handleExpandFile(file)}
                   >
-                    <activeCat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{file.file_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString()}
-                      </p>
+                    <div className="flex items-center gap-3 p-3">
+                      <activeCat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.file_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {file.notes && expandedFile !== file.id && (
+                        <Badge variant="outline" className="text-[10px] shrink-0">Notes</Badge>
+                      )}
                     </div>
-                    {file.notes && expandedFile !== file.id && (
-                      <Badge variant="outline" className="text-[10px] shrink-0">Has Notes</Badge>
-                    )}
-                    <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(file)}>
-                        <Download className="h-3.5 w-3.5" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Detail panel - right side */}
+          {selectedFile && (
+            <div className="flex-1 min-w-0 rounded-lg border bg-background p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold truncate">{selectedFile.file_name}</h3>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(selectedFile)}>
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(selectedFile)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setExpandedFile(null); setExpandedPreviewUrl(null); }}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Image preview */}
+              {isImageFile(selectedFile.file_name) && expandedPreviewUrl && (
+                <div className="rounded-lg overflow-hidden bg-black flex items-center justify-center">
+                  <img
+                    src={expandedPreviewUrl}
+                    alt={selectedFile.file_name}
+                    className="max-h-[400px] w-auto object-contain"
+                  />
+                </div>
+              )}
+
+              {/* Doctor notes */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    Doctor Notes
+                  </h4>
+                  {editingNotes !== selectedFile.id && (
+                    <Button
+                      variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                      onClick={() => { setEditingNotes(selectedFile.id); setNotesDraft(selectedFile.notes || ""); }}
+                    >
+                      <Pencil className="h-3 w-3" /> Edit
+                    </Button>
+                  )}
+                </div>
+
+                {editingNotes === selectedFile.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Add clinical notes for this file..."
+                      className="min-h-[100px] text-sm resize-none"
+                      value={notesDraft}
+                      onChange={e => setNotesDraft(e.target.value)}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => setEditingNotes(null)}>
+                        <X className="h-3.5 w-3.5 mr-1" /> Cancel
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(file)}>
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <Button size="sm" disabled={savingNotes} onClick={() => handleSaveNotes(selectedFile.id)}>
+                        {savingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        Save Notes
                       </Button>
                     </div>
                   </div>
-
-                  {/* Expanded detail view */}
-                  {expandedFile === file.id && (
-                    <div className="border-t px-4 py-4 space-y-4 bg-background">
-                      {/* Image preview */}
-                      {isImageFile(file.file_name) && expandedPreviewUrl && (
-                        <div className="rounded-lg overflow-hidden bg-black flex items-center justify-center">
-                          <img
-                            src={expandedPreviewUrl}
-                            alt={file.file_name}
-                            className="max-h-[400px] w-auto object-contain"
-                          />
-                        </div>
-                      )}
-
-                      {/* Doctor notes section */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-semibold flex items-center gap-1.5">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            Doctor Notes
-                          </h4>
-                          {editingNotes !== file.id && (
-                            <Button
-                              variant="ghost" size="sm" className="h-7 text-xs gap-1"
-                              onClick={() => { setEditingNotes(file.id); setNotesDraft(file.notes || ""); }}
-                            >
-                              <Pencil className="h-3 w-3" /> Edit
-                            </Button>
-                          )}
-                        </div>
-
-                        {editingNotes === file.id ? (
-                          <div className="space-y-2">
-                            <Textarea
-                              placeholder="Add clinical notes for this file..."
-                              className="min-h-[100px] text-sm resize-none"
-                              value={notesDraft}
-                              onChange={e => setNotesDraft(e.target.value)}
-                            />
-                            <div className="flex gap-2 justify-end">
-                              <Button variant="ghost" size="sm" onClick={() => setEditingNotes(null)}>
-                                <X className="h-3.5 w-3.5 mr-1" /> Cancel
-                              </Button>
-                              <Button size="sm" disabled={savingNotes} onClick={() => handleSaveNotes(file.id)}>
-                                {savingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                                Save Notes
-                              </Button>
-                            </div>
-                          </div>
-                        ) : file.notes ? (
-                          <div className="bg-muted/50 rounded-md p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                            {file.notes}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit to add clinical notes.</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                ) : selectedFile.notes ? (
+                  <div className="bg-muted/50 rounded-md p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    {selectedFile.notes}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit to add clinical notes.</p>
+                )}
+              </div>
             </div>
           )}
         </div>
