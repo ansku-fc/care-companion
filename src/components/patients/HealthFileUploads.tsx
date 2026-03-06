@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, Trash2, Download, Camera, Radio, HeartPulse, Watch, Apple, FlaskConical, Loader2 } from "lucide-react";
+import { Upload, Trash2, Download, Camera, Radio, HeartPulse, Watch, Apple, FlaskConical, Loader2, FileText, Pencil, Save, X, Eye } from "lucide-react";
 
 export type HealthDataTab = "lab_results" | "mole_image" | "radiology" | "ekg" | "oura" | "apple_health";
 
