@@ -2693,9 +2693,9 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
             </CardContent>
           </Card>
         ) : (
-          <Card className="overflow-hidden flex-1 min-h-0 flex flex-col">
+          <Card className="flex-1 min-h-0 flex flex-col">
             <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
-              <div className="flex min-h-0 flex-1 overflow-hidden">
+              <div className="flex min-h-0 flex-1">
                 {/* Fixed left columns: Marker + Unit */}
                 <div ref={leftScrollRef} onScroll={() => syncScroll("left")} className="shrink-0 border-r overflow-y-auto">
                   <table className="text-sm border-collapse">
