@@ -1,0 +1,1 @@
+ALTER TABLE public.patient_health_files ADD COLUMN health_dimension text NULL;
