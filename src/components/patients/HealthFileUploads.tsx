@@ -119,6 +119,21 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const isImageFile = (name: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
   const isPdfFile = (name: string) => /\.pdf$/i.test(name);
 
+  const handleExpandFile = async (file: HealthFile) => {
+    if (expandedFile === file.id) {
+      setExpandedFile(null);
+      setExpandedPreviewUrl(null);
+      return;
+    }
+    setExpandedFile(file.id);
+    if (isImageFile(file.file_name)) {
+      const { data } = await supabase.storage.from("patient-health-files").createSignedUrl(file.file_path, 300);
+      if (data?.signedUrl) setExpandedPreviewUrl(data.signedUrl);
+    } else {
+      setExpandedPreviewUrl(null);
+    }
+  };
+
   const categoryFiles = (cat: string) => files.filter(f => f.file_category === cat);
   const activeCat = FILE_CATEGORIES.find(c => c.key === activeTab);
 
