@@ -71,13 +71,27 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  const DEMO_MOLE_FILES: HealthFile[] = [
+    { id: "demo-mole-1", file_category: "mole_image", file_name: "left_forearm_mole_01.jpg", file_path: "", file_size: 245000, notes: "Regular borders, uniform brown color. 4mm diameter. Monitor at next visit.", health_dimension: "Skin & Mucous Membranes", created_at: "2025-09-15T10:30:00Z" },
+    { id: "demo-mole-2", file_category: "mole_image", file_name: "upper_back_nevus_02.jpg", file_path: "", file_size: 312000, notes: "Irregular pigment network noted. Recommend follow-up dermoscopy in 3 months.", health_dimension: "Cancer Risk", created_at: "2025-11-02T14:15:00Z" },
+    { id: "demo-mole-3", file_category: "mole_image", file_name: "right_shoulder_lesion_03.jpg", file_path: "", file_size: 198000, notes: null, health_dimension: null, created_at: "2026-01-20T09:45:00Z" },
+  ];
+
+  const DEMO_MOLE_THUMBNAILS: Record<string, string> = {
+    "demo-mole-1": demoMole1,
+    "demo-mole-2": demoMole2,
+    "demo-mole-3": demoMole3,
+  };
+
   const fetchFiles = async () => {
     const { data } = await supabase
       .from("patient_health_files")
       .select("*")
       .eq("patient_id", patientId)
       .order("created_at", { ascending: false });
-    if (data) setFiles(data as HealthFile[]);
+    const realFiles = (data || []) as HealthFile[];
+    const hasMoleFiles = realFiles.some(f => f.file_category === "mole_image");
+    setFiles(hasMoleFiles ? realFiles : [...realFiles, ...DEMO_MOLE_FILES]);
   };
 
   useEffect(() => { fetchFiles(); }, [patientId]);
