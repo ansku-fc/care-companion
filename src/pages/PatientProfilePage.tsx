@@ -2665,15 +2665,15 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   } : null;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center justify-between mb-4 shrink-0">
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FlaskConical className="h-5 w-5 text-primary" />
           Lab Results
         </h2>
         <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
       </div>
-      <div className="flex gap-4 min-h-0 flex-1">
+      <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "60vh" }}>
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
           <Card>
