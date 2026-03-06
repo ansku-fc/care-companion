@@ -314,6 +314,7 @@ export type Database = {
           file_name: string
           file_path: string
           file_size: number | null
+          health_dimension: string | null
           id: string
           notes: string | null
           patient_id: string
@@ -326,6 +327,7 @@ export type Database = {
           file_name: string
           file_path: string
           file_size?: number | null
+          health_dimension?: string | null
           id?: string
           notes?: string | null
           patient_id: string
@@ -338,6 +340,7 @@ export type Database = {
           file_name?: string
           file_path?: string
           file_size?: number | null
+          health_dimension?: string | null
           id?: string
           notes?: string | null
           patient_id?: string
