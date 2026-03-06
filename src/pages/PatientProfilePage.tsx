@@ -2666,18 +2666,24 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   } : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FlaskConical className="h-5 w-5 text-primary" />
           Health Data
         </h2>
-        <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+        {healthDataTab === "lab_results" && (
+          <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
+        )}
       </div>
 
-      {/* Health Data Uploads - moved to top */}
-      <HealthFileUploads patientId={patientId} />
-
+      <HealthFileUploads
+        patientId={patientId}
+        activeTab={healthDataTab}
+        onTabChange={setHealthDataTab}
+        labResultsCount={sorted.length}
+      >
+      {/* Lab results content - rendered as children when lab_results tab is active */}
       <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "60vh" }}>
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
