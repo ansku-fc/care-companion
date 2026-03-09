@@ -539,10 +539,65 @@ export type Database = {
           },
         ]
       }
+      patient_medication_renewals: {
+        Row: {
+          created_at: string
+          days_supply: number | null
+          id: string
+          medication_id: string
+          notes: string | null
+          patient_id: string
+          quantity_prescribed: number | null
+          refills_granted: number | null
+          renewal_date: string
+          renewed_by: string
+        }
+        Insert: {
+          created_at?: string
+          days_supply?: number | null
+          id?: string
+          medication_id: string
+          notes?: string | null
+          patient_id: string
+          quantity_prescribed?: number | null
+          refills_granted?: number | null
+          renewal_date?: string
+          renewed_by: string
+        }
+        Update: {
+          created_at?: string
+          days_supply?: number | null
+          id?: string
+          medication_id?: string
+          notes?: string | null
+          patient_id?: string
+          quantity_prescribed?: number | null
+          refills_granted?: number | null
+          renewal_date?: string
+          renewed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_medication_renewals_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "patient_medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_medication_renewals_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_medications: {
         Row: {
           created_at: string
           created_by: string
+          days_supply: number | null
           dose: string | null
           end_date: string | null
           frequency: string | null
@@ -550,6 +605,12 @@ export type Database = {
           indication: string | null
           medication_name: string
           patient_id: string
+          prescription_end_date: string | null
+          prescription_start_date: string | null
+          quantity_prescribed: number | null
+          quantity_remaining: number | null
+          refills_remaining: number | null
+          refills_total: number | null
           start_date: string | null
           status: string
           updated_at: string
@@ -557,6 +618,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          days_supply?: number | null
           dose?: string | null
           end_date?: string | null
           frequency?: string | null
@@ -564,6 +626,12 @@ export type Database = {
           indication?: string | null
           medication_name: string
           patient_id: string
+          prescription_end_date?: string | null
+          prescription_start_date?: string | null
+          quantity_prescribed?: number | null
+          quantity_remaining?: number | null
+          refills_remaining?: number | null
+          refills_total?: number | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -571,6 +639,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          days_supply?: number | null
           dose?: string | null
           end_date?: string | null
           frequency?: string | null
@@ -578,6 +647,12 @@ export type Database = {
           indication?: string | null
           medication_name?: string
           patient_id?: string
+          prescription_end_date?: string | null
+          prescription_start_date?: string | null
+          quantity_prescribed?: number | null
+          quantity_remaining?: number | null
+          refills_remaining?: number | null
+          refills_total?: number | null
           start_date?: string | null
           status?: string
           updated_at?: string
