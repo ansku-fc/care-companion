@@ -723,7 +723,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [careTeam, setCareTeam] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
   const [considerations, setConsiderations] = useState<any[]>([]);
-  const [renewals, setRenewals] = useState<any[]>([]);
+  const [medLogs, setMedLogs] = useState<any[]>([]);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "", priority: "", status: "", due_date: "" });
   const [newAllergy, setNewAllergy] = useState({ allergen: "", reaction: "", severity: "moderate" });
@@ -732,11 +732,9 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
   const [showAllMedications, setShowAllMedications] = useState(false);
   const [showMedForm, setShowMedForm] = useState(false);
-  const [newMed, setNewMed] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", quantity_prescribed: "", days_supply: "", refills_total: "" });
+  const [newMed, setNewMed] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
   const [editingMedId, setEditingMedId] = useState<string | null>(null);
-  const [editMedForm, setEditMedForm] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", end_date: "", status: "active", quantity_prescribed: "", quantity_remaining: "", days_supply: "", refills_total: "", refills_remaining: "", prescription_start_date: "", prescription_end_date: "" });
-  const [showRenewalForm, setShowRenewalForm] = useState(false);
-  const [newRenewal, setNewRenewal] = useState({ renewal_date: "", quantity_prescribed: "", days_supply: "", refills_granted: "", notes: "" });
+  const [editMedForm, setEditMedForm] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", end_date: "", status: "active" });
   const { user } = useAuth();
 
   const handleAddMedication = async () => {
@@ -748,16 +746,10 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
       frequency: newMed.frequency.trim() || null,
       indication: newMed.indication.trim() || null,
       start_date: newMed.start_date || null,
-      quantity_prescribed: newMed.quantity_prescribed ? parseInt(newMed.quantity_prescribed) : null,
-      quantity_remaining: newMed.quantity_prescribed ? parseInt(newMed.quantity_prescribed) : null,
-      days_supply: newMed.days_supply ? parseInt(newMed.days_supply) : null,
-      refills_total: newMed.refills_total ? parseInt(newMed.refills_total) : 0,
-      refills_remaining: newMed.refills_total ? parseInt(newMed.refills_total) : 0,
-      prescription_start_date: newMed.start_date || null,
-    } as any);
+    });
     if (error) { toast.error("Failed to add medication"); return; }
     toast.success("Medication added");
-    setNewMed({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", quantity_prescribed: "", days_supply: "", refills_total: "" });
+    setNewMed({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
     setShowMedForm(false);
     fetchOverviewData();
   };
@@ -772,19 +764,16 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
       start_date: m.start_date || "",
       end_date: m.end_date || "",
       status: m.status || "active",
-      quantity_prescribed: m.quantity_prescribed?.toString() || "",
-      quantity_remaining: m.quantity_remaining?.toString() || "",
-      days_supply: m.days_supply?.toString() || "",
-      refills_total: m.refills_total?.toString() || "0",
-      refills_remaining: m.refills_remaining?.toString() || "0",
-      prescription_start_date: m.prescription_start_date || "",
-      prescription_end_date: m.prescription_end_date || "",
     });
-    setShowRenewalForm(false);
   };
 
   const handleSaveMed = async () => {
-    if (!editingMedId) return;
+    if (!editingMedId || !user) return;
+    // Find original medication for change log
+    const original = allMedications.find(m => m.id === editingMedId);
+    const doseChanged = original && (original.dose || "") !== editMedForm.dose.trim();
+    const freqChanged = original && (original.frequency || "") !== editMedForm.frequency.trim();
+
     const { error } = await supabase.from("patient_medications").update({
       medication_name: editMedForm.medication_name.trim(),
       dose: editMedForm.dose.trim() || null,
@@ -793,61 +782,37 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
       start_date: editMedForm.start_date || null,
       end_date: editMedForm.end_date || null,
       status: editMedForm.status,
-      quantity_prescribed: editMedForm.quantity_prescribed ? parseInt(editMedForm.quantity_prescribed) : null,
-      quantity_remaining: editMedForm.quantity_remaining ? parseInt(editMedForm.quantity_remaining) : null,
-      days_supply: editMedForm.days_supply ? parseInt(editMedForm.days_supply) : null,
-      refills_total: editMedForm.refills_total ? parseInt(editMedForm.refills_total) : 0,
-      refills_remaining: editMedForm.refills_remaining ? parseInt(editMedForm.refills_remaining) : 0,
-      prescription_start_date: editMedForm.prescription_start_date || null,
-      prescription_end_date: editMedForm.prescription_end_date || null,
-    } as any).eq("id", editingMedId);
+    }).eq("id", editingMedId);
     if (error) { toast.error("Failed to update medication"); return; }
+
+    // Auto-log dose/frequency changes
+    if (doseChanged || freqChanged) {
+      await supabase.from("patient_medication_logs" as any).insert({
+        medication_id: editingMedId,
+        patient_id: patient.id,
+        changed_by: user.id,
+        change_type: doseChanged ? "dose_adjustment" : "frequency_change",
+        previous_dose: original?.dose || null,
+        new_dose: editMedForm.dose.trim() || null,
+        previous_frequency: original?.frequency || null,
+        new_frequency: editMedForm.frequency.trim() || null,
+      } as any);
+    }
+
     toast.success("Medication updated");
     setEditingMedId(null);
     fetchOverviewData();
   };
 
-  const handleAddRenewal = async () => {
-    if (!user || !editingMedId) return;
-    const med = allMedications.find(m => m.id === editingMedId);
-    if (!med) return;
-    const { error } = await supabase.from("patient_medication_renewals" as any).insert({
-      medication_id: editingMedId,
-      patient_id: patient.id,
-      renewed_by: user.id,
-      renewal_date: newRenewal.renewal_date || new Date().toISOString().split("T")[0],
-      quantity_prescribed: newRenewal.quantity_prescribed ? parseInt(newRenewal.quantity_prescribed) : null,
-      days_supply: newRenewal.days_supply ? parseInt(newRenewal.days_supply) : null,
-      refills_granted: newRenewal.refills_granted ? parseInt(newRenewal.refills_granted) : 0,
-      notes: newRenewal.notes.trim() || null,
-    } as any);
-    if (error) { toast.error("Failed to add renewal"); return; }
-    // Update medication with new prescription info
-    const qtyPrescribed = newRenewal.quantity_prescribed ? parseInt(newRenewal.quantity_prescribed) : med.quantity_prescribed;
-    const refillsGranted = newRenewal.refills_granted ? parseInt(newRenewal.refills_granted) : 0;
-    await supabase.from("patient_medications").update({
-      quantity_prescribed: qtyPrescribed,
-      quantity_remaining: qtyPrescribed,
-      days_supply: newRenewal.days_supply ? parseInt(newRenewal.days_supply) : med.days_supply,
-      refills_total: (med.refills_total || 0) + refillsGranted,
-      refills_remaining: (med.refills_remaining || 0) + refillsGranted,
-      prescription_start_date: newRenewal.renewal_date || new Date().toISOString().split("T")[0],
-    } as any).eq("id", editingMedId);
-    toast.success("Prescription renewed");
-    setNewRenewal({ renewal_date: "", quantity_prescribed: "", days_supply: "", refills_granted: "", notes: "" });
-    setShowRenewalForm(false);
-    fetchOverviewData();
-  };
-
   const fetchOverviewData = async () => {
-    const [diagRes, medRes, allMedRes, teamRes, allergyRes, considRes, renewalRes] = await Promise.all([
+    const [diagRes, medRes, allMedRes, teamRes, allergyRes, considRes, logsRes] = await Promise.all([
       supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
       supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
       supabase.from("patient_medications").select("*").eq("patient_id", patient.id).order("status").order("medication_name"),
       supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
       supabase.from("patient_allergies" as any).select("*").eq("patient_id", patient.id).eq("status", "active").order("allergen"),
       supabase.from("patient_clinical_considerations" as any).select("*").eq("patient_id", patient.id).eq("is_active", true).order("created_at", { ascending: false }),
-      supabase.from("patient_medication_renewals" as any).select("*").eq("patient_id", patient.id).order("renewal_date", { ascending: false }),
+      supabase.from("patient_medication_logs" as any).select("*").eq("patient_id", patient.id).order("change_date", { ascending: false }),
     ]);
     setDiagnoses(diagRes.data || []);
     setMedications(medRes.data || []);
@@ -855,7 +820,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
     setCareTeam(teamRes.data || []);
     setAllergies(allergyRes.data || []);
     setConsiderations(considRes.data || []);
-    setRenewals(renewalRes.data || []);
+    setMedLogs(logsRes.data || []);
   };
 
   useEffect(() => {
@@ -1045,11 +1010,6 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                 </div>
                 <Input placeholder="Indication (e.g. Hypertension)" value={newMed.indication} onChange={e => setNewMed(p => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
                 <Input type="date" value={newMed.start_date} onChange={e => setNewMed(p => ({ ...p, start_date: e.target.value }))} className="h-8 text-sm" />
-                <div className="grid grid-cols-3 gap-2">
-                  <Input placeholder="Qty prescribed" type="number" value={newMed.quantity_prescribed} onChange={e => setNewMed(p => ({ ...p, quantity_prescribed: e.target.value }))} className="h-8 text-sm" />
-                  <Input placeholder="Days supply" type="number" value={newMed.days_supply} onChange={e => setNewMed(p => ({ ...p, days_supply: e.target.value }))} className="h-8 text-sm" />
-                  <Input placeholder="Refills" type="number" value={newMed.refills_total} onChange={e => setNewMed(p => ({ ...p, refills_total: e.target.value }))} className="h-8 text-sm" />
-                </div>
                 <div className="flex gap-2">
                   <Button size="sm" className="h-7 text-xs" disabled={!newMed.medication_name.trim()} onClick={handleAddMedication}>Add</Button>
                   <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowMedForm(false)}>Cancel</Button>
@@ -1060,47 +1020,21 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
               <p className="text-sm text-muted-foreground italic">No active medications recorded.</p>
             ) : (
               <div className="space-y-2">
-                {medications.map((m) => {
-                  const hasPrescription = m.quantity_prescribed && m.quantity_prescribed > 0;
-                  const remainingPct = hasPrescription ? Math.round((m.quantity_remaining / m.quantity_prescribed) * 100) : null;
-                  const isLow = remainingPct !== null && remainingPct <= 20;
-                  return (
-                    <div key={m.id} className="p-2 rounded-md bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => startEditMed(m)}>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium">{m.medication_name}</p>
-                        <div className="flex items-center gap-2">
-                          {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
-                          <Pencil className="h-3 w-3 text-muted-foreground" />
-                        </div>
+                {medications.map((m) => (
+                  <div key={m.id} className="p-2 rounded-md bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => startEditMed(m)}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{m.medication_name}</p>
+                      <div className="flex items-center gap-2">
+                        {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
                       </div>
-                      <div className="flex gap-2 mt-0.5">
-                        {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
-                        {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
-                      </div>
-                      {hasPrescription && (
-                        <div className="mt-1.5 space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className={isLow ? "text-destructive font-medium" : "text-muted-foreground"}>
-                              {m.quantity_remaining}/{m.quantity_prescribed} remaining
-                            </span>
-                            {m.refills_remaining > 0 && (
-                              <span className="text-muted-foreground">{m.refills_remaining} refill{m.refills_remaining !== 1 ? "s" : ""} left</span>
-                            )}
-                            {m.refills_remaining === 0 && m.refills_total > 0 && (
-                              <span className="text-destructive text-xs font-medium">No refills left</span>
-                            )}
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all ${isLow ? "bg-destructive" : "bg-primary"}`}
-                              style={{ width: `${Math.max(remainingPct || 0, 2)}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
+                    <div className="flex gap-2 mt-0.5">
+                      {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
+                      {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -1474,32 +1408,6 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                 <Input type="date" value={editMedForm.end_date} onChange={e => setEditMedForm(p => ({ ...p, end_date: e.target.value }))} className="h-8 text-sm" />
               </div>
             </div>
-            <Separator />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Prescription</p>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Qty prescribed</Label>
-                <Input type="number" value={editMedForm.quantity_prescribed} onChange={e => setEditMedForm(p => ({ ...p, quantity_prescribed: e.target.value }))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Qty remaining</Label>
-                <Input type="number" value={editMedForm.quantity_remaining} onChange={e => setEditMedForm(p => ({ ...p, quantity_remaining: e.target.value }))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Days supply</Label>
-                <Input type="number" value={editMedForm.days_supply} onChange={e => setEditMedForm(p => ({ ...p, days_supply: e.target.value }))} className="h-8 text-sm" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Refills total</Label>
-                <Input type="number" value={editMedForm.refills_total} onChange={e => setEditMedForm(p => ({ ...p, refills_total: e.target.value }))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Refills remaining</Label>
-                <Input type="number" value={editMedForm.refills_remaining} onChange={e => setEditMedForm(p => ({ ...p, refills_remaining: e.target.value }))} className="h-8 text-sm" />
-              </div>
-            </div>
             <Select value={editMedForm.status} onValueChange={v => setEditMedForm(p => ({ ...p, status: v }))}>
               <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -1510,59 +1418,34 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
             </Select>
             <div className="flex gap-2">
               <Button size="sm" className="h-7 text-xs" disabled={!editMedForm.medication_name.trim()} onClick={handleSaveMed}>Save</Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowRenewalForm(v => !v)}>
-                {showRenewalForm ? "Cancel Renewal" : "Renew Prescription"}
-              </Button>
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingMedId(null)}>Cancel</Button>
             </div>
 
-            {/* Renewal form */}
-            {showRenewalForm && (
-              <div className="mt-2 p-2 border rounded-md bg-background space-y-2">
-                <p className="text-xs font-medium text-primary uppercase tracking-wide">New Prescription Renewal</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Renewal date</Label>
-                    <Input type="date" value={newRenewal.renewal_date} onChange={e => setNewRenewal(p => ({ ...p, renewal_date: e.target.value }))} className="h-8 text-sm" />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Qty prescribed</Label>
-                    <Input type="number" value={newRenewal.quantity_prescribed} onChange={e => setNewRenewal(p => ({ ...p, quantity_prescribed: e.target.value }))} className="h-8 text-sm" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Days supply</Label>
-                    <Input type="number" value={newRenewal.days_supply} onChange={e => setNewRenewal(p => ({ ...p, days_supply: e.target.value }))} className="h-8 text-sm" />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Refills granted</Label>
-                    <Input type="number" value={newRenewal.refills_granted} onChange={e => setNewRenewal(p => ({ ...p, refills_granted: e.target.value }))} className="h-8 text-sm" />
-                  </div>
-                </div>
-                <Input placeholder="Notes (optional)" value={newRenewal.notes} onChange={e => setNewRenewal(p => ({ ...p, notes: e.target.value }))} className="h-8 text-sm" />
-                <Button size="sm" className="h-7 text-xs" onClick={handleAddRenewal}>Submit Renewal</Button>
-              </div>
-            )}
-
-            {/* Renewal history for this medication */}
+            {/* Change log for this medication */}
             {(() => {
-              const medRenewals = renewals.filter((r: any) => r.medication_id === editingMedId);
-              if (medRenewals.length === 0) return null;
+              const logs = medLogs.filter((l: any) => l.medication_id === editingMedId);
+              if (logs.length === 0) return null;
               return (
                 <div className="mt-2 space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Renewal History</p>
-                  {medRenewals.map((r: any) => (
-                    <div key={r.id} className="p-2 rounded-md border bg-background text-xs space-y-0.5">
+                  <Separator />
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Change Log</p>
+                  {logs.map((l: any) => (
+                    <div key={l.id} className="p-2 rounded-md border bg-background text-xs space-y-0.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{new Date(r.renewal_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                        {r.refills_granted > 0 && <Badge variant="outline" className="text-[10px]">+{r.refills_granted} refills</Badge>}
+                        <span className="font-medium">{new Date(l.change_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                        <Badge variant="outline" className="text-[10px] capitalize">{l.change_type.replace("_", " ")}</Badge>
                       </div>
-                      <div className="flex gap-3 text-muted-foreground">
-                        {r.quantity_prescribed && <span>Qty: {r.quantity_prescribed}</span>}
-                        {r.days_supply && <span>{r.days_supply} days</span>}
-                      </div>
-                      {r.notes && <p className="text-muted-foreground italic">{r.notes}</p>}
+                      {(l.previous_dose || l.new_dose) && (
+                        <p className="text-muted-foreground">
+                          Dose: <span className="line-through">{l.previous_dose || "—"}</span> → <span className="font-medium text-foreground">{l.new_dose || "—"}</span>
+                        </p>
+                      )}
+                      {(l.previous_frequency || l.new_frequency) && (
+                        <p className="text-muted-foreground">
+                          Freq: <span className="line-through">{l.previous_frequency || "—"}</span> → <span className="font-medium text-foreground">{l.new_frequency || "—"}</span>
+                        </p>
+                      )}
+                      {l.notes && <p className="text-muted-foreground italic">{l.notes}</p>}
                     </div>
                   ))}
                 </div>
@@ -1574,50 +1457,24 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
         {allMedications.filter(m => m.status === "active").length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</p>
-            {allMedications.filter(m => m.status === "active").map((m) => {
-              const hasPrescription = m.quantity_prescribed && m.quantity_prescribed > 0;
-              const remainingPct = hasPrescription ? Math.round((m.quantity_remaining / m.quantity_prescribed) * 100) : null;
-              const isLow = remainingPct !== null && remainingPct <= 20;
-              return (
-                <div key={m.id} className={`p-3 rounded-md bg-muted/40 space-y-1 cursor-pointer hover:bg-muted/60 transition-colors ${editingMedId === m.id ? "ring-2 ring-primary" : ""}`} onClick={() => startEditMed(m)}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{m.medication_name}</p>
-                    <div className="flex items-center gap-2">
-                      {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
-                      <Pencil className="h-3 w-3 text-muted-foreground" />
-                    </div>
+            {allMedications.filter(m => m.status === "active").map((m) => (
+              <div key={m.id} className={`p-3 rounded-md bg-muted/40 space-y-1 cursor-pointer hover:bg-muted/60 transition-colors ${editingMedId === m.id ? "ring-2 ring-primary" : ""}`} onClick={() => startEditMed(m)}>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{m.medication_name}</p>
+                  <div className="flex items-center gap-2">
+                    {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
-                    {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
-                  </div>
-                  {m.start_date && (
-                    <p className="text-xs text-muted-foreground">Started: {new Date(m.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
-                  )}
-                  {hasPrescription && (
-                    <div className="mt-1 space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className={isLow ? "text-destructive font-medium" : "text-muted-foreground"}>
-                          {m.quantity_remaining}/{m.quantity_prescribed} remaining
-                        </span>
-                        {m.refills_remaining > 0 && (
-                          <span className="text-muted-foreground">{m.refills_remaining} refill{m.refills_remaining !== 1 ? "s" : ""}</span>
-                        )}
-                        {m.refills_remaining === 0 && m.refills_total > 0 && (
-                          <span className="text-destructive font-medium">No refills</span>
-                        )}
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${isLow ? "bg-destructive" : "bg-primary"}`}
-                          style={{ width: `${Math.max(remainingPct || 0, 2)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
-              );
-            })}
+                <div className="flex flex-wrap gap-2">
+                  {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
+                  {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                </div>
+                {m.start_date && (
+                  <p className="text-xs text-muted-foreground">Started: {new Date(m.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
+                )}
+              </div>
+            ))}
           </div>
         )}
 

@@ -539,53 +539,59 @@ export type Database = {
           },
         ]
       }
-      patient_medication_renewals: {
+      patient_medication_logs: {
         Row: {
+          change_date: string
+          change_type: string
+          changed_by: string
           created_at: string
-          days_supply: number | null
           id: string
           medication_id: string
+          new_dose: string | null
+          new_frequency: string | null
           notes: string | null
           patient_id: string
-          quantity_prescribed: number | null
-          refills_granted: number | null
-          renewal_date: string
-          renewed_by: string
+          previous_dose: string | null
+          previous_frequency: string | null
         }
         Insert: {
+          change_date?: string
+          change_type?: string
+          changed_by: string
           created_at?: string
-          days_supply?: number | null
           id?: string
           medication_id: string
+          new_dose?: string | null
+          new_frequency?: string | null
           notes?: string | null
           patient_id: string
-          quantity_prescribed?: number | null
-          refills_granted?: number | null
-          renewal_date?: string
-          renewed_by: string
+          previous_dose?: string | null
+          previous_frequency?: string | null
         }
         Update: {
+          change_date?: string
+          change_type?: string
+          changed_by?: string
           created_at?: string
-          days_supply?: number | null
           id?: string
           medication_id?: string
+          new_dose?: string | null
+          new_frequency?: string | null
           notes?: string | null
           patient_id?: string
-          quantity_prescribed?: number | null
-          refills_granted?: number | null
-          renewal_date?: string
-          renewed_by?: string
+          previous_dose?: string | null
+          previous_frequency?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "patient_medication_renewals_medication_id_fkey"
+            foreignKeyName: "patient_medication_logs_medication_id_fkey"
             columns: ["medication_id"]
             isOneToOne: false
             referencedRelation: "patient_medications"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "patient_medication_renewals_patient_id_fkey"
+            foreignKeyName: "patient_medication_logs_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
@@ -597,7 +603,6 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
-          days_supply: number | null
           dose: string | null
           end_date: string | null
           frequency: string | null
@@ -605,12 +610,6 @@ export type Database = {
           indication: string | null
           medication_name: string
           patient_id: string
-          prescription_end_date: string | null
-          prescription_start_date: string | null
-          quantity_prescribed: number | null
-          quantity_remaining: number | null
-          refills_remaining: number | null
-          refills_total: number | null
           start_date: string | null
           status: string
           updated_at: string
@@ -618,7 +617,6 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
-          days_supply?: number | null
           dose?: string | null
           end_date?: string | null
           frequency?: string | null
@@ -626,12 +624,6 @@ export type Database = {
           indication?: string | null
           medication_name: string
           patient_id: string
-          prescription_end_date?: string | null
-          prescription_start_date?: string | null
-          quantity_prescribed?: number | null
-          quantity_remaining?: number | null
-          refills_remaining?: number | null
-          refills_total?: number | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -639,7 +631,6 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
-          days_supply?: number | null
           dose?: string | null
           end_date?: string | null
           frequency?: string | null
@@ -647,12 +638,6 @@ export type Database = {
           indication?: string | null
           medication_name?: string
           patient_id?: string
-          prescription_end_date?: string | null
-          prescription_start_date?: string | null
-          quantity_prescribed?: number | null
-          quantity_remaining?: number | null
-          refills_remaining?: number | null
-          refills_total?: number | null
           start_date?: string | null
           status?: string
           updated_at?: string
