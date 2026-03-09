@@ -723,6 +723,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [careTeam, setCareTeam] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
   const [considerations, setConsiderations] = useState<any[]>([]);
+  const [renewals, setRenewals] = useState<any[]>([]);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "", priority: "", status: "", due_date: "" });
   const [newAllergy, setNewAllergy] = useState({ allergen: "", reaction: "", severity: "moderate" });
@@ -731,9 +732,11 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
   const [showAllMedications, setShowAllMedications] = useState(false);
   const [showMedForm, setShowMedForm] = useState(false);
-  const [newMed, setNewMed] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
+  const [newMed, setNewMed] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", quantity_prescribed: "", days_supply: "", refills_total: "" });
   const [editingMedId, setEditingMedId] = useState<string | null>(null);
-  const [editMedForm, setEditMedForm] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", end_date: "", status: "active" });
+  const [editMedForm, setEditMedForm] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", end_date: "", status: "active", quantity_prescribed: "", quantity_remaining: "", days_supply: "", refills_total: "", refills_remaining: "", prescription_start_date: "", prescription_end_date: "" });
+  const [showRenewalForm, setShowRenewalForm] = useState(false);
+  const [newRenewal, setNewRenewal] = useState({ renewal_date: "", quantity_prescribed: "", days_supply: "", refills_granted: "", notes: "" });
   const { user } = useAuth();
 
   const handleAddMedication = async () => {
