@@ -1355,19 +1355,62 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
             <Pill className="h-5 w-5 text-primary" />
             All Medications
           </h3>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAllMedications(false)}>
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowMedForm(true); setShowAllMedications(true); }}>
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAllMedications(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Edit medication dialog */}
+        {editingMedId && (
+          <div className="p-3 border rounded-md bg-muted/30 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Edit Medication</p>
+            <Input placeholder="Medication name *" value={editMedForm.medication_name} onChange={e => setEditMedForm(p => ({ ...p, medication_name: e.target.value }))} className="h-8 text-sm" />
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="Dose" value={editMedForm.dose} onChange={e => setEditMedForm(p => ({ ...p, dose: e.target.value }))} className="h-8 text-sm" />
+              <Input placeholder="Frequency" value={editMedForm.frequency} onChange={e => setEditMedForm(p => ({ ...p, frequency: e.target.value }))} className="h-8 text-sm" />
+            </div>
+            <Input placeholder="Indication" value={editMedForm.indication} onChange={e => setEditMedForm(p => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Start date</Label>
+                <Input type="date" value={editMedForm.start_date} onChange={e => setEditMedForm(p => ({ ...p, start_date: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">End date</Label>
+                <Input type="date" value={editMedForm.end_date} onChange={e => setEditMedForm(p => ({ ...p, end_date: e.target.value }))} className="h-8 text-sm" />
+              </div>
+            </div>
+            <Select value={editMedForm.status} onValueChange={v => setEditMedForm(p => ({ ...p, status: v }))}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="discontinued">Discontinued</SelectItem>
+                <SelectItem value="on_hold">On Hold</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button size="sm" className="h-7 text-xs" disabled={!editMedForm.medication_name.trim()} onClick={handleSaveMed}>Save</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingMedId(null)}>Cancel</Button>
+            </div>
+          </div>
+        )}
 
         {allMedications.filter(m => m.status === "active").length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</p>
             {allMedications.filter(m => m.status === "active").map((m) => (
-              <div key={m.id} className="p-3 rounded-md bg-muted/40 space-y-1">
+              <div key={m.id} className={`p-3 rounded-md bg-muted/40 space-y-1 cursor-pointer hover:bg-muted/60 transition-colors ${editingMedId === m.id ? "ring-2 ring-primary" : ""}`} onClick={() => startEditMed(m)}>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">{m.medication_name}</p>
-                  {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                  <div className="flex items-center gap-2">
+                    {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
@@ -1385,10 +1428,13 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Inactive / Discontinued</p>
             {allMedications.filter(m => m.status !== "active").map((m) => (
-              <div key={m.id} className="p-3 rounded-md bg-muted/20 opacity-60 space-y-1">
+              <div key={m.id} className="p-3 rounded-md bg-muted/20 opacity-60 space-y-1 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => startEditMed(m)}>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">{m.medication_name}</p>
-                  <Badge variant="outline" className="text-xs capitalize">{m.status}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs capitalize">{m.status}</Badge>
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
