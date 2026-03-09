@@ -29,7 +29,15 @@ const todaySchedule = [
   { time: "15:30", patient: "Lisa Chen", type: "Consultation", typeColor: "bg-primary" },
 ];
 
+const recentNotes = [
+  { id: "1", title: "Meeting notes - Dr. Patel", preview: "Discussed patient referral workflow and new onboarding procedures..." },
+  { id: "2", title: "Research: New treatment protocols", preview: "Review latest guidelines for Tier 2 patients regarding..." },
+  { id: "3", title: "Weekly review checklist", preview: "1. Review lab results 2. Update patient records 3. Follow-up calls..." },
+];
+
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       <div>
