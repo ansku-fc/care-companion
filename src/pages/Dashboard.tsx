@@ -1,6 +1,8 @@
-import { CalendarDays, ListTodo, Users, Clock } from "lucide-react";
+import { CalendarDays, ListTodo, Users, Clock, StickyNote, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const overviewCards = [
   { title: "Today's Appointments", value: "5", icon: CalendarDays, color: "text-primary" },
@@ -27,7 +29,15 @@ const todaySchedule = [
   { time: "15:30", patient: "Lisa Chen", type: "Consultation", typeColor: "bg-primary" },
 ];
 
+const recentNotes = [
+  { id: "1", title: "Meeting notes - Dr. Patel", preview: "Discussed patient referral workflow and new onboarding procedures..." },
+  { id: "2", title: "Research: New treatment protocols", preview: "Review latest guidelines for Tier 2 patients regarding..." },
+  { id: "3", title: "Weekly review checklist", preview: "1. Review lab results 2. Update patient records 3. Follow-up calls..." },
+];
+
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       <div>
@@ -96,6 +106,35 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Doctor Notes */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-primary" />
+              Doctor Notes
+            </CardTitle>
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/notes")}>
+              Open Notes <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-3">
+            {recentNotes.map((note) => (
+              <div
+                key={note.id}
+                className="rounded-lg border p-3 cursor-pointer hover:border-primary transition-colors"
+                onClick={() => navigate("/notes")}
+              >
+                <p className="text-sm font-medium truncate">{note.title}</p>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{note.preview}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
