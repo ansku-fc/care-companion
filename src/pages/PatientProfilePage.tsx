@@ -730,7 +730,58 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [newConsideration, setNewConsideration] = useState({ title: "", description: "", category: "other" });
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
   const [showAllMedications, setShowAllMedications] = useState(false);
+  const [showMedForm, setShowMedForm] = useState(false);
+  const [newMed, setNewMed] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
+  const [editingMedId, setEditingMedId] = useState<string | null>(null);
+  const [editMedForm, setEditMedForm] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", end_date: "", status: "active" });
   const { user } = useAuth();
+
+  const handleAddMedication = async () => {
+    if (!user || !newMed.medication_name.trim()) return;
+    const { error } = await supabase.from("patient_medications").insert({
+      patient_id: patient.id, created_by: user.id,
+      medication_name: newMed.medication_name.trim(),
+      dose: newMed.dose.trim() || null,
+      frequency: newMed.frequency.trim() || null,
+      indication: newMed.indication.trim() || null,
+      start_date: newMed.start_date || null,
+    });
+    if (error) { toast.error("Failed to add medication"); return; }
+    toast.success("Medication added");
+    setNewMed({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
+    setShowMedForm(false);
+    fetchOverviewData();
+  };
+
+  const startEditMed = (m: any) => {
+    setEditingMedId(m.id);
+    setEditMedForm({
+      medication_name: m.medication_name || "",
+      dose: m.dose || "",
+      frequency: m.frequency || "",
+      indication: m.indication || "",
+      start_date: m.start_date || "",
+      end_date: m.end_date || "",
+      status: m.status || "active",
+    });
+  };
+
+  const handleSaveMed = async () => {
+    if (!editingMedId) return;
+    const { error } = await supabase.from("patient_medications").update({
+      medication_name: editMedForm.medication_name.trim(),
+      dose: editMedForm.dose.trim() || null,
+      frequency: editMedForm.frequency.trim() || null,
+      indication: editMedForm.indication.trim() || null,
+      start_date: editMedForm.start_date || null,
+      end_date: editMedForm.end_date || null,
+      status: editMedForm.status,
+    }).eq("id", editingMedId);
+    if (error) { toast.error("Failed to update medication"); return; }
+    toast.success("Medication updated");
+    setEditingMedId(null);
+    fetchOverviewData();
+  };
 
   const fetchOverviewData = async () => {
     const [diagRes, medRes, allMedRes, teamRes, allergyRes, considRes] = await Promise.all([
