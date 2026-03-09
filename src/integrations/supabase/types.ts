@@ -165,6 +165,53 @@ export type Database = {
           },
         ]
       }
+      patient_allergies: {
+        Row: {
+          allergen: string
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          patient_id: string
+          reaction: string | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allergen: string
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          reaction?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allergen?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          reaction?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_allergies_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_care_team: {
         Row: {
           created_at: string
@@ -211,6 +258,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "patient_care_team_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_clinical_considerations: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          patient_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          patient_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          patient_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_clinical_considerations_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
