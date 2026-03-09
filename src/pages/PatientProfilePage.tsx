@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil,
+  AlertTriangle, ClipboardList, Plus
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
