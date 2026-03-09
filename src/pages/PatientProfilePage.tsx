@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil,
+  AlertTriangle, ClipboardList, Plus
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,6 +27,7 @@ import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
+import { useAuth } from "@/hooks/useAuth";
 
 const HEALTH_DIMENSIONS = [
   { key: "senses", label: "Senses", icon: Eye },
@@ -718,20 +720,32 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [careTeam, setCareTeam] = useState<any[]>([]);
+  const [allergies, setAllergies] = useState<any[]>([]);
+  const [considerations, setConsiderations] = useState<any[]>([]);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "", priority: "", status: "", due_date: "" });
+  const [newAllergy, setNewAllergy] = useState({ allergen: "", reaction: "", severity: "moderate" });
+  const [showAllergyForm, setShowAllergyForm] = useState(false);
+  const [newConsideration, setNewConsideration] = useState({ title: "", description: "", category: "other" });
+  const [showConsiderationForm, setShowConsiderationForm] = useState(false);
+  const { user } = useAuth();
+
+  const fetchOverviewData = async () => {
+    const [diagRes, medRes, teamRes, allergyRes, considRes] = await Promise.all([
+      supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
+      supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
+      supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
+      supabase.from("patient_allergies" as any).select("*").eq("patient_id", patient.id).eq("status", "active").order("allergen"),
+      supabase.from("patient_clinical_considerations" as any).select("*").eq("patient_id", patient.id).eq("is_active", true).order("created_at", { ascending: false }),
+    ]);
+    setDiagnoses(diagRes.data || []);
+    setMedications(medRes.data || []);
+    setCareTeam(teamRes.data || []);
+    setAllergies(allergyRes.data || []);
+    setConsiderations(considRes.data || []);
+  };
 
   useEffect(() => {
-    const fetchOverviewData = async () => {
-      const [diagRes, medRes, teamRes] = await Promise.all([
-        supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
-        supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
-        supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
-      ]);
-      setDiagnoses(diagRes.data || []);
-      setMedications(medRes.data || []);
-      setCareTeam(teamRes.data || []);
-    };
     fetchOverviewData();
   }, [patient.id]);
 
@@ -921,7 +935,137 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           </CardContent>
         </Card>
 
-        {/* 4. New Lab Results */}
+        {/* 4. Allergies */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Allergies
+              <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto" onClick={() => setShowAllergyForm(v => !v)}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {showAllergyForm && (
+              <div className="space-y-2 mb-3 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Allergen (e.g. Penicillin)" value={newAllergy.allergen} onChange={e => setNewAllergy(p => ({ ...p, allergen: e.target.value }))} className="h-8 text-sm" />
+                <Input placeholder="Reaction (e.g. Anaphylaxis)" value={newAllergy.reaction} onChange={e => setNewAllergy(p => ({ ...p, reaction: e.target.value }))} className="h-8 text-sm" />
+                <Select value={newAllergy.severity} onValueChange={v => setNewAllergy(p => ({ ...p, severity: v }))}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mild">Mild</SelectItem>
+                    <SelectItem value="moderate">Moderate</SelectItem>
+                    <SelectItem value="severe">Severe</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" disabled={!newAllergy.allergen.trim()} onClick={async () => {
+                    if (!user) return;
+                    const { error } = await supabase.from("patient_allergies" as any).insert({ patient_id: patient.id, created_by: user.id, allergen: newAllergy.allergen.trim(), reaction: newAllergy.reaction.trim() || null, severity: newAllergy.severity } as any);
+                    if (error) { toast.error("Failed to add allergy"); return; }
+                    toast.success("Allergy added");
+                    setNewAllergy({ allergen: "", reaction: "", severity: "moderate" });
+                    setShowAllergyForm(false);
+                    fetchOverviewData();
+                  }}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAllergyForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+            {allergies.length === 0 && !showAllergyForm ? (
+              <p className="text-sm text-muted-foreground italic">No allergies recorded.</p>
+            ) : (
+              <div className="space-y-2">
+                {allergies.map((a: any) => (
+                  <div key={a.id} className="flex items-start justify-between p-2 rounded-md bg-muted/40">
+                    <div>
+                      <p className="text-sm font-medium">{a.allergen}</p>
+                      <div className="flex gap-2 mt-0.5">
+                        {a.reaction && <span className="text-xs text-muted-foreground">{a.reaction}</span>}
+                        <Badge variant="outline" className={`text-xs capitalize ${a.severity === "severe" ? "bg-destructive/10 text-destructive border-destructive/30" : a.severity === "moderate" ? "bg-orange-500/10 text-orange-700 border-orange-200" : ""}`}>{a.severity}</Badge>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={async () => {
+                      await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
+                      fetchOverviewData();
+                    }}>
+                      <Trash2 className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 5. Clinical Considerations */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              Clinical Considerations
+              <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto" onClick={() => setShowConsiderationForm(v => !v)}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {showConsiderationForm && (
+              <div className="space-y-2 mb-3 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Title (e.g. Pacemaker)" value={newConsideration.title} onChange={e => setNewConsideration(p => ({ ...p, title: e.target.value }))} className="h-8 text-sm" />
+                <Input placeholder="Description (optional)" value={newConsideration.description} onChange={e => setNewConsideration(p => ({ ...p, description: e.target.value }))} className="h-8 text-sm" />
+                <Select value={newConsideration.category} onValueChange={v => setNewConsideration(p => ({ ...p, category: v }))}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="implant">Implant/Device</SelectItem>
+                    <SelectItem value="pregnancy">Pregnancy</SelectItem>
+                    <SelectItem value="contraindication">Contraindication</SelectItem>
+                    <SelectItem value="precaution">Precaution</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" disabled={!newConsideration.title.trim()} onClick={async () => {
+                    if (!user) return;
+                    const { error } = await supabase.from("patient_clinical_considerations" as any).insert({ patient_id: patient.id, created_by: user.id, title: newConsideration.title.trim(), description: newConsideration.description.trim() || null, category: newConsideration.category } as any);
+                    if (error) { toast.error("Failed to add consideration"); return; }
+                    toast.success("Consideration added");
+                    setNewConsideration({ title: "", description: "", category: "other" });
+                    setShowConsiderationForm(false);
+                    fetchOverviewData();
+                  }}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowConsiderationForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+            {considerations.length === 0 && !showConsiderationForm ? (
+              <p className="text-sm text-muted-foreground italic">No clinical considerations recorded.</p>
+            ) : (
+              <div className="space-y-2">
+                {considerations.map((c: any) => (
+                  <div key={c.id} className="flex items-start justify-between p-2 rounded-md bg-muted/40">
+                    <div>
+                      <p className="text-sm font-medium">{c.title}</p>
+                      <div className="flex gap-2 mt-0.5">
+                        {c.description && <span className="text-xs text-muted-foreground">{c.description}</span>}
+                        <Badge variant="outline" className="text-xs capitalize">{c.category}</Badge>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={async () => {
+                      await supabase.from("patient_clinical_considerations" as any).update({ is_active: false } as any).eq("id", c.id);
+                      fetchOverviewData();
+                    }}>
+                      <Trash2 className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 6. New Lab Results */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
