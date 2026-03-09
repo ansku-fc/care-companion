@@ -1045,6 +1045,11 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                 </div>
                 <Input placeholder="Indication (e.g. Hypertension)" value={newMed.indication} onChange={e => setNewMed(p => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
                 <Input type="date" value={newMed.start_date} onChange={e => setNewMed(p => ({ ...p, start_date: e.target.value }))} className="h-8 text-sm" />
+                <div className="grid grid-cols-3 gap-2">
+                  <Input placeholder="Qty prescribed" type="number" value={newMed.quantity_prescribed} onChange={e => setNewMed(p => ({ ...p, quantity_prescribed: e.target.value }))} className="h-8 text-sm" />
+                  <Input placeholder="Days supply" type="number" value={newMed.days_supply} onChange={e => setNewMed(p => ({ ...p, days_supply: e.target.value }))} className="h-8 text-sm" />
+                  <Input placeholder="Refills" type="number" value={newMed.refills_total} onChange={e => setNewMed(p => ({ ...p, refills_total: e.target.value }))} className="h-8 text-sm" />
+                </div>
                 <div className="flex gap-2">
                   <Button size="sm" className="h-7 text-xs" disabled={!newMed.medication_name.trim()} onClick={handleAddMedication}>Add</Button>
                   <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowMedForm(false)}>Cancel</Button>
@@ -1055,21 +1060,47 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
               <p className="text-sm text-muted-foreground italic">No active medications recorded.</p>
             ) : (
               <div className="space-y-2">
-                {medications.map((m) => (
-                  <div key={m.id} className="p-2 rounded-md bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => startEditMed(m)}>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">{m.medication_name}</p>
-                      <div className="flex items-center gap-2">
-                        {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
-                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                {medications.map((m) => {
+                  const hasPrescription = m.quantity_prescribed && m.quantity_prescribed > 0;
+                  const remainingPct = hasPrescription ? Math.round((m.quantity_remaining / m.quantity_prescribed) * 100) : null;
+                  const isLow = remainingPct !== null && remainingPct <= 20;
+                  return (
+                    <div key={m.id} className="p-2 rounded-md bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => startEditMed(m)}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">{m.medication_name}</p>
+                        <div className="flex items-center gap-2">
+                          {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
+                        </div>
                       </div>
+                      <div className="flex gap-2 mt-0.5">
+                        {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
+                        {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                      </div>
+                      {hasPrescription && (
+                        <div className="mt-1.5 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={isLow ? "text-destructive font-medium" : "text-muted-foreground"}>
+                              {m.quantity_remaining}/{m.quantity_prescribed} remaining
+                            </span>
+                            {m.refills_remaining > 0 && (
+                              <span className="text-muted-foreground">{m.refills_remaining} refill{m.refills_remaining !== 1 ? "s" : ""} left</span>
+                            )}
+                            {m.refills_remaining === 0 && m.refills_total > 0 && (
+                              <span className="text-destructive text-xs font-medium">No refills left</span>
+                            )}
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${isLow ? "bg-destructive" : "bg-primary"}`}
+                              style={{ width: `${Math.max(remainingPct || 0, 2)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2 mt-0.5">
-                      {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
-                      {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
