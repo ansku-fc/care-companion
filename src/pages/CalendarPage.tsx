@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical,
   Stethoscope, Clock, Play, Pencil, X, ChevronLeft, ChevronRight,
-  User, FileText, ExternalLink
+  User, FileText, ExternalLink, StickyNote, Import, Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,26 +30,31 @@ function buildDummyAppointments(month: Date) {
   const y = month.getFullYear();
   const m = month.getMonth();
 
-  const dummies = [
-    { day: 3, hour: 9, title: "Onboarding – Anna Korhonen", patient: "Anna Korhonen", type: "onboarding" as const, modality: "in_person", duration: 60, notes: "New patient intake. Prepare onboarding questionnaire and baseline labs." },
-    { day: 3, hour: 11, title: "Acute – Mikko Laine", patient: "Mikko Laine", type: "acute" as const, modality: "in_person", duration: 30, notes: "Acute chest pain, referred from GP. ECG + troponin ordered." },
-    { day: 5, hour: 8, title: "Follow-up – Sarah Johnson", patient: "Sarah Johnson", type: "follow_up" as const, modality: "remote", duration: 30, notes: "Post-statin review. Check LDL levels from last labs." },
-    { day: 5, hour: 10, title: "Onboarding – Lars Virtanen", patient: "Lars Virtanen", type: "onboarding" as const, modality: "in_person", duration: 90, notes: "Comprehensive onboarding with full lab panel and genetic screening." },
-    { day: 7, hour: 14, title: "Acute – Emma Wilson", patient: "Emma Wilson", type: "acute" as const, modality: "in_person", duration: 30, notes: "Sudden onset vertigo. Neuro screen needed." },
-    { day: 10, hour: 9, title: "Check-up – James Brown", patient: "James Brown", type: "check_up" as const, modality: "in_person", duration: 45, notes: "Annual health check. Review cardiovascular risk factors." },
-    { day: 10, hour: 13, title: "Consultation – Lisa Chen", patient: "Lisa Chen", type: "consultation" as const, modality: "remote", duration: 30, notes: "Discuss hormone panel results and supplementation plan." },
-    { day: 12, hour: 9, title: "Onboarding – Pekka Mäkelä", patient: "Pekka Mäkelä", type: "onboarding" as const, modality: "in_person", duration: 60, notes: "Executive health programme onboarding. Include body composition analysis." },
-    { day: 14, hour: 10, title: "Acute – Mark Davis", patient: "Mark Davis", type: "acute" as const, modality: "in_person", duration: 30, notes: "Acute lower back pain. MRI referral if no improvement." },
-    { day: 14, hour: 14, title: "Follow-up – Anna Korhonen", patient: "Anna Korhonen", type: "follow_up" as const, modality: "remote", duration: 30, notes: "2-week post-onboarding follow-up. Review initial lab results." },
-    { day: 17, hour: 9, title: "Consultation – Sarah Johnson", patient: "Sarah Johnson", type: "consultation" as const, modality: "in_person", duration: 45, notes: "Nutrition and lifestyle optimization session." },
-    { day: 17, hour: 11, title: "Acute – Tiina Heikkinen", patient: "Tiina Heikkinen", type: "acute" as const, modality: "in_person", duration: 30, notes: "Persistent migraine, 3rd episode this month. Consider prophylaxis." },
-    { day: 19, hour: 8, title: "Onboarding – Robert Kim", patient: "Robert Kim", type: "onboarding" as const, modality: "in_person", duration: 90, notes: "Full onboarding. Family history of early CVD – prioritise cardiovascular workup." },
-    { day: 21, hour: 13, title: "Follow-up – Emma Wilson", patient: "Emma Wilson", type: "follow_up" as const, modality: "remote", duration: 30, notes: "Vertigo follow-up. Review ENT specialist report." },
-    { day: 24, hour: 9, title: "Check-up – Mikko Laine", patient: "Mikko Laine", type: "check_up" as const, modality: "in_person", duration: 45, notes: "Quarterly metabolic check. HbA1c + lipid panel." },
-    { day: 24, hour: 14, title: "Acute – Lars Virtanen", patient: "Lars Virtanen", type: "acute" as const, modality: "in_person", duration: 30, notes: "Skin lesion concern – urgent dermoscopy." },
-    { day: 26, hour: 10, title: "Consultation – James Brown", patient: "James Brown", type: "consultation" as const, modality: "remote", duration: 30, notes: "Discuss exercise prescription and cardiac rehab progress." },
-    { day: 28, hour: 9, title: "Onboarding – Maria Santos", patient: "Maria Santos", type: "onboarding" as const, modality: "in_person", duration: 60, notes: "New patient from referral. Extensive GI history – bring previous records." },
-    { day: 28, hour: 14, title: "Acute – Pekka Mäkelä", patient: "Pekka Mäkelä", type: "acute" as const, modality: "in_person", duration: 30, notes: "Elevated liver enzymes on routine labs. Urgent hepatology review." },
+  const dummies: Array<{ day: number; hour: number; title: string; patient: string; type: string; modality: string; duration: number; notes: string; isWorkingTime?: boolean; importedNoteId?: string }> = [
+    { day: 3, hour: 9, title: "Onboarding – Anna Korhonen", patient: "Anna Korhonen", type: "onboarding", modality: "in_person", duration: 60, notes: "New patient intake. Prepare onboarding questionnaire and baseline labs." },
+    { day: 3, hour: 11, title: "Acute – Mikko Laine", patient: "Mikko Laine", type: "acute", modality: "in_person", duration: 30, notes: "Acute chest pain, referred from GP. ECG + troponin ordered." },
+    { day: 4, hour: 9, title: "Working Time – Documentation", patient: "", type: "working_time", modality: "in_person", duration: 120, notes: "Complete patient documentation and update care plans.", isWorkingTime: true },
+    { day: 5, hour: 8, title: "Follow-up – Sarah Johnson", patient: "Sarah Johnson", type: "follow_up", modality: "remote", duration: 30, notes: "Post-statin review. Check LDL levels from last labs." },
+    { day: 5, hour: 10, title: "Onboarding – Lars Virtanen", patient: "Lars Virtanen", type: "onboarding", modality: "in_person", duration: 90, notes: "Comprehensive onboarding with full lab panel and genetic screening." },
+    { day: 7, hour: 14, title: "Acute – Emma Wilson", patient: "Emma Wilson", type: "acute", modality: "in_person", duration: 30, notes: "Sudden onset vertigo. Neuro screen needed." },
+    { day: 8, hour: 13, title: "Working Time – Research", patient: "", type: "working_time", modality: "in_person", duration: 90, notes: "Review latest guidelines for Tier 2 patients.", isWorkingTime: true, importedNoteId: "n2" },
+    { day: 10, hour: 9, title: "Check-up – James Brown", patient: "James Brown", type: "check_up", modality: "in_person", duration: 45, notes: "Annual health check. Review cardiovascular risk factors." },
+    { day: 10, hour: 13, title: "Consultation – Lisa Chen", patient: "Lisa Chen", type: "consultation", modality: "remote", duration: 30, notes: "Discuss hormone panel results and supplementation plan." },
+    { day: 11, hour: 9, title: "Working Time – Meeting Prep", patient: "", type: "working_time", modality: "in_person", duration: 60, notes: "Prepare presentation on complex metabolic syndrome case.", isWorkingTime: true, importedNoteId: "n4" },
+    { day: 12, hour: 9, title: "Onboarding – Pekka Mäkelä", patient: "Pekka Mäkelä", type: "onboarding", modality: "in_person", duration: 60, notes: "Executive health programme onboarding. Include body composition analysis." },
+    { day: 14, hour: 10, title: "Acute – Mark Davis", patient: "Mark Davis", type: "acute", modality: "in_person", duration: 30, notes: "Acute lower back pain. MRI referral if no improvement." },
+    { day: 14, hour: 14, title: "Follow-up – Anna Korhonen", patient: "Anna Korhonen", type: "follow_up", modality: "remote", duration: 30, notes: "2-week post-onboarding follow-up. Review initial lab results." },
+    { day: 17, hour: 9, title: "Consultation – Sarah Johnson", patient: "Sarah Johnson", type: "consultation", modality: "in_person", duration: 45, notes: "Nutrition and lifestyle optimization session." },
+    { day: 17, hour: 11, title: "Acute – Tiina Heikkinen", patient: "Tiina Heikkinen", type: "acute", modality: "in_person", duration: 30, notes: "Persistent migraine, 3rd episode this month. Consider prophylaxis." },
+    { day: 18, hour: 9, title: "Working Time – Admin", patient: "", type: "working_time", modality: "in_person", duration: 120, notes: "Weekly review checklist and clinical hours logging.", isWorkingTime: true, importedNoteId: "n3" },
+    { day: 19, hour: 8, title: "Onboarding – Robert Kim", patient: "Robert Kim", type: "onboarding", modality: "in_person", duration: 90, notes: "Full onboarding. Family history of early CVD." },
+    { day: 21, hour: 13, title: "Follow-up – Emma Wilson", patient: "Emma Wilson", type: "follow_up", modality: "remote", duration: 30, notes: "Vertigo follow-up. Review ENT specialist report." },
+    { day: 24, hour: 9, title: "Check-up – Mikko Laine", patient: "Mikko Laine", type: "check_up", modality: "in_person", duration: 45, notes: "Quarterly metabolic check. HbA1c + lipid panel." },
+    { day: 24, hour: 14, title: "Acute – Lars Virtanen", patient: "Lars Virtanen", type: "acute", modality: "in_person", duration: 30, notes: "Skin lesion concern – urgent dermoscopy." },
+    { day: 25, hour: 9, title: "Working Time – Conference Notes", patient: "", type: "working_time", modality: "in_person", duration: 90, notes: "Review and summarize conference takeaways.", isWorkingTime: true, importedNoteId: "n6" },
+    { day: 26, hour: 10, title: "Consultation – James Brown", patient: "James Brown", type: "consultation", modality: "remote", duration: 30, notes: "Discuss exercise prescription and cardiac rehab progress." },
+    { day: 28, hour: 9, title: "Onboarding – Maria Santos", patient: "Maria Santos", type: "onboarding", modality: "in_person", duration: 60, notes: "New patient from referral. Extensive GI history." },
+    { day: 28, hour: 14, title: "Acute – Pekka Mäkelä", patient: "Pekka Mäkelä", type: "acute", modality: "in_person", duration: 30, notes: "Elevated liver enzymes on routine labs. Urgent hepatology review." },
   ];
 
   return dummies
@@ -60,8 +65,8 @@ function buildDummyAppointments(month: Date) {
       return {
         id: `dummy-${i}`,
         title: d.title,
-        patient_name: d.patient,
-        patient_id: DUMMY_PATIENT_ID,
+        patient_name: d.patient || undefined,
+        patient_id: d.isWorkingTime ? undefined : DUMMY_PATIENT_ID,
         appointment_type: d.type,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
@@ -73,6 +78,8 @@ function buildDummyAppointments(month: Date) {
         is_external_specialist: false,
         notes: d.notes,
         isDummy: true,
+        isWorkingTime: !!d.isWorkingTime,
+        importedNoteId: d.importedNoteId || null,
       };
     });
 }
@@ -105,6 +112,7 @@ const CalendarPage = () => {
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<any>(null);
+  const [importNoteAppt, setImportNoteAppt] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const cancelMutation = useMutation({
@@ -285,21 +293,32 @@ const CalendarPage = () => {
                           </Badge>
                         </div>
 
-                        {/* Patient name */}
-                        <p className="text-sm font-semibold">{a.patient_name ?? a.title}</p>
+                        {/* Title */}
+                        <p className="text-sm font-semibold">
+                          {a.isWorkingTime ? a.title : (a.patient_name ?? a.title)}
+                        </p>
 
                         {/* Modality badges */}
-                        <div className="flex flex-wrap gap-1">
-                          {a.visit_modality === "remote" ? (
-                            <Badge variant="secondary" className="text-[10px] gap-1"><Video className="h-3 w-3" /> Remote</Badge>
-                          ) : a.is_home_visit ? (
-                            <Badge variant="secondary" className="text-[10px] gap-1"><Home className="h-3 w-3" /> Home</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px] gap-1"><MapPin className="h-3 w-3" /> In-Person</Badge>
-                          )}
-                          {a.is_labs && <Badge variant="secondary" className="text-[10px] gap-1"><FlaskConical className="h-3 w-3" /> Labs</Badge>}
-                          {a.is_nurse_visit && <Badge variant="secondary" className="text-[10px] gap-1"><UserCheck className="h-3 w-3" /> Nurse</Badge>}
-                        </div>
+                        {!a.isWorkingTime && (
+                          <div className="flex flex-wrap gap-1">
+                            {a.visit_modality === "remote" ? (
+                              <Badge variant="secondary" className="text-[10px] gap-1"><Video className="h-3 w-3" /> Remote</Badge>
+                            ) : a.is_home_visit ? (
+                              <Badge variant="secondary" className="text-[10px] gap-1"><Home className="h-3 w-3" /> Home</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px] gap-1"><MapPin className="h-3 w-3" /> In-Person</Badge>
+                            )}
+                            {a.is_labs && <Badge variant="secondary" className="text-[10px] gap-1"><FlaskConical className="h-3 w-3" /> Labs</Badge>}
+                            {a.is_nurse_visit && <Badge variant="secondary" className="text-[10px] gap-1"><UserCheck className="h-3 w-3" /> Nurse</Badge>}
+                          </div>
+                        )}
+
+                        {/* Imported note indicator */}
+                        {a.isWorkingTime && a.importedNoteId && (
+                          <Badge variant="secondary" className="text-[10px] gap-1">
+                            <StickyNote className="h-3 w-3" /> Note imported
+                          </Badge>
+                        )}
 
                         {/* Notes preview */}
                         {a.notes && (
@@ -308,39 +327,63 @@ const CalendarPage = () => {
 
                         {/* Action buttons */}
                         <Separator />
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => {
-                              if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
-                              else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                            }}
-                          >
-                            <Play className="h-3 w-3" />
-                            Start Consultation
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => setDetailAppt(a)}
-                          >
-                            <FileText className="h-3 w-3" />
-                            Details
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => {
-                              if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
-                              else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                            }}
-                          >
-                            <User className="h-3 w-3" />
-                            Profile
-                          </Button>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {a.isWorkingTime ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setDetailAppt(a)}
+                              >
+                                <FileText className="h-3 w-3" />
+                                Details
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setImportNoteAppt(a)}
+                              >
+                                <Import className="h-3 w-3" />
+                                Import Note
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => {
+                                  if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
+                                  else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                                }}
+                              >
+                                <Play className="h-3 w-3" />
+                                Start Consultation
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setDetailAppt(a)}
+                              >
+                                <FileText className="h-3 w-3" />
+                                Details
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => {
+                                  if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
+                                  else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                                }}
+                              >
+                                <User className="h-3 w-3" />
+                                Profile
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
@@ -398,29 +441,44 @@ const CalendarPage = () => {
 
                 <Separator />
                 <div className="flex gap-2">
-                  <Button
-                    className="flex-1 gap-1"
-                    onClick={() => {
-                      setDetailAppt(null);
-                      if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
-                      else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                    }}
-                  >
-                    <Play className="h-4 w-4" />
-                    Start Consultation
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="gap-1"
-                    onClick={() => {
-                      setDetailAppt(null);
-                      if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
-                      else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                    }}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Patient Profile
-                  </Button>
+                  {detailAppt.isWorkingTime ? (
+                    <Button
+                      className="flex-1 gap-1"
+                      onClick={() => {
+                        setDetailAppt(null);
+                        setImportNoteAppt(detailAppt);
+                      }}
+                    >
+                      <Import className="h-4 w-4" />
+                      Import Note
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        className="flex-1 gap-1"
+                        onClick={() => {
+                          setDetailAppt(null);
+                          if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
+                          else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                        }}
+                      >
+                        <Play className="h-4 w-4" />
+                        Start Consultation
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => {
+                          setDetailAppt(null);
+                          if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
+                          else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Patient Profile
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -447,6 +505,42 @@ const CalendarPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Note Dialog */}
+      <Dialog open={!!importNoteAppt} onOpenChange={(open) => !open && setImportNoteAppt(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Import className="h-5 w-5 text-primary" />
+              Import Note to Working Time
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Select a note to attach to this working time block. The note content will be imported into the appointment notes.
+          </p>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {MOCK_NOTES.map((note) => (
+              <button
+                key={note.id}
+                className="w-full text-left rounded-lg border p-3 hover:border-primary transition-colors space-y-1"
+                onClick={() => {
+                  toast({
+                    title: "Note imported",
+                    description: `"${note.title}" has been attached to this working time block.`,
+                  });
+                  setImportNoteAppt(null);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <StickyNote className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <p className="text-sm font-medium truncate">{note.title}</p>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2 pl-5">{note.content}</p>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
