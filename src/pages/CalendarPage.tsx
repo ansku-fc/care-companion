@@ -505,6 +505,42 @@ const CalendarPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Note Dialog */}
+      <Dialog open={!!importNoteAppt} onOpenChange={(open) => !open && setImportNoteAppt(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Import className="h-5 w-5 text-primary" />
+              Import Note to Working Time
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Select a note to attach to this working time block. The note content will be imported into the appointment notes.
+          </p>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {MOCK_NOTES.map((note) => (
+              <button
+                key={note.id}
+                className="w-full text-left rounded-lg border p-3 hover:border-primary transition-colors space-y-1"
+                onClick={() => {
+                  toast({
+                    title: "Note imported",
+                    description: `"${note.title}" has been attached to this working time block.`,
+                  });
+                  setImportNoteAppt(null);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <StickyNote className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <p className="text-sm font-medium truncate">{note.title}</p>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2 pl-5">{note.content}</p>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
