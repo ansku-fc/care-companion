@@ -748,10 +748,16 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
       frequency: newMed.frequency.trim() || null,
       indication: newMed.indication.trim() || null,
       start_date: newMed.start_date || null,
-    });
+      quantity_prescribed: newMed.quantity_prescribed ? parseInt(newMed.quantity_prescribed) : null,
+      quantity_remaining: newMed.quantity_prescribed ? parseInt(newMed.quantity_prescribed) : null,
+      days_supply: newMed.days_supply ? parseInt(newMed.days_supply) : null,
+      refills_total: newMed.refills_total ? parseInt(newMed.refills_total) : 0,
+      refills_remaining: newMed.refills_total ? parseInt(newMed.refills_total) : 0,
+      prescription_start_date: newMed.start_date || null,
+    } as any);
     if (error) { toast.error("Failed to add medication"); return; }
     toast.success("Medication added");
-    setNewMed({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
+    setNewMed({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", quantity_prescribed: "", days_supply: "", refills_total: "" });
     setShowMedForm(false);
     fetchOverviewData();
   };
@@ -766,7 +772,15 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
       start_date: m.start_date || "",
       end_date: m.end_date || "",
       status: m.status || "active",
+      quantity_prescribed: m.quantity_prescribed?.toString() || "",
+      quantity_remaining: m.quantity_remaining?.toString() || "",
+      days_supply: m.days_supply?.toString() || "",
+      refills_total: m.refills_total?.toString() || "0",
+      refills_remaining: m.refills_remaining?.toString() || "0",
+      prescription_start_date: m.prescription_start_date || "",
+      prescription_end_date: m.prescription_end_date || "",
     });
+    setShowRenewalForm(false);
   };
 
   const handleSaveMed = async () => {
