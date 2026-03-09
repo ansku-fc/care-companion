@@ -733,15 +733,17 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const { user } = useAuth();
 
   const fetchOverviewData = async () => {
-    const [diagRes, medRes, teamRes, allergyRes, considRes] = await Promise.all([
+    const [diagRes, medRes, allMedRes, teamRes, allergyRes, considRes] = await Promise.all([
       supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
       supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
+      supabase.from("patient_medications").select("*").eq("patient_id", patient.id).order("status").order("medication_name"),
       supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
       supabase.from("patient_allergies" as any).select("*").eq("patient_id", patient.id).eq("status", "active").order("allergen"),
       supabase.from("patient_clinical_considerations" as any).select("*").eq("patient_id", patient.id).eq("is_active", true).order("created_at", { ascending: false }),
     ]);
     setDiagnoses(diagRes.data || []);
     setMedications(medRes.data || []);
+    setAllMedications(allMedRes.data || []);
     setCareTeam(teamRes.data || []);
     setAllergies(allergyRes.data || []);
     setConsiderations(considRes.data || []);
