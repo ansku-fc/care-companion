@@ -441,29 +441,44 @@ const CalendarPage = () => {
 
                 <Separator />
                 <div className="flex gap-2">
-                  <Button
-                    className="flex-1 gap-1"
-                    onClick={() => {
-                      setDetailAppt(null);
-                      if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
-                      else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                    }}
-                  >
-                    <Play className="h-4 w-4" />
-                    Start Consultation
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="gap-1"
-                    onClick={() => {
-                      setDetailAppt(null);
-                      if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
-                      else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                    }}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Patient Profile
-                  </Button>
+                  {detailAppt.isWorkingTime ? (
+                    <Button
+                      className="flex-1 gap-1"
+                      onClick={() => {
+                        setDetailAppt(null);
+                        setImportNoteAppt(detailAppt);
+                      }}
+                    >
+                      <Import className="h-4 w-4" />
+                      Import Note
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        className="flex-1 gap-1"
+                        onClick={() => {
+                          setDetailAppt(null);
+                          if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
+                          else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                        }}
+                      >
+                        <Play className="h-4 w-4" />
+                        Start Consultation
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => {
+                          setDetailAppt(null);
+                          if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
+                          else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Patient Profile
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             );
