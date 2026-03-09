@@ -1272,10 +1272,75 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
         </DialogContent>
       </Dialog>
     </div>
+
+    {/* Expanded Medications Panel */}
+    {showAllMedications && (
+      <div className="w-1/2 shrink-0 overflow-auto border rounded-lg bg-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Pill className="h-5 w-5 text-primary" />
+            All Medications
+          </h3>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAllMedications(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {allMedications.filter(m => m.status === "active").length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</p>
+            {allMedications.filter(m => m.status === "active").map((m) => (
+              <div key={m.id} className="p-3 rounded-md bg-muted/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{m.medication_name}</p>
+                  {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
+                  {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                </div>
+                {m.start_date && (
+                  <p className="text-xs text-muted-foreground">Started: {new Date(m.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {allMedications.filter(m => m.status !== "active").length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Inactive / Discontinued</p>
+            {allMedications.filter(m => m.status !== "active").map((m) => (
+              <div key={m.id} className="p-3 rounded-md bg-muted/20 opacity-60 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{m.medication_name}</p>
+                  <Badge variant="outline" className="text-xs capitalize">{m.status}</Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                  {m.frequency && <span className="text-xs text-muted-foreground">· {m.frequency}</span>}
+                  {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                </div>
+                {(m.start_date || m.end_date) && (
+                  <p className="text-xs text-muted-foreground">
+                    {m.start_date && `Started: ${new Date(m.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
+                    {m.start_date && m.end_date && " — "}
+                    {m.end_date && `Ended: ${new Date(m.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {allMedications.length === 0 && (
+          <p className="text-sm text-muted-foreground italic">No medications recorded.</p>
+        )}
+      </div>
+    )}
+    </div>
   );
 }
-
-function PatientDetailsView({
   patient, onboarding, age, labResults, onLabResultsAdded, visitNotes, appointments,
 }: {
   patient: Tables<"patients">;
