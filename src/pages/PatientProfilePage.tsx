@@ -719,6 +719,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const navigate = useNavigate();
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
+  const [allMedications, setAllMedications] = useState<any[]>([]);
   const [careTeam, setCareTeam] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
   const [considerations, setConsiderations] = useState<any[]>([]);
@@ -728,18 +729,21 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [showAllergyForm, setShowAllergyForm] = useState(false);
   const [newConsideration, setNewConsideration] = useState({ title: "", description: "", category: "other" });
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
+  const [showAllMedications, setShowAllMedications] = useState(false);
   const { user } = useAuth();
 
   const fetchOverviewData = async () => {
-    const [diagRes, medRes, teamRes, allergyRes, considRes] = await Promise.all([
+    const [diagRes, medRes, allMedRes, teamRes, allergyRes, considRes] = await Promise.all([
       supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
       supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
+      supabase.from("patient_medications").select("*").eq("patient_id", patient.id).order("status").order("medication_name"),
       supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
       supabase.from("patient_allergies" as any).select("*").eq("patient_id", patient.id).eq("status", "active").order("allergen"),
       supabase.from("patient_clinical_considerations" as any).select("*").eq("patient_id", patient.id).eq("is_active", true).order("created_at", { ascending: false }),
     ]);
     setDiagnoses(diagRes.data || []);
     setMedications(medRes.data || []);
+    setAllMedications(allMedRes.data || []);
     setCareTeam(teamRes.data || []);
     setAllergies(allergyRes.data || []);
     setConsiderations(considRes.data || []);
@@ -803,7 +807,8 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   };
 
   return (
-    <div className="space-y-6 p-1">
+    <div className="flex gap-6 h-full">
+    <div className={`space-y-6 p-1 ${showAllMedications ? "w-1/2 shrink-0" : "flex-1"} overflow-auto`}>
       <div>
         <h2 className="text-xl font-semibold">{patient.full_name}</h2>
         <p className="text-sm text-muted-foreground">Care Coordination Overview</p>
@@ -911,6 +916,9 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
             <CardTitle className="text-base flex items-center gap-2">
               <Pill className="h-4 w-4 text-primary" />
               Active Medications
+              <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs text-muted-foreground" onClick={() => setShowAllMedications(v => !v)}>
+                {showAllMedications ? "Close" : "See all →"}
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1263,6 +1271,73 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+
+    {/* Expanded Medications Panel */}
+    {showAllMedications && (
+      <div className="w-1/2 shrink-0 overflow-auto border rounded-lg bg-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Pill className="h-5 w-5 text-primary" />
+            All Medications
+          </h3>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAllMedications(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {allMedications.filter(m => m.status === "active").length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</p>
+            {allMedications.filter(m => m.status === "active").map((m) => (
+              <div key={m.id} className="p-3 rounded-md bg-muted/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{m.medication_name}</p>
+                  {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
+                  {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                </div>
+                {m.start_date && (
+                  <p className="text-xs text-muted-foreground">Started: {new Date(m.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {allMedications.filter(m => m.status !== "active").length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Inactive / Discontinued</p>
+            {allMedications.filter(m => m.status !== "active").map((m) => (
+              <div key={m.id} className="p-3 rounded-md bg-muted/20 opacity-60 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{m.medication_name}</p>
+                  <Badge variant="outline" className="text-xs capitalize">{m.status}</Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                  {m.frequency && <span className="text-xs text-muted-foreground">· {m.frequency}</span>}
+                  {m.indication && <span className="text-xs text-muted-foreground">· {m.indication}</span>}
+                </div>
+                {(m.start_date || m.end_date) && (
+                  <p className="text-xs text-muted-foreground">
+                    {m.start_date && `Started: ${new Date(m.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
+                    {m.start_date && m.end_date && " — "}
+                    {m.end_date && `Ended: ${new Date(m.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {allMedications.length === 0 && (
+          <p className="text-sm text-muted-foreground italic">No medications recorded.</p>
+        )}
+      </div>
+    )}
     </div>
   );
 }
