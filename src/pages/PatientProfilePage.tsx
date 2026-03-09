@@ -807,7 +807,8 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   };
 
   return (
-    <div className="space-y-6 p-1">
+    <div className="flex gap-6 h-full">
+    <div className={`space-y-6 p-1 ${showAllMedications ? "w-1/2 shrink-0" : "flex-1"} overflow-auto`}>
       <div>
         <h2 className="text-xl font-semibold">{patient.full_name}</h2>
         <p className="text-sm text-muted-foreground">Care Coordination Overview</p>
