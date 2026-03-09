@@ -1,32 +1,102 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope, Clock, Play, Pencil, X } from "lucide-react";
+import {
+  CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical,
+  Stethoscope, Clock, Play, Pencil, X, ChevronLeft, ChevronRight,
+  User, FileText, ExternalLink
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddAppointmentDialog } from "@/components/calendar/AddAppointmentDialog";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isToday, isSameMonth } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+
+// --- Dummy data ---
+const DUMMY_PATIENT_ID = "4d46d1a0-0000-0000-0000-000000000000";
+
+function buildDummyAppointments(month: Date) {
+  const y = month.getFullYear();
+  const m = month.getMonth();
+
+  const dummies = [
+    { day: 3, hour: 9, title: "Onboarding – Anna Korhonen", patient: "Anna Korhonen", type: "onboarding" as const, modality: "in_person", duration: 60, notes: "New patient intake. Prepare onboarding questionnaire and baseline labs." },
+    { day: 3, hour: 11, title: "Acute – Mikko Laine", patient: "Mikko Laine", type: "acute" as const, modality: "in_person", duration: 30, notes: "Acute chest pain, referred from GP. ECG + troponin ordered." },
+    { day: 5, hour: 8, title: "Follow-up – Sarah Johnson", patient: "Sarah Johnson", type: "follow_up" as const, modality: "remote", duration: 30, notes: "Post-statin review. Check LDL levels from last labs." },
+    { day: 5, hour: 10, title: "Onboarding – Lars Virtanen", patient: "Lars Virtanen", type: "onboarding" as const, modality: "in_person", duration: 90, notes: "Comprehensive onboarding with full lab panel and genetic screening." },
+    { day: 7, hour: 14, title: "Acute – Emma Wilson", patient: "Emma Wilson", type: "acute" as const, modality: "in_person", duration: 30, notes: "Sudden onset vertigo. Neuro screen needed." },
+    { day: 10, hour: 9, title: "Check-up – James Brown", patient: "James Brown", type: "check_up" as const, modality: "in_person", duration: 45, notes: "Annual health check. Review cardiovascular risk factors." },
+    { day: 10, hour: 13, title: "Consultation – Lisa Chen", patient: "Lisa Chen", type: "consultation" as const, modality: "remote", duration: 30, notes: "Discuss hormone panel results and supplementation plan." },
+    { day: 12, hour: 9, title: "Onboarding – Pekka Mäkelä", patient: "Pekka Mäkelä", type: "onboarding" as const, modality: "in_person", duration: 60, notes: "Executive health programme onboarding. Include body composition analysis." },
+    { day: 14, hour: 10, title: "Acute – Mark Davis", patient: "Mark Davis", type: "acute" as const, modality: "in_person", duration: 30, notes: "Acute lower back pain. MRI referral if no improvement." },
+    { day: 14, hour: 14, title: "Follow-up – Anna Korhonen", patient: "Anna Korhonen", type: "follow_up" as const, modality: "remote", duration: 30, notes: "2-week post-onboarding follow-up. Review initial lab results." },
+    { day: 17, hour: 9, title: "Consultation – Sarah Johnson", patient: "Sarah Johnson", type: "consultation" as const, modality: "in_person", duration: 45, notes: "Nutrition and lifestyle optimization session." },
+    { day: 17, hour: 11, title: "Acute – Tiina Heikkinen", patient: "Tiina Heikkinen", type: "acute" as const, modality: "in_person", duration: 30, notes: "Persistent migraine, 3rd episode this month. Consider prophylaxis." },
+    { day: 19, hour: 8, title: "Onboarding – Robert Kim", patient: "Robert Kim", type: "onboarding" as const, modality: "in_person", duration: 90, notes: "Full onboarding. Family history of early CVD – prioritise cardiovascular workup." },
+    { day: 21, hour: 13, title: "Follow-up – Emma Wilson", patient: "Emma Wilson", type: "follow_up" as const, modality: "remote", duration: 30, notes: "Vertigo follow-up. Review ENT specialist report." },
+    { day: 24, hour: 9, title: "Check-up – Mikko Laine", patient: "Mikko Laine", type: "check_up" as const, modality: "in_person", duration: 45, notes: "Quarterly metabolic check. HbA1c + lipid panel." },
+    { day: 24, hour: 14, title: "Acute – Lars Virtanen", patient: "Lars Virtanen", type: "acute" as const, modality: "in_person", duration: 30, notes: "Skin lesion concern – urgent dermoscopy." },
+    { day: 26, hour: 10, title: "Consultation – James Brown", patient: "James Brown", type: "consultation" as const, modality: "remote", duration: 30, notes: "Discuss exercise prescription and cardiac rehab progress." },
+    { day: 28, hour: 9, title: "Onboarding – Maria Santos", patient: "Maria Santos", type: "onboarding" as const, modality: "in_person", duration: 60, notes: "New patient from referral. Extensive GI history – bring previous records." },
+    { day: 28, hour: 14, title: "Acute – Pekka Mäkelä", patient: "Pekka Mäkelä", type: "acute" as const, modality: "in_person", duration: 30, notes: "Elevated liver enzymes on routine labs. Urgent hepatology review." },
+  ];
+
+  return dummies
+    .filter(d => d.day <= new Date(y, m + 1, 0).getDate())
+    .map((d, i) => {
+      const start = new Date(y, m, d.day, d.hour, 0);
+      const end = new Date(start.getTime() + d.duration * 60000);
+      return {
+        id: `dummy-${i}`,
+        title: d.title,
+        patient_name: d.patient,
+        patient_id: DUMMY_PATIENT_ID,
+        appointment_type: d.type,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        visit_modality: d.modality,
+        is_onboarding: d.type === "onboarding",
+        is_home_visit: false,
+        is_nurse_visit: false,
+        is_labs: d.type === "onboarding",
+        is_external_specialist: false,
+        notes: d.notes,
+        isDummy: true,
+      };
+    });
+}
+
+const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  onboarding: { bg: "bg-primary/10", text: "text-primary", label: "Onboarding" },
+  acute: { bg: "bg-destructive/10", text: "text-destructive", label: "Acute" },
+  consultation: { bg: "bg-accent/60", text: "text-accent-foreground", label: "Consultation" },
+  follow_up: { bg: "bg-success/10", text: "text-success", label: "Follow-up" },
+  check_up: { bg: "bg-warning/10", text: "text-warning", label: "Check-up" },
+  procedure: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Procedure" },
+  urgent: { bg: "bg-destructive/10", text: "text-destructive", label: "Urgent" },
+};
+
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const CalendarPage = () => {
   const navigate = useNavigate();
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
+  const [detailAppt, setDetailAppt] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const cancelMutation = useMutation({
@@ -44,7 +114,7 @@ const CalendarPage = () => {
     },
   });
 
-  const { data: appointments = [] } = useQuery({
+  const { data: realAppointments = [] } = useQuery({
     queryKey: ["appointments"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,117 +122,308 @@ const CalendarPage = () => {
         .select("*, patients(full_name)")
         .order("start_time", { ascending: true });
       if (error) throw error;
-      return data;
+      return data.map((a: any) => ({
+        ...a,
+        patient_name: a.patients?.full_name ?? "Unknown",
+        isDummy: false,
+      }));
     },
   });
 
-  const dayAppointments = appointments.filter((a) =>
-    date && isSameDay(parseISO(a.start_time), date)
-  );
+  const dummyAppointments = useMemo(() => buildDummyAppointments(currentMonth), [currentMonth]);
+  const allAppointments = [...realAppointments, ...dummyAppointments];
 
-  // Highlight dates with appointments
-  const appointmentDates = appointments.map((a) => parseISO(a.start_time));
+  // Calendar grid
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  const apptsByDay = useMemo(() => {
+    const map = new Map<string, any[]>();
+    allAppointments.forEach((a) => {
+      const key = format(parseISO(a.start_time), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(a);
+    });
+    // Sort each day by time
+    map.forEach((arr) => arr.sort((a: any, b: any) => a.start_time.localeCompare(b.start_time)));
+    return map;
+  }, [allAppointments]);
+
+  const selectedDayKey = format(selectedDate, "yyyy-MM-dd");
+  const dayAppointments = apptsByDay.get(selectedDayKey) ?? [];
+
+  const typeStyle = (type: string) => TYPE_STYLES[type] ?? TYPE_STYLES.consultation;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
-          <p className="text-muted-foreground">Manage your appointments and schedule.</p>
+          <p className="text-muted-foreground">Doctor's schedule overview</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> New Appointment
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-primary" />
-              Schedule
-            </CardTitle>
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2">
+        {Object.entries(TYPE_STYLES).map(([key, s]) => (
+          <div key={key} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${s.bg} ${s.text}`}>
+            <div className={`h-2 w-2 rounded-full ${s.text === "text-primary" ? "bg-primary" : s.text === "text-destructive" ? "bg-destructive" : s.text === "text-success" ? "bg-green-500" : s.text === "text-warning" ? "bg-yellow-500" : "bg-muted-foreground"}`} />
+            {s.label}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+        {/* Month Grid */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <CardTitle className="text-lg">
+                {format(currentMonth, "MMMM yyyy")}
+              </CardTitle>
+              <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              showWeekNumber
-              className="rounded-md border w-full"
-              modifiers={{ hasAppointment: appointmentDates }}
-              modifiersClassNames={{ hasAppointment: "bg-primary/10 font-semibold" }}
-            />
+          <CardContent className="px-3 pb-3">
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7 mb-1">
+              {WEEKDAYS.map((d) => (
+                <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
+              ))}
+            </div>
+            {/* Day cells */}
+            <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+              {calendarDays.map((day) => {
+                const key = format(day, "yyyy-MM-dd");
+                const dayAppts = apptsByDay.get(key) ?? [];
+                const inMonth = isSameMonth(day, currentMonth);
+                const selected = isSameDay(day, selectedDate);
+                const today = isToday(day);
+
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedDate(day)}
+                    className={`min-h-[80px] p-1 flex flex-col items-start text-left transition-colors
+                      ${inMonth ? "bg-card" : "bg-muted/30"}
+                      ${selected ? "ring-2 ring-primary ring-inset" : ""}
+                      hover:bg-accent/30`}
+                  >
+                    <span className={`text-xs font-medium mb-0.5 px-1 rounded-full
+                      ${today ? "bg-primary text-primary-foreground" : inMonth ? "text-foreground" : "text-muted-foreground"}`}>
+                      {format(day, "d")}
+                    </span>
+                    <div className="w-full space-y-0.5 overflow-hidden">
+                      {dayAppts.slice(0, 3).map((a: any) => {
+                        const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
+                        return (
+                          <div key={a.id} className={`text-[10px] leading-tight truncate px-1 py-0.5 rounded ${s.bg} ${s.text}`}>
+                            {format(parseISO(a.start_time), "HH:mm")} {a.patient_name?.split(" ")[0] ?? a.title.split("–")[0]}
+                          </div>
+                        );
+                      })}
+                      {dayAppts.length > 3 && (
+                        <div className="text-[10px] text-muted-foreground px-1">+{dayAppts.length - 3} more</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {date?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+        {/* Day Detail Sidebar */}
+        <Card className="h-fit xl:sticky xl:top-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              {format(selectedDate, "EEEE, MMMM d")}
             </CardTitle>
+            <p className="text-xs text-muted-foreground">{dayAppointments.length} appointment{dayAppointments.length !== 1 ? "s" : ""}</p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {dayAppointments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No appointments for this day.</p>
-            ) : (
-              dayAppointments.map((a) => (
-                <div key={a.id} className="border rounded-lg p-3 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <p className="font-medium text-sm">{a.title}</p>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Start appointment" onClick={() => navigate(`/patients/${a.patient_id}`)}>
-                        <Play className="h-3 w-3 text-primary" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Edit" onClick={() => { setEditingAppointment(a); setDialogOpen(true); }}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" title="Cancel" onClick={() => setCancelId(a.id)}>
-                        <X className="h-3 w-3 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {format(parseISO(a.start_time), "h:mm a")} — {format(parseISO(a.end_time), "h:mm a")}
-                  </p>
-                  {a.patients && (
-                    <p className="text-xs text-muted-foreground">
-                      Patient: {(a.patients as any).full_name}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-1">
-                    {a.visit_modality === "remote" ? (
-                      <Badge variant="secondary" className="text-xs gap-1"><Video className="h-3 w-3" /> Remote</Badge>
-                    ) : a.is_home_visit ? (
-                      <Badge variant="secondary" className="text-xs gap-1"><Home className="h-3 w-3" /> Home</Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs gap-1"><MapPin className="h-3 w-3" /> In-Person</Badge>
-                    )}
-                    {a.is_onboarding && <Badge variant="outline" className="text-xs">Onboarding</Badge>}
-                    {a.is_nurse_visit && <Badge variant="outline" className="text-xs gap-1"><UserCheck className="h-3 w-3" /> Nurse</Badge>}
-                    {a.is_labs && <Badge variant="outline" className="text-xs gap-1"><FlaskConical className="h-3 w-3" /> Labs</Badge>}
-                    {a.is_external_specialist && (
-                      <Badge variant="outline" className="text-xs gap-1">
-                        <Stethoscope className="h-3 w-3" />
-                        {a.specialist_name}{a.specialist_location ? ` @ ${a.specialist_location}` : ""}
-                      </Badge>
-                    )}
-                  </div>
-                  {a.notes && (
-                    <p className="text-xs text-muted-foreground whitespace-pre-line mt-1">{a.notes}</p>
-                  )}
+          <CardContent>
+            <ScrollArea className="max-h-[calc(100vh-280px)]">
+              {dayAppointments.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No appointments scheduled.</p>
+              ) : (
+                <div className="space-y-3">
+                  {dayAppointments.map((a: any) => {
+                    const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
+                    return (
+                      <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${s.bg} border-transparent`}>
+                        {/* Time & type */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Clock className={`h-3.5 w-3.5 ${s.text}`} />
+                            <span className="text-sm font-mono font-medium">
+                              {format(parseISO(a.start_time), "HH:mm")}–{format(parseISO(a.end_time), "HH:mm")}
+                            </span>
+                          </div>
+                          <Badge variant="outline" className={`text-[10px] ${s.text} border-current`}>
+                            {s.label}
+                          </Badge>
+                        </div>
+
+                        {/* Patient name */}
+                        <p className="text-sm font-semibold">{a.patient_name ?? a.title}</p>
+
+                        {/* Modality badges */}
+                        <div className="flex flex-wrap gap-1">
+                          {a.visit_modality === "remote" ? (
+                            <Badge variant="secondary" className="text-[10px] gap-1"><Video className="h-3 w-3" /> Remote</Badge>
+                          ) : a.is_home_visit ? (
+                            <Badge variant="secondary" className="text-[10px] gap-1"><Home className="h-3 w-3" /> Home</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] gap-1"><MapPin className="h-3 w-3" /> In-Person</Badge>
+                          )}
+                          {a.is_labs && <Badge variant="secondary" className="text-[10px] gap-1"><FlaskConical className="h-3 w-3" /> Labs</Badge>}
+                          {a.is_nurse_visit && <Badge variant="secondary" className="text-[10px] gap-1"><UserCheck className="h-3 w-3" /> Nurse</Badge>}
+                        </div>
+
+                        {/* Notes preview */}
+                        {a.notes && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{a.notes}</p>
+                        )}
+
+                        {/* Action buttons */}
+                        <Separator />
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => {
+                              if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
+                              else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                            }}
+                          >
+                            <Play className="h-3 w-3" />
+                            Start Consultation
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => setDetailAppt(a)}
+                          >
+                            <FileText className="h-3 w-3" />
+                            Details
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => {
+                              if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
+                              else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                            }}
+                          >
+                            <User className="h-3 w-3" />
+                            Profile
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))
-            )}
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
 
+      {/* Appointment Detail Dialog */}
+      <Dialog open={!!detailAppt} onOpenChange={(open) => !open && setDetailAppt(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-primary" />
+              Appointment Details
+            </DialogTitle>
+          </DialogHeader>
+          {detailAppt && (() => {
+            const s = typeStyle(detailAppt.appointment_type ?? (detailAppt.is_onboarding ? "onboarding" : "consultation"));
+            return (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-lg font-semibold">{detailAppt.patient_name ?? detailAppt.title}</p>
+                  <Badge className={`${s.bg} ${s.text} border-0`}>{s.label}</Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Date</p>
+                    <p className="font-medium">{format(parseISO(detailAppt.start_time), "EEEE, MMM d, yyyy")}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Time</p>
+                    <p className="font-medium">{format(parseISO(detailAppt.start_time), "HH:mm")} – {format(parseISO(detailAppt.end_time), "HH:mm")}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Modality</p>
+                    <p className="font-medium capitalize">{detailAppt.visit_modality?.replace("_", " ") ?? "In-person"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Labs</p>
+                    <p className="font-medium">{detailAppt.is_labs ? "Yes" : "No"}</p>
+                  </div>
+                </div>
+
+                {detailAppt.notes && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Notes</p>
+                    <p className="text-sm bg-muted/50 rounded-md p-3">{detailAppt.notes}</p>
+                  </div>
+                )}
+
+                <Separator />
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 gap-1"
+                    onClick={() => {
+                      setDetailAppt(null);
+                      if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
+                      else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                    }}
+                  >
+                    <Play className="h-4 w-4" />
+                    Start Consultation
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="gap-1"
+                    onClick={() => {
+                      setDetailAppt(null);
+                      if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
+                      else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Patient Profile
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       <AddAppointmentDialog
         open={dialogOpen}
         onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingAppointment(null); }}
-        selectedDate={date}
+        selectedDate={selectedDate}
         editingAppointment={editingAppointment}
       />
 
