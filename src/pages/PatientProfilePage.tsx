@@ -967,21 +967,44 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
             <CardTitle className="text-base flex items-center gap-2">
               <Pill className="h-4 w-4 text-primary" />
               Active Medications
-              <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs text-muted-foreground" onClick={() => setShowAllMedications(v => !v)}>
-                {showAllMedications ? "Close" : "See all →"}
-              </Button>
+              <div className="ml-auto flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setShowMedForm(v => !v)}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground" onClick={() => setShowAllMedications(v => !v)}>
+                  {showAllMedications ? "Close" : "See all →"}
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {medications.length === 0 ? (
+            {showMedForm && (
+              <div className="space-y-2 mb-3 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Medication name *" value={newMed.medication_name} onChange={e => setNewMed(p => ({ ...p, medication_name: e.target.value }))} className="h-8 text-sm" />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Dose (e.g. 10 mg)" value={newMed.dose} onChange={e => setNewMed(p => ({ ...p, dose: e.target.value }))} className="h-8 text-sm" />
+                  <Input placeholder="Frequency (e.g. 1x daily)" value={newMed.frequency} onChange={e => setNewMed(p => ({ ...p, frequency: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <Input placeholder="Indication (e.g. Hypertension)" value={newMed.indication} onChange={e => setNewMed(p => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
+                <Input type="date" value={newMed.start_date} onChange={e => setNewMed(p => ({ ...p, start_date: e.target.value }))} className="h-8 text-sm" />
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" disabled={!newMed.medication_name.trim()} onClick={handleAddMedication}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowMedForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+            {medications.length === 0 && !showMedForm ? (
               <p className="text-sm text-muted-foreground italic">No active medications recorded.</p>
             ) : (
               <div className="space-y-2">
                 {medications.map((m) => (
-                  <div key={m.id} className="p-2 rounded-md bg-muted/40">
+                  <div key={m.id} className="p-2 rounded-md bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => startEditMed(m)}>
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium">{m.medication_name}</p>
-                      {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                      <div className="flex items-center gap-2">
+                        {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </div>
                     </div>
                     <div className="flex gap-2 mt-0.5">
                       {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
