@@ -293,21 +293,32 @@ const CalendarPage = () => {
                           </Badge>
                         </div>
 
-                        {/* Patient name */}
-                        <p className="text-sm font-semibold">{a.patient_name ?? a.title}</p>
+                        {/* Title */}
+                        <p className="text-sm font-semibold">
+                          {a.isWorkingTime ? a.title : (a.patient_name ?? a.title)}
+                        </p>
 
                         {/* Modality badges */}
-                        <div className="flex flex-wrap gap-1">
-                          {a.visit_modality === "remote" ? (
-                            <Badge variant="secondary" className="text-[10px] gap-1"><Video className="h-3 w-3" /> Remote</Badge>
-                          ) : a.is_home_visit ? (
-                            <Badge variant="secondary" className="text-[10px] gap-1"><Home className="h-3 w-3" /> Home</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px] gap-1"><MapPin className="h-3 w-3" /> In-Person</Badge>
-                          )}
-                          {a.is_labs && <Badge variant="secondary" className="text-[10px] gap-1"><FlaskConical className="h-3 w-3" /> Labs</Badge>}
-                          {a.is_nurse_visit && <Badge variant="secondary" className="text-[10px] gap-1"><UserCheck className="h-3 w-3" /> Nurse</Badge>}
-                        </div>
+                        {!a.isWorkingTime && (
+                          <div className="flex flex-wrap gap-1">
+                            {a.visit_modality === "remote" ? (
+                              <Badge variant="secondary" className="text-[10px] gap-1"><Video className="h-3 w-3" /> Remote</Badge>
+                            ) : a.is_home_visit ? (
+                              <Badge variant="secondary" className="text-[10px] gap-1"><Home className="h-3 w-3" /> Home</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px] gap-1"><MapPin className="h-3 w-3" /> In-Person</Badge>
+                            )}
+                            {a.is_labs && <Badge variant="secondary" className="text-[10px] gap-1"><FlaskConical className="h-3 w-3" /> Labs</Badge>}
+                            {a.is_nurse_visit && <Badge variant="secondary" className="text-[10px] gap-1"><UserCheck className="h-3 w-3" /> Nurse</Badge>}
+                          </div>
+                        )}
+
+                        {/* Imported note indicator */}
+                        {a.isWorkingTime && a.importedNoteId && (
+                          <Badge variant="secondary" className="text-[10px] gap-1">
+                            <StickyNote className="h-3 w-3" /> Note imported
+                          </Badge>
+                        )}
 
                         {/* Notes preview */}
                         {a.notes && (
@@ -316,39 +327,63 @@ const CalendarPage = () => {
 
                         {/* Action buttons */}
                         <Separator />
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => {
-                              if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
-                              else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                            }}
-                          >
-                            <Play className="h-3 w-3" />
-                            Start Consultation
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => setDetailAppt(a)}
-                          >
-                            <FileText className="h-3 w-3" />
-                            Details
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => {
-                              if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
-                              else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                            }}
-                          >
-                            <User className="h-3 w-3" />
-                            Profile
-                          </Button>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {a.isWorkingTime ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setDetailAppt(a)}
+                              >
+                                <FileText className="h-3 w-3" />
+                                Details
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setImportNoteAppt(a)}
+                              >
+                                <Import className="h-3 w-3" />
+                                Import Note
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => {
+                                  if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
+                                  else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                                }}
+                              >
+                                <Play className="h-3 w-3" />
+                                Start Consultation
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setDetailAppt(a)}
+                              >
+                                <FileText className="h-3 w-3" />
+                                Details
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => {
+                                  if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
+                                  else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                                }}
+                              >
+                                <User className="h-3 w-3" />
+                                Profile
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
