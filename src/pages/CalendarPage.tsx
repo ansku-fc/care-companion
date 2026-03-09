@@ -112,6 +112,7 @@ const CalendarPage = () => {
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<any>(null);
+  const [importNoteAppt, setImportNoteAppt] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const cancelMutation = useMutation({
