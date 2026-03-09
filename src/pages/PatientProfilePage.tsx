@@ -793,10 +793,49 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
       start_date: editMedForm.start_date || null,
       end_date: editMedForm.end_date || null,
       status: editMedForm.status,
-    }).eq("id", editingMedId);
+      quantity_prescribed: editMedForm.quantity_prescribed ? parseInt(editMedForm.quantity_prescribed) : null,
+      quantity_remaining: editMedForm.quantity_remaining ? parseInt(editMedForm.quantity_remaining) : null,
+      days_supply: editMedForm.days_supply ? parseInt(editMedForm.days_supply) : null,
+      refills_total: editMedForm.refills_total ? parseInt(editMedForm.refills_total) : 0,
+      refills_remaining: editMedForm.refills_remaining ? parseInt(editMedForm.refills_remaining) : 0,
+      prescription_start_date: editMedForm.prescription_start_date || null,
+      prescription_end_date: editMedForm.prescription_end_date || null,
+    } as any).eq("id", editingMedId);
     if (error) { toast.error("Failed to update medication"); return; }
     toast.success("Medication updated");
     setEditingMedId(null);
+    fetchOverviewData();
+  };
+
+  const handleAddRenewal = async () => {
+    if (!user || !editingMedId) return;
+    const med = allMedications.find(m => m.id === editingMedId);
+    if (!med) return;
+    const { error } = await supabase.from("patient_medication_renewals" as any).insert({
+      medication_id: editingMedId,
+      patient_id: patient.id,
+      renewed_by: user.id,
+      renewal_date: newRenewal.renewal_date || new Date().toISOString().split("T")[0],
+      quantity_prescribed: newRenewal.quantity_prescribed ? parseInt(newRenewal.quantity_prescribed) : null,
+      days_supply: newRenewal.days_supply ? parseInt(newRenewal.days_supply) : null,
+      refills_granted: newRenewal.refills_granted ? parseInt(newRenewal.refills_granted) : 0,
+      notes: newRenewal.notes.trim() || null,
+    } as any);
+    if (error) { toast.error("Failed to add renewal"); return; }
+    // Update medication with new prescription info
+    const qtyPrescribed = newRenewal.quantity_prescribed ? parseInt(newRenewal.quantity_prescribed) : med.quantity_prescribed;
+    const refillsGranted = newRenewal.refills_granted ? parseInt(newRenewal.refills_granted) : 0;
+    await supabase.from("patient_medications").update({
+      quantity_prescribed: qtyPrescribed,
+      quantity_remaining: qtyPrescribed,
+      days_supply: newRenewal.days_supply ? parseInt(newRenewal.days_supply) : med.days_supply,
+      refills_total: (med.refills_total || 0) + refillsGranted,
+      refills_remaining: (med.refills_remaining || 0) + refillsGranted,
+      prescription_start_date: newRenewal.renewal_date || new Date().toISOString().split("T")[0],
+    } as any).eq("id", editingMedId);
+    toast.success("Prescription renewed");
+    setNewRenewal({ renewal_date: "", quantity_prescribed: "", days_supply: "", refills_granted: "", notes: "" });
+    setShowRenewalForm(false);
     fetchOverviewData();
   };
 
