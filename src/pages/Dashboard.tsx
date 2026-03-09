@@ -1,6 +1,8 @@
-import { CalendarDays, ListTodo, Users, Clock } from "lucide-react";
+import { CalendarDays, ListTodo, Users, Clock, StickyNote, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const overviewCards = [
   { title: "Today's Appointments", value: "5", icon: CalendarDays, color: "text-primary" },
