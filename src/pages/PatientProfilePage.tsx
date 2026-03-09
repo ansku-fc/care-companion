@@ -916,6 +916,9 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
             <CardTitle className="text-base flex items-center gap-2">
               <Pill className="h-4 w-4 text-primary" />
               Active Medications
+              <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs text-muted-foreground" onClick={() => setShowAllMedications(v => !v)}>
+                {showAllMedications ? "Close" : "See all →"}
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
