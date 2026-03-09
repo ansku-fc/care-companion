@@ -65,8 +65,8 @@ function buildDummyAppointments(month: Date) {
       return {
         id: `dummy-${i}`,
         title: d.title,
-        patient_name: d.patient,
-        patient_id: DUMMY_PATIENT_ID,
+        patient_name: d.patient || undefined,
+        patient_id: d.isWorkingTime ? undefined : DUMMY_PATIENT_ID,
         appointment_type: d.type,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
@@ -78,6 +78,8 @@ function buildDummyAppointments(month: Date) {
         is_external_specialist: false,
         notes: d.notes,
         isDummy: true,
+        isWorkingTime: !!d.isWorkingTime,
+        importedNoteId: d.importedNoteId || null,
       };
     });
 }
