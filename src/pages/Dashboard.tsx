@@ -106,6 +106,35 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Doctor Notes */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-primary" />
+              Doctor Notes
+            </CardTitle>
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/notes")}>
+              Open Notes <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-3">
+            {recentNotes.map((note) => (
+              <div
+                key={note.id}
+                className="rounded-lg border p-3 cursor-pointer hover:border-primary transition-colors"
+                onClick={() => navigate("/notes")}
+              >
+                <p className="text-sm font-medium truncate">{note.title}</p>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{note.preview}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

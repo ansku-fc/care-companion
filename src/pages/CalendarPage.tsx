@@ -85,7 +85,15 @@ const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> =
   check_up: { bg: "bg-warning/10", text: "text-warning", label: "Check-up" },
   procedure: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Procedure" },
   urgent: { bg: "bg-destructive/10", text: "text-destructive", label: "Urgent" },
+  working_time: { bg: "bg-blue-500/10", text: "text-blue-600", label: "Working Time" },
 };
+
+const MOCK_NOTES = [
+  { id: "n1", title: "Meeting notes - Dr. Patel", content: "Discussed patient referral workflow and new onboarding procedures. Need to follow up on digital forms integration." },
+  { id: "n2", title: "Research: New treatment protocols", content: "Review latest guidelines for Tier 2 patients regarding cardiovascular risk reduction. Update care plans accordingly." },
+  { id: "n3", title: "Weekly review checklist", content: "1. Review lab results 2. Update patient records 3. Follow-up calls 4. Prepare reports for Friday meeting." },
+  { id: "n4", title: "Case discussion prep", content: "Prepare presentation on complex metabolic syndrome case for team case discussion on Thursday." },
+];
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
