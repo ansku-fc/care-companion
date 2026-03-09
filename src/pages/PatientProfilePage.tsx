@@ -719,20 +719,32 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [careTeam, setCareTeam] = useState<any[]>([]);
+  const [allergies, setAllergies] = useState<any[]>([]);
+  const [considerations, setConsiderations] = useState<any[]>([]);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "", priority: "", status: "", due_date: "" });
+  const [newAllergy, setNewAllergy] = useState({ allergen: "", reaction: "", severity: "moderate" });
+  const [showAllergyForm, setShowAllergyForm] = useState(false);
+  const [newConsideration, setNewConsideration] = useState({ title: "", description: "", category: "other" });
+  const [showConsiderationForm, setShowConsiderationForm] = useState(false);
+  const { user } = useAuth();
+
+  const fetchOverviewData = async () => {
+    const [diagRes, medRes, teamRes, allergyRes, considRes] = await Promise.all([
+      supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
+      supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
+      supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
+      supabase.from("patient_allergies" as any).select("*").eq("patient_id", patient.id).eq("status", "active").order("allergen"),
+      supabase.from("patient_clinical_considerations" as any).select("*").eq("patient_id", patient.id).eq("is_active", true).order("created_at", { ascending: false }),
+    ]);
+    setDiagnoses(diagRes.data || []);
+    setMedications(medRes.data || []);
+    setCareTeam(teamRes.data || []);
+    setAllergies(allergyRes.data || []);
+    setConsiderations(considRes.data || []);
+  };
 
   useEffect(() => {
-    const fetchOverviewData = async () => {
-      const [diagRes, medRes, teamRes] = await Promise.all([
-        supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
-        supabase.from("patient_medications").select("*").eq("patient_id", patient.id).eq("status", "active").order("medication_name"),
-        supabase.from("patient_care_team").select("*").eq("patient_id", patient.id).eq("is_active", true).order("role"),
-      ]);
-      setDiagnoses(diagRes.data || []);
-      setMedications(medRes.data || []);
-      setCareTeam(teamRes.data || []);
-    };
     fetchOverviewData();
   }, [patient.id]);
 
