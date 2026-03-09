@@ -313,12 +313,23 @@ const CalendarPage = () => {
                           </div>
                         )}
 
-                        {/* Imported note indicator */}
-                        {a.isWorkingTime && a.importedNoteId && (
-                          <Badge variant="secondary" className="text-[10px] gap-1">
-                            <StickyNote className="h-3 w-3" /> Note imported
-                          </Badge>
-                        )}
+                        {/* Imported note content */}
+                        {a.isWorkingTime && a.importedNoteId && (() => {
+                          const note = MOCK_NOTES.find(n => n.id === a.importedNoteId);
+                          return note ? (
+                            <div className="rounded-md border border-border bg-background/60 p-2.5 space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <StickyNote className="h-3 w-3 text-primary" />
+                                <span className="text-xs font-medium">{note.title}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground whitespace-pre-line line-clamp-4">{note.content}</p>
+                            </div>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] gap-1">
+                              <StickyNote className="h-3 w-3" /> Note imported
+                            </Badge>
+                          );
+                        })()}
 
                         {/* Notes preview */}
                         {a.notes && (
