@@ -719,6 +719,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const navigate = useNavigate();
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
+  const [allMedications, setAllMedications] = useState<any[]>([]);
   const [careTeam, setCareTeam] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
   const [considerations, setConsiderations] = useState<any[]>([]);
@@ -728,6 +729,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [showAllergyForm, setShowAllergyForm] = useState(false);
   const [newConsideration, setNewConsideration] = useState({ title: "", description: "", category: "other" });
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
+  const [showAllMedications, setShowAllMedications] = useState(false);
   const { user } = useAuth();
 
   const fetchOverviewData = async () => {
