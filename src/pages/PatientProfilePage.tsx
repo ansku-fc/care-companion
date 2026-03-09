@@ -730,7 +730,58 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   const [newConsideration, setNewConsideration] = useState({ title: "", description: "", category: "other" });
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
   const [showAllMedications, setShowAllMedications] = useState(false);
+  const [showMedForm, setShowMedForm] = useState(false);
+  const [newMed, setNewMed] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
+  const [editingMedId, setEditingMedId] = useState<string | null>(null);
+  const [editMedForm, setEditMedForm] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "", end_date: "", status: "active" });
   const { user } = useAuth();
+
+  const handleAddMedication = async () => {
+    if (!user || !newMed.medication_name.trim()) return;
+    const { error } = await supabase.from("patient_medications").insert({
+      patient_id: patient.id, created_by: user.id,
+      medication_name: newMed.medication_name.trim(),
+      dose: newMed.dose.trim() || null,
+      frequency: newMed.frequency.trim() || null,
+      indication: newMed.indication.trim() || null,
+      start_date: newMed.start_date || null,
+    });
+    if (error) { toast.error("Failed to add medication"); return; }
+    toast.success("Medication added");
+    setNewMed({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
+    setShowMedForm(false);
+    fetchOverviewData();
+  };
+
+  const startEditMed = (m: any) => {
+    setEditingMedId(m.id);
+    setEditMedForm({
+      medication_name: m.medication_name || "",
+      dose: m.dose || "",
+      frequency: m.frequency || "",
+      indication: m.indication || "",
+      start_date: m.start_date || "",
+      end_date: m.end_date || "",
+      status: m.status || "active",
+    });
+  };
+
+  const handleSaveMed = async () => {
+    if (!editingMedId) return;
+    const { error } = await supabase.from("patient_medications").update({
+      medication_name: editMedForm.medication_name.trim(),
+      dose: editMedForm.dose.trim() || null,
+      frequency: editMedForm.frequency.trim() || null,
+      indication: editMedForm.indication.trim() || null,
+      start_date: editMedForm.start_date || null,
+      end_date: editMedForm.end_date || null,
+      status: editMedForm.status,
+    }).eq("id", editingMedId);
+    if (error) { toast.error("Failed to update medication"); return; }
+    toast.success("Medication updated");
+    setEditingMedId(null);
+    fetchOverviewData();
+  };
 
   const fetchOverviewData = async () => {
     const [diagRes, medRes, allMedRes, teamRes, allergyRes, considRes] = await Promise.all([
@@ -916,21 +967,44 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
             <CardTitle className="text-base flex items-center gap-2">
               <Pill className="h-4 w-4 text-primary" />
               Active Medications
-              <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs text-muted-foreground" onClick={() => setShowAllMedications(v => !v)}>
-                {showAllMedications ? "Close" : "See all →"}
-              </Button>
+              <div className="ml-auto flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setShowMedForm(v => !v)}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground" onClick={() => setShowAllMedications(v => !v)}>
+                  {showAllMedications ? "Close" : "See all →"}
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {medications.length === 0 ? (
+            {showMedForm && (
+              <div className="space-y-2 mb-3 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Medication name *" value={newMed.medication_name} onChange={e => setNewMed(p => ({ ...p, medication_name: e.target.value }))} className="h-8 text-sm" />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Dose (e.g. 10 mg)" value={newMed.dose} onChange={e => setNewMed(p => ({ ...p, dose: e.target.value }))} className="h-8 text-sm" />
+                  <Input placeholder="Frequency (e.g. 1x daily)" value={newMed.frequency} onChange={e => setNewMed(p => ({ ...p, frequency: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <Input placeholder="Indication (e.g. Hypertension)" value={newMed.indication} onChange={e => setNewMed(p => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
+                <Input type="date" value={newMed.start_date} onChange={e => setNewMed(p => ({ ...p, start_date: e.target.value }))} className="h-8 text-sm" />
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" disabled={!newMed.medication_name.trim()} onClick={handleAddMedication}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowMedForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+            {medications.length === 0 && !showMedForm ? (
               <p className="text-sm text-muted-foreground italic">No active medications recorded.</p>
             ) : (
               <div className="space-y-2">
                 {medications.map((m) => (
-                  <div key={m.id} className="p-2 rounded-md bg-muted/40">
+                  <div key={m.id} className="p-2 rounded-md bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => startEditMed(m)}>
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium">{m.medication_name}</p>
-                      {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                      <div className="flex items-center gap-2">
+                        {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </div>
                     </div>
                     <div className="flex gap-2 mt-0.5">
                       {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
@@ -1281,19 +1355,62 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
             <Pill className="h-5 w-5 text-primary" />
             All Medications
           </h3>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAllMedications(false)}>
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowMedForm(true); setShowAllMedications(true); }}>
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAllMedications(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Edit medication dialog */}
+        {editingMedId && (
+          <div className="p-3 border rounded-md bg-muted/30 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Edit Medication</p>
+            <Input placeholder="Medication name *" value={editMedForm.medication_name} onChange={e => setEditMedForm(p => ({ ...p, medication_name: e.target.value }))} className="h-8 text-sm" />
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="Dose" value={editMedForm.dose} onChange={e => setEditMedForm(p => ({ ...p, dose: e.target.value }))} className="h-8 text-sm" />
+              <Input placeholder="Frequency" value={editMedForm.frequency} onChange={e => setEditMedForm(p => ({ ...p, frequency: e.target.value }))} className="h-8 text-sm" />
+            </div>
+            <Input placeholder="Indication" value={editMedForm.indication} onChange={e => setEditMedForm(p => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Start date</Label>
+                <Input type="date" value={editMedForm.start_date} onChange={e => setEditMedForm(p => ({ ...p, start_date: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">End date</Label>
+                <Input type="date" value={editMedForm.end_date} onChange={e => setEditMedForm(p => ({ ...p, end_date: e.target.value }))} className="h-8 text-sm" />
+              </div>
+            </div>
+            <Select value={editMedForm.status} onValueChange={v => setEditMedForm(p => ({ ...p, status: v }))}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="discontinued">Discontinued</SelectItem>
+                <SelectItem value="on_hold">On Hold</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button size="sm" className="h-7 text-xs" disabled={!editMedForm.medication_name.trim()} onClick={handleSaveMed}>Save</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingMedId(null)}>Cancel</Button>
+            </div>
+          </div>
+        )}
 
         {allMedications.filter(m => m.status === "active").length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</p>
             {allMedications.filter(m => m.status === "active").map((m) => (
-              <div key={m.id} className="p-3 rounded-md bg-muted/40 space-y-1">
+              <div key={m.id} className={`p-3 rounded-md bg-muted/40 space-y-1 cursor-pointer hover:bg-muted/60 transition-colors ${editingMedId === m.id ? "ring-2 ring-primary" : ""}`} onClick={() => startEditMed(m)}>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">{m.medication_name}</p>
-                  {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                  <div className="flex items-center gap-2">
+                    {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {m.frequency && <span className="text-xs text-muted-foreground">{m.frequency}</span>}
@@ -1311,10 +1428,13 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Inactive / Discontinued</p>
             {allMedications.filter(m => m.status !== "active").map((m) => (
-              <div key={m.id} className="p-3 rounded-md bg-muted/20 opacity-60 space-y-1">
+              <div key={m.id} className="p-3 rounded-md bg-muted/20 opacity-60 space-y-1 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => startEditMed(m)}>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">{m.medication_name}</p>
-                  <Badge variant="outline" className="text-xs capitalize">{m.status}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs capitalize">{m.status}</Badge>
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {m.dose && <span className="text-xs text-muted-foreground">{m.dose}</span>}
