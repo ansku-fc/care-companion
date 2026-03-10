@@ -89,12 +89,7 @@ export type OnboardingFormData = {
   genetic_melanoma: boolean;
   genetic_cancer: boolean;
   // Family history
-  family_history_father: string;
-  family_history_mother: string;
-  family_history_siblings: string;
-  family_history_paternal_grandparents: string;
-  family_history_maternal_grandparents: string;
-  family_history_notes: string;
+  family_members: import("./FamilyMemberHistoryEditor").FamilyMember[];
   // Other
   skin_condition: number | null;
   infections_per_year: number | null;
