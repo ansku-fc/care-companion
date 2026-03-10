@@ -1516,6 +1516,183 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   );
 }
 
+const DUMMY_FAMILY_HISTORY = [
+  {
+    id: "fh1",
+    relation: "Father",
+    age: 72,
+    alive: true,
+    conditions: [
+      { name: "Type 2 Diabetes", ageAtOnset: 55, notes: "Managed with metformin" },
+      { name: "Hypertension", ageAtOnset: 48, notes: "On ACE inhibitor since diagnosis" },
+      { name: "Coronary Artery Disease", ageAtOnset: 65, notes: "Stent placement at 66" },
+    ],
+  },
+  {
+    id: "fh2",
+    relation: "Mother",
+    age: 69,
+    alive: true,
+    conditions: [
+      { name: "Breast Cancer", ageAtOnset: 58, notes: "Stage I, treated with lumpectomy + radiation. In remission." },
+      { name: "Osteoporosis", ageAtOnset: 62, notes: "Vertebral compression fracture at 64" },
+      { name: "Hypothyroidism", ageAtOnset: 45, notes: "Levothyroxine 75 mcg daily" },
+    ],
+  },
+  {
+    id: "fh3",
+    relation: "Paternal Grandfather",
+    age: null,
+    alive: false,
+    causeOfDeath: "Myocardial infarction at age 61",
+    conditions: [
+      { name: "Myocardial Infarction", ageAtOnset: 61, notes: "Fatal first event" },
+      { name: "Hyperlipidemia", ageAtOnset: null, notes: "Diagnosed postmortem" },
+    ],
+  },
+  {
+    id: "fh4",
+    relation: "Maternal Grandmother",
+    age: null,
+    alive: false,
+    causeOfDeath: "Colorectal cancer at age 74",
+    conditions: [
+      { name: "Colorectal Cancer", ageAtOnset: 71, notes: "Stage III at diagnosis" },
+      { name: "Type 2 Diabetes", ageAtOnset: 60, notes: "Insulin-dependent" },
+    ],
+  },
+  {
+    id: "fh5",
+    relation: "Brother",
+    age: 42,
+    alive: true,
+    conditions: [
+      { name: "Asthma", ageAtOnset: 12, notes: "Moderate persistent, uses inhaled corticosteroids" },
+      { name: "Anxiety Disorder", ageAtOnset: 30, notes: "GAD, managed with SSRI" },
+    ],
+  },
+  {
+    id: "fh6",
+    relation: "Sister",
+    age: 38,
+    alive: true,
+    conditions: [
+      { name: "BRCA2 Mutation Carrier", ageAtOnset: null, notes: "Identified through genetic screening. Undergoing enhanced surveillance." },
+      { name: "Polycystic Ovary Syndrome", ageAtOnset: 22, notes: "Managed with lifestyle modifications" },
+    ],
+  },
+  {
+    id: "fh7",
+    relation: "Paternal Uncle",
+    age: 68,
+    alive: true,
+    conditions: [
+      { name: "Prostate Cancer", ageAtOnset: 63, notes: "Gleason 6, active surveillance" },
+      { name: "Type 2 Diabetes", ageAtOnset: 50, notes: "On oral hypoglycemics" },
+    ],
+  },
+];
+
+const GENETIC_PREDISPOSITIONS = [
+  { risk: "Cardiovascular Disease", level: "high" as const, basis: "Father (CAD, hypertension), paternal grandfather (MI at 61). Strong paternal lineage." },
+  { risk: "Type 2 Diabetes", level: "high" as const, basis: "Father, maternal grandmother, paternal uncle. Multi-generational prevalence." },
+  { risk: "Breast / Ovarian Cancer", level: "moderate" as const, basis: "Mother (breast cancer at 58), sister (BRCA2 carrier). Recommend genetic counseling." },
+  { risk: "Colorectal Cancer", level: "moderate" as const, basis: "Maternal grandmother (colorectal cancer at 71). Consider early screening." },
+  { risk: "Osteoporosis", level: "low" as const, basis: "Mother diagnosed at 62. Monitor bone density." },
+  { risk: "Mental Health (Anxiety)", level: "low" as const, basis: "Brother with GAD. Single occurrence in family." },
+];
+
+function FamilyHistoryView() {
+  const riskColor = (level: "high" | "moderate" | "low") => {
+    switch (level) {
+      case "high": return "bg-destructive/10 text-destructive border-destructive/20";
+      case "moderate": return "bg-amber-500/10 text-amber-700 border-amber-500/20";
+      case "low": return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Genetic Predispositions Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-primary" />
+            Genetic Predispositions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {GENETIC_PREDISPOSITIONS.map((gp) => (
+              <div key={gp.risk} className={`rounded-lg border p-3 ${riskColor(gp.level)}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold">{gp.risk}</span>
+                  <Badge variant="outline" className={`text-xs capitalize ${riskColor(gp.level)}`}>
+                    {gp.level} risk
+                  </Badge>
+                </div>
+                <p className="text-xs opacity-80">{gp.basis}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Family Members */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            Family Medical History
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {DUMMY_FAMILY_HISTORY.map((member) => (
+            <div key={member.id} className="border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{member.relation}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {member.alive ? `Age ${member.age}` : `Deceased`}
+                      {!member.alive && member.causeOfDeath ? ` — ${member.causeOfDeath}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant={member.alive ? "secondary" : "outline"} className="text-xs">
+                  {member.alive ? "Living" : "Deceased"}
+                </Badge>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="h-8 text-xs">Condition</TableHead>
+                    <TableHead className="h-8 text-xs">Age at Onset</TableHead>
+                    <TableHead className="h-8 text-xs">Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {member.conditions.map((c, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm font-medium py-2">{c.name}</TableCell>
+                      <TableCell className="text-sm py-2">{c.ageAtOnset ?? "Unknown"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground py-2">{c.notes}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 function PatientDetailsView({
   patient, onboarding, age, labResults, onLabResultsAdded, visitNotes, appointments,
 }: {
@@ -1530,8 +1707,9 @@ function PatientDetailsView({
   return (
     <Tabs defaultValue="personal" className="space-y-4">
       <TabsList className="w-full">
-        <TabsTrigger value="personal" className="flex-1">Personal Information</TabsTrigger>
+       <TabsTrigger value="personal" className="flex-1">Personal Information</TabsTrigger>
         <TabsTrigger value="contact" className="flex-1">Contact Details</TabsTrigger>
+        <TabsTrigger value="family" className="flex-1">Family History</TabsTrigger>
         <TabsTrigger value="visits" className="flex-1">Visit History</TabsTrigger>
       </TabsList>
 
@@ -1580,6 +1758,10 @@ function PatientDetailsView({
             </dl>
           </CardContent>
         </Card>
+      </TabsContent>
+
+      <TabsContent value="family">
+        <FamilyHistoryView />
       </TabsContent>
 
       <TabsContent value="visits">
