@@ -88,6 +88,13 @@ export type OnboardingFormData = {
   genetic_cardiovascular: boolean;
   genetic_melanoma: boolean;
   genetic_cancer: boolean;
+  // Family history
+  family_history_father: string;
+  family_history_mother: string;
+  family_history_siblings: string;
+  family_history_paternal_grandparents: string;
+  family_history_maternal_grandparents: string;
+  family_history_notes: string;
   // Other
   skin_condition: number | null;
   infections_per_year: number | null;
