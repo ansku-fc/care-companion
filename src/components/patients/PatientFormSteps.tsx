@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FamilyMemberHistoryEditor } from "./FamilyMemberHistoryEditor";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -453,59 +454,10 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
             <BoolField label="Cancer" value={form.genetic_cancer} onChange={(v) => updateField("genetic_cancer", v)} />
           </div>
         </div>
-        <div>
-          <h4 className="font-medium mb-3">Family Medical History</h4>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label>Father – Medical Conditions</Label>
-              <Textarea
-                placeholder="e.g. Hypertension (age 45), CAD (age 58), Type 2 Diabetes (age 52)..."
-                value={form.family_history_father}
-                onChange={(e) => updateField("family_history_father", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Mother – Medical Conditions</Label>
-              <Textarea
-                placeholder="e.g. Breast cancer (age 62), Osteoporosis (age 55)..."
-                value={form.family_history_mother}
-                onChange={(e) => updateField("family_history_mother", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Siblings – Medical Conditions</Label>
-              <Textarea
-                placeholder="e.g. Brother: Type 2 Diabetes (age 40). Sister: None..."
-                value={form.family_history_siblings}
-                onChange={(e) => updateField("family_history_siblings", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Paternal Grandparents – Medical Conditions</Label>
-              <Textarea
-                placeholder="e.g. Grandfather: MI at 61, Grandmother: Alzheimer's (age 78)..."
-                value={form.family_history_paternal_grandparents}
-                onChange={(e) => updateField("family_history_paternal_grandparents", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Maternal Grandparents – Medical Conditions</Label>
-              <Textarea
-                placeholder="e.g. Grandfather: Colon cancer (age 70), Grandmother: Rheumatoid arthritis..."
-                value={form.family_history_maternal_grandparents}
-                onChange={(e) => updateField("family_history_maternal_grandparents", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Additional Family History Notes</Label>
-              <Textarea
-                placeholder="Any other relevant hereditary or familial conditions..."
-                value={form.family_history_notes}
-                onChange={(e) => updateField("family_history_notes", e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
+        <FamilyMemberHistoryEditor
+          members={form.family_members}
+          onChange={(members) => updateField("family_members", members)}
+        />
       </div>
     );
   }
