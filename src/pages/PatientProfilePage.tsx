@@ -1693,6 +1693,7 @@ function FamilyHistoryView() {
 }
 
 
+function PatientDetailsView({
   patient, onboarding, age, labResults, onLabResultsAdded, visitNotes, appointments,
 }: {
   patient: Tables<"patients">;
