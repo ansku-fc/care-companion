@@ -128,7 +128,7 @@ const defaultFormData: OnboardingFormData = {
   illness_cancer: false, illness_cancer_notes: "", illness_musculoskeletal: false, illness_musculoskeletal_notes: "",
   prev_brain_damage: false, prev_brain_damage_notes: "", prev_osteoporotic_fracture: false, prev_osteoporotic_fracture_notes: "", prev_cancer: false, prev_cancer_notes: "", prev_precancerous: false, prev_precancerous_notes: "",
   genetic_nervous_system: false, genetic_cardiovascular: false, genetic_melanoma: false, genetic_cancer: false,
-  family_history_father: "", family_history_mother: "", family_history_siblings: "", family_history_paternal_grandparents: "", family_history_maternal_grandparents: "", family_history_notes: "",
+  family_members: [],
   skin_condition: null, infections_per_year: null, vision_acuity: null,
   cancer_screening_breast: null, cancer_screening_cervical: null, cancer_screening_colorectal: null,
   symptom_smell: false, symptom_vision: false, symptom_hearing: false, symptom_neurological: false,
