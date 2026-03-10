@@ -1583,6 +1583,10 @@ function PatientDetailsView({
         </Card>
       </TabsContent>
 
+      <TabsContent value="family">
+        <FamilyHistoryView />
+      </TabsContent>
+
       <TabsContent value="visits">
         <Card>
           <CardHeader><CardTitle className="text-lg">Visit History</CardTitle></CardHeader>
