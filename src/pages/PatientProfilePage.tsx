@@ -1530,8 +1530,9 @@ function PatientDetailsView({
   return (
     <Tabs defaultValue="personal" className="space-y-4">
       <TabsList className="w-full">
-        <TabsTrigger value="personal" className="flex-1">Personal Information</TabsTrigger>
+       <TabsTrigger value="personal" className="flex-1">Personal Information</TabsTrigger>
         <TabsTrigger value="contact" className="flex-1">Contact Details</TabsTrigger>
+        <TabsTrigger value="family" className="flex-1">Family History</TabsTrigger>
         <TabsTrigger value="visits" className="flex-1">Visit History</TabsTrigger>
       </TabsList>
 
