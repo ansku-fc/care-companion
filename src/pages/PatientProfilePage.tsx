@@ -3460,6 +3460,34 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                 </div>
               </div>
             )}
+            {/* Lab Values List */}
+            {selectedMarker && chartData.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Lab Values</p>
+                <div className="space-y-1.5">
+                  {sorted.map((lab) => {
+                    const val = selectedMarker.key === "blood_pressure_systolic"
+                      ? (lab.blood_pressure_systolic != null ? `${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic}` : null)
+                      : (() => { const v = (lab as any)[selectedMarker.key]; return v === null || v === undefined ? null : typeof v === "boolean" ? (v ? "1" : "0") : String(v); })();
+                    if (val === null) return null;
+                    const d = new Date(lab.result_date);
+                    const exactDate = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+                    return (
+                      <div key={lab.id} className="flex items-center justify-between text-xs py-1.5 px-2 rounded bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{val}</span>
+                          <span className="text-muted-foreground">{selectedMarker.unit}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span>{exactDate}</span>
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 capitalize">{lab.source || "manual"}</Badge>
+                        </div>
+                      </div>
+                    );
+                  }).filter(Boolean)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
