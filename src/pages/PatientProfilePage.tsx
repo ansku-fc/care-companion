@@ -3308,9 +3308,13 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                   <table className="text-sm border-collapse w-max">
                     <thead className="sticky top-0 z-10 bg-card">
                       <tr className="border-b">
-                        {sorted.map((lab) => (
-                          <th key={lab.id} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] whitespace-nowrap">{lab.result_date}</th>
-                        ))}
+                         {sorted.map((lab) => {
+                          const d = new Date(lab.result_date);
+                          const label = `${d.getFullYear()} / ${String(d.getMonth() + 1).padStart(2, "0")}`;
+                          return (
+                            <th key={lab.id} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] whitespace-nowrap">{label}</th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
