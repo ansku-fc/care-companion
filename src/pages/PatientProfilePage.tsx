@@ -3308,9 +3308,13 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                   <table className="text-sm border-collapse w-max">
                     <thead className="sticky top-0 z-10 bg-card">
                       <tr className="border-b">
-                        {sorted.map((lab) => (
-                          <th key={lab.id} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] whitespace-nowrap">{lab.result_date}</th>
-                        ))}
+                         {sorted.map((lab) => {
+                          const d = new Date(lab.result_date);
+                          const label = `${d.getFullYear()} / ${String(d.getMonth() + 1).padStart(2, "0")}`;
+                          return (
+                            <th key={lab.id} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] whitespace-nowrap">{label}</th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
@@ -3453,6 +3457,34 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            )}
+            {/* Lab Values List */}
+            {selectedMarker && chartData.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Lab Values</p>
+                <div className="space-y-1.5">
+                  {sorted.map((lab) => {
+                    const val = selectedMarker.key === "blood_pressure_systolic"
+                      ? (lab.blood_pressure_systolic != null ? `${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic}` : null)
+                      : (() => { const v = (lab as any)[selectedMarker.key]; return v === null || v === undefined ? null : typeof v === "boolean" ? (v ? "1" : "0") : String(v); })();
+                    if (val === null) return null;
+                    const d = new Date(lab.result_date);
+                    const exactDate = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+                    return (
+                      <div key={lab.id} className="flex items-center justify-between text-xs py-1.5 px-2 rounded bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{val}</span>
+                          <span className="text-muted-foreground">{selectedMarker.unit}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span>{exactDate}</span>
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 capitalize">{lab.source || "manual"}</Badge>
+                        </div>
+                      </div>
+                    );
+                  }).filter(Boolean)}
                 </div>
               </div>
             )}
