@@ -8,50 +8,50 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 20% 10%;
+    --background: 30 20% 97%;
+    --foreground: 24 30% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 24 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 24 30% 12%;
 
-    --primary: 211 60% 48%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 24 40% 28%;
+    --primary-foreground: 36 30% 96%;
 
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 220 20% 20%;
+    --secondary: 33 20% 92%;
+    --secondary-foreground: 24 25% 18%;
 
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 14% 46%;
+    --muted: 33 15% 93%;
+    --muted-foreground: 24 10% 46%;
 
-    --accent: 210 20% 94%;
-    --accent-foreground: 220 20% 15%;
+    --accent: 33 25% 90%;
+    --accent-foreground: 24 25% 15%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 60% 40%;
+    --success: 142 45% 38%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 80% 50%;
+    --warning-foreground: 24 30% 12%;
 
-    --border: 214 20% 90%;
-    --input: 214 20% 90%;
-    --ring: 211 60% 48%;
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 24 40% 28%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 15% 30%;
-    --sidebar-primary: 211 60% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 220 15% 20%;
-    --sidebar-border: 214 20% 92%;
-    --sidebar-ring: 211 60% 48%;
+    --sidebar-foreground: 24 20% 28%;
+    --sidebar-primary: 24 40% 28%;
+    --sidebar-primary-foreground: 36 30% 96%;
+    --sidebar-accent: 33 20% 94%;
+    --sidebar-accent-foreground: 24 20% 18%;
+    --sidebar-border: 30 15% 90%;
+    --sidebar-ring: 24 40% 28%;
   }
 
   .dark {
