@@ -1047,6 +1047,8 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string | null
+          assignee_name: string | null
+          assignee_type: string | null
           category: Database["public"]["Enums"]["task_category"]
           created_at: string
           created_by: string
@@ -1061,6 +1063,8 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          assignee_name?: string | null
+          assignee_type?: string | null
           category: Database["public"]["Enums"]["task_category"]
           created_at?: string
           created_by: string
@@ -1075,6 +1079,8 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          assignee_name?: string | null
+          assignee_type?: string | null
           category?: Database["public"]["Enums"]["task_category"]
           created_at?: string
           created_by?: string
