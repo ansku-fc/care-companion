@@ -343,11 +343,11 @@ const TasksPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Patient (optional)</Label>
+                <Label>Patient <span className="text-destructive">*</span></Label>
                 <Select value={form.patient_id || "none"} onValueChange={(v) => setForm({ ...form, patient_id: v === "none" ? "" : v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No patient</SelectItem>
+                    <SelectItem value="none">Select patient…</SelectItem>
                     {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
