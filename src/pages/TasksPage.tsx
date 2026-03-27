@@ -159,6 +159,11 @@ const TasksPage = () => {
     return teamMembers.find((m) => m.user_id === id)?.role || "";
   };
 
+  const getPatientName = (id: string | null) => {
+    if (!id) return null;
+    return patients.find((p) => p.id === id)?.full_name || "Unknown Patient";
+  };
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
