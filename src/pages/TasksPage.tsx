@@ -7,23 +7,47 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Filter } from "lucide-react";
+import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import type { Tables, Enums } from "@/integrations/supabase/types";
+import type { Enums } from "@/integrations/supabase/types";
 import { format } from "date-fns";
 
-type Task = Tables<"tasks">;
 type TaskCategory = Enums<"task_category">;
 type TaskPriority = Enums<"task_priority">;
 type TaskStatus = Enums<"task_status">;
 
-interface TeamMember {
-  user_id: string;
-  full_name: string;
-  role: string;
+interface TaskRow {
+  id: string;
+  title: string;
+  description: string | null;
+  category: TaskCategory;
+  priority: TaskPriority;
+  status: TaskStatus;
+  assigned_to: string | null;
+  assignee_name: string | null;
+  assignee_type: string | null;
+  patient_id: string | null;
+  due_date: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
+
+const ASSIGNEE_TYPE_OPTIONS = [
+  { value: "doctor_internal", label: "Doctor (Internal)" },
+  { value: "doctor_external", label: "Doctor (External)" },
+  { value: "nurse_internal", label: "Nurse (Internal)" },
+  { value: "nurse_external", label: "Nurse (External)" },
+];
+
+const assigneeTypeLabel: Record<string, string> = {
+  doctor_internal: "Doctor · Internal",
+  doctor_external: "Doctor · External",
+  nurse_internal: "Nurse · Internal",
+  nurse_external: "Nurse · External",
+};
 
 const taskCategories: { key: TaskCategory; label: string; color: string }[] = [
   { key: "clinical_review", label: "Clinical Review & Interpretation", color: "bg-primary" },
@@ -51,54 +75,36 @@ const EMPTY_FORM = {
   category: "clinical_review" as TaskCategory,
   priority: "medium" as TaskPriority,
   status: "todo" as TaskStatus,
-  assigned_to: "",
+  assignee_name: "",
+  assignee_type: "doctor_internal",
   patient_id: "",
   due_date: "",
 };
 
 const TasksPage = () => {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [patients, setPatients] = useState<{ id: string; full_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const fetchData = async () => {
     setLoading(true);
-    const [tasksRes, profilesRes, rolesRes, patientsRes] = await Promise.all([
+    const [tasksRes, patientsRes] = await Promise.all([
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("user_id, full_name"),
-      supabase.from("user_roles").select("user_id, role"),
       supabase.from("patients").select("id, full_name").order("full_name"),
     ]);
 
-    if (tasksRes.data) setTasks(tasksRes.data);
+    if (tasksRes.data) setTasks(tasksRes.data as unknown as TaskRow[]);
     if (patientsRes.data) setPatients(patientsRes.data);
-
-    // Merge profiles with roles
-    if (profilesRes.data && rolesRes.data) {
-      const roleMap = new Map(rolesRes.data.map((r) => [r.user_id, r.role]));
-      const members: TeamMember[] = profilesRes.data
-        .filter((p) => p.full_name)
-        .map((p) => ({
-          user_id: p.user_id,
-          full_name: p.full_name,
-          role: roleMap.get(p.user_id) || "staff",
-        }));
-      setTeamMembers(members);
-    }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const openCreate = () => {
     setEditingTask(null);
@@ -106,7 +112,7 @@ const TasksPage = () => {
     setDialogOpen(true);
   };
 
-  const openEdit = (task: Task) => {
+  const openEdit = (task: TaskRow) => {
     setEditingTask(task);
     setForm({
       title: task.title,
@@ -114,7 +120,8 @@ const TasksPage = () => {
       category: task.category,
       priority: task.priority,
       status: task.status,
-      assigned_to: task.assigned_to || "",
+      assignee_name: task.assignee_name || "",
+      assignee_type: task.assignee_type || "doctor_internal",
       patient_id: task.patient_id || "",
       due_date: task.due_date || "",
     });
@@ -122,41 +129,32 @@ const TasksPage = () => {
   };
 
   const handleSave = async () => {
-    if (!user || !form.title.trim()) return;
+    if (!user || !form.title.trim() || !form.patient_id) return;
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       title: form.title.trim(),
       description: form.description.trim() || null,
       category: form.category,
       priority: form.priority,
       status: form.status,
-      assigned_to: form.assigned_to || null,
+      assignee_name: form.assignee_name.trim() || null,
+      assignee_type: form.assignee_name.trim() ? form.assignee_type : null,
       patient_id: form.patient_id || null,
       due_date: form.due_date || null,
     };
 
     if (editingTask) {
-      const { error } = await supabase.from("tasks").update(payload).eq("id", editingTask.id);
+      const { error } = await supabase.from("tasks").update(payload as any).eq("id", editingTask.id);
       if (error) { toast.error("Failed to update task"); return; }
       toast.success("Task updated");
     } else {
-      const { error } = await supabase.from("tasks").insert({ ...payload, created_by: user.id });
+      const { error } = await supabase.from("tasks").insert({ ...payload, created_by: user.id } as any);
       if (error) { toast.error("Failed to create task"); return; }
       toast.success("Task created");
     }
 
     setDialogOpen(false);
     fetchData();
-  };
-
-  const getAssigneeName = (id: string | null) => {
-    if (!id) return "Unassigned";
-    return teamMembers.find((m) => m.user_id === id)?.full_name || "Unknown";
-  };
-
-  const getAssigneeRole = (id: string | null) => {
-    if (!id) return "";
-    return teamMembers.find((m) => m.user_id === id)?.role || "";
   };
 
   const getPatientName = (id: string | null) => {
@@ -167,11 +165,10 @@ const TasksPage = () => {
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
-      if (filterAssignee !== "all" && (t.assigned_to || "") !== filterAssignee) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       return true;
     });
-  }, [tasks, filterCategory, filterAssignee, filterStatus]);
+  }, [tasks, filterCategory, filterStatus]);
 
   return (
     <div className="space-y-6">
@@ -192,20 +189,6 @@ const TasksPage = () => {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {taskCategories.map((c) => <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Assignee</Label>
-          <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-            <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Assignees</SelectItem>
-              {teamMembers.map((m) => (
-                <SelectItem key={m.user_id} value={m.user_id}>
-                  {m.full_name} ({m.role})
-                </SelectItem>
-              ))}
             </SelectContent>
           </Select>
         </div>
@@ -232,9 +215,8 @@ const TasksPage = () => {
         <div className="space-y-3">
           {filteredTasks.map((task) => {
             const cat = taskCategories.find((c) => c.key === task.category);
-            const assigneeName = getAssigneeName(task.assigned_to);
-            const assigneeRole = getAssigneeRole(task.assigned_to);
             const patientName = getPatientName(task.patient_id);
+            const typeLabel = task.assignee_type ? assigneeTypeLabel[task.assignee_type] : null;
             return (
               <Card key={task.id} className="cursor-pointer hover:border-primary/40 transition-colors" onClick={() => openEdit(task)}>
                 <CardContent className="p-4">
@@ -255,7 +237,10 @@ const TasksPage = () => {
                         )}
                         <span>{cat?.label}</span>
                         <span>•</span>
-                        <span>{assigneeName}{assigneeRole ? ` (${assigneeRole})` : ""}</span>
+                        <span>
+                          {task.assignee_name || "Unassigned"}
+                          {typeLabel && <span className="ml-1 text-muted-foreground">({typeLabel})</span>}
+                        </span>
                         {task.due_date && (
                           <>
                             <span>•</span>
@@ -316,19 +301,20 @@ const TasksPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Assign To</Label>
-                <Select value={form.assigned_to || "unassigned"} onValueChange={(v) => setForm({ ...form, assigned_to: v === "unassigned" ? "" : v })}>
+                <Label>Assignee Name</Label>
+                <Input value={form.assignee_name} onChange={(e) => setForm({ ...form, assignee_name: e.target.value })} placeholder="e.g. Dr. Anna Korhonen" />
+              </div>
+              <div className="space-y-1">
+                <Label>Assignee Type</Label>
+                <Select value={form.assignee_type} onValueChange={(v) => setForm({ ...form, assignee_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {teamMembers.map((m) => (
-                      <SelectItem key={m.user_id} value={m.user_id}>
-                        {m.full_name} ({m.role})
-                      </SelectItem>
-                    ))}
+                    {ASSIGNEE_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as TaskStatus })}>
@@ -340,22 +326,20 @@ const TasksPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Patient <span className="text-destructive">*</span></Label>
-                <Select value={form.patient_id || "none"} onValueChange={(v) => setForm({ ...form, patient_id: v === "none" ? "" : v })}>
-                  <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select patient…</SelectItem>
-                    {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-1">
                 <Label>Due Date</Label>
                 <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Patient <span className="text-destructive">*</span></Label>
+              <Select value={form.patient_id || "none"} onValueChange={(v) => setForm({ ...form, patient_id: v === "none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Select patient…</SelectItem>
+                  {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
