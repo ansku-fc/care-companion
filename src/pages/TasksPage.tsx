@@ -360,7 +360,7 @@ const TasksPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!form.title.trim()}>{editingTask ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={!form.title.trim() || !form.patient_id}>{editingTask ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
