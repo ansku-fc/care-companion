@@ -234,6 +234,7 @@ const TasksPage = () => {
             const cat = taskCategories.find((c) => c.key === task.category);
             const assigneeName = getAssigneeName(task.assigned_to);
             const assigneeRole = getAssigneeRole(task.assigned_to);
+            const patientName = getPatientName(task.patient_id);
             return (
               <Card key={task.id} className="cursor-pointer hover:border-primary/40 transition-colors" onClick={() => openEdit(task)}>
                 <CardContent className="p-4">
@@ -246,6 +247,12 @@ const TasksPage = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {patientName && (
+                          <>
+                            <span className="font-medium text-foreground">{patientName}</span>
+                            <span>•</span>
+                          </>
+                        )}
                         <span>{cat?.label}</span>
                         <span>•</span>
                         <span>{assigneeName}{assigneeRole ? ` (${assigneeRole})` : ""}</span>
