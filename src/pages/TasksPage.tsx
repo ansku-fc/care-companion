@@ -91,6 +91,7 @@ const TasksPage = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterPatient, setFilterPatient] = useState<string>("all");
 
   const fetchData = async () => {
     setLoading(true);
@@ -166,9 +167,10 @@ const TasksPage = () => {
     return tasks.filter((t) => {
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterPatient !== "all" && (t.patient_id || "") !== filterPatient) return false;
       return true;
     });
-  }, [tasks, filterCategory, filterStatus]);
+  }, [tasks, filterCategory, filterStatus, filterPatient]);
 
   return (
     <div className="space-y-6">
@@ -189,6 +191,16 @@ const TasksPage = () => {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {taskCategories.map((c) => <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Patient</Label>
+          <Select value={filterPatient} onValueChange={setFilterPatient}>
+            <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Patients</SelectItem>
+              {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -221,25 +233,24 @@ const TasksPage = () => {
               <Card key={task.id} className="cursor-pointer hover:border-primary/40 transition-colors" onClick={() => openEdit(task)}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 space-y-1.5">
                       <div className="flex items-center gap-2">
                         <div className={`h-2 w-2 rounded-full ${cat?.color}`} />
                         <p className={`text-sm font-medium ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}>
                           {task.title}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {patientName && (
-                          <>
-                            <span className="font-medium text-foreground">{patientName}</span>
-                            <span>•</span>
-                          </>
-                        )}
+                      {patientName && (
+                        <div className="flex items-center gap-2 ml-4">
+                          <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">{patientName}</Badge>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground ml-4">
                         <span>{cat?.label}</span>
                         <span>•</span>
                         <span>
                           {task.assignee_name || "Unassigned"}
-                          {typeLabel && <span className="ml-1 text-muted-foreground">({typeLabel})</span>}
+                          {typeLabel && <span className="ml-1">({typeLabel})</span>}
                         </span>
                         {task.due_date && (
                           <>
