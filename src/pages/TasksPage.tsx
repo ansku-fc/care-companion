@@ -166,9 +166,10 @@ const TasksPage = () => {
     return tasks.filter((t) => {
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterPatient !== "all" && (t.patient_id || "") !== filterPatient) return false;
       return true;
     });
-  }, [tasks, filterCategory, filterStatus]);
+  }, [tasks, filterCategory, filterStatus, filterPatient]);
 
   return (
     <div className="space-y-6">
