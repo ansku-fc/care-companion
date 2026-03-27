@@ -159,6 +159,11 @@ const TasksPage = () => {
     return teamMembers.find((m) => m.user_id === id)?.role || "";
   };
 
+  const getPatientName = (id: string | null) => {
+    if (!id) return null;
+    return patients.find((p) => p.id === id)?.full_name || "Unknown Patient";
+  };
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
@@ -229,6 +234,7 @@ const TasksPage = () => {
             const cat = taskCategories.find((c) => c.key === task.category);
             const assigneeName = getAssigneeName(task.assigned_to);
             const assigneeRole = getAssigneeRole(task.assigned_to);
+            const patientName = getPatientName(task.patient_id);
             return (
               <Card key={task.id} className="cursor-pointer hover:border-primary/40 transition-colors" onClick={() => openEdit(task)}>
                 <CardContent className="p-4">
@@ -241,6 +247,12 @@ const TasksPage = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {patientName && (
+                          <>
+                            <span className="font-medium text-foreground">{patientName}</span>
+                            <span>•</span>
+                          </>
+                        )}
                         <span>{cat?.label}</span>
                         <span>•</span>
                         <span>{assigneeName}{assigneeRole ? ` (${assigneeRole})` : ""}</span>
@@ -331,11 +343,11 @@ const TasksPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Patient (optional)</Label>
+                <Label>Patient <span className="text-destructive">*</span></Label>
                 <Select value={form.patient_id || "none"} onValueChange={(v) => setForm({ ...form, patient_id: v === "none" ? "" : v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No patient</SelectItem>
+                    <SelectItem value="none">Select patient…</SelectItem>
                     {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -348,7 +360,7 @@ const TasksPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!form.title.trim()}>{editingTask ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={!form.title.trim() || !form.patient_id}>{editingTask ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
