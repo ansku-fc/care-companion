@@ -195,6 +195,16 @@ const TasksPage = () => {
           </Select>
         </div>
         <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Patient</Label>
+          <Select value={filterPatient} onValueChange={setFilterPatient}>
+            <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Patients</SelectItem>
+              {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Status</Label>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
