@@ -91,6 +91,7 @@ const TasksPage = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterPatient, setFilterPatient] = useState<string>("all");
 
   const fetchData = async () => {
     setLoading(true);
