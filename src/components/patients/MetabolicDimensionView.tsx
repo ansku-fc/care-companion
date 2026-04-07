@@ -417,7 +417,7 @@ export function MetabolicDimensionView({
             <div className="flex items-center gap-2">
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-lg font-bold ${scoreColor}`}>{riskScore}/10</span>
+                <span className={`text-lg font-bold ${scoreColor}`}>{compositeScore}/10</span>
               </div>
               <Button
                 variant={showRiskHistory ? "default" : "outline"} size="sm" className="gap-1.5 text-xs"
