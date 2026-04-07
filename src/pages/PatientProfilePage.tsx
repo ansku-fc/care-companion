@@ -471,8 +471,8 @@ function HealthOverviewView({
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, cursor: "pointer" }}
                   onClick={(e: any) => {
                     if (e?.value) {
-                      const dim = HEALTH_DIMENSIONS.find((d) => d.label === e.value);
-                      if (dim) onSelectDimension(dim.key);
+                      const main = HEALTH_TAXONOMY.find((d) => d.label === e.value);
+                      if (main) onSelectDimension(main.key);
                     }
                   }}
                 />
