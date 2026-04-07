@@ -550,6 +550,21 @@ export function HealthReportDialog({
                         <span className={cn("h-2 w-2 rounded-full shrink-0", dotColor)} />
                         {dim.label}
                       </button>
+                      {/* Metabolic sub-dimensions in sidebar */}
+                      {dim.key === "metabolic" && METABOLIC_SUB_DIMS.map(sub => (
+                        <button
+                          key={sub.key}
+                          onClick={() => scrollToPage(`metabolic_${sub.key}`)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left pl-7",
+                            activePageKey === `metabolic_${sub.key}`
+                              ? "bg-white/15 text-white font-medium"
+                              : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                          )}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
                       {dim.key === "skin_mucous" && (
                         <button
                           onClick={() => scrollToPage("skin-map")}
