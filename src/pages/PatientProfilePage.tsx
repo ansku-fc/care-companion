@@ -1876,7 +1876,7 @@ function HealthDimensionView({
     );
   }
 
-  if (dimensionKey === "skin_mucous") {
+  if (dimensionKey === "skin_mucous" || dimensionKey === "skin" || dimensionKey === "skin_oral_mucosal") {
     return (
       <SkinMucousDimensionView
         patient={patient}
