@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -145,9 +145,48 @@ function getRiskFactors(key: string, onboarding: Tables<"patient_onboarding"> | 
       { label: "Insomnia", value: bool(onboarding.insomnia) },
       { label: "Sleep Apnoea", value: bool(onboarding.symptom_sleep_apnoea) },
     ],
+    // Metabolic sub-dimensions
+    metabolic: () => [
+      { label: "BMI", value: fmt(onboarding.bmi) },
+      { label: "Weight (kg)", value: fmt(onboarding.weight_kg) },
+      { label: "Height (cm)", value: fmt(onboarding.height_cm) },
+      { label: "Waist Circumference (cm)", value: fmt(onboarding.waist_circumference_cm) },
+      { label: "Waist-Hip Ratio", value: fmt(onboarding.waist_to_hip_ratio) },
+      { label: "Endocrine / Hormone Illness", value: bool(onboarding.illness_hormone) },
+      { label: "Kidney Illness", value: bool(onboarding.illness_kidney) },
+      { label: "Kidney Function Symptoms", value: bool(onboarding.symptom_kidney_function) },
+    ],
+    endocrine: () => [
+      { label: "Hormone Illness", value: bool(onboarding.illness_hormone) },
+      { label: "Menstruation/Menopause", value: bool(onboarding.symptom_menstruation_menopause) },
+    ],
+    kidneys: () => [
+      { label: "Kidney Illness", value: bool(onboarding.illness_kidney) },
+      { label: "Kidney Function Symptoms", value: bool(onboarding.symptom_kidney_function) },
+    ],
+    body_composition: () => [
+      { label: "BMI", value: fmt(onboarding.bmi) },
+      { label: "Weight (kg)", value: fmt(onboarding.weight_kg) },
+      { label: "Height (cm)", value: fmt(onboarding.height_cm) },
+      { label: "Waist Circumference (cm)", value: fmt(onboarding.waist_circumference_cm) },
+      { label: "Waist-Hip Ratio", value: fmt(onboarding.waist_to_hip_ratio) },
+    ],
+    metabolism: () => [
+      { label: "BMI", value: fmt(onboarding.bmi) },
+      { label: "Exercise (MET hrs/week)", value: fmt(onboarding.exercise_met_hours) },
+    ],
   };
   return map[key]?.() ?? [];
 }
+
+// Metabolic sub-dimension definitions for report
+const METABOLIC_SUB_DIMS = [
+  { key: "endocrine", label: "2.1 Endocrine System" },
+  { key: "kidneys", label: "2.2 Kidneys" },
+  { key: "body_composition", label: "2.3 Body Composition" },
+  { key: "nutrition", label: "2.4 Nutrition" },
+  { key: "metabolism", label: "2.5 Metabolism" },
+];
 
 function getLabMarkers(key: string): { dbKey: string; label: string; unit: string; refLow?: number; refHigh?: number; secondaryKey?: string; secondaryLabel?: string }[] {
   const map: Record<string, { dbKey: string; label: string; unit: string; refLow?: number; refHigh?: number; secondaryKey?: string; secondaryLabel?: string }[]> = {
@@ -173,6 +212,35 @@ function getLabMarkers(key: string): { dbKey: string; label: string; unit: strin
       { dbKey: "fev1_percent", label: "FEV1", unit: "%" },
       { dbKey: "fvc_percent", label: "FVC", unit: "%" },
       { dbKey: "pef_percent", label: "PEF", unit: "%" },
+    ],
+    // Metabolic sub-dimensions
+    endocrine: [
+      { dbKey: "free_t4_pmol_l", label: "Free T4", unit: "pmol/L", refLow: 12, refHigh: 22 },
+      { dbKey: "tsh_mu_l", label: "TSH", unit: "mU/L", refLow: 0.4, refHigh: 4.0 },
+    ],
+    kidneys: [
+      { dbKey: "egfr", label: "eGFR", unit: "mL/min/1.73m²", refLow: 60 },
+      { dbKey: "creatinine_umol_l", label: "Creatinine", unit: "µmol/L", refLow: 45, refHigh: 110 },
+      { dbKey: "cystatin_c", label: "Cystatin C", unit: "mg/L", refHigh: 1.03 },
+      { dbKey: "calcium_mmol_l", label: "Calcium", unit: "mmol/L", refLow: 2.15, refHigh: 2.55 },
+      { dbKey: "potassium_mmol_l", label: "Potassium", unit: "mmol/L", refLow: 3.5, refHigh: 5.0 },
+      { dbKey: "magnesium_mmol_l", label: "Magnesium", unit: "mmol/L", refLow: 0.7, refHigh: 1.0 },
+      { dbKey: "sodium_mmol_l", label: "Sodium", unit: "mmol/L", refLow: 136, refHigh: 145 },
+      { dbKey: "urine_acr_mg_mmol", label: "Urine ACR", unit: "mg/mmol", refHigh: 3.0 },
+    ],
+    nutrition: [
+      { dbKey: "holotranscobalamin_pmol_l", label: "Holotranscobalamin", unit: "pmol/L", refLow: 50 },
+      { dbKey: "vitamin_b12_total_ng_l", label: "Vitamin B12", unit: "ng/L", refLow: 200, refHigh: 900 },
+      { dbKey: "vitamin_d_25oh_nmol_l", label: "Vitamin D", unit: "nmol/L", refLow: 75 },
+      { dbKey: "folate_ug_l", label: "Folate", unit: "µg/L", refLow: 5.9 },
+      { dbKey: "iron_serum_umol_l", label: "Iron (serum)", unit: "µmol/L", refLow: 10, refHigh: 30 },
+      { dbKey: "ferritin_ug_l", label: "Ferritin", unit: "µg/L", refLow: 30, refHigh: 300 },
+      { dbKey: "transferrin_saturation_pct", label: "Transferrin Sat.", unit: "%", refLow: 20, refHigh: 50 },
+      { dbKey: "total_protein_g_l", label: "Total Protein", unit: "g/L", refLow: 64, refHigh: 83 },
+      { dbKey: "prealbumin_g_l", label: "Prealbumin", unit: "g/L", refLow: 0.2, refHigh: 0.4 },
+    ],
+    metabolism: [
+      { dbKey: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42 },
     ],
   };
   return map[key] ?? [];
@@ -482,6 +550,21 @@ export function HealthReportDialog({
                         <span className={cn("h-2 w-2 rounded-full shrink-0", dotColor)} />
                         {dim.label}
                       </button>
+                      {/* Metabolic sub-dimensions in sidebar */}
+                      {dim.key === "metabolic" && METABOLIC_SUB_DIMS.map(sub => (
+                        <button
+                          key={sub.key}
+                          onClick={() => scrollToPage(`metabolic_${sub.key}`)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors text-left pl-7",
+                            activePageKey === `metabolic_${sub.key}`
+                              ? "bg-white/15 text-white font-medium"
+                              : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                          )}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
                       {dim.key === "skin_mucous" && (
                         <button
                           onClick={() => scrollToPage("skin-map")}
@@ -637,8 +720,11 @@ export function HealthReportDialog({
               const labMarkers = getLabMarkers(dim.key);
               const texts = dimTexts[dim.key];
 
+              const isMetabolic = dim.key === "metabolic";
+
               return (
-                <div key={dim.key} data-page={dim.key} style={pageStyle}>
+                <React.Fragment key={dim.key}>
+                <div data-page={dim.key} style={pageStyle}>
                   {/* Header */}
                   <div className="dim-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
                     <h2 style={{ fontSize: 17, margin: 0 }}>{dim.label}</h2>
@@ -682,8 +768,8 @@ export function HealthReportDialog({
                     </div>
                   )}
 
-                  {/* Lab Charts */}
-                  {labMarkers.length > 0 && (() => {
+                  {/* Lab Charts (non-metabolic dimensions) */}
+                  {!isMetabolic && labMarkers.length > 0 && (() => {
                     const visibleMarkers = labMarkers.filter(m => !hiddenCharts.has(`${dim.key}_${m.dbKey}`));
                     const hiddenMarkersList = labMarkers.filter(m => hiddenCharts.has(`${dim.key}_${m.dbKey}`));
                     return (
@@ -694,7 +780,6 @@ export function HealthReportDialog({
                           <span style={{ fontSize: 9, color: "#bbb" }}>{hiddenMarkersList.length} chart{hiddenMarkersList.length > 1 ? "s" : ""} hidden</span>
                         )}
                       </div>
-                      {/* Visible charts grid */}
                       {visibleMarkers.length > 0 && (
                         <div style={{ display: "grid", gridTemplateColumns: visibleMarkers.length === 1 ? "1fr" : "1fr 1fr", gap: 12 }}>
                           {visibleMarkers.map(m => {
@@ -751,7 +836,6 @@ export function HealthReportDialog({
                           })}
                         </div>
                       )}
-                      {/* Hidden charts - compact restore buttons */}
                       {hiddenMarkersList.length > 0 && (
                         <div className="print:hidden" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: visibleMarkers.length > 0 ? 8 : 0 }}>
                           {hiddenMarkersList.map(m => (
@@ -770,14 +854,139 @@ export function HealthReportDialog({
                     );
                   })()}
 
-
-
                   {/* Page footer */}
                   <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
                     <span>{patient.full_name} — Health Report</span>
                     <span>{dim.label}</span>
                   </div>
                 </div>
+
+                {/* Metabolic sub-dimension pages */}
+                {isMetabolic && METABOLIC_SUB_DIMS.map(sub => {
+                  const subRiskFactors = getRiskFactors(sub.key, onboarding);
+                  const subLabMarkers = getLabMarkers(sub.key);
+                  const visibleSubMarkers = subLabMarkers.filter(m => !hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
+                  const hiddenSubMarkers = subLabMarkers.filter(m => hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
+
+                  return (
+                    <div key={sub.key} data-page={`metabolic_${sub.key}`} style={pageStyle}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
+                        <h2 style={{ fontSize: 17, margin: 0 }}>{sub.label}</h2>
+                        <span style={{ fontSize: 11, color: "#888" }}>Metabolic Health</span>
+                      </div>
+
+                      {/* Sub-dimension risk factors */}
+                      {subRiskFactors.length > 0 && (
+                        <div className="section" style={{ marginBottom: 14 }}>
+                          <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Risk Factors</div>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 4 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Factor</th>
+                                <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Value</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {subRiskFactors.map(f => (
+                                <tr key={f.label}>
+                                  <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0" }}>{f.label}</td>
+                                  <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0", fontWeight: 500 }}>{f.value}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Sub-dimension lab charts */}
+                      {subLabMarkers.length > 0 && (
+                        <div className="section" style={{ marginBottom: 14 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>Lab Trends</div>
+                            {hiddenSubMarkers.length > 0 && (
+                              <span style={{ fontSize: 9, color: "#bbb" }}>{hiddenSubMarkers.length} hidden</span>
+                            )}
+                          </div>
+                          {visibleSubMarkers.length > 0 && (
+                            <div style={{ display: "grid", gridTemplateColumns: visibleSubMarkers.length === 1 ? "1fr" : "1fr 1fr", gap: 12 }}>
+                              {visibleSubMarkers.map(m => {
+                                const chartData = buildChartData(labResults, m);
+                                const latestVal = (latestLab as any)?.[m.dbKey];
+                                return (
+                                  <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "10px 12px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                                      <span style={{ fontSize: 11, fontWeight: 600 }}>{m.label} {m.unit && `(${m.unit})`}</span>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        {latestVal != null && (
+                                          <span style={{ fontSize: 13, fontWeight: 700 }}>{String(latestVal)}</span>
+                                        )}
+                                        <button
+                                          onClick={() => setHiddenCharts(prev => { const next = new Set(prev); next.add(`metabolic_${sub.key}_${m.dbKey}`); return next; })}
+                                          title="Hide from report"
+                                          className="print:hidden"
+                                          style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "#666" }}
+                                        >
+                                          <Eye className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {chartData.length > 0 ? (
+                                      <div style={{ height: 120 }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                                            <XAxis dataKey="date" tick={{ fontSize: 8 }} />
+                                            <YAxis tick={{ fontSize: 8 }} />
+                                            <Tooltip contentStyle={{ fontSize: 10 }} />
+                                            {m.refLow != null && m.refHigh != null && (
+                                              <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
+                                            )}
+                                            {m.refLow != null && !m.refHigh && (
+                                              <ReferenceArea y1={m.refLow} y2={m.refLow * 3} fill="#3b82f6" fillOpacity={0.08} />
+                                            )}
+                                            {m.refHigh != null && !m.refLow && (
+                                              <ReferenceArea y1={0} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
+                                            )}
+                                            <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
+                                          </LineChart>
+                                        </ResponsiveContainer>
+                                      </div>
+                                    ) : (
+                                      <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 10, fontStyle: "italic" }}>
+                                        No data available
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {hiddenSubMarkers.length > 0 && (
+                            <div className="print:hidden" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: visibleSubMarkers.length > 0 ? 8 : 0 }}>
+                              {hiddenSubMarkers.map(m => (
+                                <button
+                                  key={m.dbKey}
+                                  onClick={() => setHiddenCharts(prev => { const next = new Set(prev); next.delete(`metabolic_${sub.key}_${m.dbKey}`); return next; })}
+                                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", border: "1px dashed #ddd", borderRadius: 4, background: "none", cursor: "pointer", fontSize: 10, color: "#999" }}
+                                >
+                                  <EyeOff className="h-3 w-3" />
+                                  {m.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Page footer */}
+                      <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
+                        <span>{patient.full_name} — Health Report</span>
+                        <span>{sub.label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                </React.Fragment>
               );
             })}
 
