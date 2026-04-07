@@ -739,16 +739,15 @@ export function HealthReportDialog({
                     const lab = labResults[0] || null;
                     const subScores = computeSubDimScores(onboarding, lab);
                     return (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 14 }}>
+                      <div style={{ display: "flex", gap: 4, marginBottom: 14, flexWrap: "wrap" }}>
                         {subScores.map(sub => {
-                          const subBg = sub.score <= 3 ? "#dcfce7" : sub.score <= 6 ? "#fef9c3" : "#fee2e2";
-                          const subColor = sub.score <= 3 ? "#166534" : sub.score <= 6 ? "#854d0e" : "#991b1b";
+                          const barColor = sub.score <= 3 ? "#22c55e" : sub.score <= 6 ? "#eab308" : "#ef4444";
                           return (
-                            <div key={sub.key} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "6px 8px", textAlign: "center" }}>
-                              <div style={{ fontSize: 8, color: "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 3 }}>{sub.label}</div>
-                              <div style={{ display: "inline-block", padding: "1px 8px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: subBg, color: subColor }}>
-                                {sub.score}/10
+                            <div key={sub.key} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 4px", borderRadius: 20, background: "#f8f8f8", border: "1px solid #ebebeb" }}>
+                              <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: barColor + "18", border: `1.5px solid ${barColor}` }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: barColor }}>{sub.score}</span>
                               </div>
+                              <span style={{ fontSize: 9, fontWeight: 600, color: "#555", letterSpacing: 0.2 }}>{sub.label}</span>
                             </div>
                           );
                         })}
