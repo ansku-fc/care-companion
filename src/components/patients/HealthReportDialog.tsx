@@ -885,8 +885,7 @@ export function HealthReportDialog({
                     const visibleSubMarkers = subLabMarkers.filter(m => !hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
                     const hiddenSubMarkers = subLabMarkers.filter(m => hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
                     const subScore = subScoresAll.find(s => s.key === sub.key)?.score ?? 1;
-                    const subScoreBg = subScore <= 3 ? "#dcfce7" : subScore <= 6 ? "#fef9c3" : "#fee2e2";
-                    const subScoreColor = subScore <= 3 ? "#166534" : subScore <= 6 ? "#854d0e" : "#991b1b";
+                    const subScoreBarColor = subScore <= 3 ? "#22c55e" : subScore <= 6 ? "#eab308" : "#ef4444";
 
                     return (
                       <div key={sub.key} data-page={`metabolic_${sub.key}`} style={pageStyle}>
@@ -896,9 +895,12 @@ export function HealthReportDialog({
                             <h2 style={{ fontSize: 17, margin: 0 }}>{sub.label}</h2>
                             <span style={{ fontSize: 10, color: "#888" }}>Metabolic Health</span>
                           </div>
-                          <span style={{ display: "inline-block", padding: "3px 14px", borderRadius: 12, fontSize: 12, fontWeight: 700, background: subScoreBg, color: subScoreColor }}>
-                            Index: {subScore}/10
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px 4px 4px", borderRadius: 20, background: "#f8f8f8", border: "1px solid #ebebeb" }}>
+                            <div style={{ width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: subScoreBarColor + "18", border: `1.5px solid ${subScoreBarColor}` }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: subScoreBarColor }}>{subScore}</span>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "#555" }}>/ 10</span>
+                          </div>
                         </div>
 
                         {/* Two-column: risk factors + latest values */}
