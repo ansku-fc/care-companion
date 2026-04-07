@@ -30,24 +30,12 @@ import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 import { useAuth } from "@/hooks/useAuth";
 
-const HEALTH_DIMENSIONS = [
-  { key: "senses", label: "Senses", icon: Eye },
-  { key: "nervous_system", label: "Nervous System", icon: Brain },
-  { key: "physical_performance", label: "Physical Performance", icon: Dumbbell },
-  { key: "respiratory", label: "Respiratory", icon: Wind },
-  { key: "hormones", label: "Hormones", icon: Beaker },
-  { key: "skin_mucous", label: "Skin & Mucous", icon: Droplets },
-  { key: "immunity", label: "Immunity", icon: Shield },
-  { key: "nutrition", label: "Nutrition", icon: Apple },
-  { key: "liver", label: "Liver", icon: Stethoscope },
-  { key: "mental_health", label: "Mental Health", icon: Sparkles },
-  { key: "kidney", label: "Kidney", icon: Activity },
-  { key: "substances", label: "Substances", icon: Pill },
-  { key: "cardiovascular", label: "Cardiovascular", icon: HeartPulse },
-  { key: "cancer_risk", label: "Cancer Risk", icon: Ribbon },
-  { key: "musculoskeletal", label: "Musculoskeletal", icon: Bone },
-  { key: "sleep", label: "Sleep", icon: Moon },
-];
+// Legacy flat list for backward compat in dimension views
+const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
+  const items = [{ key: main.key, label: main.label, icon: main.icon }];
+  main.subDimensions.forEach((sub) => items.push({ key: sub.key, label: sub.label, icon: sub.icon }));
+  return items;
+});
 
 type SidebarSection = "details" | string;
 
