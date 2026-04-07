@@ -1944,6 +1944,7 @@ function HealthDimensionView({
           </dl>
         );
       case "skin_mucous":
+      case "mucous_membranes":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Skin Condition</dt><dd>{onboarding?.skin_condition ?? "—"}</dd></div>
