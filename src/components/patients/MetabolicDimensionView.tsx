@@ -176,7 +176,7 @@ export function computeSubDimScores(
   ];
 }
 
-function computeCompositeScore(subs: SubDimScore[]): number {
+export function computeCompositeScore(subs: SubDimScore[]): number {
   if (subs.length === 0) return 1;
   // Weighted average rounded, clamped 1-10
   const avg = subs.reduce((sum, s) => sum + s.score, 0) / subs.length;
