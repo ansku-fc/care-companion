@@ -145,6 +145,36 @@ function getRiskFactors(key: string, onboarding: Tables<"patient_onboarding"> | 
       { label: "Insomnia", value: bool(onboarding.insomnia) },
       { label: "Sleep Apnoea", value: bool(onboarding.symptom_sleep_apnoea) },
     ],
+    // Metabolic sub-dimensions
+    metabolic: () => [
+      { label: "BMI", value: fmt(onboarding.bmi) },
+      { label: "Weight (kg)", value: fmt(onboarding.weight_kg) },
+      { label: "Height (cm)", value: fmt(onboarding.height_cm) },
+      { label: "Waist Circumference (cm)", value: fmt(onboarding.waist_circumference_cm) },
+      { label: "Waist-Hip Ratio", value: fmt(onboarding.waist_to_hip_ratio) },
+      { label: "Endocrine / Hormone Illness", value: bool(onboarding.illness_hormone) },
+      { label: "Kidney Illness", value: bool(onboarding.illness_kidney) },
+      { label: "Kidney Function Symptoms", value: bool(onboarding.symptom_kidney_function) },
+    ],
+    endocrine: () => [
+      { label: "Hormone Illness", value: bool(onboarding.illness_hormone) },
+      { label: "Menstruation/Menopause", value: bool(onboarding.symptom_menstruation_menopause) },
+    ],
+    kidneys: () => [
+      { label: "Kidney Illness", value: bool(onboarding.illness_kidney) },
+      { label: "Kidney Function Symptoms", value: bool(onboarding.symptom_kidney_function) },
+    ],
+    body_composition: () => [
+      { label: "BMI", value: fmt(onboarding.bmi) },
+      { label: "Weight (kg)", value: fmt(onboarding.weight_kg) },
+      { label: "Height (cm)", value: fmt(onboarding.height_cm) },
+      { label: "Waist Circumference (cm)", value: fmt(onboarding.waist_circumference_cm) },
+      { label: "Waist-Hip Ratio", value: fmt(onboarding.waist_to_hip_ratio) },
+    ],
+    metabolism: () => [
+      { label: "BMI", value: fmt(onboarding.bmi) },
+      { label: "Exercise (MET hrs/week)", value: fmt(onboarding.exercise_met_hours) },
+    ],
   };
   return map[key]?.() ?? [];
 }
