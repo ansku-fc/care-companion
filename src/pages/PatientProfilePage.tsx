@@ -194,19 +194,56 @@ const PatientProfilePage = () => {
             <Separator className="my-2" />
             <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Health Dimensions</p>
 
-            {HEALTH_DIMENSIONS.map((dim) => {
-              const Icon = dim.icon;
+            {HEALTH_TAXONOMY.map((main) => {
+              const MainIcon = main.icon;
+              const isMainActive = activeSection === main.key;
+              const isSubActive = main.subDimensions.some((s) => s.key === activeSection);
+              const isExpanded = expandedGroups[main.key] ?? isSubActive;
+              const hasSubs = main.subDimensions.length > 0;
+
               return (
-                <button
-                  key={dim.key}
-                  onClick={() => setActiveSection(dim.key)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeSection === dim.key ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {dim.label}
-                </button>
+                <div key={main.key}>
+                  <button
+                    onClick={() => {
+                      if (hasSubs) {
+                        setExpandedGroups((prev) => ({ ...prev, [main.key]: !isExpanded }));
+                      }
+                      setActiveSection(main.key);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                      isMainActive ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <MainIcon className="h-4 w-4" />
+                    <span className="flex-1 text-left">{main.number}. {main.label}</span>
+                    {hasSubs && (
+                      isExpanded
+                        ? <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                        : <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                    )}
+                  </button>
+                  {hasSubs && isExpanded && (
+                    <div className="ml-4 border-l border-border/50 pl-2 mt-0.5 mb-1">
+                      {main.subDimensions.map((sub) => {
+                        const SubIcon = sub.icon;
+                        return (
+                          <button
+                            key={sub.key}
+                            onClick={() => setActiveSection(sub.key)}
+                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors ${
+                              activeSection === sub.key
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-muted text-foreground"
+                            }`}
+                          >
+                            <SubIcon className="h-3.5 w-3.5" />
+                            {sub.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
