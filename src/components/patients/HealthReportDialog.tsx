@@ -734,6 +734,28 @@ export function HealthReportDialog({
                     </span>
                   </div>
 
+                  {/* Metabolic sub-dimension index cards */}
+                  {isMetabolic && (() => {
+                    const lab = labResults[0] || null;
+                    const subScores = computeSubDimScores(onboarding, lab);
+                    return (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
+                        {subScores.map(sub => {
+                          const subBg = sub.score <= 3 ? "#dcfce7" : sub.score <= 6 ? "#fef9c3" : "#fee2e2";
+                          const subColor = sub.score <= 3 ? "#166534" : sub.score <= 6 ? "#854d0e" : "#991b1b";
+                          return (
+                            <div key={sub.key} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "8px 10px", textAlign: "center" }}>
+                              <div style={{ fontSize: 9, color: "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 }}>{sub.label}</div>
+                              <div style={{ display: "inline-block", padding: "2px 10px", borderRadius: 10, fontSize: 13, fontWeight: 700, background: subBg, color: subColor }}>
+                                {sub.score}/10
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
                   {/* Summary */}
                   <div className="section" style={{ marginBottom: 14 }}>
                     <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Summary</div>
