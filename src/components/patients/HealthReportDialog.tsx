@@ -739,14 +739,14 @@ export function HealthReportDialog({
                     const lab = labResults[0] || null;
                     const subScores = computeSubDimScores(onboarding, lab);
                     return (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 14 }}>
                         {subScores.map(sub => {
                           const subBg = sub.score <= 3 ? "#dcfce7" : sub.score <= 6 ? "#fef9c3" : "#fee2e2";
                           const subColor = sub.score <= 3 ? "#166534" : sub.score <= 6 ? "#854d0e" : "#991b1b";
                           return (
-                            <div key={sub.key} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "8px 10px", textAlign: "center" }}>
-                              <div style={{ fontSize: 9, color: "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 }}>{sub.label}</div>
-                              <div style={{ display: "inline-block", padding: "2px 10px", borderRadius: 10, fontSize: 13, fontWeight: 700, background: subBg, color: subColor }}>
+                            <div key={sub.key} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "6px 8px", textAlign: "center" }}>
+                              <div style={{ fontSize: 8, color: "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 3 }}>{sub.label}</div>
+                              <div style={{ display: "inline-block", padding: "1px 8px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: subBg, color: subColor }}>
                                 {sub.score}/10
                               </div>
                             </div>
@@ -756,38 +756,30 @@ export function HealthReportDialog({
                     );
                   })()}
 
-                  {/* Summary */}
-                  <div className="section" style={{ marginBottom: 14 }}>
-                    <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Summary</div>
-                    <InlineEdit value={texts.summary} onChange={v => updateDimText(dim.key, "summary", v)} placeholder={`Clinical summary for ${dim.label}...`} />
+                  {/* Two-column: Summary + Recommendations side by side */}
+                  <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Summary</div>
+                      <InlineEdit value={texts.summary} onChange={v => updateDimText(dim.key, "summary", v)} placeholder={`Clinical summary for ${dim.label}...`} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Recommendations</div>
+                      <InlineEdit value={texts.recommendations} onChange={v => updateDimText(dim.key, "recommendations", v)} placeholder={`Recommendations for ${dim.label}...`} />
+                    </div>
                   </div>
 
-                  {/* Recommendations */}
-                  <div className="section" style={{ marginBottom: 14 }}>
-                    <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Recommendations</div>
-                    <InlineEdit value={texts.recommendations} onChange={v => updateDimText(dim.key, "recommendations", v)} placeholder={`Recommendations for ${dim.label}...`} />
-                  </div>
-
-                  {/* Risk Factors Table */}
+                  {/* Risk Factors Table - compact */}
                   {riskFactors.length > 0 && (
-                    <div className="section" style={{ marginBottom: 14 }}>
+                    <div className="section" style={{ marginBottom: 12 }}>
                       <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Risk Factors</div>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 4 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Factor</th>
-                            <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {riskFactors.map(f => (
-                            <tr key={f.label}>
-                              <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0" }}>{f.label}</td>
-                              <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0", fontWeight: 500 }}>{f.value}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+                        {riskFactors.map(f => (
+                          <div key={f.label} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid #f5f5f5", fontSize: 10 }}>
+                            <span style={{ color: "#666" }}>{f.label}</span>
+                            <span style={{ fontWeight: 600 }}>{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
