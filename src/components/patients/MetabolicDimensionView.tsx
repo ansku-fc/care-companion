@@ -455,6 +455,25 @@ export function MetabolicDimensionView({
         )}
       </Card>
 
+      {/* Sub-dimension indices */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {subScores.map((sub) => {
+          const sc = scoreColorFn(sub.score);
+          const bg = scoreBgFn(sub.score);
+          return (
+            <Card key={sub.key} className="cursor-pointer hover:border-primary/40 transition-colors" onClick={() => onNavigateDimension(sub.key)}>
+              <CardContent className="p-3 flex flex-col items-center gap-1">
+                <span className="text-xs font-medium text-muted-foreground text-center leading-tight">{sub.label}</span>
+                <div className={`flex items-center justify-center h-10 w-10 rounded-full ${bg}`}>
+                  <span className={`text-base font-bold ${sc}`}>{sub.score}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">/10</span>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
       {/* Main layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Left: Summary & Recommendations */}
