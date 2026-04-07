@@ -1877,6 +1877,24 @@ function HealthDimensionView({
     );
   }
 
+  if (dimensionKey === "metabolic" || dimensionKey === "endocrine" || dimensionKey === "kidneys" || dimensionKey === "body_composition" || dimensionKey === "nutrition" || dimensionKey === "metabolism") {
+    const radarData = computeRadarData(onboarding, labResults, healthCategories);
+    const metScore = radarData.find((d) => d.key === "metabolic")?.score ?? 1;
+    return (
+      <MetabolicDimensionView
+        patient={patient}
+        onboarding={onboarding}
+        labResults={labResults}
+        healthCategories={healthCategories}
+        markerNotes={markerNotes}
+        setMarkerNotes={setMarkerNotes}
+        onNavigateDimension={onNavigateDimension}
+        onDataChanged={onDataChanged}
+        riskScore={metScore}
+      />
+    );
+  }
+
   if (dimensionKey === "skin_mucous" || dimensionKey === "skin" || dimensionKey === "skin_oral_mucosal") {
     return (
       <SkinMucousDimensionView
