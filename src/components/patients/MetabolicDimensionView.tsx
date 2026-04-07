@@ -433,7 +433,7 @@ export function MetabolicDimensionView({
 
         <CardContent className="pt-0 space-y-3">
           {/* Sub-dimension indices — compact inline row */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
             {subScores.map((sub) => {
               const sc = scoreColorFn(sub.score);
               const bg = scoreBgFn(sub.score);
@@ -441,10 +441,10 @@ export function MetabolicDimensionView({
                 <button
                   key={sub.key}
                   onClick={() => onNavigateDimension(sub.key)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors hover:border-primary/40 cursor-pointer ${bg}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border transition-colors hover:border-primary/40 cursor-pointer ${bg}`}
                 >
-                  <span className="text-xs font-medium text-muted-foreground">{sub.label}</span>
-                  <span className={`text-sm font-bold ${sc}`}>{sub.score}/10</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">{sub.label}</span>
+                  <span className={`text-[11px] font-bold ${sc}`}>{sub.score}/10</span>
                 </button>
               );
             })}
