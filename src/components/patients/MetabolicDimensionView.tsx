@@ -93,6 +93,99 @@ const UNIT_MAP: Record<string, string> = {
 
 type SubTab = "risk_factors" | "lab_nutrition" | "lab_endocrine" | "lab_kidneys" | "total_risk";
 
+// ── Sub-dimension score computation ─────────────────────────────
+type SubDimScore = { key: string; label: string; score: number };
+
+function computeSubDimScores(
+  onboarding: Tables<"patient_onboarding"> | null,
+  lab: Tables<"patient_lab_results"> | null,
+): SubDimScore[] {
+  // Helper: check if a lab value is out of ref range
+  const outOfRange = (val: number | null | undefined, ref: { low?: number; high?: number }): boolean => {
+    if (val == null) return false;
+    if (ref.low != null && val < ref.low) return true;
+    if (ref.high != null && val > ref.high) return true;
+    return false;
+  };
+
+  // Count how many markers in a group are out of range
+  const countOutOfRange = (markers: string[]) => {
+    let count = 0;
+    for (const key of markers) {
+      const ref = METABOLIC_REFS[key];
+      if (!ref) continue;
+      const val = lab ? (lab as any)[key] : null;
+      if (outOfRange(val != null ? Number(val) : null, ref)) count++;
+    }
+    return count;
+  };
+
+  // 2.1 Endocrine System
+  let endoScore = 1;
+  if (onboarding?.illness_hormone) endoScore += 3;
+  const endoOor = countOutOfRange(ENDOCRINE_MARKERS);
+  endoScore += endoOor * 2;
+  endoScore = Math.min(endoScore, 10);
+
+  // 2.2 Kidneys
+  let kidneyScore = 1;
+  if (onboarding?.illness_kidney) kidneyScore += 3;
+  if (onboarding?.symptom_kidney_function) kidneyScore += 1;
+  const kidneyOor = countOutOfRange(KIDNEY_MARKERS);
+  kidneyScore += Math.min(kidneyOor * 1.5, 6);
+  kidneyScore = Math.min(Math.round(kidneyScore), 10);
+
+  // 2.3 Body Composition
+  let bodyScore = 1;
+  if (onboarding?.bmi) {
+    const bmi = Number(onboarding.bmi);
+    if (bmi > 35) bodyScore += 4;
+    else if (bmi > 30) bodyScore += 3;
+    else if (bmi > 25) bodyScore += 1;
+    else if (bmi < 18.5) bodyScore += 3;
+  }
+  if (onboarding?.waist_to_hip_ratio && Number(onboarding.waist_to_hip_ratio) > 0.9) bodyScore += 2;
+  if (onboarding?.waist_circumference_cm && Number(onboarding.waist_circumference_cm) > 102) bodyScore += 1;
+  bodyScore = Math.min(bodyScore, 10);
+
+  // 2.4 Nutrition
+  let nutritionScore = 1;
+  const nutritionOor = countOutOfRange(NUTRITION_MARKERS);
+  if (nutritionOor >= 4) nutritionScore += 4;
+  else if (nutritionOor >= 2) nutritionScore += 2;
+  else if (nutritionOor >= 1) nutritionScore += 1;
+  // Check diet markers from onboarding
+  if (onboarding?.fruits_vegetables_g_per_day != null && Number(onboarding.fruits_vegetables_g_per_day) < 400) nutritionScore += 1;
+  if (onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25) nutritionScore += 1;
+  nutritionScore = Math.min(nutritionScore, 10);
+
+  // 2.5 Metabolism
+  let metabScore = 1;
+  if (lab?.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42) metabScore += 3;
+  if (lab?.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 48) metabScore += 2;
+  if (onboarding?.bmi && Number(onboarding.bmi) > 30) metabScore += 1;
+  if (onboarding?.exercise_met_hours != null && Number(onboarding.exercise_met_hours) < 5) metabScore += 1;
+  metabScore = Math.min(metabScore, 10);
+
+  return [
+    { key: "endocrine", label: "Endocrine System", score: endoScore },
+    { key: "kidneys", label: "Kidneys", score: kidneyScore },
+    { key: "body_composition", label: "Body Composition", score: bodyScore },
+    { key: "nutrition", label: "Nutrition", score: nutritionScore },
+    { key: "metabolism", label: "Metabolism", score: metabScore },
+  ];
+}
+
+function computeCompositeScore(subs: SubDimScore[]): number {
+  if (subs.length === 0) return 1;
+  // Weighted average rounded, clamped 1-10
+  const avg = subs.reduce((sum, s) => sum + s.score, 0) / subs.length;
+  return Math.max(1, Math.min(10, Math.round(avg)));
+}
+
+const scoreColorFn = (s: number) => s <= 3 ? "text-green-600" : s <= 6 ? "text-amber-600" : "text-destructive";
+const scoreBgFn = (s: number) => s <= 3 ? "bg-green-100" : s <= 6 ? "bg-amber-100" : "bg-red-100";
+
 interface Props {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
@@ -102,13 +195,11 @@ interface Props {
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   onNavigateDimension: (section: string) => void;
   onDataChanged?: () => void;
-  riskScore: number;
 }
 
 export function MetabolicDimensionView({
   patient, onboarding, labResults, healthCategories,
   markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
-  riskScore,
 }: Props) {
   const [subTab, setSubTab] = useState<SubTab>("risk_factors");
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
@@ -120,8 +211,12 @@ export function MetabolicDimensionView({
   const [summary, setSummary] = useState(metCategory?.summary || "");
   const [recommendations, setRecommendations] = useState((metCategory as any)?.recommendations || "");
 
-  const scoreColor = riskScore <= 3 ? "text-green-600" : riskScore <= 6 ? "text-amber-600" : "text-destructive";
-  const scoreBg = riskScore <= 3 ? "bg-green-100" : riskScore <= 6 ? "bg-amber-100" : "bg-red-100";
+  const lab = labResults[0] || null;
+  const subScores = useMemo(() => computeSubDimScores(onboarding, lab), [onboarding, lab]);
+  const compositeScore = useMemo(() => computeCompositeScore(subScores), [subScores]);
+
+  const scoreColor = scoreColorFn(compositeScore);
+  const scoreBg = scoreBgFn(compositeScore);
 
   const sorted = useMemo(() =>
     [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date)),
@@ -130,15 +225,9 @@ export function MetabolicDimensionView({
 
   // Risk history
   const riskHistory = useMemo(() => {
-    const computed = sorted.map((lab) => {
-      let score = 1;
-      if (onboarding?.illness_hormone) score += 2;
-      if (onboarding?.illness_kidney) score += 2;
-      if (onboarding?.bmi && (Number(onboarding.bmi) > 30 || Number(onboarding.bmi) < 18.5)) score += 2;
-      if ((lab as any).tsh_mu_l && (Number((lab as any).tsh_mu_l) < 0.4 || Number((lab as any).tsh_mu_l) > 4.0)) score += 1;
-      if ((lab as any).egfr && Number((lab as any).egfr) < 60) score += 2;
-      if ((lab as any).hba1c_mmol_mol && Number((lab as any).hba1c_mmol_mol) > 42) score += 1;
-      return { date: lab.result_date, score: Math.min(score, 10) };
+    const computed = sorted.map((sortedLab) => {
+      const subs = computeSubDimScores(onboarding, sortedLab);
+      return { date: sortedLab.result_date, score: computeCompositeScore(subs) };
     });
     if (computed.length < 2) {
       return [
