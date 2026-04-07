@@ -16,8 +16,9 @@ import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
   Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil,
-  AlertTriangle, ClipboardList, Plus
+  AlertTriangle, ClipboardList, Plus, ChevronDown, ChevronRight,
 } from "lucide-react";
+import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension } from "@/lib/healthDimensions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
