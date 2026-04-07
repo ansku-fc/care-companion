@@ -1878,8 +1878,6 @@ function HealthDimensionView({
   }
 
   if (dimensionKey === "metabolic" || dimensionKey === "endocrine" || dimensionKey === "kidneys" || dimensionKey === "body_composition" || dimensionKey === "nutrition" || dimensionKey === "metabolism") {
-    const radarData = computeRadarData(onboarding, labResults, healthCategories);
-    const metScore = radarData.find((d) => d.key === "metabolic")?.score ?? 1;
     return (
       <MetabolicDimensionView
         patient={patient}
@@ -1890,7 +1888,6 @@ function HealthDimensionView({
         setMarkerNotes={setMarkerNotes}
         onNavigateDimension={onNavigateDimension}
         onDataChanged={onDataChanged}
-        riskScore={metScore}
       />
     );
   }
