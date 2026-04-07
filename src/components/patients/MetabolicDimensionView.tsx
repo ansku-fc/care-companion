@@ -96,7 +96,7 @@ type SubTab = "risk_factors" | "lab_nutrition" | "lab_endocrine" | "lab_kidneys"
 // ── Sub-dimension score computation ─────────────────────────────
 export type SubDimScore = { key: string; label: string; score: number };
 
-function computeSubDimScores(
+export function computeSubDimScores(
   onboarding: Tables<"patient_onboarding"> | null,
   lab: Tables<"patient_lab_results"> | null,
 ): SubDimScore[] {
