@@ -2015,6 +2015,7 @@ function HealthDimensionView({
           </dl>
         );
       case "substances":
+      case "substance_use":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Alcohol (units/week)</dt><dd>{onboarding?.alcohol_units_per_week ?? "—"}</dd></div>
