@@ -2003,6 +2003,7 @@ function HealthDimensionView({
           </dl>
         );
       case "kidney":
+      case "kidneys":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Kidney Illness</dt><dd>{onboarding?.illness_kidney ? "Yes" : "No"}</dd></div>
