@@ -55,6 +55,7 @@ const PatientProfilePage = () => {
   const [appointments, setAppointments] = useState<Tables<"appointments">[]>([]);
   const [patientTasks, setPatientTasks] = useState<any[]>([]);
   const [activeSection, setActiveSection] = useState<SidebarSection>("overview");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
