@@ -1991,6 +1991,7 @@ function HealthDimensionView({
           </dl>
         );
       case "mental_health":
+      case "mental_wellbeing":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Mental Health Illness</dt><dd>{onboarding?.illness_mental_health ? "Yes" : "No"}</dd></div>
