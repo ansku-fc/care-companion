@@ -2064,6 +2064,7 @@ function HealthDimensionView({
           </dl>
         );
       case "sleep":
+      case "sleep_recovery":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Sleep Quality (1-10)</dt><dd>{onboarding?.sleep_quality ?? "—"}</dd></div>
