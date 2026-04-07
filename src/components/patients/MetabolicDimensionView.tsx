@@ -546,12 +546,12 @@ export function MetabolicDimensionView({
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className={`flex items-center justify-center h-20 w-20 rounded-full ${scoreBg}`}>
-                    <span className={`text-3xl font-bold ${scoreColor}`}>{riskScore}</span>
+                    <span className={`text-3xl font-bold ${scoreColor}`}>{compositeScore}</span>
                   </div>
                   <div>
-                    <p className="font-medium">Risk Score: {riskScore}/10</p>
+                    <p className="font-medium">Risk Score: {compositeScore}/10</p>
                     <p className="text-sm text-muted-foreground">
-                      {riskScore <= 3 ? "Low risk — continue monitoring" : riskScore <= 6 ? "Moderate risk — consider intervention" : "High risk — action recommended"}
+                      {compositeScore <= 3 ? "Low risk — continue monitoring" : compositeScore <= 6 ? "Moderate risk — consider intervention" : "High risk — action recommended"}
                     </p>
                   </div>
                 </div>
