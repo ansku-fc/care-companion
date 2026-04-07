@@ -179,6 +179,15 @@ function getRiskFactors(key: string, onboarding: Tables<"patient_onboarding"> | 
   return map[key]?.() ?? [];
 }
 
+// Metabolic sub-dimension definitions for report
+const METABOLIC_SUB_DIMS = [
+  { key: "endocrine", label: "2.1 Endocrine System" },
+  { key: "kidneys", label: "2.2 Kidneys" },
+  { key: "body_composition", label: "2.3 Body Composition" },
+  { key: "nutrition", label: "2.4 Nutrition" },
+  { key: "metabolism", label: "2.5 Metabolism" },
+];
+
 function getLabMarkers(key: string): { dbKey: string; label: string; unit: string; refLow?: number; refHigh?: number; secondaryKey?: string; secondaryLabel?: string }[] {
   const map: Record<string, { dbKey: string; label: string; unit: string; refLow?: number; refHigh?: number; secondaryKey?: string; secondaryLabel?: string }[]> = {
     cardiovascular: [
@@ -203,6 +212,35 @@ function getLabMarkers(key: string): { dbKey: string; label: string; unit: strin
       { dbKey: "fev1_percent", label: "FEV1", unit: "%" },
       { dbKey: "fvc_percent", label: "FVC", unit: "%" },
       { dbKey: "pef_percent", label: "PEF", unit: "%" },
+    ],
+    // Metabolic sub-dimensions
+    endocrine: [
+      { dbKey: "free_t4_pmol_l", label: "Free T4", unit: "pmol/L", refLow: 12, refHigh: 22 },
+      { dbKey: "tsh_mu_l", label: "TSH", unit: "mU/L", refLow: 0.4, refHigh: 4.0 },
+    ],
+    kidneys: [
+      { dbKey: "egfr", label: "eGFR", unit: "mL/min/1.73m²", refLow: 60 },
+      { dbKey: "creatinine_umol_l", label: "Creatinine", unit: "µmol/L", refLow: 45, refHigh: 110 },
+      { dbKey: "cystatin_c", label: "Cystatin C", unit: "mg/L", refHigh: 1.03 },
+      { dbKey: "calcium_mmol_l", label: "Calcium", unit: "mmol/L", refLow: 2.15, refHigh: 2.55 },
+      { dbKey: "potassium_mmol_l", label: "Potassium", unit: "mmol/L", refLow: 3.5, refHigh: 5.0 },
+      { dbKey: "magnesium_mmol_l", label: "Magnesium", unit: "mmol/L", refLow: 0.7, refHigh: 1.0 },
+      { dbKey: "sodium_mmol_l", label: "Sodium", unit: "mmol/L", refLow: 136, refHigh: 145 },
+      { dbKey: "urine_acr_mg_mmol", label: "Urine ACR", unit: "mg/mmol", refHigh: 3.0 },
+    ],
+    nutrition: [
+      { dbKey: "holotranscobalamin_pmol_l", label: "Holotranscobalamin", unit: "pmol/L", refLow: 50 },
+      { dbKey: "vitamin_b12_total_ng_l", label: "Vitamin B12", unit: "ng/L", refLow: 200, refHigh: 900 },
+      { dbKey: "vitamin_d_25oh_nmol_l", label: "Vitamin D", unit: "nmol/L", refLow: 75 },
+      { dbKey: "folate_ug_l", label: "Folate", unit: "µg/L", refLow: 5.9 },
+      { dbKey: "iron_serum_umol_l", label: "Iron (serum)", unit: "µmol/L", refLow: 10, refHigh: 30 },
+      { dbKey: "ferritin_ug_l", label: "Ferritin", unit: "µg/L", refLow: 30, refHigh: 300 },
+      { dbKey: "transferrin_saturation_pct", label: "Transferrin Sat.", unit: "%", refLow: 20, refHigh: 50 },
+      { dbKey: "total_protein_g_l", label: "Total Protein", unit: "g/L", refLow: 64, refHigh: 83 },
+      { dbKey: "prealbumin_g_l", label: "Prealbumin", unit: "g/L", refLow: 0.2, refHigh: 0.4 },
+    ],
+    metabolism: [
+      { dbKey: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42 },
     ],
   };
   return map[key] ?? [];
