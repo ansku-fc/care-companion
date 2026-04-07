@@ -455,25 +455,46 @@ export type Database = {
           apoe_e4: boolean | null
           blood_pressure_diastolic: number | null
           blood_pressure_systolic: number | null
+          calcium_adjusted_mmol_l: number | null
+          calcium_ionised_mmol_l: number | null
+          calcium_mmol_l: number | null
           created_at: string
           created_by: string
+          creatinine_umol_l: number | null
           cystatin_c: number | null
           egfr: number | null
+          ferritin_ug_l: number | null
           fev1_percent: number | null
+          folate_ug_l: number | null
+          free_t4_pmol_l: number | null
           fvc_percent: number | null
           gt_u_l: number | null
           hba1c_mmol_mol: number | null
+          holotranscobalamin_pmol_l: number | null
           id: string
+          iron_serum_umol_l: number | null
           ldl_mmol_l: number | null
+          magnesium_mmol_l: number | null
           patient_id: string
           pef_percent: number | null
+          phosphate_mmol_l: number | null
+          potassium_mmol_l: number | null
+          prealbumin_g_l: number | null
           result_date: string
+          sodium_mmol_l: number | null
           source: string
           source_filename: string | null
           testosterone_estrogen_abnormal: boolean | null
+          total_protein_g_l: number | null
+          transferrin_g_l: number | null
+          transferrin_receptor_mg_l: number | null
+          transferrin_saturation_pct: number | null
           tsh_mu_l: number | null
           u_alb_krea_abnormal: boolean | null
           updated_at: string
+          urine_acr_mg_mmol: number | null
+          vitamin_b12_total_ng_l: number | null
+          vitamin_d_25oh_nmol_l: number | null
         }
         Insert: {
           afos_alp_u_l?: number | null
@@ -482,25 +503,46 @@ export type Database = {
           apoe_e4?: boolean | null
           blood_pressure_diastolic?: number | null
           blood_pressure_systolic?: number | null
+          calcium_adjusted_mmol_l?: number | null
+          calcium_ionised_mmol_l?: number | null
+          calcium_mmol_l?: number | null
           created_at?: string
           created_by: string
+          creatinine_umol_l?: number | null
           cystatin_c?: number | null
           egfr?: number | null
+          ferritin_ug_l?: number | null
           fev1_percent?: number | null
+          folate_ug_l?: number | null
+          free_t4_pmol_l?: number | null
           fvc_percent?: number | null
           gt_u_l?: number | null
           hba1c_mmol_mol?: number | null
+          holotranscobalamin_pmol_l?: number | null
           id?: string
+          iron_serum_umol_l?: number | null
           ldl_mmol_l?: number | null
+          magnesium_mmol_l?: number | null
           patient_id: string
           pef_percent?: number | null
+          phosphate_mmol_l?: number | null
+          potassium_mmol_l?: number | null
+          prealbumin_g_l?: number | null
           result_date?: string
+          sodium_mmol_l?: number | null
           source?: string
           source_filename?: string | null
           testosterone_estrogen_abnormal?: boolean | null
+          total_protein_g_l?: number | null
+          transferrin_g_l?: number | null
+          transferrin_receptor_mg_l?: number | null
+          transferrin_saturation_pct?: number | null
           tsh_mu_l?: number | null
           u_alb_krea_abnormal?: boolean | null
           updated_at?: string
+          urine_acr_mg_mmol?: number | null
+          vitamin_b12_total_ng_l?: number | null
+          vitamin_d_25oh_nmol_l?: number | null
         }
         Update: {
           afos_alp_u_l?: number | null
@@ -509,25 +551,46 @@ export type Database = {
           apoe_e4?: boolean | null
           blood_pressure_diastolic?: number | null
           blood_pressure_systolic?: number | null
+          calcium_adjusted_mmol_l?: number | null
+          calcium_ionised_mmol_l?: number | null
+          calcium_mmol_l?: number | null
           created_at?: string
           created_by?: string
+          creatinine_umol_l?: number | null
           cystatin_c?: number | null
           egfr?: number | null
+          ferritin_ug_l?: number | null
           fev1_percent?: number | null
+          folate_ug_l?: number | null
+          free_t4_pmol_l?: number | null
           fvc_percent?: number | null
           gt_u_l?: number | null
           hba1c_mmol_mol?: number | null
+          holotranscobalamin_pmol_l?: number | null
           id?: string
+          iron_serum_umol_l?: number | null
           ldl_mmol_l?: number | null
+          magnesium_mmol_l?: number | null
           patient_id?: string
           pef_percent?: number | null
+          phosphate_mmol_l?: number | null
+          potassium_mmol_l?: number | null
+          prealbumin_g_l?: number | null
           result_date?: string
+          sodium_mmol_l?: number | null
           source?: string
           source_filename?: string | null
           testosterone_estrogen_abnormal?: boolean | null
+          total_protein_g_l?: number | null
+          transferrin_g_l?: number | null
+          transferrin_receptor_mg_l?: number | null
+          transferrin_saturation_pct?: number | null
           tsh_mu_l?: number | null
           u_alb_krea_abnormal?: boolean | null
           updated_at?: string
+          urine_acr_mg_mmol?: number | null
+          vitamin_b12_total_ng_l?: number | null
+          vitamin_d_25oh_nmol_l?: number | null
         }
         Relationships: [
           {

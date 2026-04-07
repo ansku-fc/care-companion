@@ -28,6 +28,7 @@ import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
+import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { useAuth } from "@/hooks/useAuth";
 
 // Legacy flat list for backward compat in dimension views
@@ -1876,6 +1877,24 @@ function HealthDimensionView({
     );
   }
 
+  if (dimensionKey === "metabolic" || dimensionKey === "endocrine" || dimensionKey === "kidneys" || dimensionKey === "body_composition" || dimensionKey === "nutrition" || dimensionKey === "metabolism") {
+    const radarData = computeRadarData(onboarding, labResults, healthCategories);
+    const metScore = radarData.find((d) => d.key === "metabolic")?.score ?? 1;
+    return (
+      <MetabolicDimensionView
+        patient={patient}
+        onboarding={onboarding}
+        labResults={labResults}
+        healthCategories={healthCategories}
+        markerNotes={markerNotes}
+        setMarkerNotes={setMarkerNotes}
+        onNavigateDimension={onNavigateDimension}
+        onDataChanged={onDataChanged}
+        riskScore={metScore}
+      />
+    );
+  }
+
   if (dimensionKey === "skin_mucous" || dimensionKey === "skin" || dimensionKey === "skin_oral_mucosal") {
     return (
       <SkinMucousDimensionView
@@ -3104,20 +3123,32 @@ function CardiovascularDimensionView({
 
 // Mapping from lab marker key to health dimension keys
 const MARKER_DIMENSIONS: Record<string, string[]> = {
-  ldl_mmol_l: ["cardiovascular", "nervous_system"],
-  hba1c_mmol_mol: ["cardiovascular", "nutrition"],
-  blood_pressure_systolic: ["cardiovascular", "kidney"],
-  blood_pressure_diastolic: ["cardiovascular", "kidney"],
-  alat_u_l: ["liver"],
-  afos_alp_u_l: ["liver", "musculoskeletal"],
-  gt_u_l: ["liver", "substances"],
-  alat_asat_ratio: ["liver"],
-  egfr: ["kidney"],
-  cystatin_c: ["kidney"],
-  tsh_mu_l: ["hormones"],
-  pef_percent: ["respiratory"],
-  fev1_percent: ["respiratory"],
-  fvc_percent: ["respiratory"],
+  ldl_mmol_l: ["cardiovascular", "brain_mental"],
+  hba1c_mmol_mol: ["cardiovascular", "metabolic"],
+  blood_pressure_systolic: ["cardiovascular", "metabolic"],
+  blood_pressure_diastolic: ["cardiovascular", "metabolic"],
+  alat_u_l: ["digestion"],
+  afos_alp_u_l: ["digestion", "exercise_functional"],
+  gt_u_l: ["digestion"],
+  alat_asat_ratio: ["digestion"],
+  egfr: ["metabolic"],
+  cystatin_c: ["metabolic"],
+  tsh_mu_l: ["metabolic"],
+  pef_percent: ["respiratory_immune"],
+  fev1_percent: ["respiratory_immune"],
+  fvc_percent: ["respiratory_immune"],
+  // Metabolic nutrition markers
+  holotranscobalamin_pmol_l: ["metabolic"],
+  vitamin_b12_total_ng_l: ["metabolic"],
+  vitamin_d_25oh_nmol_l: ["metabolic"],
+  folate_ug_l: ["metabolic"],
+  iron_serum_umol_l: ["metabolic"],
+  ferritin_ug_l: ["metabolic"],
+  free_t4_pmol_l: ["metabolic"],
+  calcium_mmol_l: ["metabolic"],
+  potassium_mmol_l: ["metabolic"],
+  creatinine_umol_l: ["metabolic"],
+  sodium_mmol_l: ["metabolic"],
 };
 
 const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: string }> = {

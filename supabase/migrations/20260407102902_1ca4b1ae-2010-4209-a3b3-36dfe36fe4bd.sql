@@ -1,0 +1,23 @@
+
+ALTER TABLE public.patient_lab_results
+  ADD COLUMN IF NOT EXISTS holotranscobalamin_pmol_l numeric,
+  ADD COLUMN IF NOT EXISTS vitamin_b12_total_ng_l numeric,
+  ADD COLUMN IF NOT EXISTS vitamin_d_25oh_nmol_l numeric,
+  ADD COLUMN IF NOT EXISTS folate_ug_l numeric,
+  ADD COLUMN IF NOT EXISTS phosphate_mmol_l numeric,
+  ADD COLUMN IF NOT EXISTS iron_serum_umol_l numeric,
+  ADD COLUMN IF NOT EXISTS ferritin_ug_l numeric,
+  ADD COLUMN IF NOT EXISTS transferrin_receptor_mg_l numeric,
+  ADD COLUMN IF NOT EXISTS transferrin_g_l numeric,
+  ADD COLUMN IF NOT EXISTS transferrin_saturation_pct numeric,
+  ADD COLUMN IF NOT EXISTS total_protein_g_l numeric,
+  ADD COLUMN IF NOT EXISTS prealbumin_g_l numeric,
+  ADD COLUMN IF NOT EXISTS free_t4_pmol_l numeric,
+  ADD COLUMN IF NOT EXISTS calcium_mmol_l numeric,
+  ADD COLUMN IF NOT EXISTS calcium_adjusted_mmol_l numeric,
+  ADD COLUMN IF NOT EXISTS calcium_ionised_mmol_l numeric,
+  ADD COLUMN IF NOT EXISTS potassium_mmol_l numeric,
+  ADD COLUMN IF NOT EXISTS creatinine_umol_l numeric,
+  ADD COLUMN IF NOT EXISTS magnesium_mmol_l numeric,
+  ADD COLUMN IF NOT EXISTS sodium_mmol_l numeric,
+  ADD COLUMN IF NOT EXISTS urine_acr_mg_mmol numeric;
