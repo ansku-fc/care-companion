@@ -94,9 +94,9 @@ const UNIT_MAP: Record<string, string> = {
 type SubTab = "risk_factors" | "lab_nutrition" | "lab_endocrine" | "lab_kidneys" | "total_risk";
 
 // ── Sub-dimension score computation ─────────────────────────────
-type SubDimScore = { key: string; label: string; score: number };
+export type SubDimScore = { key: string; label: string; score: number };
 
-function computeSubDimScores(
+export function computeSubDimScores(
   onboarding: Tables<"patient_onboarding"> | null,
   lab: Tables<"patient_lab_results"> | null,
 ): SubDimScore[] {
@@ -176,7 +176,7 @@ function computeSubDimScores(
   ];
 }
 
-function computeCompositeScore(subs: SubDimScore[]): number {
+export function computeCompositeScore(subs: SubDimScore[]): number {
   if (subs.length === 0) return 1;
   // Weighted average rounded, clamped 1-10
   const avg = subs.reduce((sum, s) => sum + s.score, 0) / subs.length;
