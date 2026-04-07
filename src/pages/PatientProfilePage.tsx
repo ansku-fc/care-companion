@@ -1859,7 +1859,6 @@ function HealthDimensionView({
   const dim = findDimension(dimensionKey);
   if (!dim) return null;
   const Icon = dim.icon;
-  const Icon = dim.icon;
   const lab = labResults[0] || null;
 
   if (dimensionKey === "cardiovascular") {
