@@ -739,14 +739,14 @@ export function HealthReportDialog({
                     const lab = labResults[0] || null;
                     const subScores = computeSubDimScores(onboarding, lab);
                     return (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 14 }}>
                         {subScores.map(sub => {
                           const subBg = sub.score <= 3 ? "#dcfce7" : sub.score <= 6 ? "#fef9c3" : "#fee2e2";
                           const subColor = sub.score <= 3 ? "#166534" : sub.score <= 6 ? "#854d0e" : "#991b1b";
                           return (
-                            <div key={sub.key} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "8px 10px", textAlign: "center" }}>
-                              <div style={{ fontSize: 9, color: "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 }}>{sub.label}</div>
-                              <div style={{ display: "inline-block", padding: "2px 10px", borderRadius: 10, fontSize: 13, fontWeight: 700, background: subBg, color: subColor }}>
+                            <div key={sub.key} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "6px 8px", textAlign: "center" }}>
+                              <div style={{ fontSize: 8, color: "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 3 }}>{sub.label}</div>
+                              <div style={{ display: "inline-block", padding: "1px 8px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: subBg, color: subColor }}>
                                 {sub.score}/10
                               </div>
                             </div>
@@ -756,38 +756,30 @@ export function HealthReportDialog({
                     );
                   })()}
 
-                  {/* Summary */}
-                  <div className="section" style={{ marginBottom: 14 }}>
-                    <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Summary</div>
-                    <InlineEdit value={texts.summary} onChange={v => updateDimText(dim.key, "summary", v)} placeholder={`Clinical summary for ${dim.label}...`} />
+                  {/* Two-column: Summary + Recommendations side by side */}
+                  <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Summary</div>
+                      <InlineEdit value={texts.summary} onChange={v => updateDimText(dim.key, "summary", v)} placeholder={`Clinical summary for ${dim.label}...`} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Recommendations</div>
+                      <InlineEdit value={texts.recommendations} onChange={v => updateDimText(dim.key, "recommendations", v)} placeholder={`Recommendations for ${dim.label}...`} />
+                    </div>
                   </div>
 
-                  {/* Recommendations */}
-                  <div className="section" style={{ marginBottom: 14 }}>
-                    <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Recommendations</div>
-                    <InlineEdit value={texts.recommendations} onChange={v => updateDimText(dim.key, "recommendations", v)} placeholder={`Recommendations for ${dim.label}...`} />
-                  </div>
-
-                  {/* Risk Factors Table */}
+                  {/* Risk Factors Table - compact */}
                   {riskFactors.length > 0 && (
-                    <div className="section" style={{ marginBottom: 14 }}>
+                    <div className="section" style={{ marginBottom: 12 }}>
                       <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Risk Factors</div>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 4 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Factor</th>
-                            <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {riskFactors.map(f => (
-                            <tr key={f.label}>
-                              <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0" }}>{f.label}</td>
-                              <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0", fontWeight: 500 }}>{f.value}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+                        {riskFactors.map(f => (
+                          <div key={f.label} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid #f5f5f5", fontSize: 10 }}>
+                            <span style={{ color: "#666" }}>{f.label}</span>
+                            <span style={{ fontWeight: 600 }}>{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -885,130 +877,159 @@ export function HealthReportDialog({
                 </div>
 
                 {/* Metabolic sub-dimension pages */}
-                {isMetabolic && METABOLIC_SUB_DIMS.map(sub => {
-                  const subRiskFactors = getRiskFactors(sub.key, onboarding);
-                  const subLabMarkers = getLabMarkers(sub.key);
-                  const visibleSubMarkers = subLabMarkers.filter(m => !hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
-                  const hiddenSubMarkers = subLabMarkers.filter(m => hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
+                {isMetabolic && (() => {
+                  const lab = labResults[0] || null;
+                  const subScoresAll = computeSubDimScores(onboarding, lab);
+                  return METABOLIC_SUB_DIMS.map(sub => {
+                    const subRiskFactors = getRiskFactors(sub.key, onboarding);
+                    const subLabMarkers = getLabMarkers(sub.key);
+                    const visibleSubMarkers = subLabMarkers.filter(m => !hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
+                    const hiddenSubMarkers = subLabMarkers.filter(m => hiddenCharts.has(`metabolic_${sub.key}_${m.dbKey}`));
+                    const subScore = subScoresAll.find(s => s.key === sub.key)?.score ?? 1;
+                    const subScoreBg = subScore <= 3 ? "#dcfce7" : subScore <= 6 ? "#fef9c3" : "#fee2e2";
+                    const subScoreColor = subScore <= 3 ? "#166534" : subScore <= 6 ? "#854d0e" : "#991b1b";
 
-                  return (
-                    <div key={sub.key} data-page={`metabolic_${sub.key}`} style={pageStyle}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
-                        <h2 style={{ fontSize: 17, margin: 0 }}>{sub.label}</h2>
-                        <span style={{ fontSize: 11, color: "#888" }}>Metabolic Health</span>
-                      </div>
-
-                      {/* Sub-dimension risk factors */}
-                      {subRiskFactors.length > 0 && (
-                        <div className="section" style={{ marginBottom: 14 }}>
-                          <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Risk Factors</div>
-                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 4 }}>
-                            <thead>
-                              <tr>
-                                <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Factor</th>
-                                <th style={{ textAlign: "left", padding: "5px 8px", borderBottom: "1px solid #ddd", fontWeight: 600, color: "#666", fontSize: 9, textTransform: "uppercase" }}>Value</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {subRiskFactors.map(f => (
-                                <tr key={f.label}>
-                                  <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0" }}>{f.label}</td>
-                                  <td style={{ padding: "5px 8px", borderBottom: "1px solid #f0f0f0", fontWeight: 500 }}>{f.value}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                    return (
+                      <div key={sub.key} data-page={`metabolic_${sub.key}`} style={pageStyle}>
+                        {/* Header with score badge */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, borderBottom: "2px solid #e5e5e5", paddingBottom: 8 }}>
+                          <div>
+                            <h2 style={{ fontSize: 17, margin: 0 }}>{sub.label}</h2>
+                            <span style={{ fontSize: 10, color: "#888" }}>Metabolic Health</span>
+                          </div>
+                          <span style={{ display: "inline-block", padding: "3px 14px", borderRadius: 12, fontSize: 12, fontWeight: 700, background: subScoreBg, color: subScoreColor }}>
+                            Index: {subScore}/10
+                          </span>
                         </div>
-                      )}
 
-                      {/* Sub-dimension lab charts */}
-                      {subLabMarkers.length > 0 && (
-                        <div className="section" style={{ marginBottom: 14 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>Lab Trends</div>
-                            {hiddenSubMarkers.length > 0 && (
-                              <span style={{ fontSize: 9, color: "#bbb" }}>{hiddenSubMarkers.length} hidden</span>
+                        {/* Two-column: risk factors + latest values */}
+                        {(subRiskFactors.length > 0 || subLabMarkers.length > 0) && (
+                          <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
+                            {/* Risk factors column */}
+                            {subRiskFactors.length > 0 && (
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Risk Factors</div>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10, marginTop: 2 }}>
+                                  <tbody>
+                                    {subRiskFactors.map(f => (
+                                      <tr key={f.label}>
+                                        <td style={{ padding: "3px 6px", borderBottom: "1px solid #f0f0f0", color: "#666" }}>{f.label}</td>
+                                        <td style={{ padding: "3px 6px", borderBottom: "1px solid #f0f0f0", fontWeight: 600, textAlign: "right" }}>{f.value}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                            {/* Latest lab values column */}
+                            {subLabMarkers.length > 0 && (
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Latest Values</div>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10, marginTop: 2 }}>
+                                  <tbody>
+                                    {subLabMarkers.map(m => {
+                                      const val = (latestLab as any)?.[m.dbKey];
+                                      const numVal = val != null ? Number(val) : null;
+                                      const isOor = numVal != null && ((m.refLow != null && numVal < m.refLow) || (m.refHigh != null && numVal > m.refHigh));
+                                      return (
+                                        <tr key={m.dbKey}>
+                                          <td style={{ padding: "3px 6px", borderBottom: "1px solid #f0f0f0", color: "#666" }}>{m.label} <span style={{ fontSize: 8, color: "#aaa" }}>({m.unit})</span></td>
+                                          <td style={{ padding: "3px 6px", borderBottom: "1px solid #f0f0f0", fontWeight: 600, textAlign: "right", color: isOor ? "#dc2626" : "#1a1a1a" }}>
+                                            {val != null ? String(val) : "—"}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
                             )}
                           </div>
-                          {visibleSubMarkers.length > 0 && (
-                            <div style={{ display: "grid", gridTemplateColumns: visibleSubMarkers.length === 1 ? "1fr" : "1fr 1fr", gap: 12 }}>
-                              {visibleSubMarkers.map(m => {
-                                const chartData = buildChartData(labResults, m);
-                                const latestVal = (latestLab as any)?.[m.dbKey];
-                                return (
-                                  <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: "10px 12px" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                                      <span style={{ fontSize: 11, fontWeight: 600 }}>{m.label} {m.unit && `(${m.unit})`}</span>
-                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        {latestVal != null && (
-                                          <span style={{ fontSize: 13, fontWeight: 700 }}>{String(latestVal)}</span>
-                                        )}
+                        )}
+
+                        {/* Lab charts - 3 columns for denser layout */}
+                        {subLabMarkers.length > 0 && (
+                          <div className="section" style={{ marginBottom: 10 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                              <div className="section-label" style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>Lab Trends</div>
+                              {hiddenSubMarkers.length > 0 && (
+                                <span style={{ fontSize: 9, color: "#bbb" }}>{hiddenSubMarkers.length} hidden</span>
+                              )}
+                            </div>
+                            {visibleSubMarkers.length > 0 && (
+                              <div style={{ display: "grid", gridTemplateColumns: visibleSubMarkers.length <= 2 ? "1fr 1fr" : "1fr 1fr 1fr", gap: 8 }}>
+                                {visibleSubMarkers.map(m => {
+                                  const chartData = buildChartData(labResults, m);
+                                  return (
+                                    <div key={m.dbKey} style={{ border: "1px solid #e5e5e5", borderRadius: 5, padding: "6px 8px" }}>
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                                        <span style={{ fontSize: 9, fontWeight: 600 }}>{m.label}</span>
                                         <button
                                           onClick={() => setHiddenCharts(prev => { const next = new Set(prev); next.add(`metabolic_${sub.key}_${m.dbKey}`); return next; })}
                                           title="Hide from report"
                                           className="print:hidden"
-                                          style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "#666" }}
+                                          style={{ background: "none", border: "none", cursor: "pointer", padding: 1, color: "#999" }}
                                         >
-                                          <Eye className="h-3.5 w-3.5" />
+                                          <Eye className="h-3 w-3" />
                                         </button>
                                       </div>
+                                      {chartData.length > 0 ? (
+                                        <div style={{ height: 90 }}>
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={chartData} margin={{ top: 2, right: 4, bottom: 2, left: -16 }}>
+                                              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                                              <XAxis dataKey="date" tick={{ fontSize: 7 }} />
+                                              <YAxis tick={{ fontSize: 7 }} />
+                                              <Tooltip contentStyle={{ fontSize: 9 }} />
+                                              {m.refLow != null && m.refHigh != null && (
+                                                <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
+                                              )}
+                                              {m.refLow != null && !m.refHigh && (
+                                                <ReferenceArea y1={m.refLow} y2={m.refLow * 3} fill="#3b82f6" fillOpacity={0.08} />
+                                              )}
+                                              {m.refHigh != null && !m.refLow && (
+                                                <ReferenceArea y1={0} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
+                                              )}
+                                              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} name={m.label} />
+                                            </LineChart>
+                                          </ResponsiveContainer>
+                                        </div>
+                                      ) : (
+                                        <div style={{ height: 50, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 9, fontStyle: "italic" }}>
+                                          No data
+                                        </div>
+                                      )}
                                     </div>
-                                    {chartData.length > 0 ? (
-                                      <div style={{ height: 120 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                          <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                                            <XAxis dataKey="date" tick={{ fontSize: 8 }} />
-                                            <YAxis tick={{ fontSize: 8 }} />
-                                            <Tooltip contentStyle={{ fontSize: 10 }} />
-                                            {m.refLow != null && m.refHigh != null && (
-                                              <ReferenceArea y1={m.refLow} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
-                                            )}
-                                            {m.refLow != null && !m.refHigh && (
-                                              <ReferenceArea y1={m.refLow} y2={m.refLow * 3} fill="#3b82f6" fillOpacity={0.08} />
-                                            )}
-                                            {m.refHigh != null && !m.refLow && (
-                                              <ReferenceArea y1={0} y2={m.refHigh} fill="#3b82f6" fillOpacity={0.08} />
-                                            )}
-                                            <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2.5 }} name={m.label} />
-                                          </LineChart>
-                                        </ResponsiveContainer>
-                                      </div>
-                                    ) : (
-                                      <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 10, fontStyle: "italic" }}>
-                                        No data available
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {hiddenSubMarkers.length > 0 && (
-                            <div className="print:hidden" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: visibleSubMarkers.length > 0 ? 8 : 0 }}>
-                              {hiddenSubMarkers.map(m => (
-                                <button
-                                  key={m.dbKey}
-                                  onClick={() => setHiddenCharts(prev => { const next = new Set(prev); next.delete(`metabolic_${sub.key}_${m.dbKey}`); return next; })}
-                                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", border: "1px dashed #ddd", borderRadius: 4, background: "none", cursor: "pointer", fontSize: 10, color: "#999" }}
-                                >
-                                  <EyeOff className="h-3 w-3" />
-                                  {m.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {hiddenSubMarkers.length > 0 && (
+                              <div className="print:hidden" style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+                                {hiddenSubMarkers.map(m => (
+                                  <button
+                                    key={m.dbKey}
+                                    onClick={() => setHiddenCharts(prev => { const next = new Set(prev); next.delete(`metabolic_${sub.key}_${m.dbKey}`); return next; })}
+                                    style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 6px", border: "1px dashed #ddd", borderRadius: 4, background: "none", cursor: "pointer", fontSize: 9, color: "#999" }}
+                                  >
+                                    <EyeOff className="h-2.5 w-2.5" />
+                                    {m.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-                      {/* Page footer */}
-                      <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
-                        <span>{patient.full_name} — Health Report</span>
-                        <span>{sub.label}</span>
+                        {/* Page footer */}
+                        <div style={{ position: "absolute", bottom: 40, left: 72, right: 72, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
+                          <span>{patient.full_name} — Health Report</span>
+                          <span>{sub.label}</span>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
                 </React.Fragment>
               );
             })}
