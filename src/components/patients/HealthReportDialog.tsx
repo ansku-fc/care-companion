@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
+import { computeSubDimScores, computeCompositeScore } from "@/components/patients/MetabolicDimensionView";
 
 // Use 9 main dimensions for the report
 const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.map((m) => ({ key: m.key, label: m.label }));
