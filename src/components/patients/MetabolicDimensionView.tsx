@@ -403,7 +403,6 @@ export function MetabolicDimensionView({
     );
   };
 
-  const lab = labResults[0] || null;
 
   return (
     <div className="space-y-4">
