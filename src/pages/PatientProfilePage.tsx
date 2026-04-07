@@ -1916,6 +1916,7 @@ function HealthDimensionView({
           </dl>
         );
       case "physical_performance":
+      case "exercise_functional":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Exercise (MET hrs/week)</dt><dd>{onboarding?.exercise_met_hours ?? "—"}</dd></div>
