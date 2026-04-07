@@ -94,7 +94,7 @@ const UNIT_MAP: Record<string, string> = {
 type SubTab = "risk_factors" | "lab_nutrition" | "lab_endocrine" | "lab_kidneys" | "total_risk";
 
 // ── Sub-dimension score computation ─────────────────────────────
-type SubDimScore = { key: string; label: string; score: number };
+export type SubDimScore = { key: string; label: string; score: number };
 
 function computeSubDimScores(
   onboarding: Tables<"patient_onboarding"> | null,
