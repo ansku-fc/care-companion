@@ -1891,6 +1891,7 @@ function HealthDimensionView({
   const renderContent = () => {
     switch (dimensionKey) {
       case "senses":
+      case "sensory_organs":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Vision Acuity</dt><dd>{onboarding?.vision_acuity ?? "—"}</dd></div>
