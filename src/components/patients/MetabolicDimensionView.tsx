@@ -431,47 +431,49 @@ export function MetabolicDimensionView({
           <p className="text-xs text-muted-foreground">1 = no action needed → 10 = immediate action</p>
         </CardHeader>
 
-        {showRiskHistory && (
-          <CardContent className="pt-0">
-            {riskHistory.length > 1 ? (
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={riskHistory}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                    <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(value: number) => [`${value}/10`, "Risk Index"]} />
-                    <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} />
-                    <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} />
-                    <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} />
-                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5 }} name="Risk Index" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">Not enough data points.</p>
-            )}
-          </CardContent>
-        )}
-      </Card>
+        <CardContent className="pt-0 space-y-3">
+          {/* Sub-dimension indices — compact inline row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {subScores.map((sub) => {
+              const sc = scoreColorFn(sub.score);
+              const bg = scoreBgFn(sub.score);
+              return (
+                <button
+                  key={sub.key}
+                  onClick={() => onNavigateDimension(sub.key)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors hover:border-primary/40 cursor-pointer ${bg}`}
+                >
+                  <span className="text-xs font-medium text-muted-foreground">{sub.label}</span>
+                  <span className={`text-sm font-bold ${sc}`}>{sub.score}/10</span>
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Sub-dimension indices — compact inline row */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {subScores.map((sub) => {
-          const sc = scoreColorFn(sub.score);
-          const bg = scoreBgFn(sub.score);
-          return (
-            <button
-              key={sub.key}
-              onClick={() => onNavigateDimension(sub.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors hover:border-primary/40 cursor-pointer ${bg}`}
-            >
-              <span className="text-xs font-medium text-muted-foreground">{sub.label}</span>
-              <span className={`text-sm font-bold ${sc}`}>{sub.score}/10</span>
-            </button>
-          );
-        })}
-      </div>
+          {showRiskHistory && (
+            <>
+              {riskHistory.length > 1 ? (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={riskHistory}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(value: number) => [`${value}/10`, "Risk Index"]} />
+                      <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} />
+                      <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} />
+                      <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} />
+                      <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5 }} name="Risk Index" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-6">Not enough data points.</p>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Main layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
