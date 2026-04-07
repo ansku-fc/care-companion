@@ -11,25 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 
-const HEALTH_DIMENSIONS = [
-  { key: "senses", label: "Senses" },
-  { key: "nervous_system", label: "Nervous System" },
-  { key: "physical_performance", label: "Physical Performance" },
-  { key: "respiratory", label: "Respiratory" },
-  { key: "hormones", label: "Hormones" },
-  { key: "skin_mucous", label: "Skin & Mucous" },
-  { key: "immunity", label: "Immunity" },
-  { key: "nutrition", label: "Nutrition" },
-  { key: "liver", label: "Liver" },
-  { key: "mental_health", label: "Mental Health" },
-  { key: "kidney", label: "Kidney" },
-  { key: "substances", label: "Substances" },
-  { key: "cardiovascular", label: "Cardiovascular" },
-  { key: "cancer_risk", label: "Cancer Risk" },
-  { key: "musculoskeletal", label: "Musculoskeletal" },
-  { key: "sleep", label: "Sleep" },
-];
+// Use 9 main dimensions for the report
+const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.map((m) => ({ key: m.key, label: m.label }));
 
 interface HealthReportDialogProps {
   open: boolean;

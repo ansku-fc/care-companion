@@ -16,8 +16,9 @@ import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
   Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil,
-  AlertTriangle, ClipboardList, Plus
+  AlertTriangle, ClipboardList, Plus, ChevronDown, ChevronRight,
 } from "lucide-react";
+import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension } from "@/lib/healthDimensions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
@@ -29,24 +30,12 @@ import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 import { useAuth } from "@/hooks/useAuth";
 
-const HEALTH_DIMENSIONS = [
-  { key: "senses", label: "Senses", icon: Eye },
-  { key: "nervous_system", label: "Nervous System", icon: Brain },
-  { key: "physical_performance", label: "Physical Performance", icon: Dumbbell },
-  { key: "respiratory", label: "Respiratory", icon: Wind },
-  { key: "hormones", label: "Hormones", icon: Beaker },
-  { key: "skin_mucous", label: "Skin & Mucous", icon: Droplets },
-  { key: "immunity", label: "Immunity", icon: Shield },
-  { key: "nutrition", label: "Nutrition", icon: Apple },
-  { key: "liver", label: "Liver", icon: Stethoscope },
-  { key: "mental_health", label: "Mental Health", icon: Sparkles },
-  { key: "kidney", label: "Kidney", icon: Activity },
-  { key: "substances", label: "Substances", icon: Pill },
-  { key: "cardiovascular", label: "Cardiovascular", icon: HeartPulse },
-  { key: "cancer_risk", label: "Cancer Risk", icon: Ribbon },
-  { key: "musculoskeletal", label: "Musculoskeletal", icon: Bone },
-  { key: "sleep", label: "Sleep", icon: Moon },
-];
+// Legacy flat list for backward compat in dimension views
+const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
+  const items = [{ key: main.key, label: main.label, icon: main.icon }];
+  main.subDimensions.forEach((sub) => items.push({ key: sub.key, label: sub.label, icon: sub.icon }));
+  return items;
+});
 
 type SidebarSection = "details" | string;
 
@@ -66,6 +55,7 @@ const PatientProfilePage = () => {
   const [appointments, setAppointments] = useState<Tables<"appointments">[]>([]);
   const [patientTasks, setPatientTasks] = useState<any[]>([]);
   const [activeSection, setActiveSection] = useState<SidebarSection>("overview");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
@@ -204,19 +194,56 @@ const PatientProfilePage = () => {
             <Separator className="my-2" />
             <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Health Dimensions</p>
 
-            {HEALTH_DIMENSIONS.map((dim) => {
-              const Icon = dim.icon;
+            {HEALTH_TAXONOMY.map((main) => {
+              const MainIcon = main.icon;
+              const isMainActive = activeSection === main.key;
+              const isSubActive = main.subDimensions.some((s) => s.key === activeSection);
+              const isExpanded = expandedGroups[main.key] ?? isSubActive;
+              const hasSubs = main.subDimensions.length > 0;
+
               return (
-                <button
-                  key={dim.key}
-                  onClick={() => setActiveSection(dim.key)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeSection === dim.key ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {dim.label}
-                </button>
+                <div key={main.key}>
+                  <button
+                    onClick={() => {
+                      if (hasSubs) {
+                        setExpandedGroups((prev) => ({ ...prev, [main.key]: !isExpanded }));
+                      }
+                      setActiveSection(main.key);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                      isMainActive ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <MainIcon className="h-4 w-4" />
+                    <span className="flex-1 text-left">{main.number}. {main.label}</span>
+                    {hasSubs && (
+                      isExpanded
+                        ? <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                        : <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                    )}
+                  </button>
+                  {hasSubs && isExpanded && (
+                    <div className="ml-4 border-l border-border/50 pl-2 mt-0.5 mb-1">
+                      {main.subDimensions.map((sub) => {
+                        const SubIcon = sub.icon;
+                        return (
+                          <button
+                            key={sub.key}
+                            onClick={() => setActiveSection(sub.key)}
+                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors ${
+                              activeSection === sub.key
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-muted text-foreground"
+                            }`}
+                          >
+                            <SubIcon className="h-3.5 w-3.5" />
+                            {sub.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -265,7 +292,7 @@ const PatientProfilePage = () => {
   );
 };
 
-// Compute a simple score (1-10) for each health dimension based on onboarding + lab data
+// Compute a simple score (1-10) for each of the 9 main health dimensions
 function computeRadarData(
   onboarding: Tables<"patient_onboarding"> | null,
   labResults: Tables<"patient_lab_results">[],
@@ -274,94 +301,84 @@ function computeRadarData(
   const lab = labResults[0] || null;
   const catMap = new Map(healthCategories.map((c) => [c.category.toLowerCase(), c]));
 
-  return HEALTH_DIMENSIONS.map((dim) => {
-    const stored = catMap.get(dim.label.toLowerCase());
-    if (stored) {
-      const statusScores: Record<string, number> = { normal: 2, monitor: 4, attention: 6, warning: 8, critical: 10 };
-      return { category: dim.label, score: statusScores[stored.status] ?? 3 };
+  const getStoredScore = (keys: string[]): number | null => {
+    const statusScores: Record<string, number> = { normal: 2, monitor: 4, attention: 6, warning: 8, critical: 10 };
+    for (const k of keys) {
+      const stored = catMap.get(k.toLowerCase());
+      if (stored) return statusScores[stored.status] ?? 3;
     }
+    return null;
+  };
+
+  return HEALTH_TAXONOMY.map((main) => {
+    // Check stored categories first
+    const allKeys = [main.label, ...main.subDimensions.map((s) => s.label)];
+    const storedScore = getStoredScore(allKeys);
+    if (storedScore !== null) return { category: main.label, key: main.key, score: storedScore };
 
     let score = 1;
-    if (!onboarding && !lab) return { category: dim.label, score };
+    if (!onboarding && !lab) return { category: main.label, key: main.key, score };
 
-    switch (dim.key) {
-      case "senses":
-        if (onboarding?.illness_senses) score += 3;
-        if (onboarding?.symptom_smell || onboarding?.symptom_vision || onboarding?.symptom_hearing) score += 2;
+    switch (main.key) {
+      case "brain_mental":
+        if (onboarding?.illness_neurological) score += 2;
+        if (onboarding?.illness_mental_health) score += 2;
+        if (onboarding?.gad7_score && onboarding.gad7_score > 10) score += 2;
+        if (onboarding?.insomnia) score += 1;
+        if (onboarding?.illness_senses) score += 1;
+        if (onboarding?.alcohol_units_per_week && Number(onboarding.alcohol_units_per_week) > 14) score += 1;
+        if (onboarding?.other_substances) score += 1;
         break;
-      case "nervous_system":
-        if (onboarding?.illness_neurological) score += 3;
-        if (onboarding?.symptom_neurological || onboarding?.symptom_balance) score += 2;
-        if (onboarding?.prev_brain_damage) score += 2;
-        break;
-      case "physical_performance":
-        if (onboarding?.exercise_met_hours != null && onboarding.exercise_met_hours < 5) score += 3;
-        if (onboarding?.symptom_mobility_restriction) score += 2;
-        break;
-      case "respiratory":
-        if (onboarding?.symptom_respiratory) score += 3;
-        if (onboarding?.symptom_sleep_apnoea) score += 2;
-        if (onboarding?.smoking === "yes") score += 2;
-        break;
-      case "hormones":
-        if (onboarding?.illness_hormone) score += 3;
-        if (lab?.testosterone_estrogen_abnormal) score += 2;
-        if (lab?.tsh_mu_l && (Number(lab.tsh_mu_l) < 0.4 || Number(lab.tsh_mu_l) > 4.0)) score += 2;
-        break;
-      case "skin_mucous":
-        if (onboarding?.symptom_skin_rash || onboarding?.symptom_mucous_membranes) score += 3;
-        if (onboarding?.skin_condition && onboarding.skin_condition > 3) score += 2;
-        break;
-      case "immunity":
-        if (onboarding?.illness_immune) score += 3;
-        if (onboarding?.symptom_immune_allergies) score += 2;
-        if (onboarding?.infections_per_year && Number(onboarding.infections_per_year) > 4) score += 2;
-        break;
-      case "nutrition":
-        if (onboarding?.bmi && (Number(onboarding.bmi) > 30 || Number(onboarding.bmi) < 18.5)) score += 3;
-        if (onboarding?.symptom_gastrointestinal) score += 2;
-        break;
-      case "liver":
-        if (onboarding?.illness_liver) score += 3;
-        if (lab?.alat_u_l && Number(lab.alat_u_l) > 50) score += 2;
-        if (lab?.gt_u_l && Number(lab.gt_u_l) > 60) score += 2;
-        break;
-      case "mental_health":
-        if (onboarding?.illness_mental_health) score += 3;
-        if (onboarding?.gad7_score && onboarding.gad7_score > 10) score += 3;
-        if (onboarding?.stress_perceived && onboarding.stress_perceived > 7) score += 2;
-        break;
-      case "kidney":
-        if (onboarding?.illness_kidney) score += 3;
-        if (lab?.egfr && Number(lab.egfr) < 60) score += 3;
-        if (lab?.u_alb_krea_abnormal) score += 2;
-        break;
-      case "substances":
-        if (onboarding?.alcohol_units_per_week && Number(onboarding.alcohol_units_per_week) > 14) score += 3;
-        if (onboarding?.smoking === "yes") score += 2;
-        if (onboarding?.other_substances) score += 2;
+      case "metabolic":
+        if (onboarding?.illness_hormone) score += 2;
+        if (onboarding?.illness_kidney) score += 2;
+        if (onboarding?.bmi && (Number(onboarding.bmi) > 30 || Number(onboarding.bmi) < 18.5)) score += 2;
+        if (lab?.tsh_mu_l && (Number(lab.tsh_mu_l) < 0.4 || Number(lab.tsh_mu_l) > 4.0)) score += 1;
+        if (lab?.egfr && Number(lab.egfr) < 60) score += 2;
+        if (lab?.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42) score += 1;
         break;
       case "cardiovascular":
         if (onboarding?.illness_cardiovascular) score += 3;
         if (lab?.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) score += 2;
         if (lab?.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 140) score += 2;
+        if (onboarding?.genetic_cardiovascular) score += 1;
+        break;
+      case "exercise_functional":
+        if (onboarding?.exercise_met_hours != null && onboarding.exercise_met_hours < 5) score += 3;
+        if (onboarding?.illness_musculoskeletal) score += 2;
+        if (onboarding?.symptom_joint_pain) score += 1;
+        if (onboarding?.symptom_mobility_restriction) score += 2;
+        break;
+      case "digestion":
+        if (onboarding?.illness_liver) score += 2;
+        if (onboarding?.illness_gastrointestinal) score += 2;
+        if (onboarding?.symptom_gastrointestinal) score += 2;
+        if (lab?.alat_u_l && Number(lab.alat_u_l) > 50) score += 1;
+        if (lab?.gt_u_l && Number(lab.gt_u_l) > 60) score += 1;
+        break;
+      case "respiratory_immune":
+        if (onboarding?.symptom_respiratory) score += 2;
+        if (onboarding?.illness_immune) score += 2;
+        if (onboarding?.symptom_immune_allergies) score += 2;
+        if (onboarding?.smoking === "yes") score += 2;
+        if (onboarding?.infections_per_year && Number(onboarding.infections_per_year) > 4) score += 1;
         break;
       case "cancer_risk":
         if (onboarding?.illness_cancer || onboarding?.prev_cancer) score += 4;
         if (onboarding?.genetic_cancer || onboarding?.genetic_melanoma) score += 2;
+        if (onboarding?.prev_precancerous) score += 2;
         break;
-      case "musculoskeletal":
-        if (onboarding?.illness_musculoskeletal) score += 3;
-        if (onboarding?.symptom_joint_pain) score += 2;
-        if (onboarding?.prev_osteoporotic_fracture) score += 2;
+      case "skin_oral_mucosal":
+        if (onboarding?.symptom_skin_rash || onboarding?.symptom_mucous_membranes) score += 3;
+        if (onboarding?.skin_condition && onboarding.skin_condition > 3) score += 2;
+        if (onboarding?.sun_exposure) score += 1;
         break;
-      case "sleep":
-        if (onboarding?.insomnia) score += 3;
-        if (onboarding?.sleep_quality && onboarding.sleep_quality < 4) score += 2;
-        if (onboarding?.symptom_sleep_apnoea) score += 2;
+      case "reproductive_sexual":
+        if (onboarding?.symptom_menstruation_menopause) score += 3;
+        if (lab?.testosterone_estrogen_abnormal) score += 2;
         break;
     }
-    return { category: dim.label, score: Math.min(score, 10) };
+    return { category: main.label, key: main.key, score: Math.min(score, 10) };
   });
 }
 
@@ -454,8 +471,8 @@ function HealthOverviewView({
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, cursor: "pointer" }}
                   onClick={(e: any) => {
                     if (e?.value) {
-                      const dim = HEALTH_DIMENSIONS.find((d) => d.label === e.value);
-                      if (dim) onSelectDimension(dim.key);
+                      const main = HEALTH_TAXONOMY.find((d) => d.label === e.value);
+                      if (main) onSelectDimension(main.key);
                     }
                   }}
                 />
@@ -1839,7 +1856,7 @@ function HealthDimensionView({
   onNavigateDimension: (section: string) => void;
   onDataChanged?: () => void;
 }) {
-  const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimensionKey);
+  const dim = findDimension(dimensionKey);
   if (!dim) return null;
   const Icon = dim.icon;
   const lab = labResults[0] || null;
@@ -1859,7 +1876,7 @@ function HealthDimensionView({
     );
   }
 
-  if (dimensionKey === "skin_mucous") {
+  if (dimensionKey === "skin_mucous" || dimensionKey === "skin" || dimensionKey === "skin_oral_mucosal") {
     return (
       <SkinMucousDimensionView
         patient={patient}
@@ -1874,6 +1891,7 @@ function HealthDimensionView({
   const renderContent = () => {
     switch (dimensionKey) {
       case "senses":
+      case "sensory_organs":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Vision Acuity</dt><dd>{onboarding?.vision_acuity ?? "—"}</dd></div>
@@ -1885,6 +1903,7 @@ function HealthDimensionView({
           </dl>
         );
       case "nervous_system":
+      case "brain_mental":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Neurological Illness</dt><dd>{onboarding?.illness_neurological ? "Yes" : "No"}</dd></div>
@@ -1897,6 +1916,7 @@ function HealthDimensionView({
           </dl>
         );
       case "physical_performance":
+      case "exercise_functional":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Exercise (MET hrs/week)</dt><dd>{onboarding?.exercise_met_hours ?? "—"}</dd></div>
@@ -1904,6 +1924,7 @@ function HealthDimensionView({
           </dl>
         );
       case "respiratory":
+      case "respiratory_immune":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Respiratory Symptoms</dt><dd>{onboarding?.symptom_respiratory ? "Yes" : "No"}</dd></div>
@@ -1912,6 +1933,8 @@ function HealthDimensionView({
           </dl>
         );
       case "hormones":
+      case "endocrine":
+      case "metabolic":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Hormone Illness</dt><dd>{onboarding?.illness_hormone ? "Yes" : "No"}</dd></div>
@@ -1921,6 +1944,7 @@ function HealthDimensionView({
           </dl>
         );
       case "skin_mucous":
+      case "mucous_membranes":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Skin Condition</dt><dd>{onboarding?.skin_condition ?? "—"}</dd></div>
@@ -1930,6 +1954,8 @@ function HealthDimensionView({
           </dl>
         );
       case "immunity":
+      case "immune_defence":
+      case "allergies":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Immune Illness</dt><dd>{onboarding?.illness_immune ? "Yes" : "No"}</dd></div>
@@ -1938,6 +1964,7 @@ function HealthDimensionView({
           </dl>
         );
       case "nutrition":
+      case "body_composition":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">BMI</dt><dd>{onboarding?.bmi ?? "—"}</dd></div>
@@ -1951,6 +1978,9 @@ function HealthDimensionView({
           </dl>
         );
       case "liver":
+      case "digestion":
+      case "gastrointestinal":
+      case "pancreas":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Liver Illness</dt><dd>{onboarding?.illness_liver ? "Yes" : "No"}</dd></div>
@@ -1961,6 +1991,7 @@ function HealthDimensionView({
           </dl>
         );
       case "mental_health":
+      case "mental_wellbeing":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Mental Health Illness</dt><dd>{onboarding?.illness_mental_health ? "Yes" : "No"}</dd></div>
@@ -1972,6 +2003,7 @@ function HealthDimensionView({
           </dl>
         );
       case "kidney":
+      case "kidneys":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Kidney Illness</dt><dd>{onboarding?.illness_kidney ? "Yes" : "No"}</dd></div>
@@ -1983,6 +2015,7 @@ function HealthDimensionView({
           </dl>
         );
       case "substances":
+      case "substance_use":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Alcohol (units/week)</dt><dd>{onboarding?.alcohol_units_per_week ?? "—"}</dd></div>
@@ -2004,6 +2037,9 @@ function HealthDimensionView({
           </dl>
         );
       case "cancer_risk":
+      case "gynaecological_cancer":
+      case "prostate_other_cancer":
+      case "precancerous":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Cancer Illness</dt><dd>{onboarding?.illness_cancer ? "Yes" : "No"}</dd></div>
@@ -2028,6 +2064,7 @@ function HealthDimensionView({
           </dl>
         );
       case "sleep":
+      case "sleep_recovery":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Sleep Quality (1-10)</dt><dd>{onboarding?.sleep_quality ?? "—"}</dd></div>
