@@ -1903,6 +1903,7 @@ function HealthDimensionView({
           </dl>
         );
       case "nervous_system":
+      case "brain_mental":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Neurological Illness</dt><dd>{onboarding?.illness_neurological ? "Yes" : "No"}</dd></div>
