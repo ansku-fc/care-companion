@@ -1924,6 +1924,7 @@ function HealthDimensionView({
           </dl>
         );
       case "respiratory":
+      case "respiratory_immune":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Respiratory Symptoms</dt><dd>{onboarding?.symptom_respiratory ? "Yes" : "No"}</dd></div>
