@@ -2632,6 +2632,10 @@ function CardiovascularDimensionView({
   const ldlData = sorted.filter((l) => l.ldl_mmol_l != null).map((l) => ({ date: l.result_date, value: Number(l.ldl_mmol_l) }));
   const bpData = sorted.filter((l) => l.blood_pressure_systolic != null).map((l) => ({ date: l.result_date, systolic: Number(l.blood_pressure_systolic), diastolic: Number(l.blood_pressure_diastolic) }));
   const hba1cData = sorted.filter((l) => l.hba1c_mmol_mol != null).map((l) => ({ date: l.result_date, value: Number(l.hba1c_mmol_mol) }));
+  const alatData = sorted.filter((l) => l.alat_u_l != null).map((l) => ({ date: l.result_date, value: Number(l.alat_u_l) }));
+  const afosData = sorted.filter((l) => l.afos_alp_u_l != null).map((l) => ({ date: l.result_date, value: Number(l.afos_alp_u_l) }));
+  const gtData = sorted.filter((l) => l.gt_u_l != null).map((l) => ({ date: l.result_date, value: Number(l.gt_u_l) }));
+  const alatAsatData = sorted.filter((l) => l.alat_asat_ratio != null).map((l) => ({ date: l.result_date, value: Number(l.alat_asat_ratio) }));
 
   const scoreColor = cvScore <= 3 ? "text-green-600" : cvScore <= 6 ? "text-amber-600" : "text-destructive";
   const scoreBg = cvScore <= 3 ? "bg-green-100" : cvScore <= 6 ? "bg-amber-100" : "bg-red-100";
