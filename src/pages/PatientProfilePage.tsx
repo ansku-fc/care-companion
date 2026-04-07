@@ -1954,6 +1954,8 @@ function HealthDimensionView({
           </dl>
         );
       case "immunity":
+      case "immune_defence":
+      case "allergies":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Immune Illness</dt><dd>{onboarding?.illness_immune ? "Yes" : "No"}</dd></div>
