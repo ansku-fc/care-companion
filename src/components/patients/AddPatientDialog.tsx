@@ -113,6 +113,8 @@ export type OnboardingFormData = {
   symptom_gastrointestinal: boolean;
   symptom_balance: boolean;
   symptom_sleep_apnoea: boolean;
+  // Allergies (multi-select, stored as array of strings)
+  allergies: string[];
 };
 
 const defaultFormData: OnboardingFormData = {
@@ -136,6 +138,7 @@ const defaultFormData: OnboardingFormData = {
   symptom_menstruation_menopause: false, symptom_mucous_membranes: false, symptom_mobility_restriction: false,
   symptom_kidney_function: false, symptom_joint_pain: false, symptom_gastrointestinal: false,
   symptom_balance: false, symptom_sleep_apnoea: false,
+  allergies: [],
 };
 
 const STEPS = [
