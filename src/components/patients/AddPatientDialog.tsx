@@ -115,6 +115,8 @@ export type OnboardingFormData = {
   symptom_sleep_apnoea: boolean;
   // Allergies (multi-select, stored as array of strings)
   allergies: string[];
+  // Illness-medication pairings
+  illness_medications: import("./IllnessMedicationEditor").IllnessMedicationRow[];
 };
 
 const defaultFormData: OnboardingFormData = {
@@ -139,6 +141,7 @@ const defaultFormData: OnboardingFormData = {
   symptom_kidney_function: false, symptom_joint_pain: false, symptom_gastrointestinal: false,
   symptom_balance: false, symptom_sleep_apnoea: false,
   allergies: [],
+  illness_medications: [],
 };
 
 const STEPS = [

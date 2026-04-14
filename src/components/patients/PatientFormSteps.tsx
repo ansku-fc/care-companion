@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowDownAZ, LayoutGrid, X, ChevronsUpDown } from "lucide-react";
 import type { OnboardingFormData } from "./AddPatientDialog";
+import { IllnessMedicationEditor } from "./IllnessMedicationEditor";
 
 const COMMON_ALLERGENS = [
   "Penicillin", "Amoxicillin", "Sulfonamides", "Aspirin", "Ibuprofen",
@@ -448,6 +449,13 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
             onNotesChange={item.notesField ? (v) => updateField(item.notesField!, v) : undefined}
           />
         ))}
+
+        <div className="border-t pt-4 mt-4">
+          <IllnessMedicationEditor
+            rows={form.illness_medications}
+            onChange={(rows) => updateField("illness_medications", rows)}
+          />
+        </div>
       </div>
     );
   }
