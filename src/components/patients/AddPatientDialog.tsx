@@ -113,6 +113,8 @@ export type OnboardingFormData = {
   symptom_gastrointestinal: boolean;
   symptom_balance: boolean;
   symptom_sleep_apnoea: boolean;
+  // Allergies (multi-select, stored as array of strings)
+  allergies: string[];
 };
 
 const defaultFormData: OnboardingFormData = {
@@ -136,6 +138,7 @@ const defaultFormData: OnboardingFormData = {
   symptom_menstruation_menopause: false, symptom_mucous_membranes: false, symptom_mobility_restriction: false,
   symptom_kidney_function: false, symptom_joint_pain: false, symptom_gastrointestinal: false,
   symptom_balance: false, symptom_sleep_apnoea: false,
+  allergies: [],
 };
 
 const STEPS = [
@@ -315,6 +318,20 @@ export function AddPatientDialog() {
             apoe_e4: labResults.apoe_e4,
           });
         if (labErr) throw labErr;
+      }
+
+      // 4. Create allergies if any selected
+      if (form.allergies.length > 0) {
+        const allergyRows = form.allergies.map((allergen) => ({
+          patient_id: patient.id,
+          created_by: user.id,
+          allergen,
+          severity: "unknown",
+        }));
+        const { error: allergyErr } = await supabase
+          .from("patient_allergies")
+          .insert(allergyRows);
+        if (allergyErr) throw allergyErr;
       }
 
       toast.success("Patient created successfully");
