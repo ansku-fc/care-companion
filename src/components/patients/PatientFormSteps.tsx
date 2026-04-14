@@ -280,6 +280,57 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>Allergies</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-between font-normal h-auto min-h-[40px] py-2">
+                {form.allergies.length === 0 ? (
+                  <span className="text-muted-foreground">Select allergies...</span>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {form.allergies.map((a) => (
+                      <Badge key={a} variant="secondary" className="gap-1 text-xs">
+                        {a}
+                        <button
+                          type="button"
+                          className="ml-0.5 hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateField("allergies", form.allergies.filter((x) => x !== a));
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-2 max-h-[250px] overflow-y-auto" align="start">
+              {COMMON_ALLERGENS.map((allergen) => {
+                const checked = form.allergies.includes(allergen);
+                return (
+                  <label
+                    key={allergen}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        if (v) updateField("allergies", [...form.allergies, allergen]);
+                        else updateField("allergies", form.allergies.filter((x) => x !== allergen));
+                      }}
+                    />
+                    {allergen}
+                  </label>
+                );
+              })}
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
     );
   }
