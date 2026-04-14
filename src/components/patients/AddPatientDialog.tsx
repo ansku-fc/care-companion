@@ -320,6 +320,20 @@ export function AddPatientDialog() {
         if (labErr) throw labErr;
       }
 
+      // 4. Create allergies if any selected
+      if (form.allergies.length > 0) {
+        const allergyRows = form.allergies.map((allergen) => ({
+          patient_id: patient.id,
+          created_by: user.id,
+          allergen,
+          severity: "unknown",
+        }));
+        const { error: allergyErr } = await supabase
+          .from("patient_allergies")
+          .insert(allergyRows);
+        if (allergyErr) throw allergyErr;
+      }
+
       toast.success("Patient created successfully");
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       const patientId = patient.id;
