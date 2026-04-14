@@ -337,6 +337,24 @@ export function AddPatientDialog() {
         if (allergyErr) throw allergyErr;
       }
 
+      // 5. Create medications from illness-medication pairings
+      const medRows = form.illness_medications.flatMap((row) =>
+        row.medications.map((med) => ({
+          patient_id: patient.id,
+          created_by: user.id,
+          medication_name: med.name,
+          dose: med.dose || null,
+          indication: row.illness,
+          status: "active",
+        }))
+      );
+      if (medRows.length > 0) {
+        const { error: medErr } = await supabase
+          .from("patient_medications")
+          .insert(medRows);
+        if (medErr) throw medErr;
+      }
+
       toast.success("Patient created successfully");
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       const patientId = patient.id;
