@@ -6,8 +6,19 @@ import { FamilyMemberHistoryEditor } from "./FamilyMemberHistoryEditor";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowDownAZ, LayoutGrid } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowDownAZ, LayoutGrid, X, ChevronsUpDown } from "lucide-react";
 import type { OnboardingFormData } from "./AddPatientDialog";
+
+const COMMON_ALLERGENS = [
+  "Penicillin", "Amoxicillin", "Sulfonamides", "Aspirin", "Ibuprofen",
+  "Codeine", "Morphine", "Latex", "Peanuts", "Tree Nuts",
+  "Shellfish", "Fish", "Eggs", "Milk / Dairy", "Wheat / Gluten",
+  "Soy", "Sesame", "Bee Venom", "Wasp Venom", "Dust Mites",
+  "Pollen", "Mold", "Pet Dander", "Nickel", "Contrast Dye",
+];
 
 type SortMode = "category" | "alphabetical";
 
