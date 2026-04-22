@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pill, Plus, AlertTriangle, RefreshCw } from "lucide-react";
+import { Pill, Plus, AlertTriangle, RefreshCw, ChevronDown, ChevronRight, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── Mock medication data — keep aligned with PatientMedicationsView ──
@@ -17,16 +17,41 @@ type DimMed = {
   totalPills: number;
   renewalDate?: string;
   status: "active" | "past";
+  startDate?: string;
+  endDate?: string;
+  discontinuationReason?: string;
+  discontinuedBy?: string;
+  hadInteractionAlertAtDiscontinuation?: { drugs: [string, string]; severity: "severe" | "moderate" | "mild"; description: string };
 };
 
 const SEED_MEDS: DimMed[] = [
-  { id: "m1", name: "Atorvastatin", dose: "20 mg", frequency: "Once daily (evening)", dimension: "Cardiovascular Health", remainingPills: 18, totalPills: 90, renewalDate: "2026-05-08", status: "active" },
-  { id: "m2", name: "Lisinopril", dose: "10 mg", frequency: "Once daily (morning)", dimension: "Cardiovascular Health", remainingPills: 42, totalPills: 90, renewalDate: "2026-06-02", status: "active" },
+  { id: "m1", name: "Atorvastatin", dose: "20 mg", frequency: "Once daily (evening)", dimension: "Cardiovascular Health", remainingPills: 18, totalPills: 90, renewalDate: "2026-05-08", status: "active", startDate: "2024-02-10" },
+  { id: "m2", name: "Lisinopril", dose: "10 mg", frequency: "Once daily (morning)", dimension: "Cardiovascular Health", remainingPills: 42, totalPills: 90, renewalDate: "2026-06-02", status: "active", startDate: "2023-07-08" },
   { id: "m3", name: "Metformin", dose: "500 mg", frequency: "Twice daily with meals", dimension: "Metabolic Health", remainingPills: 6, totalPills: 180, renewalDate: "2026-04-29", status: "active" },
   { id: "m4", name: "Levothyroxine", dose: "75 mcg", frequency: "Once daily (fasting)", dimension: "Metabolic Health", remainingPills: 60, totalPills: 100, renewalDate: "2026-07-14", status: "active" },
   { id: "m5", name: "Sertraline", dose: "50 mg", frequency: "Once daily", dimension: "Brain & Mental Health", remainingPills: 24, totalPills: 60, renewalDate: "2026-05-20", status: "active" },
   { id: "m6", name: "Warfarin", dose: "3 mg", frequency: "Once daily", dimension: "Cardiovascular Health", remainingPills: 30, totalPills: 90, renewalDate: "2026-06-15", status: "active" },
   { id: "m7", name: "Ibuprofen", dose: "400 mg", frequency: "Up to 3x daily as needed", dimension: "Exercise & Functional Health", remainingPills: 12, totalPills: 60, renewalDate: "2026-05-15", status: "active" },
+  // ── Past medications (dummy) ──
+  {
+    id: "m-past-1",
+    name: "Aspirin",
+    dose: "100 mg",
+    frequency: "Once daily",
+    dimension: "Cardiovascular Health",
+    remainingPills: 0,
+    totalPills: 90,
+    status: "past",
+    startDate: "2022-01-15",
+    endDate: "2023-11-20",
+    discontinuationReason: "Replaced by Atorvastatin",
+    discontinuedBy: "Dr. Laine",
+    hadInteractionAlertAtDiscontinuation: {
+      drugs: ["Aspirin", "Warfarin"],
+      severity: "moderate",
+      description: "Combined antiplatelet + anticoagulant — bleeding risk monitored throughout treatment.",
+    },
+  },
 ];
 
 type DimInteraction = {
@@ -88,9 +113,16 @@ interface Props {
 
 export function DimensionMedicationsSection({ dimensionKey, dimensionLabel, onNavigateToMedications }: Props) {
   const matchingLabels = DIMENSION_LABEL_MAP[dimensionKey] ?? [dimensionLabel];
+  const [pastOpen, setPastOpen] = useState(false);
+  const [expandedPastIds, setExpandedPastIds] = useState<Set<string>>(new Set());
 
   const meds = useMemo(
     () => SEED_MEDS.filter((m) => m.status === "active" && matchingLabels.includes(m.dimension)),
+    [matchingLabels],
+  );
+
+  const pastMeds = useMemo(
+    () => SEED_MEDS.filter((m) => m.status === "past" && matchingLabels.includes(m.dimension)),
     [matchingLabels],
   );
 
@@ -229,7 +261,89 @@ export function DimensionMedicationsSection({ dimensionKey, dimensionLabel, onNa
             })}
           </div>
         )}
+
+        {/* ── Past medications ── */}
+        {pastMeds.length > 0 && (
+          <div className="pt-2 border-t">
+            <button
+              onClick={() => setPastOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {pastOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              <History className="h-3.5 w-3.5" />
+              Past medications ({pastMeds.length})
+            </button>
+
+            {pastOpen && (
+              <div className="mt-2 space-y-2">
+                {pastMeds.map((m) => {
+                  const isExpanded = expandedPastIds.has(m.id);
+                  const toggle = () =>
+                    setExpandedPastIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(m.id)) next.delete(m.id);
+                      else next.add(m.id);
+                      return next;
+                    });
+                  return (
+                    <div key={m.id} className="rounded-md border bg-muted/30 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium text-foreground">{m.name}</span>
+                            <span className="text-xs text-muted-foreground">{m.dose} • {m.frequency}</span>
+                            {m.hadInteractionAlertAtDiscontinuation && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggle(); }}
+                                className="inline-flex items-center gap-1 text-[10px] text-amber-600 hover:underline"
+                                title="Had active interaction alert at discontinuation"
+                              >
+                                <AlertTriangle className="h-3 w-3" /> Historical alert
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {m.startDate} → {m.endDate}
+                          </p>
+                          {m.discontinuationReason && (
+                            <p className="text-xs text-foreground mt-1">
+                              <span className="text-muted-foreground">Reason:</span> {m.discontinuationReason}
+                              {m.discontinuedBy && (
+                                <span className="text-muted-foreground"> • by {m.discontinuedBy}</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={toggle}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          {isExpanded ? "Hide" : "Details"}
+                        </button>
+                      </div>
+                      {isExpanded && m.hadInteractionAlertAtDiscontinuation && (
+                        <div className={cn("mt-2 rounded-md p-2 text-xs", SEVERITY_BORDER[m.hadInteractionAlertAtDiscontinuation.severity])}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                            <span className="font-medium text-foreground">
+                              {m.hadInteractionAlertAtDiscontinuation.drugs[0]} + {m.hadInteractionAlertAtDiscontinuation.drugs[1]}
+                            </span>
+                            <Badge className={cn("text-[9px] uppercase", SEVERITY_BADGE[m.hadInteractionAlertAtDiscontinuation.severity])}>
+                              {m.hadInteractionAlertAtDiscontinuation.severity}
+                            </Badge>
+                          </div>
+                          <p className="text-muted-foreground">{m.hadInteractionAlertAtDiscontinuation.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
+
