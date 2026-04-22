@@ -239,7 +239,11 @@ const PatientProfilePage = () => {
                       setActiveSection(main.key);
                     }}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isMainActive ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                      isMainActive
+                        ? "bg-primary text-primary-foreground"
+                        : isSubActive
+                          ? "bg-primary/15 text-foreground font-medium"
+                          : "hover:bg-muted text-foreground"
                     }`}
                   >
                     <MainIcon className="h-4 w-4" />
