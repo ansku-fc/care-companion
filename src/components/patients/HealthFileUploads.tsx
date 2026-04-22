@@ -215,7 +215,7 @@ export function HealthFileUploads({ patientId, activeTab, onTabChange, labResult
               key={tab.key}
               onClick={() => onTabChange(tab.key)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
-                isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />

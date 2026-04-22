@@ -2726,7 +2726,7 @@ function SkinMucousDimensionView({
                 key={tab}
                 onClick={() => setSubTab(tab)}
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                  subTab === tab ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                  subTab === tab ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tab === "risk_factors" ? "Risk Factors" : tab === "skin_map" ? `Skin Map (${skinMarkers.length})` : "Total Risk"}
@@ -3480,7 +3480,7 @@ function CardiovascularDimensionView({
               <button
                 onClick={() => { setCvSubTab("risk_factors"); setSelectedMarker(null); }}
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
-                  cvSubTab === "risk_factors" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                  cvSubTab === "risk_factors" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Risk Factors
@@ -3488,7 +3488,7 @@ function CardiovascularDimensionView({
               <button
                 onClick={() => { setCvSubTab("lab_graphs"); setSelectedMarker(null); }}
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
-                  cvSubTab === "lab_graphs" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                  cvSubTab === "lab_graphs" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Lab Results
