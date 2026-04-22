@@ -31,6 +31,7 @@ import { HealthFileUploads, type HealthDataTab } from "@/components/patients/Hea
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
+import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
 import {
   CardioLabBiomarkerPanel,
   getAnnotations,
