@@ -1,4 +1,4 @@
-import { Home, Calendar, ListTodo, Users, StickyNote, Clock, LogOut } from "lucide-react";
+import { Home, Calendar, ListTodo, Users, StickyNote, Clock, LogOut, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -11,11 +11,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 const workflowNavItems = [
   { title: "Home", url: "/", icon: Home },
@@ -31,74 +33,93 @@ const adminNavItems = [
 
 export function AppSidebar() {
   const { profile, role, signOut } = useAuth();
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
 
+  const renderNavItem = (item: { title: string; url: string; icon: any }) => {
+    const link = (
+      <NavLink
+        to={item.url}
+        end={item.url === "/"}
+        className="hover:bg-sidebar-accent text-sidebar-foreground"
+        activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+      >
+        <item.icon className={collapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+        {!collapsed && <span>{item.title}</span>}
+      </NavLink>
+    );
+    return (
+      <SidebarMenuItem key={item.title}>
+        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined}>
+          {link}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarContent className="border-t-2 border-t-[hsl(25_52%_12%)]">
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 py-3">
-            <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Foundation Clinic</span>
+          <SidebarGroupLabel className="px-2 py-3">
+            <div className="flex items-center justify-between w-full gap-2">
+              {collapsed ? (
+                <span className="text-sm font-bold tracking-tight text-sidebar-foreground mx-auto">FC</span>
+              ) : (
+                <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Foundation Clinic</span>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="h-7 w-7 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Workflow Group */}
-              {workflowNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="hover:bg-sidebar-accent text-sidebar-foreground"
-                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {workflowNavItems.map(renderNavItem)}
 
-              {/* Divider */}
-              <li className="px-4 py-2">
+              <li className="px-2 py-2">
                 <Separator className="bg-[hsl(25_30%_18%)]" />
               </li>
 
-              {/* Administrative Group */}
-              {adminNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className="hover:bg-sidebar-accent text-sidebar-foreground"
-                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {adminNavItems.map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{profile?.full_name || "User"}</p>
-            {role && <Badge variant="secondary" className="text-xs capitalize">{role}</Badge>}
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2">
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">{initials}</AvatarFallback>
+            </Avatar>
+            <Button variant="ghost" size="icon" onClick={signOut} title="Sign out" className="h-7 w-7">
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3 px-2">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{profile?.full_name || "User"}</p>
+              {role && <Badge variant="secondary" className="text-xs capitalize">{role}</Badge>}
+            </div>
+            <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
