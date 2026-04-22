@@ -373,7 +373,22 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                                     className="h-8 text-sm"
                                   />
                                 </td>
-                                <td className="px-3 py-2 text-muted-foreground text-xs">{r.unit ?? "—"}</td>
+                                <td className="px-3 py-2">
+                                  {r.unit ? (
+                                    <Select value={r.unit} onValueChange={(v) => updateUnit(idx, v)}>
+                                      <SelectTrigger className="h-8 text-xs px-2">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-popover z-50">
+                                        {unitOptionsFor(r.unit).map((u) => (
+                                          <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">—</span>
+                                  )}
+                                </td>
                                 <td className="px-3 py-2 text-muted-foreground text-xs">{r.reference ?? "—"}</td>
                               </tr>
                             ))}
