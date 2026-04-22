@@ -30,6 +30,7 @@ import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
+import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { useAuth } from "@/hooks/useAuth";
 
 // Legacy flat list for backward compat in dimension views
@@ -1913,6 +1914,7 @@ function HealthDimensionView({
         labResults={labResults}
         healthCategories={healthCategories}
         onDataChanged={onDataChanged}
+        onNavigateDimension={onNavigateDimension}
       />
     );
   }
@@ -2122,13 +2124,14 @@ function HealthDimensionView({
 }
 
 function SkinMucousDimensionView({
-  patient, onboarding, labResults, healthCategories, onDataChanged,
+  patient, onboarding, labResults, healthCategories, onDataChanged, onNavigateDimension,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
   onDataChanged?: () => void;
+  onNavigateDimension?: (section: string) => void;
 }) {
   const radarData = computeRadarData(onboarding, labResults, healthCategories);
   const skinScore = radarData.find((d) => d.category === "Skin & Mucous")?.score ?? 1;
