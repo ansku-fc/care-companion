@@ -31,6 +31,15 @@ import { HealthFileUploads, type HealthDataTab } from "@/components/patients/Hea
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
+import {
+  CardioLabBiomarkerPanel,
+  getAnnotations,
+  markIncluded,
+  useAnnotationsVersion,
+  type LabAnnotation,
+} from "@/components/patients/CardioLabBiomarkerPanel";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 
 // Legacy flat list for backward compat in dimension views
