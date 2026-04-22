@@ -3355,6 +3355,67 @@ function CardiovascularDimensionView({
           </Button>
         </div>
       </section>
+
+      {/* ── Incorporate annotations side panel ── */}
+      <Sheet open={incorporateOpen !== null} onOpenChange={(o) => !o && setIncorporateOpen(null)}>
+        <SheetContent side="right" className="w-[440px] sm:max-w-[440px] flex flex-col">
+          <SheetHeader>
+            <SheetTitle>
+              Incorporate annotations into{" "}
+              {incorporateOpen === "summary" ? "Summary" : "Recommendations"}
+            </SheetTitle>
+            <SheetDescription className="text-xs">
+              Select annotations to append as draft text. Nothing is saved until you review and click Save.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-auto mt-4 space-y-2">
+            {(incorporateOpen === "summary" ? newForSummary : incorporateOpen === "recommendations" ? newForRecommendations : [])
+              .slice()
+              .sort((a, b) => a.date.localeCompare(b.date))
+              .map((a) => {
+                const checked = selectedAnnIds.has(a.id);
+                return (
+                  <label
+                    key={a.id}
+                    className={cn(
+                      "flex items-start gap-2 rounded-md border p-3 cursor-pointer transition-colors",
+                      checked ? "border-primary bg-primary/5" : "hover:bg-muted/40",
+                    )}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        setSelectedAnnIds((prev) => {
+                          const next = new Set(prev);
+                          if (v) next.add(a.id);
+                          else next.delete(a.id);
+                          return next;
+                        });
+                      }}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-medium text-foreground">{a.biomarkerLabel}</span>
+                        <span className="text-[11px] text-muted-foreground">{a.date}</span>
+                      </div>
+                      <p className="text-sm text-foreground mt-1">{a.text}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">— {a.doctor}</p>
+                    </div>
+                  </label>
+                );
+              })}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <Button variant="ghost" onClick={() => setIncorporateOpen(null)}>Cancel</Button>
+            <Button onClick={applyIncorporate} disabled={selectedAnnIds.size === 0}>
+              Insert as draft ({selectedAnnIds.size})
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
