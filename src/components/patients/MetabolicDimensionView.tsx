@@ -350,7 +350,7 @@ export function MetabolicDimensionView({
               <button
                 onClick={() => { setSubTab("risk_factors"); setSelectedMarker(null); }}
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
-                  subTab === "risk_factors" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                  subTab === "risk_factors" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Risk Factors
@@ -358,7 +358,7 @@ export function MetabolicDimensionView({
               <button
                 onClick={() => { setSubTab("lab_graphs"); setSelectedMarker(null); }}
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
-                  subTab === "lab_graphs" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                  subTab === "lab_graphs" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Lab Results
