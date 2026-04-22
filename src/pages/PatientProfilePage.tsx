@@ -39,6 +39,7 @@ import {
   useAnnotationsVersion,
   updateAnnotation,
   deleteAnnotation,
+  addAnnotation,
   getSeriesRowsForBiomarker,
   type LabAnnotation,
 } from "@/components/patients/CardioLabBiomarkerPanel";
