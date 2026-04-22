@@ -3339,29 +3339,6 @@ function CardiovascularDimensionView({
                 </div>
               )}
               <Textarea
-
-                placeholder="Write a clinical summary for the cardiovascular dimension..."
-                value={cvSummary}
-                onChange={(e) => setCvSummary(e.target.value)}
-                className="min-h-[160px] resize-none"
-              />
-              {autoNotesBlock && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Auto-linked Lab Notes</p>
-                  <div className="rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap text-foreground">
-                    {autoNotesBlock}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
                 placeholder="Write recommendations for the cardiovascular care plan..."
                 value={cvRecommendations}
                 onChange={(e) => setCvRecommendations(e.target.value)}
