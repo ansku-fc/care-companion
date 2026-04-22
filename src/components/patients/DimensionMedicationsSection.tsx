@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pill, Plus, AlertTriangle, RefreshCw } from "lucide-react";
+import { Pill, Plus, AlertTriangle, RefreshCw, ChevronDown, ChevronRight, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── Mock medication data — keep aligned with PatientMedicationsView ──
