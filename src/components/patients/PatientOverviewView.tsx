@@ -430,36 +430,51 @@ export function PatientOverviewView({
         </div>
       </div>
 
-      {/* 4. HEALTH DIMENSION SUMMARY STRIP */}
+      {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
       <div className="space-y-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
           Health Dimensions
         </h3>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2">
-          {HEALTH_TAXONOMY.map((dim) => {
-            const score = dimensionScore(dim.key);
-            const Icon = dim.icon;
-            return (
-              <button
-                key={dim.key}
-                onClick={() => onSelectSection(dim.key)}
-                className="flex flex-col items-start gap-1.5 p-3 rounded-md bg-card shadow-card hover:shadow-md transition-shadow border-l-4 text-left"
-                style={{ borderLeftColor: scoreBorderColor(score) }}
-              >
-                <Icon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-[11px] font-medium text-foreground leading-tight line-clamp-2">
-                  {dim.label}
-                </span>
-                <div className="flex items-baseline gap-1 mt-auto">
-                  <span className={cn("text-base font-bold leading-none", scoreColorClass(score))}>
-                    {score.toFixed(1)}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground">/10</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <Card className="shadow-card">
+          <CardContent className="py-4">
+            <ul className="space-y-1">
+              {[...HEALTH_TAXONOMY]
+                .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
+                .sort((a, b) => b.score - a.score)
+                .map(({ dim, score }) => {
+                  const Icon = dim.icon;
+                  const widthPct = Math.max(4, (score / 10) * 100);
+                  const barColor = scoreBorderColor(score);
+                  return (
+                    <li key={dim.key}>
+                      <button
+                        onClick={() => onSelectSection(dim.key)}
+                        className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 w-44 shrink-0">
+                          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-xs font-medium text-foreground truncate">
+                            {dim.label}
+                          </span>
+                        </div>
+                        <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${widthPct}%`, backgroundColor: barColor }}
+                          />
+                        </div>
+                        <span
+                          className={cn("text-sm font-semibold tabular-nums w-10 text-right", scoreColorClass(score))}
+                        >
+                          {score.toFixed(1)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
 
       {/* 5. BOTTOM ROW: Next Visit · Care Team · Recent Labs */}
