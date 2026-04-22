@@ -39,6 +39,7 @@ import {
   useAnnotationsVersion,
   updateAnnotation,
   deleteAnnotation,
+  addAnnotation,
   getSeriesRowsForBiomarker,
   type LabAnnotation,
 } from "@/components/patients/CardioLabBiomarkerPanel";
@@ -2802,8 +2803,16 @@ function Sparkline({ points }: { points: number[] }) {
   );
 }
 
-// Inline annotation list with edit/delete for the marker detail sidebar.
-function AnnotationListEditor({ biomarkerKey }: { biomarkerKey: string }) {
+// Inline annotation list with add/edit/delete for the marker detail sidebar.
+function AnnotationListEditor({
+  biomarkerKey,
+  biomarkerLabel,
+  doctor = "Dr. Laine",
+}: {
+  biomarkerKey: string;
+  biomarkerLabel: string;
+  doctor?: string;
+}) {
   useAnnotationsVersion();
   const list = getAnnotationsForBiomarker(biomarkerKey)
     .slice()
@@ -2813,12 +2822,91 @@ function AnnotationListEditor({ biomarkerKey }: { biomarkerKey: string }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
 
+  // Inline "Add annotation" form state
+  const [adding, setAdding] = useState(false);
+  const [newDate, setNewDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [newText, setNewText] = useState("");
+
+  const handleSaveNew = () => {
+    if (!newText.trim() || !newDate) return;
+    addAnnotation({
+      biomarkerKey,
+      biomarkerLabel,
+      date: newDate,
+      text: newText.trim(),
+      doctor,
+    });
+    setNewText("");
+    setNewDate(new Date().toISOString().slice(0, 10));
+    setAdding(false);
+  };
+
+  const renderAddSection = () => (
+    <div className="mb-2">
+      {adding ? (
+        <div className="rounded-md border bg-card p-2 space-y-2">
+          <div>
+            <Label className="text-[11px] text-muted-foreground">Date</Label>
+            <Input
+              type="date"
+              value={newDate}
+              onChange={(e) => setNewDate(e.target.value)}
+              className="h-8 text-xs mt-0.5"
+            />
+          </div>
+          <div>
+            <Label className="text-[11px] text-muted-foreground">Annotation</Label>
+            <Textarea
+              autoFocus
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              placeholder="e.g. Started Atorvastatin 20mg — monitoring response"
+              className="min-h-[60px] text-xs resize-none mt-0.5"
+            />
+          </div>
+          <div className="flex justify-end gap-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setAdding(false);
+                setNewText("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              onClick={handleSaveNew}
+              disabled={!newText.trim() || !newDate}
+            >
+              Save annotation
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 w-full text-xs"
+          onClick={() => setAdding(true)}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add annotation
+        </Button>
+      )}
+    </div>
+  );
+
   if (list.length === 0) {
     return (
       <div className="mt-4">
         <p className="text-xs font-medium text-muted-foreground mb-1.5">Annotations</p>
+        {renderAddSection()}
         <p className="text-xs text-muted-foreground italic">
-          No annotations yet. Click a point on the graph to add one.
+          No annotations yet. Click a point on the graph or use the button above to add one.
         </p>
       </div>
     );
@@ -2829,7 +2917,9 @@ function AnnotationListEditor({ biomarkerKey }: { biomarkerKey: string }) {
       <p className="text-xs font-medium text-muted-foreground mb-1.5">
         Annotations ({list.length})
       </p>
+      {renderAddSection()}
       <ul className="space-y-1.5">
+
         {list.map((a) => {
           const isEditing = editingId === a.id;
           const isDeleting = deletingId === a.id;
@@ -3521,19 +3611,11 @@ function CardiovascularDimensionView({
                             </div>
                           )}
 
-                          <div>
-                            <Label className="text-xs">Doctor Notes</Label>
-                            <Textarea
-                              placeholder="Add notes about this marker..."
-                              className="mt-1 min-h-[80px] text-xs resize-none"
-                              value={markerNotes[selectedMarker.key] || ""}
-                              onChange={(e) => {
-                                setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
-                              }}
-                            />
-                          </div>
+                          <AnnotationListEditor
+                            biomarkerKey={selectedMarker.key}
+                            biomarkerLabel={selectedMarker.label}
+                          />
 
-                          <AnnotationListEditor biomarkerKey={selectedMarker.key} />
 
                           {MARKER_DIMENSIONS[selectedMarker.key] && (
                             <div>
