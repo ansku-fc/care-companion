@@ -113,9 +113,16 @@ interface Props {
 
 export function DimensionMedicationsSection({ dimensionKey, dimensionLabel, onNavigateToMedications }: Props) {
   const matchingLabels = DIMENSION_LABEL_MAP[dimensionKey] ?? [dimensionLabel];
+  const [pastOpen, setPastOpen] = useState(false);
+  const [expandedPastIds, setExpandedPastIds] = useState<Set<string>>(new Set());
 
   const meds = useMemo(
     () => SEED_MEDS.filter((m) => m.status === "active" && matchingLabels.includes(m.dimension)),
+    [matchingLabels],
+  );
+
+  const pastMeds = useMemo(
+    () => SEED_MEDS.filter((m) => m.status === "past" && matchingLabels.includes(m.dimension)),
     [matchingLabels],
   );
 
