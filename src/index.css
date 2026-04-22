@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,59 +10,59 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Foundation Clinic — modern neutral premium SaaS palette */
-    --background: 240 6% 97%;          /* #F5F5F7 */
-    --foreground: 240 4% 12%;          /* #1C1C1E */
+    /* Foundation Clinic — clean white with indigo accent */
+    --background: 240 33% 98%;          /* #F8F8FC */
+    --foreground: 244 47% 20%;          /* #1E1B4B */
 
     --card: 0 0% 100%;
-    --card-foreground: 240 4% 12%;
+    --card-foreground: 244 47% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 4% 12%;
+    --popover-foreground: 244 47% 20%;
 
-    --primary: 240 4% 12%;             /* near-black #1C1C1E */
+    --primary: 239 84% 67%;             /* indigo #6366F1 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 6% 94%;
-    --secondary-foreground: 240 4% 12%;
+    --secondary: 240 33% 96%;
+    --secondary-foreground: 244 47% 20%;
 
-    --muted: 240 6% 96%;
-    --muted-foreground: 240 3% 44%;    /* #6E6E73 */
+    --muted: 240 20% 97%;
+    --muted-foreground: 220 9% 46%;     /* #6B7280 */
 
-    --accent: 19 50% 53%;              /* terracotta #C4714A */
+    --accent: 239 84% 67%;              /* indigo accent #6366F1 */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 6 64% 46%;          /* #C0392B */
+    --destructive: 0 72% 51%;           /* #DC2626 */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 140 36% 46%;            /* #4A9E6B */
+    --success: 173 86% 32%;             /* teal #0D9488 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 43 88% 38%;             /* #B8860B */
+    --warning: 32 95% 44%;              /* amber #D97706 */
     --warning-foreground: 0 0% 100%;
 
-    --border: 240 7% 91%;              /* #E5E5EA */
-    --input: 240 7% 91%;
-    --ring: 19 50% 53%;
+    --border: 240 33% 94%;              /* #EBEBF5 */
+    --input: 240 33% 94%;
+    --ring: 239 84% 67%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;                  /* 20px */
 
-    /* Sidebar — deep charcoal */
-    --sidebar-background: 240 4% 12%;     /* #1C1C1E */
+    /* Sidebar — deep indigo-charcoal */
+    --sidebar-background: 244 47% 20%;     /* #1E1B4B */
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 240 3% 17%;        /* #2C2C2E active */
+    --sidebar-primary: 244 44% 30%;        /* #2D2A6E active bg */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3% 17%;
+    --sidebar-accent: 244 44% 30%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 3% 17%;
-    --sidebar-ring: 19 50% 53%;
+    --sidebar-border: 244 44% 30%;
+    --sidebar-ring: 239 84% 67%;
 
-    /* Neutral soft shadow system */
-    --shadow-card: 0 1px 3px hsl(240 4% 12% / 0.06), 0 4px 12px hsl(240 4% 12% / 0.04);
-    --shadow-card-hover: 0 4px 16px hsl(240 4% 12% / 0.10);
-    --shadow-alert: 0 2px 8px hsl(240 4% 12% / 0.06);
-    --shadow-panel: 0 4px 20px hsl(240 4% 12% / 0.10);
-    --shadow-modal: 0 8px 32px hsl(240 4% 12% / 0.16);
+    /* Soft indigo-tinted shadow system */
+    --shadow-card: 0 1px 4px hsl(239 84% 67% / 0.06), 0 4px 16px hsl(239 84% 67% / 0.04);
+    --shadow-card-hover: 0 4px 20px hsl(239 84% 67% / 0.10);
+    --shadow-alert: 0 2px 8px hsl(239 84% 67% / 0.06);
+    --shadow-panel: 0 4px 24px hsl(239 84% 67% / 0.10);
+    --shadow-modal: 0 8px 40px hsl(244 47% 20% / 0.16);
   }
 
   .dark {
@@ -116,12 +118,16 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
     font-feature-settings: "ss01", "cv11";
     letter-spacing: 0.005em;
     line-height: 1.55;
+    font-weight: 400;
   }
 
   h1, h2, h3, h4 {
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
     letter-spacing: -0.018em;
     line-height: 1.2;
   }
