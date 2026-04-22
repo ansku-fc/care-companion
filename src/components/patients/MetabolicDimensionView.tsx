@@ -1,98 +1,45 @@
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Beaker, Activity, Save, X, ChevronDown, ChevronRight } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceArea,
 } from "recharts";
-import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
+import {
+  CardioLabBiomarkerPanel,
+  getSeriesRowsForBiomarker,
+} from "@/components/patients/CardioLabBiomarkerPanel";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
 // ── Reference values for metabolic markers ──────────────────────────
 const METABOLIC_REFS: Record<string, { low?: number; high?: number; label: string }> = {
   // Nutrition
-  holotranscobalamin_pmol_l: { low: 50, label: "Holotranscobalamin" },
-  vitamin_b12_total_ng_l: { low: 200, high: 900, label: "Vitamin B12 (total)" },
+  vitamin_b12_total_ng_l: { low: 200, high: 900, label: "Vitamin B12" },
   vitamin_d_25oh_nmol_l: { low: 75, label: "Vitamin D (25-OH)" },
   folate_ug_l: { low: 5.9, label: "Folate" },
-  phosphate_mmol_l: { low: 0.8, high: 1.5, label: "Phosphate" },
-  iron_serum_umol_l: { low: 10, high: 30, label: "Iron (serum)" },
   ferritin_ug_l: { low: 30, high: 300, label: "Ferritin" },
-  transferrin_receptor_mg_l: { high: 4.4, label: "Transferrin Receptor" },
-  transferrin_g_l: { low: 2.0, high: 3.6, label: "Transferrin" },
-  transferrin_saturation_pct: { low: 20, high: 50, label: "Transferrin Saturation" },
-  total_protein_g_l: { low: 64, high: 83, label: "Total Protein" },
-  prealbumin_g_l: { low: 0.2, high: 0.4, label: "Prealbumin" },
   // Endocrine
   free_t4_pmol_l: { low: 12, high: 22, label: "Free T4" },
   tsh_mu_l: { low: 0.4, high: 4.0, label: "TSH" },
   // Kidneys
   egfr: { low: 60, label: "eGFR" },
   calcium_mmol_l: { low: 2.15, high: 2.55, label: "Calcium" },
-  calcium_adjusted_mmol_l: { low: 2.15, high: 2.55, label: "Calcium (adjusted)" },
-  calcium_ionised_mmol_l: { low: 1.15, high: 1.30, label: "Calcium (ionised)" },
   potassium_mmol_l: { low: 3.5, high: 5.0, label: "Potassium" },
   creatinine_umol_l: { low: 45, high: 110, label: "Creatinine" },
-  cystatin_c: { high: 1.03, label: "Cystatin C" },
-  magnesium_mmol_l: { low: 0.7, high: 1.0, label: "Magnesium" },
   sodium_mmol_l: { low: 136, high: 145, label: "Sodium" },
-  urine_acr_mg_mmol: { high: 3.0, label: "Urine ACR" },
+  // Metabolism
+  fasting_glucose_mmol_l: { low: 3.9, high: 5.6, label: "Fasting Glucose" },
+  hba1c_metabolic: { high: 42, label: "HbA1c" },
 };
 
-// Group markers by sub-dimension
-const NUTRITION_MARKERS = [
-  "holotranscobalamin_pmol_l", "vitamin_b12_total_ng_l", "vitamin_d_25oh_nmol_l",
-  "folate_ug_l", "phosphate_mmol_l", "iron_serum_umol_l", "ferritin_ug_l",
-  "transferrin_receptor_mg_l", "transferrin_g_l", "transferrin_saturation_pct",
-  "total_protein_g_l", "prealbumin_g_l",
-];
-
-const ENDOCRINE_MARKERS = ["free_t4_pmol_l", "tsh_mu_l"];
-
-const KIDNEY_MARKERS = [
-  "egfr", "calcium_mmol_l", "calcium_adjusted_mmol_l", "calcium_ionised_mmol_l",
-  "potassium_mmol_l", "creatinine_umol_l", "cystatin_c", "magnesium_mmol_l",
-  "sodium_mmol_l", "urine_acr_mg_mmol",
-];
-
-const UNIT_MAP: Record<string, string> = {
-  holotranscobalamin_pmol_l: "pmol/L",
-  vitamin_b12_total_ng_l: "ng/L",
-  vitamin_d_25oh_nmol_l: "nmol/L",
-  folate_ug_l: "µg/L",
-  phosphate_mmol_l: "mmol/L",
-  iron_serum_umol_l: "µmol/L",
-  ferritin_ug_l: "µg/L",
-  transferrin_receptor_mg_l: "mg/L",
-  transferrin_g_l: "g/L",
-  transferrin_saturation_pct: "%",
-  total_protein_g_l: "g/L",
-  prealbumin_g_l: "g/L",
-  free_t4_pmol_l: "pmol/L",
-  tsh_mu_l: "mU/L",
-  egfr: "mL/min/1.73m²",
-  calcium_mmol_l: "mmol/L",
-  calcium_adjusted_mmol_l: "mmol/L",
-  calcium_ionised_mmol_l: "mmol/L",
-  potassium_mmol_l: "mmol/L",
-  creatinine_umol_l: "µmol/L",
-  cystatin_c: "mg/L",
-  magnesium_mmol_l: "mmol/L",
-  sodium_mmol_l: "mmol/L",
-  urine_acr_mg_mmol: "mg/mmol",
-};
-
-type SubTab = "risk_factors" | "lab_nutrition" | "lab_endocrine" | "lab_kidneys" | "total_risk";
+type SubTab = "risk_factors" | "lab_graphs";
 
 // ── Sub-dimension score computation ─────────────────────────────
 export type SubDimScore = { key: string; label: string; score: number };
@@ -101,7 +48,6 @@ export function computeSubDimScores(
   onboarding: Tables<"patient_onboarding"> | null,
   lab: Tables<"patient_lab_results"> | null,
 ): SubDimScore[] {
-  // Helper: check if a lab value is out of ref range
   const outOfRange = (val: number | null | undefined, ref: { low?: number; high?: number }): boolean => {
     if (val == null) return false;
     if (ref.low != null && val < ref.low) return true;
@@ -109,7 +55,10 @@ export function computeSubDimScores(
     return false;
   };
 
-  // Count how many markers in a group are out of range
+  const ENDOCRINE_MARKERS = ["free_t4_pmol_l", "tsh_mu_l"];
+  const KIDNEY_MARKERS = ["egfr", "calcium_mmol_l", "potassium_mmol_l", "creatinine_umol_l", "sodium_mmol_l"];
+  const NUTRITION_MARKERS = ["vitamin_b12_total_ng_l", "vitamin_d_25oh_nmol_l", "folate_ug_l", "ferritin_ug_l"];
+
   const countOutOfRange = (markers: string[]) => {
     let count = 0;
     for (const key of markers) {
@@ -121,22 +70,17 @@ export function computeSubDimScores(
     return count;
   };
 
-  // 2.1 Endocrine System
   let endoScore = 1;
   if (onboarding?.illness_hormone) endoScore += 3;
-  const endoOor = countOutOfRange(ENDOCRINE_MARKERS);
-  endoScore += endoOor * 2;
+  endoScore += countOutOfRange(ENDOCRINE_MARKERS) * 2;
   endoScore = Math.min(endoScore, 10);
 
-  // 2.2 Kidneys
   let kidneyScore = 1;
   if (onboarding?.illness_kidney) kidneyScore += 3;
   if (onboarding?.symptom_kidney_function) kidneyScore += 1;
-  const kidneyOor = countOutOfRange(KIDNEY_MARKERS);
-  kidneyScore += Math.min(kidneyOor * 1.5, 6);
+  kidneyScore += Math.min(countOutOfRange(KIDNEY_MARKERS) * 1.5, 6);
   kidneyScore = Math.min(Math.round(kidneyScore), 10);
 
-  // 2.3 Body Composition
   let bodyScore = 1;
   if (onboarding?.bmi) {
     const bmi = Number(onboarding.bmi);
@@ -149,18 +93,15 @@ export function computeSubDimScores(
   if (onboarding?.waist_circumference_cm && Number(onboarding.waist_circumference_cm) > 102) bodyScore += 1;
   bodyScore = Math.min(bodyScore, 10);
 
-  // 2.4 Nutrition
   let nutritionScore = 1;
   const nutritionOor = countOutOfRange(NUTRITION_MARKERS);
   if (nutritionOor >= 4) nutritionScore += 4;
   else if (nutritionOor >= 2) nutritionScore += 2;
   else if (nutritionOor >= 1) nutritionScore += 1;
-  // Check diet markers from onboarding
   if (onboarding?.fruits_vegetables_g_per_day != null && Number(onboarding.fruits_vegetables_g_per_day) < 400) nutritionScore += 1;
   if (onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25) nutritionScore += 1;
   nutritionScore = Math.min(nutritionScore, 10);
 
-  // 2.5 Metabolism
   let metabScore = 1;
   if (lab?.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42) metabScore += 3;
   if (lab?.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 48) metabScore += 2;
@@ -179,13 +120,12 @@ export function computeSubDimScores(
 
 export function computeCompositeScore(subs: SubDimScore[]): number {
   if (subs.length === 0) return 1;
-  // Weighted average rounded, clamped 1-10
   const avg = subs.reduce((sum, s) => sum + s.score, 0) / subs.length;
   return Math.max(1, Math.min(10, Math.round(avg)));
 }
 
-const scoreColorFn = (s: number) => s <= 3 ? "text-[hsl(137_25%_39%)]" : s <= 6 ? "text-[hsl(28_63%_44%)]" : "text-[hsl(0_57%_39%)]";
-const scoreBgFn = (_s: number) => "";
+const scoreColorFn = (s: number) =>
+  s <= 3 ? "text-[hsl(137_25%_39%)]" : s <= 6 ? "text-[hsl(28_63%_44%)]" : "text-[hsl(0_57%_39%)]";
 
 interface Props {
   patient: Tables<"patients">;
@@ -200,11 +140,18 @@ interface Props {
 
 export function MetabolicDimensionView({
   patient, onboarding, labResults, healthCategories,
-  markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
+  onNavigateDimension, onDataChanged,
 }: Props) {
   const [subTab, setSubTab] = useState<SubTab>("risk_factors");
-  const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
-  const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
+  const [selectedMarker, setSelectedMarker] = useState<{
+    key: string;
+    label: string;
+    unit: string;
+    refLow?: number;
+    refHigh?: number;
+    accentColorVar: string;
+  } | null>(null);
+  const [sidebarWindow, setSidebarWindow] = useState<"6m" | "1y" | "3y" | "all">("3y");
   const [saving, setSaving] = useState(false);
   const [showRiskHistory, setShowRiskHistory] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -221,16 +168,13 @@ export function MetabolicDimensionView({
   const lab = labResults[0] || null;
   const subScores = useMemo(() => computeSubDimScores(onboarding, lab), [onboarding, lab]);
   const compositeScore = useMemo(() => computeCompositeScore(subScores), [subScores]);
-
   const scoreColor = scoreColorFn(compositeScore);
-  const scoreBg = scoreBgFn(compositeScore);
 
-  const sorted = useMemo(() =>
-    [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date)),
+  const sorted = useMemo(
+    () => [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date)),
     [labResults],
   );
 
-  // Risk history
   const riskHistory = useMemo(() => {
     const computed = sorted.map((sortedLab) => {
       const subs = computeSubDimScores(onboarding, sortedLab);
@@ -238,15 +182,18 @@ export function MetabolicDimensionView({
     });
     if (computed.length < 2) {
       return [
-        { date: "2023-06-01", score: 3 }, { date: "2023-12-01", score: 4 },
-        { date: "2024-06-01", score: 3 }, { date: "2025-01-01", score: 5 },
-        ...computed,
+        { date: "2023-06-01", score: 3 },
+        { date: "2023-12-01", score: 4 },
+        { date: "2024-06-01", score: 3 },
+        { date: "2025-01-01", score: compositeScore },
       ];
     }
     return computed;
-  }, [sorted, onboarding]);
+  }, [sorted, onboarding, compositeScore]);
 
-  const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
+  const onboardingDate = onboarding?.created_at
+    ? new Date(onboarding.created_at).toLocaleDateString()
+    : "—";
 
   const riskFactors: { key: string; label: string; value: string; detail: React.ReactNode }[] = [
     { key: "bmi", label: "BMI", value: onboarding?.bmi != null ? String(onboarding.bmi) : "—", detail: <p className="text-sm text-muted-foreground">Body Mass Index. Normal range 18.5–24.9.</p> },
@@ -275,159 +222,68 @@ export function MetabolicDimensionView({
     else { toast.success("Saved successfully"); onDataChanged?.(); }
   };
 
-  // Helper to render a group of lab charts
-  const renderLabGroup = (markerKeys: string[]) => {
-    return (
-      <div className="flex gap-4">
-        <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
-          {markerKeys.map((key) => {
-            const ref = METABOLIC_REFS[key];
-            if (!ref) return null;
-            const data = sorted
-              .filter((l) => (l as any)[key] != null)
-              .map((l) => ({ date: l.result_date, value: Number((l as any)[key]) }));
-            const unit = UNIT_MAP[key] || "";
+  // Metabolic biomarkers (single-column list) — same shape as Cardiovascular
+  const METABOLIC_BIOMARKERS: Array<{
+    key: string;
+    label: string;
+    sidebarLabel?: string;
+    unit: string;
+    refLow?: number;
+    refHigh?: number;
+    accentColorVar: string;
+  }> = [
+    { key: "egfr", label: "eGFR", unit: "mL/min/1.73m²", refLow: 60, accentColorVar: "hsl(200 70% 40%)" },
+    { key: "creatinine_umol_l", label: "Creatinine", unit: "µmol/L", refLow: 45, refHigh: 110, accentColorVar: "hsl(220 50% 45%)" },
+    { key: "fasting_glucose_mmol_l", label: "Fasting Glucose", unit: "mmol/L", refLow: 3.9, refHigh: 5.6, accentColorVar: "hsl(340 60% 45%)" },
+    { key: "hba1c_metabolic", label: "HbA1c", unit: "mmol/mol", refHigh: 42, accentColorVar: "hsl(15 60% 45%)" },
+    { key: "tsh_mu_l", label: "TSH", unit: "mIU/L", refLow: 0.4, refHigh: 4.0, accentColorVar: "hsl(280 50% 45%)" },
+    { key: "free_t4_pmol_l", label: "Free T4", unit: "pmol/L", refLow: 12, refHigh: 22, accentColorVar: "hsl(260 50% 45%)" },
+    { key: "vitamin_d_25oh_nmol_l", label: "Vitamin D (25-OH)", unit: "nmol/L", refLow: 75, accentColorVar: "hsl(45 70% 40%)" },
+    { key: "vitamin_b12_total_ng_l", label: "Vitamin B12", unit: "ng/L", refLow: 200, refHigh: 900, accentColorVar: "hsl(160 55% 35%)" },
+    { key: "ferritin_ug_l", label: "Ferritin", unit: "µg/L", refLow: 30, refHigh: 300, accentColorVar: "hsl(25 45% 30%)" },
+    { key: "folate_ug_l", label: "Folate", unit: "µg/L", refLow: 5.9, accentColorVar: "hsl(120 40% 35%)" },
+    { key: "potassium_mmol_l", label: "Potassium", unit: "mmol/L", refLow: 3.5, refHigh: 5.0, accentColorVar: "hsl(180 50% 40%)" },
+    { key: "sodium_mmol_l", label: "Sodium", unit: "mmol/L", refLow: 136, refHigh: 145, accentColorVar: "hsl(190 55% 40%)" },
+    { key: "calcium_mmol_l", label: "Calcium", unit: "mmol/L", refLow: 2.15, refHigh: 2.55, accentColorVar: "hsl(40 70% 40%)" },
+  ];
 
-            return (
-              <Card
-                key={key}
-                className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === key ? "border-primary" : ""}`}
-                onClick={() => setSelectedMarker({ key, label: ref.label, unit })}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{ref.label} ({unit})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {data.length > 0 ? (
-                    <div className="h-[180px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={data}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                          <YAxis tick={{ fontSize: 10 }} />
-                          <Tooltip />
-                          {ref.low != null && ref.high != null && (
-                            <ReferenceArea y1={ref.low} y2={ref.high} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                          )}
-                          {ref.low != null && !ref.high && (
-                            <ReferenceArea y1={ref.low} y2={ref.low * 3} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                          )}
-                          {ref.high != null && !ref.low && (
-                            <ReferenceArea y1={0} y2={ref.high} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                          )}
-                          <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name={ref.label} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground py-6 text-center">No data available.</p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Detail panel */}
-        {selectedMarker && (() => {
-          const detailData = sorted
-            .map((lab) => {
-              const val = (lab as any)[selectedMarker.key];
-              return val != null ? { date: lab.result_date, value: Number(val) } : null;
-            })
-            .filter(Boolean) as { date: string; value: number }[];
-
-          const ref = {
-            ...METABOLIC_REFS[selectedMarker.key],
-            ...customRefs[selectedMarker.key],
-          };
-
-          return (
-            <div className="w-[380px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200">
-              <div className="flex items-center justify-between p-4 border-b">
-                <div>
-                  <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
-                  <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
-                </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="p-4 flex-1 overflow-auto">
-                {detailData.length < 1 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No data points available.</p>
-                ) : (
-                  <DraggableReferenceChart
-                    chartData={detailData}
-                    refValues={ref}
-                    onRefChange={(newRef) => {
-                      setCustomRefs((prev) => ({
-                        ...prev,
-                        [selectedMarker.key]: { ...(METABOLIC_REFS[selectedMarker.key] || {}), ...prev[selectedMarker.key], ...newRef },
-                      }));
-                    }}
-                  />
-                )}
-                <div className="mt-4 space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Low</Label>
-                      <Input type="number" step="any" placeholder="—" className="h-8 text-xs"
-                        value={ref?.low ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? undefined : Number(e.target.value);
-                          setCustomRefs((prev) => ({ ...prev, [selectedMarker.key]: { ...prev[selectedMarker.key], low: val } }));
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">High</Label>
-                      <Input type="number" step="any" placeholder="—" className="h-8 text-xs"
-                        value={ref?.high ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? undefined : Number(e.target.value);
-                          setCustomRefs((prev) => ({ ...prev, [selectedMarker.key]: { ...prev[selectedMarker.key], high: val } }));
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Label className="text-xs">Doctor Notes</Label>
-                  <Textarea
-                    placeholder="Add notes about this marker..."
-                    className="mt-1 min-h-[80px] text-xs resize-none"
-                    value={markerNotes[selectedMarker.key] || ""}
-                    onChange={(e) => setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }))}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-      </div>
-    );
-  };
-
+  const selectMarker = (b: typeof METABOLIC_BIOMARKERS[number]) =>
+    setSelectedMarker({
+      key: b.key,
+      label: b.sidebarLabel ?? b.label,
+      unit: b.unit,
+      refLow: b.refLow,
+      refHigh: b.refHigh,
+      accentColorVar: b.accentColorVar,
+    });
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* ─────────────── 1. HEADER ─────────────── */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Beaker className="h-5 w-5 text-primary" />
-              Metabolic Health
-            </CardTitle>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+                <Beaker className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Metabolic Health</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Risk Index scale: 1 = no action needed → 10 = immediate action
+                </p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{Number(compositeScore).toFixed(1)}</span>
+                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>
+                  {Number(compositeScore).toFixed(1)}
+                </span>
               </div>
               <Button
-                variant="outline" size="sm"
+                variant="outline"
+                size="sm"
                 className="gap-1.5 text-xs bg-card text-foreground border-border shadow-card hover:bg-accent"
                 onClick={() => setShowRiskHistory(!showRiskHistory)}
               >
@@ -436,23 +292,21 @@ export function MetabolicDimensionView({
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">1 = no action needed → 10 = immediate action</p>
         </CardHeader>
 
         <CardContent className="pt-0 space-y-3">
-          {/* Sub-dimension indices — compact inline row */}
-          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {/* Sub-dimension indices — compact secondary row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             {subScores.map((sub) => {
               const sc = scoreColorFn(sub.score);
-              const bg = scoreBgFn(sub.score);
               return (
                 <button
                   key={sub.key}
                   onClick={() => onNavigateDimension(sub.key)}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border transition-colors hover:border-primary/40 cursor-pointer ${bg}`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-card transition-colors hover:border-primary/40 cursor-pointer"
                 >
-                  <span className="text-[10px] font-medium text-muted-foreground">{sub.label}</span>
-                  <span className={`text-[11px] font-bold ${sc}`}>{sub.score}/10</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{sub.label}</span>
+                  <span className={`text-[12px] font-bold ${sc}`}>{sub.score.toFixed(1)}</span>
                 </button>
               );
             })}
@@ -468,159 +322,253 @@ export function MetabolicDimensionView({
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                       <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 10 }} />
                       <Tooltip formatter={(value: number) => [`${value}/10`, "Risk Index"]} />
-                      <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} />
-                      <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} />
-                      <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} />
-                      <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5 }} name="Risk Index" />
+                      <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} label={{ value: "Low", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} label={{ value: "Medium", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} label={{ value: "High", position: "insideLeft", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} activeDot={{ r: 7 }} name="Risk Index" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-6">Not enough data points.</p>
+                <p className="text-sm text-muted-foreground text-center py-6">Not enough data points to show history.</p>
               )}
             </>
           )}
         </CardContent>
       </Card>
 
-      {/* Main layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Left: Summary & Recommendations */}
-        <div className="flex flex-col gap-4">
-          <Card className="flex-1">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Doctor's Summary</CardTitle></CardHeader>
-            <CardContent>
-              <Textarea placeholder="Write a clinical summary for metabolic health..." value={summary} onChange={(e) => setSummary(e.target.value)} className="min-h-[120px] resize-none" />
-            </CardContent>
-          </Card>
-          <Card className="flex-1">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Recommendations</CardTitle></CardHeader>
-            <CardContent>
-              <Textarea placeholder="Write recommendations for metabolic care plan..." value={recommendations} onChange={(e) => setRecommendations(e.target.value)} className="min-h-[120px] resize-none" />
-            </CardContent>
-          </Card>
-          <DimensionMedicationsSection
-            dimensionKey="metabolic"
-            dimensionLabel="Metabolic Health"
-            onNavigateToMedications={() => onNavigateDimension("medications")}
-          />
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving} className="gap-2">
-              <Save className="h-4 w-4" /> {saving ? "Saving..." : "Save"}
-            </Button>
-          </div>
+      {/* ─────────────── 2. RISK PICTURE ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Picture</h2>
+          <p className="text-xs text-muted-foreground">What is driving the current risk index</p>
         </div>
 
-        {/* Right: Sub-tabs */}
-        <div className="xl:col-span-2 flex flex-col gap-4">
-          <div className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground gap-1 flex-wrap">
-            {([
-              ["risk_factors", "Risk Factors"],
-              ["lab_nutrition", "Nutrition Labs"],
-              ["lab_endocrine", "Endocrine Labs"],
-              ["lab_kidneys", "Kidney Labs"],
-              ["total_risk", "Total Risk"],
-            ] as [SubTab, string][]).map(([key, label]) => (
-              <button key={key}
-                onClick={() => { setSubTab(key); setSelectedMarker(null); }}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                  subTab === key ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="inline-flex h-9 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground gap-1 self-start">
+              <button
+                onClick={() => { setSubTab("risk_factors"); setSelectedMarker(null); }}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
+                  subTab === "risk_factors" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
                 }`}
               >
-                {label}
+                Risk Factors
               </button>
-            ))}
-          </div>
+              <button
+                onClick={() => { setSubTab("lab_graphs"); setSelectedMarker(null); }}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
+                  subTab === "lab_graphs" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                }`}
+              >
+                Lab Results
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {subTab === "risk_factors" && (
+              <div className="divide-y border rounded-md">
+                {riskFactors.map((f) => {
+                  const expanded = expandedRows.has(f.key);
+                  return (
+                    <div key={f.key} className="border-b last:border-0">
+                      <button
+                        onClick={() => toggleRow(f.key)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <span className="font-medium text-sm">{f.label}</span>
+                          <span className="text-sm text-muted-foreground">{f.value}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground">{onboardingDate}</span>
+                          {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                        </div>
+                      </button>
+                      {expanded && <div className="px-4 pb-4 pt-0">{f.detail}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-          {/* Risk Factors */}
-          {subTab === "risk_factors" && (
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-base">Risk Factors from Onboarding</CardTitle></CardHeader>
-              <CardContent>
-                <div className="divide-y border rounded-md">
-                  {riskFactors.map((f) => {
-                    const expanded = expandedRows.has(f.key);
-                    return (
-                      <div key={f.key} className="border-b last:border-0">
-                        <button
-                          onClick={() => toggleRow(f.key)}
-                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <span className="font-medium text-sm">{f.label}</span>
-                            <span className="text-sm text-muted-foreground">{f.value}</span>
+            {subTab === "lab_graphs" && (
+              <div className="flex gap-4">
+                <div className="grid grid-cols-1 gap-4 flex-1 min-w-0">
+                  {METABOLIC_BIOMARKERS.map((b) => (
+                    <CardioLabBiomarkerPanel
+                      key={b.key}
+                      biomarkerKey={b.key}
+                      label={b.label}
+                      unit={b.unit}
+                      refLow={b.refLow}
+                      refHigh={b.refHigh}
+                      accentColorVar={b.accentColorVar}
+                      selected={selectedMarker?.key === b.key}
+                      onSelect={() => selectMarker(b)}
+                    />
+                  ))}
+                </div>
+
+                {selectedMarker && (() => {
+                  const rows = getSeriesRowsForBiomarker(
+                    selectedMarker.key,
+                    sidebarWindow,
+                    selectedMarker.refLow,
+                    selectedMarker.refHigh,
+                  );
+                  return (
+                    <div
+                      className="w-[380px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200 self-start sticky top-4 max-h-[calc(100vh-2rem)]"
+                      style={{ borderLeftWidth: 4, borderLeftColor: selectedMarker.accentColorVar }}
+                    >
+                      <div className="flex items-center justify-between p-4 border-b bg-card sticky top-0 z-10 rounded-t-lg">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: selectedMarker.accentColorVar }}
+                            aria-hidden
+                          />
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-sm truncate">{selectedMarker.label}</h3>
+                            {selectedMarker.unit && (
+                              <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+                            )}
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-muted-foreground">{onboardingDate}</span>
-                            {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                          </div>
-                        </button>
-                        {expanded && <div className="px-4 pb-4 pt-0">{f.detail}</div>}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Nutrition Labs */}
-          {subTab === "lab_nutrition" && renderLabGroup(NUTRITION_MARKERS)}
+                      <div className="p-4 flex-1 overflow-auto space-y-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-muted-foreground">Data points</p>
+                          <div className="inline-flex rounded-md border bg-muted/50 p-0.5 text-[10px]">
+                            {(["6m", "1y", "3y", "all"] as const).map((w) => (
+                              <button
+                                key={w}
+                                onClick={() => setSidebarWindow(w)}
+                                className={cn(
+                                  "px-1.5 py-0.5 rounded-sm transition-colors",
+                                  sidebarWindow === w
+                                    ? "bg-background text-foreground shadow-sm font-medium"
+                                    : "text-muted-foreground hover:text-foreground",
+                                )}
+                              >
+                                {w === "all" ? "All" : w}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-          {/* Endocrine Labs */}
-          {subTab === "lab_endocrine" && renderLabGroup(ENDOCRINE_MARKERS)}
+                        {rows.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">No data recorded yet.</p>
+                        ) : (
+                          <div className="border rounded-md overflow-hidden">
+                            <div className="max-h-64 overflow-auto">
+                              <table className="w-full text-xs">
+                                <thead className="bg-muted/40 sticky top-0">
+                                  <tr>
+                                    <th className="text-left font-medium px-2 py-1.5">Date</th>
+                                    <th className="text-left font-medium px-2 py-1.5">Value</th>
+                                    <th className="text-left font-medium px-2 py-1.5">In range</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {rows.map((r) => (
+                                    <tr key={r.date} className="border-t">
+                                      <td className="px-2 py-1.5 text-muted-foreground">{r.date}</td>
+                                      <td className="px-2 py-1.5 font-medium">{r.value}</td>
+                                      <td className="px-2 py-1.5">
+                                        {r.inRange === null ? (
+                                          <span className="text-muted-foreground">—</span>
+                                        ) : r.inRange ? (
+                                          <span className="inline-flex items-center gap-1 text-[hsl(142_60%_35%)]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142_60%_45%)]" />
+                                            Yes
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 text-destructive">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                                            No
+                                          </span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
-          {/* Kidney Labs */}
-          {subTab === "lab_kidneys" && renderLabGroup(KIDNEY_MARKERS)}
-
-          {/* Total Risk */}
-          {subTab === "total_risk" && (
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-base">Total Metabolic Risk Assessment</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className={`flex items-center justify-center h-20 w-20 rounded-full ${scoreBg}`}>
-                    <span className={`text-3xl font-bold ${scoreColor}`}>{compositeScore}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Risk Score: {compositeScore}/10</p>
-                    <p className="text-sm text-muted-foreground">
-                      {compositeScore <= 3 ? "Low risk — continue monitoring" : compositeScore <= 6 ? "Moderate risk — consider intervention" : "High risk — action recommended"}
-                    </p>
-                  </div>
-                </div>
-                <Separator />
-                <div>
-                  <p className="text-sm font-medium mb-2">Contributing Factors</p>
-                  <div className="space-y-2 text-sm">
-                    {onboarding?.illness_hormone && (
-                      <div className="flex items-center gap-2"><Badge variant="destructive" className="text-xs">High</Badge><span>Endocrine / hormone illness</span></div>
-                    )}
-                    {onboarding?.illness_kidney && (
-                      <div className="flex items-center gap-2"><Badge variant="destructive" className="text-xs">High</Badge><span>Kidney illness</span></div>
-                    )}
-                    {onboarding?.bmi && Number(onboarding.bmi) > 30 && (
-                      <div className="flex items-center gap-2"><Badge variant="destructive" className="text-xs">High</Badge><span>BMI &gt; 30: {onboarding.bmi}</span></div>
-                    )}
-                    {onboarding?.bmi && Number(onboarding.bmi) < 18.5 && (
-                      <div className="flex items-center gap-2"><Badge variant="secondary" className="text-xs">Moderate</Badge><span>BMI &lt; 18.5: {onboarding.bmi}</span></div>
-                    )}
-                    {lab?.tsh_mu_l && (Number(lab.tsh_mu_l) < 0.4 || Number(lab.tsh_mu_l) > 4.0) && (
-                      <div className="flex items-center gap-2"><Badge variant="secondary" className="text-xs">Moderate</Badge><span>TSH out of range: {lab.tsh_mu_l} mU/L</span></div>
-                    )}
-                    {lab?.egfr && Number(lab.egfr) < 60 && (
-                      <div className="flex items-center gap-2"><Badge variant="destructive" className="text-xs">High</Badge><span>Low eGFR: {lab.egfr} mL/min/1.73m²</span></div>
-                    )}
-                    {lab?.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42 && (
-                      <div className="flex items-center gap-2"><Badge variant="secondary" className="text-xs">Moderate</Badge><span>Elevated HbA1c: {lab.hba1c_mmol_mol} mmol/mol</span></div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+      {/* ─────────────── 3. MEDICATIONS ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Medications</h2>
+          <p className="text-xs text-muted-foreground">What we are doing about it</p>
         </div>
-      </div>
+        <DimensionMedicationsSection
+          dimensionKey="metabolic"
+          dimensionLabel="Metabolic Health"
+          onNavigateToMedications={() => onNavigateDimension("medications")}
+        />
+      </section>
+
+      {/* ─────────────── 4. CLINICAL SYNTHESIS ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Clinical Synthesis</h2>
+          <p className="text-xs text-muted-foreground">Doctor's interpretation and care plan</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Doctor's Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write a clinical summary for the metabolic dimension..."
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                className="min-h-[160px] resize-none"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recommendations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write recommendations for the metabolic care plan..."
+                value={recommendations}
+                onChange={(e) => setRecommendations(e.target.value)}
+                className="min-h-[160px] resize-none"
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : "Save Summary & Recommendations"}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
