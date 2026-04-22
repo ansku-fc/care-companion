@@ -14,6 +14,7 @@ import {
   Tooltip, ReferenceArea,
 } from "recharts";
 import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
+import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -491,6 +492,11 @@ export function MetabolicDimensionView({
               <Textarea placeholder="Write recommendations for metabolic care plan..." value={recommendations} onChange={(e) => setRecommendations(e.target.value)} className="min-h-[120px] resize-none" />
             </CardContent>
           </Card>
+          <DimensionMedicationsSection
+            dimensionKey="metabolic"
+            dimensionLabel="Metabolic Health"
+            onNavigateToMedications={() => onNavigateDimension("medications")}
+          />
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" /> {saving ? "Saving..." : "Save"}

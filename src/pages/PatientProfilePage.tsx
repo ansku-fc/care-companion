@@ -2769,6 +2769,12 @@ function CardiovascularDimensionView({
             </CardContent>
           </Card>
 
+          <DimensionMedicationsSection
+            dimensionKey="cardiovascular"
+            dimensionLabel="Cardiovascular Health"
+            onNavigateToMedications={() => onNavigateDimension("medications")}
+          />
+
           <div className="flex justify-end">
             <Button onClick={handleSaveCv} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" />
