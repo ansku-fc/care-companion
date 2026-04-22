@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle, Pill, Search, Plus, Calendar as CalendarIcon, RefreshCw, Check,
   MoreVertical, Pencil, Ban, FileText, Printer, ShieldCheck, MessageSquare, History,
+  Clock, ChevronDown, ChevronRight, Replace, ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
