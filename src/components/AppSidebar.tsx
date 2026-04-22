@@ -34,10 +34,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="border-t-2 border-t-[hsl(25_52%_12%)]">
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
-            <span className="text-base font-semibold tracking-tight">Clinical Dashboard</span>
+            <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Clinical Dashboard</span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
