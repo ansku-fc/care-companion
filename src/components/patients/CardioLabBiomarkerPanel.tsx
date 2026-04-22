@@ -235,6 +235,137 @@ const HBA1C_DATA: Point[] = [
   { date: "2026-03-15", value: 38 },
 ];
 
+// ── Metabolic biomarker dummy series ─────────────────────────────
+const EGFR_DATA: Point[] = [
+  { date: "2022-04-10", value: 92 },
+  { date: "2022-10-15", value: 90 },
+  { date: "2023-04-22", value: 91 },
+  { date: "2023-10-08", value: 89 },
+  { date: "2024-04-12", value: 90 },
+  { date: "2024-10-22", value: 88 },
+  { date: "2025-04-09", value: 89 },
+  { date: "2025-11-04", value: 90 },
+  { date: "2026-03-15", value: 91 },
+];
+
+const CREATININE_DATA: Point[] = [
+  { date: "2022-04-10", value: 80 },
+  { date: "2022-10-15", value: 82 },
+  { date: "2023-04-22", value: 78 },
+  { date: "2023-10-08", value: 84 },
+  { date: "2024-04-12", value: 81 },
+  { date: "2024-10-22", value: 83 },
+  { date: "2025-04-09", value: 80 },
+  { date: "2025-11-04", value: 85 },
+  { date: "2026-03-15", value: 82 },
+];
+
+const FASTING_GLUCOSE_DATA: Point[] = [
+  { date: "2022-04-10", value: 5.8 },
+  { date: "2022-10-15", value: 5.9 },
+  { date: "2023-04-22", value: 5.9 },
+  { date: "2023-10-08", value: 6.0 },
+  { date: "2024-04-12", value: 6.1 },
+  { date: "2024-10-22", value: 6.0 },
+  { date: "2025-04-09", value: 6.0 },
+  { date: "2025-11-04", value: 6.0 },
+  { date: "2026-03-15", value: 6.0 },
+];
+
+const HBA1C_METABOLIC_DATA: Point[] = [
+  { date: "2022-04-10", value: 38 },
+  { date: "2022-10-15", value: 39 },
+  { date: "2023-04-22", value: 40 },
+  { date: "2023-10-08", value: 41 },
+  { date: "2024-04-12", value: 42 },
+  { date: "2024-10-22", value: 42 },
+  { date: "2025-04-09", value: 42 },
+  { date: "2025-11-04", value: 41 },
+  { date: "2026-03-15", value: 42 },
+];
+
+const TSH_DATA: Point[] = [
+  { date: "2022-04-10", value: 2.2 },
+  { date: "2022-10-15", value: 2.4 },
+  { date: "2023-04-22", value: 2.1 },
+  { date: "2023-10-08", value: 2.5 },
+  { date: "2024-04-12", value: 2.3 },
+  { date: "2024-10-22", value: 2.6 },
+  { date: "2025-04-09", value: 2.2 },
+  { date: "2025-11-04", value: 2.4 },
+  { date: "2026-03-15", value: 2.3 },
+];
+
+const FREE_T4_DATA: Point[] = [
+  { date: "2022-04-10", value: 15 },
+  { date: "2023-04-22", value: 16 },
+  { date: "2024-04-12", value: 15 },
+  { date: "2024-10-22", value: 17 },
+  { date: "2025-04-09", value: 16 },
+  { date: "2025-11-04", value: 15 },
+  { date: "2026-03-15", value: 16 },
+];
+
+const VITAMIN_D_DATA: Point[] = [
+  { date: "2022-04-10", value: 82 },
+  { date: "2022-10-15", value: 78 },
+  { date: "2023-04-22", value: 88 },
+  { date: "2023-10-08", value: 80 },
+  { date: "2024-04-12", value: 86 },
+  { date: "2024-10-22", value: 79 },
+  { date: "2025-04-09", value: 90 },
+  { date: "2025-11-04", value: 82 },
+  { date: "2026-03-15", value: 87 },
+];
+
+const VITAMIN_B12_DATA: Point[] = [
+  { date: "2022-04-10", value: 480 },
+  { date: "2023-04-22", value: 510 },
+  { date: "2024-04-12", value: 495 },
+  { date: "2025-04-09", value: 520 },
+  { date: "2026-03-15", value: 500 },
+];
+
+const FERRITIN_DATA: Point[] = [
+  { date: "2022-04-10", value: 110 },
+  { date: "2023-04-22", value: 125 },
+  { date: "2024-04-12", value: 118 },
+  { date: "2025-04-09", value: 130 },
+  { date: "2026-03-15", value: 120 },
+];
+
+const FOLATE_DATA: Point[] = [
+  { date: "2022-04-10", value: 12 },
+  { date: "2023-04-22", value: 14 },
+  { date: "2024-04-12", value: 11 },
+  { date: "2025-04-09", value: 13 },
+  { date: "2026-03-15", value: 12 },
+];
+
+const POTASSIUM_DATA: Point[] = [
+  { date: "2022-04-10", value: 4.2 },
+  { date: "2023-04-22", value: 4.4 },
+  { date: "2024-04-12", value: 4.1 },
+  { date: "2025-04-09", value: 4.3 },
+  { date: "2026-03-15", value: 4.2 },
+];
+
+const SODIUM_DATA: Point[] = [
+  { date: "2022-04-10", value: 140 },
+  { date: "2023-04-22", value: 141 },
+  { date: "2024-04-12", value: 139 },
+  { date: "2025-04-09", value: 140 },
+  { date: "2026-03-15", value: 140 },
+];
+
+const CALCIUM_DATA: Point[] = [
+  { date: "2022-04-10", value: 2.35 },
+  { date: "2023-04-22", value: 2.40 },
+  { date: "2024-04-12", value: 2.32 },
+  { date: "2025-04-09", value: 2.38 },
+  { date: "2026-03-15", value: 2.36 },
+];
+
 export const CARDIO_DUMMY_SERIES: Record<string, { single?: Point[]; bp?: BPPoint[] }> = {
   ldl_mmol_l: { single: LDL_DATA },
   blood_pressure_systolic: { bp: BP_DATA },
@@ -243,6 +374,20 @@ export const CARDIO_DUMMY_SERIES: Record<string, { single?: Point[]; bp?: BPPoin
   gt_u_l: { single: GT_DATA },
   alat_asat_ratio: { single: ALAT_ASAT_DATA },
   hba1c_mmol_mol: { single: HBA1C_DATA },
+  // Metabolic
+  egfr: { single: EGFR_DATA },
+  creatinine_umol_l: { single: CREATININE_DATA },
+  fasting_glucose_mmol_l: { single: FASTING_GLUCOSE_DATA },
+  hba1c_metabolic: { single: HBA1C_METABOLIC_DATA },
+  tsh_mu_l: { single: TSH_DATA },
+  free_t4_pmol_l: { single: FREE_T4_DATA },
+  vitamin_d_25oh_nmol_l: { single: VITAMIN_D_DATA },
+  vitamin_b12_total_ng_l: { single: VITAMIN_B12_DATA },
+  ferritin_ug_l: { single: FERRITIN_DATA },
+  folate_ug_l: { single: FOLATE_DATA },
+  potassium_mmol_l: { single: POTASSIUM_DATA },
+  sodium_mmol_l: { single: SODIUM_DATA },
+  calcium_mmol_l: { single: CALCIUM_DATA },
 };
 
 // ──────────────────────────────────────────────────────────────────────
