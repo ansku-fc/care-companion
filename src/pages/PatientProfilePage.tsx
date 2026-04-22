@@ -32,6 +32,7 @@ import { MetabolicDimensionView } from "@/components/patients/MetabolicDimension
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
+import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
 import {
   CardioLabBiomarkerPanel,
   getAnnotations,
@@ -290,7 +291,15 @@ const PatientProfilePage = () => {
         </Button>
 
         {activeSection === "overview" ? (
-          <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} labResults={labResults} onSelectSection={setActiveSection} tasks={patientTasks} onTasksChanged={fetchData} />
+          <PatientOverviewView
+            patient={patient}
+            appointments={appointments}
+            labResults={labResults}
+            healthCategories={healthCategories}
+            tasks={patientTasks}
+            onSelectSection={setActiveSection}
+            onTasksChanged={fetchData}
+          />
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
         ) : activeSection === "medications" ? (
