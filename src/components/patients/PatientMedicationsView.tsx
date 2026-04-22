@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Pill, Search, Plus, Calendar as CalendarIcon, ChevronRight } from "lucide-react";
+import { AlertTriangle, Pill, Search, Plus, Calendar as CalendarIcon, ChevronRight, RefreshCw, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 type MedStatus = "active" | "past";
 
