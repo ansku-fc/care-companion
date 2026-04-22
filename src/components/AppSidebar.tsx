@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, ListTodo, Users, StickyNote, Clock, LogOut } from "lucide-react";
+import { Home, Calendar, ListTodo, Users, StickyNote, Clock, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -15,12 +15,16 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
-const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+const workflowNavItems = [
+  { title: "Home", url: "/", icon: Home },
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Tasks", url: "/tasks", icon: ListTodo },
   { title: "Patients", url: "/patients", icon: Users },
+];
+
+const adminNavItems = [
   { title: "Clinical Hours", url: "/clinical-hours", icon: Clock },
   { title: "Notes", url: "/notes", icon: StickyNote },
 ];
@@ -37,14 +41,41 @@ export function AppSidebar() {
       <SidebarContent className="border-t-2 border-t-[hsl(25_52%_12%)]">
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
-            <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Clinical Dashboard</span>
+            <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Foundation Clinic</span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {/* Workflow Group */}
+              {workflowNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end={item.url === "/"} className="hover:bg-sidebar-accent text-sidebar-foreground" activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium">
+                    <NavLink
+                      to={item.url}
+                      end={item.url === "/"}
+                      className="hover:bg-sidebar-accent text-sidebar-foreground"
+                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {/* Divider */}
+              <li className="px-4 py-2">
+                <Separator className="bg-[hsl(25_30%_18%)]" />
+              </li>
+
+              {/* Administrative Group */}
+              {adminNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className="hover:bg-sidebar-accent text-sidebar-foreground"
+                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                    >
                       <item.icon className="mr-2 h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
