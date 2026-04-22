@@ -5,9 +5,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Upload, FileText, Check, AlertCircle, Loader2, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+// Alternative units the doctor can switch between when the OCR mis-reads a unit
+const UNIT_ALTERNATIVES: Record<string, string[]> = {
+  "mmol/l": ["mmol/l", "mol/l", "µmol/l", "mg/dl", "g/l"],
+  "mmol/mol": ["mmol/mol", "mol/mol", "%"],
+  "mmHg": ["mmHg", "kPa"],
+  "U/l": ["U/l", "kU/l", "µkat/l"],
+  "ml/min/1.73 m²": ["ml/min/1.73 m²", "ml/min"],
+  "mg/l": ["mg/l", "µg/l", "g/l", "ng/ml"],
+  "mU/l": ["mU/l", "U/l", "µU/ml"],
+  "%": ["%", "ratio"],
+};
+
+const unitOptionsFor = (unit?: string): string[] => {
+  if (!unit) return [];
+  const alts = UNIT_ALTERNATIVES[unit];
+  return alts ?? [unit];
+};
 
 type ParsedRow = {
   field: keyof ExtractedValues;
@@ -127,6 +146,10 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
 
   const updateRow = (idx: number, value: string) => {
     setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, parsed: value, verified: false } : r)));
+  };
+
+  const updateUnit = (idx: number, unit: string) => {
+    setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, unit, verified: false } : r)));
   };
 
   const toggleVerified = (idx: number) => {
@@ -350,7 +373,22 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                                     className="h-8 text-sm"
                                   />
                                 </td>
-                                <td className="px-3 py-2 text-muted-foreground text-xs">{r.unit ?? "—"}</td>
+                                <td className="px-3 py-2">
+                                  {r.unit ? (
+                                    <Select value={r.unit} onValueChange={(v) => updateUnit(idx, v)}>
+                                      <SelectTrigger className="h-8 text-xs px-2">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-popover z-50">
+                                        {unitOptionsFor(r.unit).map((u) => (
+                                          <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">—</span>
+                                  )}
+                                </td>
                                 <td className="px-3 py-2 text-muted-foreground text-xs">{r.reference ?? "—"}</td>
                               </tr>
                             ))}
