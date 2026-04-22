@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, Fragment } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -307,8 +307,8 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                           .filter(({ r }) => r.dimension === dim);
                         const dimVerified = dimRows.filter(({ r }) => r.verified).length;
                         return (
-                          <>
-                            <tr key={`hdr-${dim}`} className="bg-muted/40 border-b border-t">
+                          <Fragment key={dim}>
+                            <tr className="bg-muted/40 border-b border-t">
                               <td colSpan={5} className="px-3 py-1.5">
                                 <div className="flex items-center justify-between">
                                   <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
@@ -354,7 +354,7 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                                 <td className="px-3 py-2 text-muted-foreground text-xs">{r.reference ?? "—"}</td>
                               </tr>
                             ))}
-                          </>
+                          </Fragment>
                         );
                       })}
                     </tbody>
