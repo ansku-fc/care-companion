@@ -16,7 +16,7 @@ import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
   Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil,
-  AlertTriangle, ClipboardList, Plus, ChevronDown, ChevronRight,
+  AlertTriangle, ClipboardList, Plus, ChevronDown, ChevronRight, StickyNote,
 } from "lucide-react";
 import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension } from "@/lib/healthDimensions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
