@@ -3032,31 +3032,6 @@ function CardiovascularDimensionView({
                     selected={selectedMarker?.key === "hba1c_mmol_mol"}
                     onSelect={() => setSelectedMarker({ key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" })}
                   />
-
-                  <Card
-                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "hba1c_mmol_mol" ? "border-primary" : ""}`}
-                    onClick={() => setSelectedMarker({ key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" })}
-                  >
-                    <CardHeader className="pb-2"><CardTitle className="text-base">HbA1c (mmol/mol)</CardTitle></CardHeader>
-                    <CardContent>
-                      {hba1cData.length > 0 ? (
-                        <div className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={hba1cData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <ReferenceArea y1={0} y2={42} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="HbA1c" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No HbA1c data available.</p>
-                      )}
-                    </CardContent>
-                  </Card>
                 </div>
 
                 {selectedMarker && (() => {
