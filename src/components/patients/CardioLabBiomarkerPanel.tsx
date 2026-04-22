@@ -602,8 +602,8 @@ export function CardioLabBiomarkerPanel({
         <p className="font-medium">{date}</p>
         {isBP ? (
           <>
-            <p className="text-destructive">Systolic: {payload[0].payload.systolic} mmHg</p>
-            <p className="text-primary">Diastolic: {payload[0].payload.diastolic} mmHg</p>
+            <p style={{ color: "#2C1A0E" }}>Systolic: {payload[0].payload.systolic} mmHg</p>
+            <p style={{ color: "#7A5C3A" }}>Diastolic: {payload[0].payload.diastolic} mmHg</p>
           </>
         ) : (
           <p>
@@ -642,6 +642,10 @@ export function CardioLabBiomarkerPanel({
       .filter((a) => a.idx !== -1);
   }, [annotations, data]);
 
+  // Warm brand palette for all lines (no blue, no per-marker tint)
+  const PRIMARY_LINE = "#2C1A0E";
+  const SECONDARY_LINE = "#7A5C3A";
+
   // Custom dot renderer: paint out-of-range points red
   const renderDot = (props: any) => {
     const { cx, cy, payload, index } = props;
@@ -656,7 +660,7 @@ export function CardioLabBiomarkerPanel({
         cx={cx}
         cy={cy}
         r={4}
-        fill={out ? "hsl(var(--destructive))" : accentColorVar}
+        fill={out ? "hsl(var(--destructive))" : PRIMARY_LINE}
         stroke="hsl(var(--background))"
         strokeWidth={1}
       />
@@ -773,17 +777,17 @@ export function CardioLabBiomarkerPanel({
                       <Line
                         type="monotone"
                         dataKey="systolic"
-                        stroke="hsl(var(--destructive))"
+                        stroke={PRIMARY_LINE}
                         strokeWidth={2}
-                        dot={{ r: 4 }}
+                        dot={{ r: 4, fill: PRIMARY_LINE }}
                         name="Systolic"
                       />
                       <Line
                         type="monotone"
                         dataKey="diastolic"
-                        stroke={accentColorVar}
+                        stroke={SECONDARY_LINE}
                         strokeWidth={2}
-                        dot={{ r: 4 }}
+                        dot={{ r: 4, fill: SECONDARY_LINE }}
                         name="Diastolic"
                       />
                     </>
@@ -791,7 +795,7 @@ export function CardioLabBiomarkerPanel({
                     <Line
                       type="monotone"
                       dataKey="value"
-                      stroke={accentColorVar}
+                      stroke={PRIMARY_LINE}
                       strokeWidth={2}
                       dot={renderDot as any}
                       activeDot={{ r: 5 }}
