@@ -29,6 +29,7 @@ import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
+import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { useAuth } from "@/hooks/useAuth";
 
 // Legacy flat list for backward compat in dimension views
@@ -163,6 +164,16 @@ const PatientProfilePage = () => {
             })()}
 
             <button
+              onClick={() => setActiveSection("medications")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "medications" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <Pill className="h-4 w-4" />
+              Medications
+            </button>
+
+            <button
               onClick={() => setActiveSection("visits")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 activeSection === "visits" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
@@ -261,6 +272,8 @@ const PatientProfilePage = () => {
           <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} labResults={labResults} onSelectSection={setActiveSection} tasks={patientTasks} onTasksChanged={fetchData} />
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
+        ) : activeSection === "medications" ? (
+          <PatientMedicationsView patientName={patient.full_name} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
         ) : activeSection === "health_overview" ? (
