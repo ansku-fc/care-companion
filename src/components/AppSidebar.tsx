@@ -45,7 +45,7 @@ export function AppSidebar() {
       <NavLink
         to={item.url}
         end={item.url === "/"}
-        className="relative rounded-[10px] text-[hsl(240_3%_60%)] hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors [&>svg]:text-[hsl(240_3%_60%)] hover:[&>svg]:text-sidebar-foreground"
+        className="relative rounded-[10px] text-[hsl(232_30%_70%)] hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors [&>svg]:text-[hsl(232_30%_70%)] hover:[&>svg]:text-sidebar-foreground"
         activeClassName="bg-sidebar-primary text-sidebar-foreground font-medium [&>svg]:text-sidebar-foreground [&>span.active-pill]:opacity-100"
       >
         <span className="active-pill pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-accent opacity-0 transition-opacity" />
