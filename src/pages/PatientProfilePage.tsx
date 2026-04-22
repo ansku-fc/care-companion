@@ -29,6 +29,7 @@ import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
+import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { useAuth } from "@/hooks/useAuth";
 
 // Legacy flat list for backward compat in dimension views
