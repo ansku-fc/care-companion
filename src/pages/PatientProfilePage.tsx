@@ -272,6 +272,8 @@ const PatientProfilePage = () => {
           <CareOverviewView patient={patient} appointments={appointments} visitNotes={visitNotes} healthCategories={healthCategories} labResults={labResults} onSelectSection={setActiveSection} tasks={patientTasks} onTasksChanged={fetchData} />
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
+        ) : activeSection === "medications" ? (
+          <PatientMedicationsView patientName={patient.full_name} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
         ) : activeSection === "health_overview" ? (
