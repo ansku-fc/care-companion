@@ -128,20 +128,12 @@ const PatientProfilePage = () => {
     <div className="flex gap-6 h-[calc(100vh-8rem)]">
       {/* Sidebar */}
       <div className="w-64 shrink-0 border rounded-lg bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-semibold truncate text-sm">{patient.full_name}</p>
-              <p className="text-xs text-muted-foreground">
-                {age ? `Age ${age}` : ""}{age && patient.gender ? " • " : ""}{patient.gender || ""}
-              </p>
-            </div>
-          </div>
+        <div className="px-4 py-3 border-b flex items-center gap-2 flex-wrap">
+          <p className="font-medium text-sm truncate flex-1 min-w-0">{patient.full_name}</p>
           {patient.tier && (
-            <Badge className="mt-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90">{TIER_LABELS[patient.tier] || patient.tier}</Badge>
+            <Badge className="text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+              {TIER_LABELS[patient.tier] || patient.tier}
+            </Badge>
           )}
         </div>
 
@@ -228,7 +220,9 @@ const PatientProfilePage = () => {
               const MainIcon = main.icon;
               const isMainActive = activeSection === main.key;
               const isSubActive = main.subDimensions.some((s) => s.key === activeSection);
-              const isExpanded = expandedGroups[main.key] ?? isSubActive;
+              // Single-expansion: only one group open at a time. Auto-open if a sub is active.
+              const expandedKey = Object.keys(expandedGroups).find((k) => expandedGroups[k]);
+              const isExpanded = expandedKey ? expandedKey === main.key : isSubActive;
               const hasSubs = main.subDimensions.length > 0;
 
               return (
@@ -236,7 +230,13 @@ const PatientProfilePage = () => {
                   <button
                     onClick={() => {
                       if (hasSubs) {
-                        setExpandedGroups((prev) => ({ ...prev, [main.key]: !isExpanded }));
+                        // Collapse all others, toggle this one
+                        setExpandedGroups((prev) => {
+                          const wasOpen = prev[main.key];
+                          return wasOpen ? {} : { [main.key]: true };
+                        });
+                      } else {
+                        setExpandedGroups({});
                       }
                       setActiveSection(main.key);
                     }}
