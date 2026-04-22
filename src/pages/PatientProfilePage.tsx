@@ -2734,6 +2734,72 @@ function SkinMucousDimensionView({
   );
 }
 
+// ─────────────── Cardiovascular Risk Factor helpers ───────────────
+function ExpandableRiskRow({
+  label,
+  value,
+  recorded,
+  expanded,
+  onToggle,
+  expandable = true,
+  children,
+}: {
+  label: string;
+  value: React.ReactNode;
+  recorded: string;
+  expanded: boolean;
+  onToggle: () => void;
+  expandable?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={expandable ? onToggle : undefined}
+        className={cn(
+          "w-full grid grid-cols-[1fr_1.2fr_auto_24px] items-center gap-3 px-3 py-2 text-left",
+          expandable && "hover:bg-muted/40 cursor-pointer",
+        )}
+      >
+        <span className="font-medium text-sm">{label}</span>
+        <span className="text-sm">{value}</span>
+        <span className="text-xs text-muted-foreground">{recorded}</span>
+        {expandable ? (
+          expanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )
+        ) : (
+          <span />
+        )}
+      </button>
+      {expanded && expandable && (
+        <div className="px-3 pb-3 pt-1 bg-muted/20 border-t">{children}</div>
+      )}
+    </div>
+  );
+}
+
+function Sparkline({ points }: { points: number[] }) {
+  if (points.length < 2) return null;
+  const w = 48;
+  const h = 14;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+  const stepX = w / (points.length - 1);
+  const path = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${i * stepX} ${h - ((p - min) / range) * h}`)
+    .join(" ");
+  return (
+    <svg width={w} height={h} className="text-primary" aria-hidden>
+      <path d={path} fill="none" stroke="currentColor" strokeWidth={1.5} />
+    </svg>
+  );
+}
+
 function CardiovascularDimensionView({
   patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
 }: {
