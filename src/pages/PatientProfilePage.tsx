@@ -139,7 +139,7 @@ const PatientProfilePage = () => {
             </div>
           </div>
           {patient.tier && (
-            <Badge variant="outline" className="mt-2 text-xs">{TIER_LABELS[patient.tier] || patient.tier}</Badge>
+            <Badge className="mt-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90">{TIER_LABELS[patient.tier] || patient.tier}</Badge>
           )}
         </div>
 

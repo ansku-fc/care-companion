@@ -34,17 +34,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="border-t-2 border-t-[hsl(25_52%_12%)]">
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
-            <span className="text-base font-semibold tracking-tight">Clinical Dashboard</span>
+            <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Clinical Dashboard</span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end={item.url === "/"} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
+                    <NavLink to={item.url} end={item.url === "/"} className="hover:bg-sidebar-accent text-sidebar-foreground" activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium">
                       <item.icon className="mr-2 h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
