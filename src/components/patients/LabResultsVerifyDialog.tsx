@@ -5,9 +5,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Upload, FileText, Check, AlertCircle, Loader2, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+// Alternative units the doctor can switch between when the OCR mis-reads a unit
+const UNIT_ALTERNATIVES: Record<string, string[]> = {
+  "mmol/l": ["mmol/l", "mol/l", "µmol/l", "mg/dl", "g/l"],
+  "mmol/mol": ["mmol/mol", "mol/mol", "%"],
+  "mmHg": ["mmHg", "kPa"],
+  "U/l": ["U/l", "kU/l", "µkat/l"],
+  "ml/min/1.73 m²": ["ml/min/1.73 m²", "ml/min"],
+  "mg/l": ["mg/l", "µg/l", "g/l", "ng/ml"],
+  "mU/l": ["mU/l", "U/l", "µU/ml"],
+  "%": ["%", "ratio"],
+};
+
+const unitOptionsFor = (unit?: string): string[] => {
+  if (!unit) return [];
+  const alts = UNIT_ALTERNATIVES[unit];
+  return alts ?? [unit];
+};
 
 type ParsedRow = {
   field: keyof ExtractedValues;
