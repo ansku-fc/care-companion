@@ -2484,13 +2484,20 @@ function SkinMucousDimensionView({
     return dummyHistory;
   }, [skinScore]);
 
-  const riskFactors = [
-    { label: "Skin Condition (1-10)", value: onboarding?.skin_condition != null ? String(onboarding.skin_condition) : "—" },
-    { label: "Skin Rash", value: onboarding?.symptom_skin_rash ? "Yes" : "No" },
-    { label: "Mucous Membrane Issues", value: onboarding?.symptom_mucous_membranes ? "Yes" : "No" },
-    { label: "Sun Exposure", value: onboarding?.sun_exposure ? "Yes" : "No" },
-    { label: "Genetic Melanoma Risk", value: onboarding?.genetic_melanoma ? "Yes" : "No" },
+  const riskFactors: { key: string; label: string; value: string; detail: React.ReactNode }[] = [
+    { key: "skin_condition", label: "Skin Condition (1-10)", value: onboarding?.skin_condition != null ? String(onboarding.skin_condition) : "—", detail: <p className="text-sm text-muted-foreground">Self-reported skin condition score recorded at onboarding.</p> },
+    { key: "skin_rash", label: "Skin Rash", value: onboarding?.symptom_skin_rash ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Patient-reported active rash symptoms.</p> },
+    { key: "mucous", label: "Mucous Membrane Issues", value: onboarding?.symptom_mucous_membranes ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Symptoms affecting mucous membranes (oral, nasal, etc.).</p> },
+    { key: "sun", label: "Sun Exposure", value: onboarding?.sun_exposure ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Significant cumulative sun exposure history.</p> },
+    { key: "melanoma", label: "Genetic Melanoma Risk", value: onboarding?.genetic_melanoma ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Family history of melanoma or genetic predisposition.</p> },
   ];
+
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const toggleRow = (k: string) => setExpandedRows((prev) => {
+    const next = new Set(prev);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    return next;
+  });
 
   const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
 
@@ -2708,24 +2715,29 @@ function SkinMucousDimensionView({
                 <CardTitle className="text-base">Risk Factors from Onboarding</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Factor</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>Recorded</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {riskFactors.map((f) => (
-                      <TableRow key={f.label}>
-                        <TableCell className="font-medium text-sm">{f.label}</TableCell>
-                        <TableCell className="text-sm">{f.value}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="divide-y border rounded-md">
+                  {riskFactors.map((f) => {
+                    const expanded = expandedRows.has(f.key);
+                    return (
+                      <div key={f.key} className="border-b last:border-0">
+                        <button
+                          onClick={() => toggleRow(f.key)}
+                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <span className="font-medium text-sm">{f.label}</span>
+                            <span className="text-sm text-muted-foreground">{f.value}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{onboardingDate}</span>
+                            {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </div>
+                        </button>
+                        {expanded && <div className="px-4 pb-4 pt-0">{f.detail}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}
