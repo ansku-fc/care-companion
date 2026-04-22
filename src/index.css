@@ -8,50 +8,51 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 30 20% 97%;
-    --foreground: 24 30% 12%;
+    /* Foundation Clinic warm brand palette */
+    --background: 32 24% 95%;          /* #F7F4F0 warm off-white */
+    --foreground: 28 35% 7%;           /* #1A1109 near black */
 
-    --card: 0 0% 100%;
-    --card-foreground: 24 30% 12%;
+    --card: 35 22% 92%;                /* #EFEBE4 warm cream */
+    --card-foreground: 28 35% 7%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 24 30% 12%;
+    --popover: 35 22% 92%;
+    --popover-foreground: 28 35% 7%;
 
-    --primary: 24 40% 28%;
-    --primary-foreground: 36 30% 96%;
+    --primary: 25 52% 12%;             /* #2C1A0E dark brown */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 33 20% 92%;
-    --secondary-foreground: 24 25% 18%;
+    --secondary: 33 18% 88%;           /* warm beige */
+    --secondary-foreground: 28 35% 7%;
 
-    --muted: 33 15% 93%;
-    --muted-foreground: 24 10% 46%;
+    --muted: 33 14% 92%;               /* #EEEBE6 light warm grey */
+    --muted-foreground: 25 9% 44%;     /* #7A6E64 warm mid-grey */
 
-    --accent: 33 25% 90%;
-    --accent-foreground: 24 25% 15%;
+    --accent: 33 18% 88%;
+    --accent-foreground: 28 35% 7%;
 
-    --destructive: 0 65% 48%;
+    --destructive: 0 57% 39%;          /* #9B2B2B deep red */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 45% 38%;
+    --success: 137 25% 39%;            /* #4A7C59 muted sage */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 80% 50%;
-    --warning-foreground: 24 30% 12%;
+    --warning: 28 63% 44%;             /* #B56E2A muted amber */
+    --warning-foreground: 0 0% 100%;
 
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
-    --ring: 24 40% 28%;
+    --border: 32 13% 81%;              /* #D6CFC6 warm light grey */
+    --input: 32 13% 81%;
+    --ring: 25 52% 12%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 24 20% 28%;
-    --sidebar-primary: 24 40% 28%;
-    --sidebar-primary-foreground: 36 30% 96%;
-    --sidebar-accent: 33 20% 94%;
-    --sidebar-accent-foreground: 24 20% 18%;
-    --sidebar-border: 30 15% 90%;
-    --sidebar-ring: 24 40% 28%;
+    --sidebar-background: 33 22% 88%;  /* #E8E2D9 light warm beige */
+    --sidebar-foreground: 25 9% 44%;
+    --sidebar-primary: 25 52% 12%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 33 18% 84%;
+    --sidebar-accent-foreground: 28 35% 7%;
+    --sidebar-border: 32 13% 78%;
+    --sidebar-ring: 25 52% 12%;
   }
 
   .dark {
