@@ -2991,7 +2991,15 @@ function CardiovascularDimensionView({
   const [cvSummary, setCvSummary] = useState(cvCategory?.summary || "");
   const [cvRecommendations, setCvRecommendations] = useState((cvCategory as any)?.recommendations || "");
   const [saving, setSaving] = useState(false);
-  const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
+  const [selectedMarker, setSelectedMarker] = useState<{
+    key: string;
+    label: string;
+    unit: string;
+    refLow?: number;
+    refHigh?: number;
+    accentColorVar: string;
+  } | null>(null);
+  const [sidebarWindow, setSidebarWindow] = useState<"6m" | "1y" | "3y" | "all">("3y");
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
 
   // Auto-populate linked marker notes into summary
