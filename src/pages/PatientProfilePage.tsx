@@ -2364,6 +2364,12 @@ function SkinMucousDimensionView({
             </CardContent>
           </Card>
 
+          <DimensionMedicationsSection
+            dimensionKey="skin_mucous"
+            dimensionLabel="Skin & Mucous Health"
+            onNavigateToMedications={() => onNavigateDimension?.("medications")}
+          />
+
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" />
