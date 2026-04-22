@@ -843,6 +843,215 @@ export function PatientMedicationsView({ patientName }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Resolve dialog — pick which med to discontinue */}
+      <Dialog open={!!resolveTarget} onOpenChange={(o) => { if (!o) setResolveTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Replace className="h-5 w-5 text-primary" />
+              Resolve interaction
+            </DialogTitle>
+            <DialogDescription>
+              Select which medication to discontinue. The discontinue flow will open pre-filled.
+            </DialogDescription>
+          </DialogHeader>
+          {resolveTarget && (
+            <div className="space-y-2">
+              {resolveTarget.drugs.map((drugName) => {
+                const m = meds.find((mm) => mm.name === drugName && mm.status === "active");
+                if (!m) return null;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => handleResolveSelectMed(m.id)}
+                    className="w-full border rounded-md p-3 text-left hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-sm">{m.name} {m.dose}</p>
+                        <p className="text-xs text-muted-foreground">{m.indication} · {m.frequency}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResolveTarget(null)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Override dialog */}
+      <Dialog open={!!overrideTarget} onOpenChange={(o) => { if (!o) { setOverrideTarget(null); setOverrideStep(1); setOverrideReason(""); setOverrideNote(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Override interaction
+            </DialogTitle>
+            <DialogDescription>
+              {overrideTarget && (
+                <>
+                  {overrideTarget.drugs[0]} × {overrideTarget.drugs[1]} —{" "}
+                  <span className="uppercase font-medium">{overrideTarget.severity}</span>.
+                  This decision will be permanently logged.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {overrideStep === 1 ? (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Reason <span className="text-destructive">*</span></Label>
+                <Select value={overrideReason} onValueChange={setOverrideReason}>
+                  <SelectTrigger><SelectValue placeholder="Select a reason..." /></SelectTrigger>
+                  <SelectContent>
+                    {OVERRIDE_REASONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>
+                  {overrideTarget?.severity === "severe" ? "Written justification (required)" : "Additional note (optional)"}
+                </Label>
+                <Textarea
+                  value={overrideNote}
+                  onChange={(e) => setOverrideNote(e.target.value)}
+                  rows={3}
+                  placeholder="Clinical rationale, monitoring plan, patient discussion..."
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-1">
+              <p className="font-semibold text-destructive flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4" /> Confirm override of SEVERE interaction
+              </p>
+              <p className="text-muted-foreground text-xs pt-1">
+                Are you sure you want to override a severe interaction? This will be logged with your name and timestamp for regulatory audit (THL, EU AI Act).
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            {overrideStep === 1 ? (
+              <>
+                <Button variant="outline" onClick={() => setOverrideTarget(null)}>Cancel</Button>
+                <Button
+                  disabled={!overrideReason || (overrideTarget?.severity === "severe" && !overrideNote.trim())}
+                  onClick={() => {
+                    if (overrideTarget?.severity === "severe") setOverrideStep(2);
+                    else handleConfirmOverride();
+                  }}
+                >
+                  {overrideTarget?.severity === "severe" ? "Continue" : "Confirm override"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setOverrideStep(1)}>Back</Button>
+                <Button variant="destructive" onClick={handleConfirmOverride}>Yes, override severe interaction</Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Defer dialog */}
+      <Dialog open={!!deferTarget} onOpenChange={(o) => { if (!o) { setDeferTarget(null); setDeferDate(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Defer alert
+            </DialogTitle>
+            <DialogDescription>
+              {deferTarget && (
+                <>
+                  {deferTarget.drugs[0]} × {deferTarget.drugs[1]} — set a follow-up date. A task will be created in the Tasks view.
+                  {deferTarget.severity === "severe" && (
+                    <span className="block mt-1 text-destructive font-medium">Severe interactions may not be deferred beyond 7 days.</span>
+                  )}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>Review by <span className="text-destructive">*</span></Label>
+            <Input
+              type="date"
+              value={deferDate}
+              min={new Date().toISOString().slice(0, 10)}
+              max={deferTarget ? maxDeferDate(deferTarget.severity) : undefined}
+              onChange={(e) => setDeferDate(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeferTarget(null)}>Cancel</Button>
+            <Button onClick={handleConfirmDefer} disabled={!deferDate}>Defer & create task</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Audit log dialog */}
+      <Dialog open={showAuditLog} onOpenChange={setShowAuditLog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5 text-primary" />
+              Interaction alert audit log
+            </DialogTitle>
+            <DialogDescription>
+              All actions taken on drug interaction alerts. Required for regulatory compliance (THL, EU AI Act).
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {alertLog.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">No actions logged yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {[...alertLog].reverse().map((a, idx) => {
+                  const drugs = a.key.split("__").join(" × ");
+                  const labels: Record<AlertAction["type"], string> = {
+                    acknowledge: "Acknowledged",
+                    override: "Overridden",
+                    defer: "Deferred",
+                    resolve: "Resolved",
+                    resurface: "Re-surfaced",
+                  };
+                  return (
+                    <div key={idx} className="border rounded-md p-2 text-xs flex items-start gap-2">
+                      <Badge variant="outline" className="text-[10px] shrink-0">{labels[a.type]}</Badge>
+                      <Badge className={cn("text-[10px] uppercase shrink-0", SEVERITY_BADGE[a.severity])}>{a.severity}</Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{drugs}</p>
+                        <p className="text-muted-foreground text-[11px]">
+                          {a.type === "override" && `Reason: ${a.reasonLabel}${a.note ? ` — ${a.note}` : ""}`}
+                          {a.type === "defer" && `Until: ${a.until}`}
+                          {a.type === "resolve" && a.via}
+                          {a.type === "resurface" && a.reason}
+                          {a.type === "acknowledge" && "Mild interaction acknowledged"}
+                        </p>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground text-right shrink-0">
+                        {a.type !== "resurface" && <p>{a.by}</p>}
+                        <p>{new Date(a.at).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
