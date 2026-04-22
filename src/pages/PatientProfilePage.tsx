@@ -3393,6 +3393,8 @@ function CardiovascularDimensionView({
                             }}
                           />
                         </div>
+                        {/* Annotations list (chronological) — manageable here too */}
+                        <AnnotationListEditor biomarkerKey={selectedMarker.key} />
                         {MARKER_DIMENSIONS[selectedMarker.key] && (
                           <div className="mt-4">
                             <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
