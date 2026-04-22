@@ -3021,30 +3021,155 @@ function CardiovascularDimensionView({
           </CardHeader>
           <CardContent>
             {cvSubTab === "risk_factors" && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Factor</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Recorded</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {riskFactors.map((f) => (
-                    <TableRow key={f.label}>
-                      <TableCell className="font-medium text-sm">{f.label}</TableCell>
-                      <TableCell className="text-sm">{f.value}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
-                    </TableRow>
-                  ))}
-                  {onboarding?.illness_cardiovascular_notes && (
-                    <TableRow>
-                      <TableCell className="font-medium text-sm">Previous Illness Notes</TableCell>
-                      <TableCell colSpan={2} className="text-sm">{onboarding.illness_cardiovascular_notes}</TableCell>
-                    </TableRow>
+              <div className="divide-y border rounded-md">
+                <ExpandableRiskRow
+                  label="Current Illnesses"
+                  value={`${cvCurrentIllnesses.length} active condition${cvCurrentIllnesses.length === 1 ? "" : "s"}`}
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("current_illness")}
+                  onToggle={() => toggleRiskRow("current_illness")}
+                >
+                  {cvCurrentIllnesses.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No active cardiovascular conditions.</p>
+                  ) : (
+                    <ul className="space-y-1.5 text-sm">
+                      {cvCurrentIllnesses.map((c) => (
+                        <li key={c.name} className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{c.name}</span>
+                          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Diagnosed {c.diagnosedDate}</span>
+                            {c.severity && <Badge variant="outline" className="text-[10px]">{c.severity}</Badge>}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </TableBody>
-              </Table>
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Past Illnesses"
+                  value={`${cvPastIllnesses.length} resolved`}
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("past_illness")}
+                  onToggle={() => toggleRiskRow("past_illness")}
+                >
+                  {cvPastIllnesses.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No past cardiovascular illnesses on record.</p>
+                  ) : (
+                    <ul className="space-y-1.5 text-sm">
+                      {cvPastIllnesses.map((c) => (
+                        <li key={c.name} className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{c.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {c.from} → {c.to}
+                            {c.resolution ? ` · ${c.resolution}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Genetic Predisposition"
+                  value={geneticPredisposition}
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("genetic")}
+                  onToggle={() => toggleRiskRow("genetic")}
+                >
+                  <p className="text-sm">
+                    {onboarding?.genetic_cardiovascular
+                      ? "Family history of cardiovascular disease recorded at onboarding."
+                      : "No reported family history of cardiovascular disease."}
+                  </p>
+                  {onboarding?.illness_cardiovascular_notes && (
+                    <p className="text-xs text-muted-foreground mt-1">{onboarding.illness_cardiovascular_notes}</p>
+                  )}
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Smoking"
+                  value={
+                    <span className="flex items-center gap-2">
+                      <span>{smokingCurrent}</span>
+                      {smokingChanged && smokingPrev && (
+                        <span className="text-[11px] text-muted-foreground italic">
+                          (changed from {smokingPrev.value}, {new Date(smokingHistory[smokingHistory.length - 1].date).toLocaleDateString(undefined, { month: "short", year: "numeric" })})
+                        </span>
+                      )}
+                    </span>
+                  }
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("smoking")}
+                  onToggle={() => toggleRiskRow("smoking")}
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Smoking status timeline</p>
+                  <ul className="space-y-1 text-sm">
+                    {smokingHistory.map((h) => (
+                      <li key={h.date} className="flex items-center justify-between">
+                        <span>{h.date}</span>
+                        <span className="font-medium">{h.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Exercise, MET (hours/week)"
+                  value={
+                    <span className="flex items-center gap-2">
+                      <span>{exerciseCurrent}</span>
+                      <Sparkline points={exerciseHistory.map((h) => h.value)} />
+                      <span className={cn("text-[11px]", exerciseTrend >= 0 ? "text-green-600" : "text-destructive")}>
+                        {exerciseTrend >= 0 ? "▲" : "▼"} {Math.abs(exerciseTrend).toFixed(1)}
+                      </span>
+                    </span>
+                  }
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("exercise")}
+                  onToggle={() => toggleRiskRow("exercise")}
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Exercise history</p>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {exerciseHistory.map((h) => (
+                        <tr key={h.date} className="border-t first:border-0">
+                          <td className="py-1 text-muted-foreground">{h.date}</td>
+                          <td className="py-1 text-right font-medium">{h.value} MET hrs</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Waist-Hip Ratio"
+                  value={
+                    <span className="flex items-center gap-2">
+                      <span>{whrCurrent}</span>
+                      <Sparkline points={whrHistory.map((h) => h.value)} />
+                      <span className={cn("text-[11px]", whrTrend <= 0 ? "text-green-600" : "text-destructive")}>
+                        {whrTrend <= 0 ? "▼" : "▲"} {Math.abs(whrTrend).toFixed(2)}
+                      </span>
+                    </span>
+                  }
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("whr")}
+                  onToggle={() => toggleRiskRow("whr")}
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Waist-Hip Ratio history</p>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {whrHistory.map((h) => (
+                        <tr key={h.date} className="border-t first:border-0">
+                          <td className="py-1 text-muted-foreground">{h.date}</td>
+                          <td className="py-1 text-right font-medium">{h.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ExpandableRiskRow>
+              </div>
             )}
 
             {cvSubTab === "lab_graphs" && (
