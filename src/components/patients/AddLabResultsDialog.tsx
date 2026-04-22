@@ -16,6 +16,7 @@ interface Props {
 
 export function AddLabResultsDialog({ patientId, onSaved, children }: Props) {
   const [open, setOpen] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
   const [data, setData] = useState<LabResultsData>({ ...defaultLabResults });
   const [saving, setSaving] = useState(false);
 
@@ -48,28 +49,49 @@ export function AddLabResultsDialog({ patientId, onSaved, children }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setData({ ...defaultLabResults }); }}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Plus className="h-4 w-4" /> Add Lab Results
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Add Lab Results</DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="flex-1 pr-4">
-          <LabResultsStep data={data} onChange={setData} />
-        </ScrollArea>
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Lab Results"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setData({ ...defaultLabResults }); }}>
+        <DialogTrigger asChild>
+          {children || (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Plus className="h-4 w-4" /> Add Lab Results
+              </Button>
+            </div>
+          )}
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Add Lab Results</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => { setOpen(false); setVerifyOpen(true); }}
+            >
+              <FileText className="h-4 w-4" /> Verify from PDF
+            </Button>
+          </div>
+          <ScrollArea className="flex-1 pr-4">
+            <LabResultsStep data={data} onChange={setData} />
+          </ScrollArea>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save Lab Results"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <LabResultsVerifyDialog
+        open={verifyOpen}
+        onOpenChange={setVerifyOpen}
+        patientId={patientId}
+        onSaved={onSaved}
+      />
+    </>
   );
 }
