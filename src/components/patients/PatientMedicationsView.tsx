@@ -117,25 +117,40 @@ function daysUntil(iso?: string): number | null {
   return Math.ceil(diff / 86_400_000);
 }
 
-// ---------- Acknowledgement log ----------
-type AckRecord = {
-  key: string; // interaction key
-  signature: string; // doses+meds snapshot — re-surfaces if it changes
-  by: string;
-  at: string;
-};
+// ---------- Alert action log ----------
+type AlertAction =
+  | { type: "acknowledge"; key: string; signature: string; severity: Interaction["severity"]; by: string; at: string }
+  | { type: "override"; key: string; signature: string; severity: Interaction["severity"]; reason: string; reasonLabel: string; note?: string; by: string; at: string }
+  | { type: "defer"; key: string; signature: string; severity: Interaction["severity"]; until: string; by: string; at: string }
+  | { type: "resolve"; key: string; signature: string; severity: Interaction["severity"]; via: string; by: string; at: string }
+  | { type: "resurface"; key: string; signature: string; severity: Interaction["severity"]; previousState: string; reason: string; at: string };
+
+type AlertState =
+  | { kind: "unactioned" }
+  | { kind: "acknowledged"; signature: string; by: string; at: string }
+  | { kind: "overridden"; signature: string; reason: string; reasonLabel: string; note?: string; by: string; at: string }
+  | { kind: "deferred"; signature: string; until: string; by: string; at: string }
+  | { kind: "resolved"; signature: string; via: string; by: string; at: string };
+
+const OVERRIDE_REASONS = [
+  { value: "short_term", label: "Short-term use / risk accepted" },
+  { value: "no_alternative", label: "No suitable alternative" },
+  { value: "patient_consent", label: "Patient informed and consenting" },
+  { value: "other", label: "Other" },
+];
 
 function interactionKey(i: Interaction) {
   return [...i.drugs].sort().join("__");
 }
 
 function combinationSignature(meds: Medication[], i: Interaction): string {
-  // signature changes whenever either drug's dose/freq changes, or any active med added/removed
   const activeNames = meds.filter((m) => m.status === "active").map((m) => m.name).sort().join(",");
   const a = meds.find((m) => m.name === i.drugs[0] && m.status === "active");
   const b = meds.find((m) => m.name === i.drugs[1] && m.status === "active");
   return `${activeNames}|${a?.dose}-${a?.frequency}|${b?.dose}-${b?.frequency}`;
 }
+
+const SEVERITY_ORDER: Record<Interaction["severity"], number> = { mild: 0, moderate: 1, severe: 2 };
 
 interface Props {
   patientName: string;
