@@ -186,37 +186,12 @@ export function PatientOverviewView({
   // ─────────────────────────────────────────────────────────
   return (
     <div className="space-y-4 p-1 overflow-auto h-full">
-      {/* 1. PATIENT IDENTITY STRIP */}
-      <Card className="shadow-card">
-        <CardContent className="py-4">
-          <div className="flex items-baseline justify-between gap-4 flex-wrap">
-            <div className="space-y-1">
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <h1 className="text-xl font-semibold text-foreground leading-tight">
-                  {patient.full_name}
-                </h1>
-                {patient.tier && (
-                  <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 text-[10px] uppercase tracking-wide">
-                    {TIER_LABELS[patient.tier] || patient.tier}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {age != null && <>Age {age}</>}
-                {age != null && patient.gender && <> · </>}
-                {patient.gender && <span className="capitalize">{patient.gender}</span>}
-                {(age != null || patient.gender) && (personalDoctor || memberSince) && <> · </>}
-                {personalDoctor && <>Dr. {personalDoctor.member_name}</>}
-                {personalDoctor && memberSince && <> · </>}
-                Member since {memberSince}
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => onSelectSection("details")}>
-              Edit details
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* 1. EDIT DETAILS BUTTON — top right */}
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" className="text-xs" onClick={() => onSelectSection("details")}>
+          Edit details
+        </Button>
+      </div>
 
       {/* 2. ALERTS BAR */}
       <Card className={cn("border shadow-card transition-colors", alertBarClass)}>
