@@ -1887,6 +1887,12 @@ function HealthDimensionView({
   onDataChanged?: () => void;
 }) {
   const dim = findDimension(dimensionKey);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const toggleRow = (k: string) => setExpandedRows((prev) => {
+    const next = new Set(prev);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    return next;
+  });
   if (!dim) return null;
   const Icon = dim.icon;
   const lab = labResults[0] || null;
