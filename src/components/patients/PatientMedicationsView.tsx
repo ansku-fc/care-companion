@@ -248,7 +248,8 @@ export function PatientMedicationsView({ patientName }: Props) {
   const handleConfirmDiscontinue = () => {
     if (!discontinueTarget) return;
     const ts = new Date().toISOString();
-    updateMed(discontinueTarget.id, {
+    const target = discontinueTarget;
+    updateMed(target.id, {
       status: "past",
       endDate: ts.slice(0, 10),
       discontinueReason,
@@ -257,8 +258,26 @@ export function PatientMedicationsView({ patientName }: Props) {
     });
     toast({
       title: "Medication discontinued",
-      description: `${discontinueTarget.name} discontinued by ${CURRENT_DOCTOR} · logged ${new Date(ts).toLocaleString()}`,
+      description: `${target.name} discontinued by ${CURRENT_DOCTOR} · logged ${new Date(ts).toLocaleString()}`,
     });
+    // If this discontinuation came from an alert "Resolve" flow, log a resolve event
+    if (pendingResolveFor) {
+      const i = INTERACTIONS.find((x) => interactionKey(x) === pendingResolveFor);
+      if (i) {
+        logAlertAction({
+          type: "resolve", key: pendingResolveFor,
+          signature: combinationSignature(meds, i),
+          severity: i.severity,
+          via: `Discontinued ${target.name}`,
+          by: CURRENT_DOCTOR, at: ts,
+        });
+        toast({
+          title: "Interaction resolved",
+          description: `${i.drugs.join(" × ")} resolved by discontinuing ${target.name}.`,
+        });
+      }
+      setPendingResolveFor(null);
+    }
     setDiscontinueTarget(null);
     setDiscontinueStep(1);
     setDiscontinueReason("");
