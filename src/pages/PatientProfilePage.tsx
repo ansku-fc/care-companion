@@ -2148,8 +2148,8 @@ function GenericDimensionView({
   );
   const mainDim = findMainDimension(dimensionKey) ?? null;
   const score = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
-  const scoreColor = "text-white";
-  const scoreBg = score <= 3 ? "bg-[hsl(28_35%_7%)]" : score <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
+  const scoreColor = score <= 3 ? "text-[hsl(137_25%_39%)]" : score <= 6 ? "text-[hsl(28_63%_44%)]" : "text-[hsl(0_57%_39%)]";
+  const scoreBg = "";
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
 
@@ -2200,9 +2200,10 @@ function GenericDimensionView({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
-                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
-                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{score}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
+                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{score}</span>
+                <span className="text-sm font-medium text-muted-foreground">/10</span>
               </div>
               <Button
                 variant="outline"
@@ -2331,8 +2332,8 @@ function SkinMucousDimensionView({
   }, [summary]);
   const [editSummary, setEditSummary] = useState(cleanSummary);
 
-  const scoreColor = "text-white";
-  const scoreBg = skinScore <= 3 ? "bg-[hsl(28_35%_7%)]" : skinScore <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
+  const scoreColor = skinScore <= 3 ? "text-[hsl(137_25%_39%)]" : skinScore <= 6 ? "text-[hsl(28_63%_44%)]" : "text-[hsl(0_57%_39%)]";
+  const scoreBg = "";
 
   const riskHistory = useMemo(() => {
     // Simple history based on score
@@ -2463,9 +2464,10 @@ function SkinMucousDimensionView({
               Skin & Mucous Membranes
             </CardTitle>
             <div className="flex items-center gap-2">
-              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
-                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
-                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{skinScore}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
+                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{skinScore}</span>
+                <span className="text-sm font-medium text-muted-foreground">/10</span>
               </div>
               <Button
                 variant="outline"
@@ -3166,8 +3168,8 @@ function CardiovascularDimensionView({
   const gtData = sorted.filter((l) => l.gt_u_l != null).map((l) => ({ date: l.result_date, value: Number(l.gt_u_l) }));
   const alatAsatData = sorted.filter((l) => l.alat_asat_ratio != null).map((l) => ({ date: l.result_date, value: Number(l.alat_asat_ratio) }));
 
-  const scoreColor = "text-white";
-  const scoreBg = cvScore <= 3 ? "bg-[hsl(28_35%_7%)]" : cvScore <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
+  const scoreColor = cvScore <= 3 ? "text-[hsl(137_25%_39%)]" : cvScore <= 6 ? "text-[hsl(28_63%_44%)]" : "text-[hsl(0_57%_39%)]";
+  const scoreBg = "";
 
   const handleSaveCv = async () => {
     setSaving(true);
@@ -3250,9 +3252,10 @@ function CardiovascularDimensionView({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
-                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
-                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{cvScore}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
+                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{cvScore}</span>
+                <span className="text-sm font-medium text-muted-foreground">/10</span>
               </div>
               <Button
                 variant="outline"
