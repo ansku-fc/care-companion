@@ -264,6 +264,44 @@ function filterByWindow<T extends { date: string }>(data: T[], window: Window): 
   return data.filter((d) => new Date(d.date).getTime() >= cutoff);
 }
 
+export type LabSidebarRow = {
+  date: string;
+  value: number | string;
+  inRange: boolean | null;
+};
+
+export function getSeriesRowsForBiomarker(
+  key: string,
+  windowKey: "6m" | "1y" | "3y" | "all",
+  refLow?: number,
+  refHigh?: number,
+): LabSidebarRow[] {
+  const series = CARDIO_DUMMY_SERIES[key];
+  if (!series) return [];
+  if (series.bp) {
+    const filtered = filterByWindow(series.bp, windowKey);
+    return filtered.map((p) => {
+      const sysOut = (refHigh !== undefined && p.systolic > refHigh) || (refLow !== undefined && p.systolic < refLow);
+      const diaOut = p.diastolic > 90;
+      const inRange = !(sysOut || diaOut);
+      return {
+        date: p.date,
+        value: `${p.systolic}/${p.diastolic}`,
+        inRange: refLow !== undefined || refHigh !== undefined ? inRange : null,
+      };
+    });
+  }
+  const filtered = filterByWindow(series.single ?? [], windowKey);
+  return filtered.map((p) => {
+    const out = (refHigh !== undefined && p.value > refHigh) || (refLow !== undefined && p.value < refLow);
+    return {
+      date: p.date,
+      value: p.value,
+      inRange: refLow !== undefined || refHigh !== undefined ? !out : null,
+    };
+  });
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────────────────────────────
@@ -276,6 +314,7 @@ type Props = {
   selected?: boolean;
   onSelect?: () => void;
   doctor?: string;
+  accentColorVar?: string;
 };
 
 export function CardioLabBiomarkerPanel({
