@@ -1,0 +1,1 @@
+UPDATE public.patients SET full_name = 'Jay-Z' WHERE full_name = 'dsd';
