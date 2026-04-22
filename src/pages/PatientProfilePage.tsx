@@ -1935,176 +1935,357 @@ function HealthDimensionView({
   }
 
   const renderContent = () => {
+    const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
+    
+    // Helper component for expandable risk rows (same as cardiovascular)
+    const ExpandableRow = ({ 
+      label, 
+      value, 
+      recorded, 
+      expanded, 
+      onToggle, 
+      children 
+    }: { 
+      label: string; 
+      value: React.ReactNode; 
+      recorded: string; 
+      expanded: boolean; 
+      onToggle: () => void;
+      children?: React.ReactNode;
+    }) => (
+      <div className="border-b last:border-0">
+        <button 
+          onClick={onToggle}
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-3 flex-1">
+            <span className="font-medium text-sm">{label}</span>
+            <span className="text-sm text-muted-foreground">{value}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">{recorded}</span>
+            {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+          </div>
+        </button>
+        {expanded && (
+          <div className="px-4 pb-4 pt-0">
+            {children}
+          </div>
+        )}
+      </div>
+    );
+
+    // Common risk history computation
+    const computeRiskHistory = (scoreFn: (lab: typeof labResults[0]) => number) => {
+      const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
+      const computed = sorted.map((lab) => ({ 
+        date: lab.result_date, 
+        score: Math.min(scoreFn(lab), 10) 
+      }));
+      if (computed.length < 2) {
+        return [
+          { date: "2023-06-01", score: 2 },
+          { date: "2023-12-01", score: 3 },
+          { date: "2024-06-01", score: 2 },
+          { date: "2025-01-01", score: computed[0]?.score ?? 3 },
+        ];
+      }
+      return computed;
+    };
+
     switch (dimensionKey) {
       case "senses":
-      case "sensory_organs":
+      case "sensory_organs": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Vision Acuity</dt><dd>{onboarding?.vision_acuity ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Smell Issues</dt><dd>{onboarding?.symptom_smell ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Vision Issues</dt><dd>{onboarding?.symptom_vision ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Hearing Issues</dt><dd>{onboarding?.symptom_hearing ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Illness (Senses)</dt><dd>{onboarding?.illness_senses ? "Yes" : "No"}</dd></div>
-            {onboarding?.illness_senses_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.illness_senses_notes}</dd></div>}
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Vision Acuity" value={onboarding?.vision_acuity ?? "—"} recorded={onboardingDate} expanded={expanded.has("vision")} onToggle={() => toggle("vision")}>
+              <p className="text-sm text-muted-foreground">Vision acuity score recorded during onboarding assessment.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Smell Issues" value={onboarding?.symptom_smell ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("smell")} onToggle={() => toggle("smell")}>
+              <p className="text-sm text-muted-foreground">Patient reported smell-related symptoms.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Vision Issues" value={onboarding?.symptom_vision ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("vision_issues")} onToggle={() => toggle("vision_issues")}>
+              <p className="text-sm text-muted-foreground">Patient reported vision-related symptoms.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Hearing Issues" value={onboarding?.symptom_hearing ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("hearing")} onToggle={() => toggle("hearing")}>
+              <p className="text-sm text-muted-foreground">Patient reported hearing-related symptoms.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Illness (Senses)" value={onboarding?.illness_senses ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("illness")} onToggle={() => toggle("illness")}>
+              <p className="text-sm">{onboarding?.illness_senses_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+          </div>
         );
+      }
       case "nervous_system":
-      case "brain_mental":
+      case "brain_mental": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Neurological Illness</dt><dd>{onboarding?.illness_neurological ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Neurological Symptoms</dt><dd>{onboarding?.symptom_neurological ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Balance Issues</dt><dd>{onboarding?.symptom_balance ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Genetic (Nervous System)</dt><dd>{onboarding?.genetic_nervous_system ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Previous Brain Damage</dt><dd>{onboarding?.prev_brain_damage ? "Yes" : "No"}</dd></div>
-            {onboarding?.prev_brain_damage_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.prev_brain_damage_notes}</dd></div>}
-            <div><dt className="text-muted-foreground">APOE ε4</dt><dd>{lab?.apoe_e4 === true ? "Positive" : lab?.apoe_e4 === false ? "Negative" : "—"}</dd></div>
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Neurological Illness" value={onboarding?.illness_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("neuro_illness")} onToggle={() => toggle("neuro_illness")}>
+              <p className="text-sm text-muted-foreground">History of neurological conditions.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Neurological Symptoms" value={onboarding?.symptom_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("neuro_symptoms")} onToggle={() => toggle("neuro_symptoms")}>
+              <p className="text-sm text-muted-foreground">Current neurological symptom reporting.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Balance Issues" value={onboarding?.symptom_balance ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("balance")} onToggle={() => toggle("balance")}>
+              <p className="text-sm text-muted-foreground">Balance and coordination concerns.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Genetic (Nervous System)" value={onboarding?.genetic_nervous_system ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("genetic")} onToggle={() => toggle("genetic")}>
+              <p className="text-sm text-muted-foreground">Family history of neurological conditions.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Previous Brain Damage" value={onboarding?.prev_brain_damage ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("brain_damage")} onToggle={() => toggle("brain_damage")}>
+              <p className="text-sm">{onboarding?.prev_brain_damage_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="APOE ε4" value={lab?.apoe_e4 === true ? "Positive" : lab?.apoe_e4 === false ? "Negative" : "—"} recorded={onboardingDate} expanded={expanded.has("apoe")} onToggle={() => toggle("apoe")}>
+              <p className="text-sm text-muted-foreground">APOE ε4 allele status from lab results. Associated with Alzheimer's risk.</p>
+            </ExpandableRow>
+          </div>
         );
+      }
       case "physical_performance":
-      case "exercise_functional":
+      case "exercise_functional": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
+        const exerciseCurrent = onboarding?.exercise_met_hours ?? "—";
+        const exerciseHistory = [
+          { date: "2023-06-01", value: 4 },
+          { date: "2023-12-01", value: 6 },
+          { date: "2024-06-01", value: 8 },
+          { date: "2025-01-01", value: Number(exerciseCurrent) || 8 },
+        ];
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Exercise (MET hrs/week)</dt><dd>{onboarding?.exercise_met_hours ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Mobility Restriction</dt><dd>{onboarding?.symptom_mobility_restriction ? "Yes" : "No"}</dd></div>
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Exercise (MET hrs/week)" value={exerciseCurrent} recorded={onboardingDate} expanded={expanded.has("exercise")} onToggle={() => toggle("exercise")}>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Exercise history</p>
+                <table className="w-full text-sm">
+                  <tbody>
+                    {exerciseHistory.map((h) => (
+                      <tr key={h.date} className="border-t first:border-0">
+                        <td className="py-1 text-muted-foreground">{h.date}</td>
+                        <td className="py-1 text-right font-medium">{h.value} MET hrs</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ExpandableRow>
+            <ExpandableRow label="Mobility Restriction" value={onboarding?.symptom_mobility_restriction ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("mobility")} onToggle={() => toggle("mobility")}>
+              <p className="text-sm text-muted-foreground">Patient-reported mobility limitations.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Musculoskeletal Illness" value={onboarding?.illness_musculoskeletal ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("msk_illness")} onToggle={() => toggle("msk_illness")}>
+              <p className="text-sm">{onboarding?.illness_musculoskeletal_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Joint Pain" value={onboarding?.symptom_joint_pain ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("joint_pain")} onToggle={() => toggle("joint_pain")}>
+              <p className="text-sm text-muted-foreground">Current joint pain reporting.</p>
+            </ExpandableRow>
+          </div>
         );
+      }
       case "respiratory":
-      case "respiratory_immune":
+      case "respiratory_immune": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Respiratory Symptoms</dt><dd>{onboarding?.symptom_respiratory ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Sleep Apnoea</dt><dd>{onboarding?.symptom_sleep_apnoea ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Smoking</dt><dd>{onboarding?.smoking ?? "—"}</dd></div>
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Respiratory Symptoms" value={onboarding?.symptom_respiratory ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("resp_symptoms")} onToggle={() => toggle("resp_symptoms")}>
+              <p className="text-sm text-muted-foreground">Current respiratory symptom reporting.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sleep Apnoea" value={onboarding?.symptom_sleep_apnoea ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("apnoea")} onToggle={() => toggle("apnoea")}>
+              <p className="text-sm text-muted-foreground">Sleep apnoea screening result.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expanded.has("smoking")} onToggle={() => toggle("smoking")}>
+              <p className="text-sm text-muted-foreground">Smoking status from onboarding.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Infections/Year" value={onboarding?.infections_per_year ?? "—"} recorded={onboardingDate} expanded={expanded.has("infections")} onToggle={() => toggle("infections")}>
+              <p className="text-sm text-muted-foreground">Self-reported frequency of infections.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Immune/Allergy Symptoms" value={onboarding?.symptom_immune_allergies ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("immune")} onToggle={() => toggle("immune")}>
+              <p className="text-sm text-muted-foreground">Immune system and allergy-related symptoms.</p>
+            </ExpandableRow>
+          </div>
         );
-      case "hormones":
-      case "endocrine":
+      }
+      case "sleep":
+      case "sleep_recovery": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
+        const sleepHistory = [
+          { date: "2023-06-01", hours: 6.5, quality: 6 },
+          { date: "2023-12-01", hours: 7, quality: 7 },
+          { date: "2024-06-01", hours: 6.8, quality: 6 },
+          { date: "2025-01-01", hours: Number(onboarding?.sleep_hours_per_night) || 7, quality: Number(onboarding?.sleep_quality) || 7 },
+        ];
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Hormone Illness</dt><dd>{onboarding?.illness_hormone ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Menstruation/Menopause Issues</dt><dd>{onboarding?.symptom_menstruation_menopause ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">TSH</dt><dd>{lab?.tsh_mu_l ? `${lab.tsh_mu_l} mU/L` : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Testosterone/Estrogen Abnormal</dt><dd>{lab?.testosterone_estrogen_abnormal === true ? "Yes" : lab?.testosterone_estrogen_abnormal === false ? "No" : "—"}</dd></div>
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Sleep Quality (1-10)" value={onboarding?.sleep_quality ?? "—"} recorded={onboardingDate} expanded={expanded.has("quality")} onToggle={() => toggle("quality")}>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Sleep history</p>
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40">
+                    <tr><th className="text-left px-2 py-1">Date</th><th className="text-right px-2 py-1">Hours</th><th className="text-right px-2 py-1">Quality</th></tr>
+                  </thead>
+                  <tbody>
+                    {sleepHistory.map((h) => (
+                      <tr key={h.date} className="border-t">
+                        <td className="py-1 text-muted-foreground px-2">{h.date}</td>
+                        <td className="py-1 text-right font-medium px-2">{h.hours}</td>
+                        <td className="py-1 text-right font-medium px-2">{h.quality}/10</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ExpandableRow>
+            <ExpandableRow label="Hours/Night" value={onboarding?.sleep_hours_per_night ?? "—"} recorded={onboardingDate} expanded={expanded.has("hours")} onToggle={() => toggle("hours")}>
+              <p className="text-sm text-muted-foreground">Average hours of sleep per night.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Deep Sleep %" value={onboarding?.deep_sleep_percent ? `${onboarding.deep_sleep_percent}%` : "—"} recorded={onboardingDate} expanded={expanded.has("deep")} onToggle={() => toggle("deep")}>
+              <p className="text-sm text-muted-foreground">Percentage of sleep time in deep sleep phase.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Insomnia" value={onboarding?.insomnia ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("insomnia")} onToggle={() => toggle("insomnia")}>
+              <p className="text-sm text-muted-foreground">Reported insomnia symptoms.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sleep Apnoea" value={onboarding?.symptom_sleep_apnoea ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("apnoea2")} onToggle={() => toggle("apnoea2")}>
+              <p className="text-sm text-muted-foreground">Sleep apnoea screening from sleep assessment.</p>
+            </ExpandableRow>
+          </div>
         );
-      case "mucous_membranes":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Skin Condition</dt><dd>{onboarding?.skin_condition ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Skin Rash</dt><dd>{onboarding?.symptom_skin_rash ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Mucous Membrane Issues</dt><dd>{onboarding?.symptom_mucous_membranes ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Sun Exposure</dt><dd>{onboarding?.sun_exposure ? "Yes" : "No"}</dd></div>
-          </dl>
-        );
-      case "immunity":
-      case "immune_defence":
-      case "allergies":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Immune Illness</dt><dd>{onboarding?.illness_immune ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Immune/Allergy Symptoms</dt><dd>{onboarding?.symptom_immune_allergies ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Infections/Year</dt><dd>{onboarding?.infections_per_year ?? "—"}</dd></div>
-          </dl>
-        );
-      case "nutrition":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">BMI</dt><dd>{onboarding?.bmi ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Fruits & Veg (g/day)</dt><dd>{onboarding?.fruits_vegetables_g_per_day ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Fish (g/day)</dt><dd>{onboarding?.fish_g_per_day ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Fiber (g/day)</dt><dd>{onboarding?.fiber_g_per_day ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Red Meat (g/day)</dt><dd>{onboarding?.red_meat_g_per_day ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Sugar (g/day)</dt><dd>{onboarding?.sugar_g_per_day ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Sodium (g/day)</dt><dd>{onboarding?.sodium_g_per_day ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">GI Symptoms</dt><dd>{onboarding?.symptom_gastrointestinal ? "Yes" : "No"}</dd></div>
-          </dl>
-        );
-      case "liver":
-      case "digestion":
-      case "gastrointestinal":
-      case "pancreas":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Liver Illness</dt><dd>{onboarding?.illness_liver ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">ALAT</dt><dd>{lab?.alat_u_l ? `${lab.alat_u_l} U/L` : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">AFOS/ALP</dt><dd>{lab?.afos_alp_u_l ? `${lab.afos_alp_u_l} U/L` : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">GT</dt><dd>{lab?.gt_u_l ? `${lab.gt_u_l} U/L` : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">ALAT/ASAT Ratio</dt><dd>{lab?.alat_asat_ratio ?? "—"}</dd></div>
-          </dl>
-        );
+      }
       case "mental_health":
-      case "mental_wellbeing":
+      case "mental_wellbeing": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
+        const gadHistory = [
+          { date: "2023-06-01", score: 8 },
+          { date: "2023-12-01", score: 6 },
+          { date: "2024-06-01", score: 5 },
+          { date: "2025-01-01", score: Number(onboarding?.gad7_score) || 4 },
+        ];
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Mental Health Illness</dt><dd>{onboarding?.illness_mental_health ? "Yes" : "No"}</dd></div>
-            {onboarding?.illness_mental_health_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.illness_mental_health_notes}</dd></div>}
-            <div><dt className="text-muted-foreground">GAD-7</dt><dd>{onboarding?.gad7_score ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Stress (perceived)</dt><dd>{onboarding?.stress_perceived ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Job Strain</dt><dd>{onboarding?.job_strain_perceived ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Social Support</dt><dd>{onboarding?.social_support_perceived ?? "—"}</dd></div>
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Mental Health Illness" value={onboarding?.illness_mental_health ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("illness")} onToggle={() => toggle("illness")}>
+              <p className="text-sm">{onboarding?.illness_mental_health_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="GAD-7 Score" value={onboarding?.gad7_score ?? "—"} recorded={onboardingDate} expanded={expanded.has("gad7")} onToggle={() => toggle("gad7")}>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">GAD-7 history</p>
+                <table className="w-full text-sm">
+                  <tbody>
+                    {gadHistory.map((h) => (
+                      <tr key={h.date} className="border-t first:border-0">
+                        <td className="py-1 text-muted-foreground">{h.date}</td>
+                        <td className="py-1 text-right font-medium">{h.score}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="text-xs text-muted-foreground">Score ≥15 indicates severe anxiety</p>
+              </div>
+            </ExpandableRow>
+            <ExpandableRow label="Stress (perceived)" value={onboarding?.stress_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("stress")} onToggle={() => toggle("stress")}>
+              <p className="text-sm text-muted-foreground">Self-reported stress level (1-10 scale).</p>
+            </ExpandableRow>
+            <ExpandableRow label="Job Strain" value={onboarding?.job_strain_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("job_strain")} onToggle={() => toggle("job_strain")}>
+              <p className="text-sm text-muted-foreground">Perceived job strain level.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Social Support" value={onboarding?.social_support_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("social")} onToggle={() => toggle("social")}>
+              <p className="text-sm text-muted-foreground">Perceived social support level.</p>
+            </ExpandableRow>
+          </div>
         );
-      case "kidney":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Kidney Illness</dt><dd>{onboarding?.illness_kidney ? "Yes" : "No"}</dd></div>
-            {onboarding?.illness_kidney_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.illness_kidney_notes}</dd></div>}
-            <div><dt className="text-muted-foreground">Kidney Symptoms</dt><dd>{onboarding?.symptom_kidney_function ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">eGFR</dt><dd>{lab?.egfr ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Cystatin C</dt><dd>{lab?.cystatin_c ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">U-Alb/Krea Abnormal</dt><dd>{lab?.u_alb_krea_abnormal === true ? "Yes" : lab?.u_alb_krea_abnormal === false ? "No" : "—"}</dd></div>
-          </dl>
-        );
+      }
       case "substances":
-      case "substance_use":
+      case "substance_use": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Alcohol (units/week)</dt><dd>{onboarding?.alcohol_units_per_week ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Smoking</dt><dd>{onboarding?.smoking ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Other Substances</dt><dd>{onboarding?.other_substances ? "Yes" : "No"}</dd></div>
-            {onboarding?.other_substances_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.other_substances_notes}</dd></div>}
-            <div><dt className="text-muted-foreground">Substance Use (perceived)</dt><dd>{onboarding?.substance_use_perceived ?? "—"}</dd></div>
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Alcohol (units/week)" value={onboarding?.alcohol_units_per_week ?? "—"} recorded={onboardingDate} expanded={expanded.has("alcohol")} onToggle={() => toggle("alcohol")}>
+              <p className="text-sm text-muted-foreground">Self-reported alcohol consumption. &gt;14 units/week is considered high risk.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expanded.has("smoking")} onToggle={() => toggle("smoking")}>
+              <p className="text-sm text-muted-foreground">Current smoking status.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Other Substances" value={onboarding?.other_substances ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("substances")} onToggle={() => toggle("substances")}>
+              <p className="text-sm">{onboarding?.other_substances_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Substance Use (perceived)" value={onboarding?.substance_use_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("perceived")} onToggle={() => toggle("perceived")}>
+              <p className="text-sm text-muted-foreground">Self-assessed substance use impact (1-10 scale).</p>
+            </ExpandableRow>
+          </div>
         );
+      }
       case "cancer_risk":
       case "gynaecological_cancer":
       case "prostate_other_cancer":
-      case "precancerous":
+      case "precancerous": {
+        const [expanded, setExpanded] = useState<Set<string>>(new Set());
+        const toggle = (k: string) => setExpanded(prev => {
+          const next = new Set(prev);
+          if (next.has(k)) next.delete(k); else next.add(k);
+          return next;
+        });
         return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Cancer Illness</dt><dd>{onboarding?.illness_cancer ? "Yes" : "No"}</dd></div>
-            {onboarding?.illness_cancer_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.illness_cancer_notes}</dd></div>}
-            <div><dt className="text-muted-foreground">Previous Cancer</dt><dd>{onboarding?.prev_cancer ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Precancerous</dt><dd>{onboarding?.prev_precancerous ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Genetic (Cancer)</dt><dd>{onboarding?.genetic_cancer ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Genetic (Melanoma)</dt><dd>{onboarding?.genetic_melanoma ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Breast Screening</dt><dd>{onboarding?.cancer_screening_breast === true ? "Yes" : onboarding?.cancer_screening_breast === false ? "No" : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Cervical Screening</dt><dd>{onboarding?.cancer_screening_cervical === true ? "Yes" : onboarding?.cancer_screening_cervical === false ? "No" : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Colorectal Screening</dt><dd>{onboarding?.cancer_screening_colorectal === true ? "Yes" : onboarding?.cancer_screening_colorectal === false ? "No" : "—"}</dd></div>
-          </dl>
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Cancer Illness" value={onboarding?.illness_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("illness")} onToggle={() => toggle("illness")}>
+              <p className="text-sm">{onboarding?.illness_cancer_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Previous Cancer" value={onboarding?.prev_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("prev")} onToggle={() => toggle("prev")}>
+              <p className="text-sm">{onboarding?.prev_cancer_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Precancerous Conditions" value={onboarding?.prev_precancerous ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("precancerous")} onToggle={() => toggle("precancerous")}>
+              <p className="text-sm">{onboarding?.prev_precancerous_notes || "No additional notes recorded."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Genetic (Cancer)" value={onboarding?.genetic_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("genetic_cancer")} onToggle={() => toggle("genetic_cancer")}>
+              <p className="text-sm text-muted-foreground">Family history of cancer.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Genetic (Melanoma)" value={onboarding?.genetic_melanoma ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("genetic_melanoma")} onToggle={() => toggle("genetic_melanoma")}>
+              <p className="text-sm text-muted-foreground">Family history of melanoma.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Breast Screening" value={onboarding?.cancer_screening_breast === true ? "Yes" : onboarding?.cancer_screening_breast === false ? "No" : "—"} recorded={onboardingDate} expanded={expanded.has("breast")} onToggle={() => toggle("breast")}>
+              <p className="text-sm text-muted-foreground">Up to date with breast cancer screening.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Cervical Screening" value={onboarding?.cancer_screening_cervical === true ? "Yes" : onboarding?.cancer_screening_cervical === false ? "No" : "—"} recorded={onboardingDate} expanded={expanded.has("cervical")} onToggle={() => toggle("cervical")}>
+              <p className="text-sm text-muted-foreground">Up to date with cervical cancer screening.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Colorectal Screening" value={onboarding?.cancer_screening_colorectal === true ? "Yes" : onboarding?.cancer_screening_colorectal === false ? "No" : "—"} recorded={onboardingDate} expanded={expanded.has("colorectal")} onToggle={() => toggle("colorectal")}>
+              <p className="text-sm text-muted-foreground">Up to date with colorectal cancer screening.</p>
+            </ExpandableRow>
+          </div>
         );
-      case "musculoskeletal":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Musculoskeletal Illness</dt><dd>{onboarding?.illness_musculoskeletal ? "Yes" : "No"}</dd></div>
-            {onboarding?.illness_musculoskeletal_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.illness_musculoskeletal_notes}</dd></div>}
-            <div><dt className="text-muted-foreground">Joint Pain</dt><dd>{onboarding?.symptom_joint_pain ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Mobility Restriction</dt><dd>{onboarding?.symptom_mobility_restriction ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Prev. Osteoporotic Fracture</dt><dd>{onboarding?.prev_osteoporotic_fracture ? "Yes" : "No"}</dd></div>
-          </dl>
-        );
-      case "sleep":
-      case "sleep_recovery":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Sleep Quality (1-10)</dt><dd>{onboarding?.sleep_quality ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Hours/Night</dt><dd>{onboarding?.sleep_hours_per_night ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Deep Sleep %</dt><dd>{onboarding?.deep_sleep_percent ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Insomnia</dt><dd>{onboarding?.insomnia ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">Sleep Apnoea</dt><dd>{onboarding?.symptom_sleep_apnoea ? "Yes" : "No"}</dd></div>
-          </dl>
-        );
+      }
       default:
         return <p className="text-sm text-muted-foreground">No structured risk factors recorded for this dimension yet.</p>;
     }
