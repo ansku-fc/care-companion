@@ -456,9 +456,9 @@ export function PatientOverviewView({
                         onClick={() => onSelectSection(dim.key)}
                         className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
                       >
-                        <div className="flex items-center gap-2 w-44 shrink-0">
+                        <div className="flex items-center gap-2 w-64 shrink-0">
                           <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-xs font-medium text-foreground truncate">
+                          <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
                             {dim.label}
                           </span>
                         </div>
