@@ -291,7 +291,7 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
               ) : (
                 <ScrollArea className="flex-1">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-muted/60 backdrop-blur border-b text-xs uppercase tracking-wide text-muted-foreground">
+                    <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur border-b text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
                         <th className="text-left font-medium px-3 py-2 w-10"></th>
                         <th className="text-left font-medium px-3 py-2">Test</th>
@@ -301,40 +301,62 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((r, i) => (
-                        <tr
-                          key={r.field}
-                          className={cn(
-                            "border-b transition-colors",
-                            r.verified ? "bg-accent/40" : "hover:bg-muted/40"
-                          )}
-                        >
-                          <td className="px-3 py-2">
-                            <button
-                              onClick={() => toggleVerified(i)}
-                              className={cn(
-                                "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                r.verified
-                                  ? "bg-primary border-primary text-primary-foreground"
-                                  : "border-muted-foreground/30 hover:border-primary"
-                              )}
-                              aria-label={r.verified ? "Mark unverified" : "Mark verified"}
-                            >
-                              {r.verified && <Check className="h-3 w-3" strokeWidth={3} />}
-                            </button>
-                          </td>
-                          <td className="px-3 py-2 font-medium">{r.label}</td>
-                          <td className="px-3 py-2">
-                            <Input
-                              value={r.parsed}
-                              onChange={(e) => updateRow(i, e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-muted-foreground text-xs">{r.unit ?? "—"}</td>
-                          <td className="px-3 py-2 text-muted-foreground text-xs">{r.reference ?? "—"}</td>
-                        </tr>
-                      ))}
+                      {DIMENSION_ORDER.filter((dim) => rows.some((r) => r.dimension === dim)).map((dim) => {
+                        const dimRows = rows
+                          .map((r, idx) => ({ r, idx }))
+                          .filter(({ r }) => r.dimension === dim);
+                        const dimVerified = dimRows.filter(({ r }) => r.verified).length;
+                        return (
+                          <>
+                            <tr key={`hdr-${dim}`} className="bg-muted/40 border-b border-t">
+                              <td colSpan={5} className="px-3 py-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                                    {dim}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {dimVerified}/{dimRows.length} verified
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            {dimRows.map(({ r, idx }) => (
+                              <tr
+                                key={r.field}
+                                className={cn(
+                                  "border-b transition-colors",
+                                  r.verified ? "bg-accent/40" : "hover:bg-muted/40"
+                                )}
+                              >
+                                <td className="px-3 py-2">
+                                  <button
+                                    onClick={() => toggleVerified(idx)}
+                                    className={cn(
+                                      "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                      r.verified
+                                        ? "bg-primary border-primary text-primary-foreground"
+                                        : "border-muted-foreground/30 hover:border-primary"
+                                    )}
+                                    aria-label={r.verified ? "Mark unverified" : "Mark verified"}
+                                  >
+                                    {r.verified && <Check className="h-3 w-3" strokeWidth={3} />}
+                                  </button>
+                                </td>
+                                <td className="px-3 py-2 font-medium">{r.label}</td>
+                                <td className="px-3 py-2">
+                                  <Input
+                                    value={r.parsed}
+                                    onChange={(e) => updateRow(idx, e.target.value)}
+                                    className="h-8 text-sm"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-muted-foreground text-xs">{r.unit ?? "—"}</td>
+                                <td className="px-3 py-2 text-muted-foreground text-xs">{r.reference ?? "—"}</td>
+                              </tr>
+                            ))}
+                          </>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </ScrollArea>
