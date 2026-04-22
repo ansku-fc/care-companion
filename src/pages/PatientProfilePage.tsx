@@ -3296,7 +3296,50 @@ function CardiovascularDimensionView({
               <CardTitle className="text-base">Doctor's Summary</CardTitle>
             </CardHeader>
             <CardContent>
+              {newForSummary.length > 0 && (
+                <div className="mb-3 flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                  <p className="text-xs text-foreground">
+                    You have <span className="font-semibold">{newForSummary.length}</span> new annotation{newForSummary.length === 1 ? "" : "s"} since your last summary update.
+                  </p>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openIncorporate("summary")}>
+                    <StickyNote className="h-3.5 w-3.5" /> View &amp; incorporate
+                  </Button>
+                </div>
+              )}
               <Textarea
+                placeholder="Write a clinical summary for the cardiovascular dimension..."
+                value={cvSummary}
+                onChange={(e) => setCvSummary(e.target.value)}
+                className="min-h-[160px] resize-none"
+              />
+              {autoNotesBlock && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Auto-linked Lab Notes</p>
+                  <div className="rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap text-foreground">
+                    {autoNotesBlock}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recommendations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {newForRecommendations.length > 0 && (
+                <div className="mb-3 flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                  <p className="text-xs text-foreground">
+                    You have <span className="font-semibold">{newForRecommendations.length}</span> new annotation{newForRecommendations.length === 1 ? "" : "s"} that may inform recommendations.
+                  </p>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openIncorporate("recommendations")}>
+                    <StickyNote className="h-3.5 w-3.5" /> View &amp; incorporate
+                  </Button>
+                </div>
+              )}
+              <Textarea
+
                 placeholder="Write a clinical summary for the cardiovascular dimension..."
                 value={cvSummary}
                 onChange={(e) => setCvSummary(e.target.value)}
