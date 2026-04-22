@@ -23,14 +23,14 @@ const TIER_LABELS: Record<string, string> = {
 
 // Risk colour helpers
 function scoreColorClass(score: number): string {
-  if (score <= 3) return "text-[hsl(137_25%_39%)]";
-  if (score <= 6) return "text-[hsl(28_63%_44%)]";
-  return "text-[hsl(0_57%_39%)]";
+  if (score <= 3) return "text-[hsl(189_94%_43%)]";  /* teal */
+  if (score <= 6) return "text-[hsl(330_81%_60%)]";  /* pink */
+  return "text-[hsl(330_81%_50%)]";                  /* hot pink-red */
 }
 function scoreBorderColor(score: number): string {
-  if (score <= 3) return "hsl(137 25% 39%)";
-  if (score <= 6) return "hsl(28 63% 44%)";
-  return "hsl(0 57% 39%)";
+  if (score <= 3) return "hsl(189 94% 43%)";
+  if (score <= 6) return "hsl(330 81% 60%)";
+  return "hsl(330 81% 50%)";
 }
 
 interface Props {
