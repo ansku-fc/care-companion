@@ -513,10 +513,10 @@ export function SubDimensionView({
   onDataChanged?: () => void;
 }) {
   const sub = parent.subDimensions.find((s) => s.key === subKey);
-  if (!sub) return null;
-  const Icon = sub.icon;
   const [tab, setTab] = useState<"risk_factors" | "lab_results">("risk_factors");
   const biomarkers = useMemo(() => getBiomarkersForSubDimension(subKey), [subKey]);
+  if (!sub) return null;
+  const Icon = sub.icon;
 
   const categoryKey = `${parent.label}__${sub.label}`.toLowerCase();
   const storedCategory = healthCategories.find(
