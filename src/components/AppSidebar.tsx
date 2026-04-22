@@ -64,7 +64,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="border-t-2 border-t-[hsl(25_52%_12%)]">
+      <SidebarContent>
         <div className={collapsed ? "flex flex-col items-center gap-2 px-1 py-3" : "flex items-center justify-between gap-2 px-3 py-3"}>
           {collapsed ? (
             <>
@@ -100,7 +100,7 @@ export function AppSidebar() {
               {workflowNavItems.map(renderNavItem)}
 
               <li className="px-2 py-2">
-                <Separator className="bg-[hsl(25_30%_18%)]" />
+                <Separator className="bg-sidebar-border" />
               </li>
 
               {adminNavItems.map(renderNavItem)}
