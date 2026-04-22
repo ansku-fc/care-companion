@@ -2484,13 +2484,20 @@ function SkinMucousDimensionView({
     return dummyHistory;
   }, [skinScore]);
 
-  const riskFactors = [
-    { label: "Skin Condition (1-10)", value: onboarding?.skin_condition != null ? String(onboarding.skin_condition) : "—" },
-    { label: "Skin Rash", value: onboarding?.symptom_skin_rash ? "Yes" : "No" },
-    { label: "Mucous Membrane Issues", value: onboarding?.symptom_mucous_membranes ? "Yes" : "No" },
-    { label: "Sun Exposure", value: onboarding?.sun_exposure ? "Yes" : "No" },
-    { label: "Genetic Melanoma Risk", value: onboarding?.genetic_melanoma ? "Yes" : "No" },
+  const riskFactors: { key: string; label: string; value: string; detail: React.ReactNode }[] = [
+    { key: "skin_condition", label: "Skin Condition (1-10)", value: onboarding?.skin_condition != null ? String(onboarding.skin_condition) : "—", detail: <p className="text-sm text-muted-foreground">Self-reported skin condition score recorded at onboarding.</p> },
+    { key: "skin_rash", label: "Skin Rash", value: onboarding?.symptom_skin_rash ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Patient-reported active rash symptoms.</p> },
+    { key: "mucous", label: "Mucous Membrane Issues", value: onboarding?.symptom_mucous_membranes ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Symptoms affecting mucous membranes (oral, nasal, etc.).</p> },
+    { key: "sun", label: "Sun Exposure", value: onboarding?.sun_exposure ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Significant cumulative sun exposure history.</p> },
+    { key: "melanoma", label: "Genetic Melanoma Risk", value: onboarding?.genetic_melanoma ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Family history of melanoma or genetic predisposition.</p> },
   ];
+
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const toggleRow = (k: string) => setExpandedRows((prev) => {
+    const next = new Set(prev);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    return next;
+  });
 
   const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
 
