@@ -142,7 +142,19 @@ All colors MUST be HSL.
 
 @layer utilities {
   .section-label {
-    @apply text-[11px] font-semibold uppercase text-muted-foreground;
+    @apply text-[11px] font-semibold uppercase text-foreground;
     letter-spacing: 0.14em;
+  }
+
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
   }
 }
