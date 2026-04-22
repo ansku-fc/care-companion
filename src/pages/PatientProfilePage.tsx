@@ -1901,6 +1901,7 @@ function HealthDimensionView({
   const Icon = dim.icon;
   const lab = labResults[0] || null;
 
+  // Cardiovascular has no sub-dimensions and keeps its specialised view
   if (dimensionKey === "cardiovascular") {
     return (
       <CardiovascularDimensionView
@@ -1912,34 +1913,6 @@ function HealthDimensionView({
         setMarkerNotes={setMarkerNotes}
         onNavigateDimension={onNavigateDimension}
         onDataChanged={onDataChanged}
-      />
-    );
-  }
-
-  if (dimensionKey === "metabolic" || dimensionKey === "endocrine" || dimensionKey === "kidneys" || dimensionKey === "body_composition" || dimensionKey === "nutrition" || dimensionKey === "metabolism") {
-    return (
-      <MetabolicDimensionView
-        patient={patient}
-        onboarding={onboarding}
-        labResults={labResults}
-        healthCategories={healthCategories}
-        markerNotes={markerNotes}
-        setMarkerNotes={setMarkerNotes}
-        onNavigateDimension={onNavigateDimension}
-        onDataChanged={onDataChanged}
-      />
-    );
-  }
-
-  if (dimensionKey === "skin_mucous" || dimensionKey === "skin" || dimensionKey === "skin_oral_mucosal") {
-    return (
-      <SkinMucousDimensionView
-        patient={patient}
-        onboarding={onboarding}
-        labResults={labResults}
-        healthCategories={healthCategories}
-        onDataChanged={onDataChanged}
-        onNavigateDimension={onNavigateDimension}
       />
     );
   }
