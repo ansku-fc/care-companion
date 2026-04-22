@@ -2687,14 +2687,21 @@ function CardiovascularDimensionView({
 
   return (
     <div className="space-y-4">
-      {/* Header with index */}
+      {/* ─────────────── 1. HEADER ─────────────── */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <HeartPulse className="h-5 w-5 text-primary" />
-              Cardiovascular System
-            </CardTitle>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+                <HeartPulse className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Cardiovascular Health</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Risk Index scale: 1 = no action needed → 10 = immediate action
+                </p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
@@ -2711,7 +2718,6 @@ function CardiovascularDimensionView({
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">1 = no action needed → 10 = immediate action</p>
         </CardHeader>
 
         {showRiskHistory && (
@@ -2738,453 +2744,373 @@ function CardiovascularDimensionView({
         )}
       </Card>
 
-      {/* Main layout: left = summary/notes always visible, right = sub-tab content */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Left column - always visible */}
-        <div className="flex flex-col gap-4">
-          <Card className="flex-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Doctor's Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Write a clinical summary for the cardiovascular dimension..."
-                value={cvSummary}
-                onChange={(e) => setCvSummary(e.target.value)}
-                className="min-h-[120px] resize-none"
-              />
-              {autoNotesBlock && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Auto-linked Lab Notes</p>
-                  <div className="rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap text-foreground">
-                    {autoNotesBlock}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="flex-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Write recommendations for the cardiovascular care plan..."
-                value={cvRecommendations}
-                onChange={(e) => setCvRecommendations(e.target.value)}
-                className="min-h-[120px] resize-none"
-              />
-            </CardContent>
-          </Card>
-
-          <DimensionMedicationsSection
-            dimensionKey="cardiovascular"
-            dimensionLabel="Cardiovascular Health"
-            onNavigateToMedications={() => onNavigateDimension("medications")}
-          />
-
-          <div className="flex justify-end">
-            <Button onClick={handleSaveCv} disabled={saving} className="gap-2">
-              <Save className="h-4 w-4" />
-              {saving ? "Saving..." : "Save"}
-            </Button>
-          </div>
+      {/* ─────────────── 2. RISK PICTURE ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Picture</h2>
+          <p className="text-xs text-muted-foreground">What is driving the current risk index</p>
         </div>
 
-        {/* Right column - sub-tabs */}
-        <div className="xl:col-span-2 flex flex-col gap-4">
-          {/* Sub-tab navigation */}
-          <div className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground gap-1">
-            <button
-              onClick={() => { setCvSubTab("risk_factors"); setSelectedMarker(null); }}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                cvSubTab === "risk_factors" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
-              }`}
-            >
-              Risk Factors
-            </button>
-            <button
-              onClick={() => { setCvSubTab("lab_graphs"); setSelectedMarker(null); }}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                cvSubTab === "lab_graphs" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
-              }`}
-            >
-              Lab Results
-            </button>
-            <button
-              onClick={() => { setCvSubTab("total_risk"); setSelectedMarker(null); }}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                cvSubTab === "total_risk" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
-              }`}
-            >
-              Total Risk
-            </button>
-          </div>
-
-          {/* Sub-tab content */}
-          {cvSubTab === "risk_factors" && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Risk Factors from Onboarding</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Factor</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>Recorded</TableHead>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="inline-flex h-9 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground gap-1 self-start">
+              <button
+                onClick={() => { setCvSubTab("risk_factors"); setSelectedMarker(null); }}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
+                  cvSubTab === "risk_factors" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                }`}
+              >
+                Risk Factors
+              </button>
+              <button
+                onClick={() => { setCvSubTab("lab_graphs"); setSelectedMarker(null); }}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
+                  cvSubTab === "lab_graphs" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                }`}
+              >
+                Lab Results
+              </button>
+              <button
+                onClick={() => { setCvSubTab("total_risk"); setSelectedMarker(null); }}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
+                  cvSubTab === "total_risk" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
+                }`}
+              >
+                Total Risk
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {cvSubTab === "risk_factors" && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Factor</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Recorded</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {riskFactors.map((f) => (
+                    <TableRow key={f.label}>
+                      <TableCell className="font-medium text-sm">{f.label}</TableCell>
+                      <TableCell className="text-sm">{f.value}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {riskFactors.map((f) => (
-                      <TableRow key={f.label}>
-                        <TableCell className="font-medium text-sm">{f.label}</TableCell>
-                        <TableCell className="text-sm">{f.value}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
-                      </TableRow>
-                    ))}
-                    {onboarding?.illness_cardiovascular_notes && (
-                      <TableRow>
-                        <TableCell className="font-medium text-sm">Previous Illness Notes</TableCell>
-                        <TableCell colSpan={2} className="text-sm">{onboarding.illness_cardiovascular_notes}</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+                  ))}
+                  {onboarding?.illness_cardiovascular_notes && (
+                    <TableRow>
+                      <TableCell className="font-medium text-sm">Previous Illness Notes</TableCell>
+                      <TableCell colSpan={2} className="text-sm">{onboarding.illness_cardiovascular_notes}</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
 
-          {cvSubTab === "lab_graphs" && (
-            <div className="flex gap-4">
-              <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
-                {/* LDL Chart */}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "ldl_mmol_l" ? "border-primary" : ""}`}
-                  onClick={() => setSelectedMarker({ key: "ldl_mmol_l", label: "LDL", unit: "mmol/L" })}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">LDL (mmol/L)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {ldlData.length > 0 ? (
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={ldlData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <ReferenceArea y1={0} y2={3.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                            <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="LDL" />
-                          </LineChart>
-                        </ResponsiveContainer>
+            {cvSubTab === "lab_graphs" && (
+              <div className="flex gap-4">
+                <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
+                  <Card
+                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "ldl_mmol_l" ? "border-primary" : ""}`}
+                    onClick={() => setSelectedMarker({ key: "ldl_mmol_l", label: "LDL", unit: "mmol/L" })}
+                  >
+                    <CardHeader className="pb-2"><CardTitle className="text-base">LDL (mmol/L)</CardTitle></CardHeader>
+                    <CardContent>
+                      {ldlData.length > 0 ? (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={ldlData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <ReferenceArea y1={0} y2={3.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="LDL" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No LDL data available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "blood_pressure_systolic" ? "border-primary" : ""}`}
+                    onClick={() => setSelectedMarker({ key: "blood_pressure_systolic", label: "Blood Pressure (Systolic)", unit: "mmHg" })}
+                  >
+                    <CardHeader className="pb-2"><CardTitle className="text-base">Blood Pressure (mmHg)</CardTitle></CardHeader>
+                    <CardContent>
+                      {bpData.length > 0 ? (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={bpData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <ReferenceArea y1={60} y2={140} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                              <Line type="monotone" dataKey="systolic" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} name="Systolic" />
+                              <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="Diastolic" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No BP data available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "alat_u_l" ? "border-primary" : ""}`}
+                    onClick={() => setSelectedMarker({ key: "alat_u_l", label: "ALAT", unit: "U/L" })}
+                  >
+                    <CardHeader className="pb-2"><CardTitle className="text-base">ALAT (U/L)</CardTitle></CardHeader>
+                    <CardContent>
+                      {alatData.length > 0 ? (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={alatData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <ReferenceArea y1={0} y2={50} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="ALAT" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No ALAT data available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "afos_alp_u_l" ? "border-primary" : ""}`}
+                    onClick={() => setSelectedMarker({ key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L" })}
+                  >
+                    <CardHeader className="pb-2"><CardTitle className="text-base">AFOS/ALP (U/L)</CardTitle></CardHeader>
+                    <CardContent>
+                      {afosData.length > 0 ? (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={afosData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <ReferenceArea y1={35} y2={105} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="AFOS/ALP" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No AFOS/ALP data available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "gt_u_l" ? "border-primary" : ""}`}
+                    onClick={() => setSelectedMarker({ key: "gt_u_l", label: "GT", unit: "U/L" })}
+                  >
+                    <CardHeader className="pb-2"><CardTitle className="text-base">GT (U/L)</CardTitle></CardHeader>
+                    <CardContent>
+                      {gtData.length > 0 ? (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={gtData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <ReferenceArea y1={0} y2={60} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="GT" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No GT data available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "alat_asat_ratio" ? "border-primary" : ""}`}
+                    onClick={() => setSelectedMarker({ key: "alat_asat_ratio", label: "ALAT/ASAT Ratio", unit: "" })}
+                  >
+                    <CardHeader className="pb-2"><CardTitle className="text-base">ALAT/ASAT Ratio</CardTitle></CardHeader>
+                    <CardContent>
+                      {alatAsatData.length > 0 ? (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={alatAsatData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <ReferenceArea y1={0} y2={1.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="ALAT/ASAT" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No ALAT/ASAT data available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "hba1c_mmol_mol" ? "border-primary" : ""}`}
+                    onClick={() => setSelectedMarker({ key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" })}
+                  >
+                    <CardHeader className="pb-2"><CardTitle className="text-base">HbA1c (mmol/mol)</CardTitle></CardHeader>
+                    <CardContent>
+                      {hba1cData.length > 0 ? (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={hba1cData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <ReferenceArea y1={0} y2={42} fill="hsl(var(--primary))" fillOpacity={0.08} />
+                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="HbA1c" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No HbA1c data available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {selectedMarker && (() => {
+                  const detailChartData = sorted
+                    .map((lab) => {
+                      const val = (lab as any)[selectedMarker.key];
+                      if (val === null || val === undefined) return null;
+                      return { date: lab.result_date, value: Number(val) };
+                    })
+                    .filter(Boolean) as { date: string; value: number }[];
+
+                  const ref = {
+                    ...REFERENCE_VALUES[selectedMarker.key],
+                    ...customRefs[selectedMarker.key],
+                  };
+
+                  return (
+                    <div className="w-[380px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200">
+                      <div className="flex items-center justify-between p-4 border-b">
+                        <div>
+                          <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
+                          {selectedMarker.unit && (
+                            <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-8 text-center">No LDL data available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Blood Pressure Chart */}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "blood_pressure_systolic" ? "border-primary" : ""}`}
-                  onClick={() => setSelectedMarker({ key: "blood_pressure_systolic", label: "Blood Pressure (Systolic)", unit: "mmHg" })}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Blood Pressure (mmHg)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {bpData.length > 0 ? (
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={bpData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <ReferenceArea y1={60} y2={140} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                            <Line type="monotone" dataKey="systolic" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} name="Systolic" />
-                            <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="Diastolic" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-8 text-center">No BP data available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* ALAT Chart */}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "alat_u_l" ? "border-primary" : ""}`}
-                  onClick={() => setSelectedMarker({ key: "alat_u_l", label: "ALAT", unit: "U/L" })}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">ALAT (U/L)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {alatData.length > 0 ? (
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={alatData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <ReferenceArea y1={0} y2={50} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                            <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="ALAT" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-8 text-center">No ALAT data available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* AFOS/ALP Chart */}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "afos_alp_u_l" ? "border-primary" : ""}`}
-                  onClick={() => setSelectedMarker({ key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L" })}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">AFOS/ALP (U/L)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {afosData.length > 0 ? (
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={afosData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <ReferenceArea y1={35} y2={105} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                            <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="AFOS/ALP" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-8 text-center">No AFOS/ALP data available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* GT Chart */}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "gt_u_l" ? "border-primary" : ""}`}
-                  onClick={() => setSelectedMarker({ key: "gt_u_l", label: "GT", unit: "U/L" })}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">GT (U/L)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {gtData.length > 0 ? (
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={gtData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <ReferenceArea y1={0} y2={60} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                            <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="GT" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-8 text-center">No GT data available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* ALAT/ASAT Ratio Chart */}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "alat_asat_ratio" ? "border-primary" : ""}`}
-                  onClick={() => setSelectedMarker({ key: "alat_asat_ratio", label: "ALAT/ASAT Ratio", unit: "" })}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">ALAT/ASAT Ratio</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {alatAsatData.length > 0 ? (
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={alatAsatData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <ReferenceArea y1={0} y2={1.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                            <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="ALAT/ASAT" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-8 text-center">No ALAT/ASAT data available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-                {/* HbA1c Chart */}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "hba1c_mmol_mol" ? "border-primary" : ""}`}
-                  onClick={() => setSelectedMarker({ key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" })}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">HbA1c (mmol/mol)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {hba1cData.length > 0 ? (
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={hba1cData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <ReferenceArea y1={0} y2={42} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                            <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="HbA1c" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-8 text-center">No HbA1c data available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Detail Panel */}
-              {selectedMarker && (() => {
-                const detailChartData = sorted
-                  .map((lab) => {
-                    const val = (lab as any)[selectedMarker.key];
-                    if (val === null || val === undefined) return null;
-                    return { date: lab.result_date, value: Number(val) };
-                  })
-                  .filter(Boolean) as { date: string; value: number }[];
-
-                const ref = {
-                  ...REFERENCE_VALUES[selectedMarker.key],
-                  ...customRefs[selectedMarker.key],
-                };
-
-                return (
-                  <div className="w-[380px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200">
-                    <div className="flex items-center justify-between p-4 border-b">
-                      <div>
-                        <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
-                        {selectedMarker.unit && (
-                          <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+                      <div className="p-4 flex-1 overflow-auto">
+                        {detailChartData.length < 1 ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
+                        ) : (
+                          <DraggableReferenceChart
+                            chartData={detailChartData}
+                            refValues={ref}
+                            onRefChange={(newRef) => {
+                              setCustomRefs((prev) => ({
+                                ...prev,
+                                [selectedMarker.key]: { ...(REFERENCE_VALUES[selectedMarker.key] || {}), ...prev[selectedMarker.key], ...newRef },
+                              }));
+                            }}
+                          />
+                        )}
+                        <div className="mt-4 space-y-3">
+                          <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Low</Label>
+                              <Input
+                                type="number"
+                                step="any"
+                                placeholder="—"
+                                className="h-8 text-xs"
+                                value={ref?.low ?? ""}
+                                onChange={(e) => {
+                                  const val = e.target.value === "" ? undefined : Number(e.target.value);
+                                  setCustomRefs((prev) => ({
+                                    ...prev,
+                                    [selectedMarker.key]: { ...prev[selectedMarker.key], low: val },
+                                  }));
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">High</Label>
+                              <Input
+                                type="number"
+                                step="any"
+                                placeholder="—"
+                                className="h-8 text-xs"
+                                value={ref?.high ?? ""}
+                                onChange={(e) => {
+                                  const val = e.target.value === "" ? undefined : Number(e.target.value);
+                                  setCustomRefs((prev) => ({
+                                    ...prev,
+                                    [selectedMarker.key]: { ...prev[selectedMarker.key], high: val },
+                                  }));
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <Label className="text-xs">Doctor Notes</Label>
+                          <Textarea
+                            placeholder="Add notes about this marker..."
+                            className="mt-1 min-h-[80px] text-xs resize-none"
+                            value={markerNotes[selectedMarker.key] || ""}
+                            onChange={(e) => {
+                              setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
+                            }}
+                          />
+                        </div>
+                        {MARKER_DIMENSIONS[selectedMarker.key] && (
+                          <div className="mt-4">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
+                                const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
+                                if (!dim) return null;
+                                const DimIcon = dim.icon;
+                                return (
+                                  <button
+                                    key={dimKey}
+                                    onClick={() => onNavigateDimension(dimKey)}
+                                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                                  >
+                                    <DimIcon className="h-3 w-3" />
+                                    {dim.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         )}
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
-                    <div className="p-4 flex-1 overflow-auto">
-                      {detailChartData.length < 1 ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
-                      ) : (
-                        <DraggableReferenceChart
-                          chartData={detailChartData}
-                          refValues={ref}
-                          onRefChange={(newRef) => {
-                            setCustomRefs((prev) => ({
-                              ...prev,
-                              [selectedMarker.key]: { ...(REFERENCE_VALUES[selectedMarker.key] || {}), ...prev[selectedMarker.key], ...newRef },
-                            }));
-                          }}
-                        />
-                      )}
-                      <div className="mt-4 space-y-3">
-                        <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-xs">Low</Label>
-                            <Input
-                              type="number"
-                              step="any"
-                              placeholder="—"
-                              className="h-8 text-xs"
-                              value={ref?.low ?? ""}
-                              onChange={(e) => {
-                                const val = e.target.value === "" ? undefined : Number(e.target.value);
-                                setCustomRefs((prev) => ({
-                                  ...prev,
-                                  [selectedMarker.key]: { ...prev[selectedMarker.key], low: val },
-                                }));
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">High</Label>
-                            <Input
-                              type="number"
-                              step="any"
-                              placeholder="—"
-                              className="h-8 text-xs"
-                              value={ref?.high ?? ""}
-                              onChange={(e) => {
-                                const val = e.target.value === "" ? undefined : Number(e.target.value);
-                                setCustomRefs((prev) => ({
-                                  ...prev,
-                                  [selectedMarker.key]: { ...prev[selectedMarker.key], high: val },
-                                }));
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <Label className="text-xs">Doctor Notes</Label>
-                        <Textarea
-                          placeholder="Add notes about this marker..."
-                          className="mt-1 min-h-[80px] text-xs resize-none"
-                          value={markerNotes[selectedMarker.key] || ""}
-                          onChange={(e) => {
-                            setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
-                          }}
-                        />
-                      </div>
-                      {MARKER_DIMENSIONS[selectedMarker.key] && (
-                        <div className="mt-4">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
-                              const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
-                              if (!dim) return null;
-                              const DimIcon = dim.icon;
-                              return (
-                                <button
-                                  key={dimKey}
-                                  onClick={() => onNavigateDimension(dimKey)}
-                                  className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-                                >
-                                  <DimIcon className="h-3 w-3" />
-                                  {dim.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
+                  );
+                })()}
+              </div>
+            )}
 
-          {cvSubTab === "total_risk" && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Total Cardiovascular Risk Assessment</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {cvSubTab === "total_risk" && (
+              <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className={`flex items-center justify-center h-20 w-20 rounded-full ${scoreBg}`}>
                     <span className={`text-3xl font-bold ${scoreColor}`}>{cvScore}</span>
@@ -3252,11 +3178,77 @@ function CardiovascularDimensionView({
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* ─────────────── 3. MEDICATIONS ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Medications</h2>
+          <p className="text-xs text-muted-foreground">What we are doing about it</p>
         </div>
-      </div>
+        <DimensionMedicationsSection
+          dimensionKey="cardiovascular"
+          dimensionLabel="Cardiovascular Health"
+          onNavigateToMedications={() => onNavigateDimension("medications")}
+        />
+      </section>
+
+      {/* ─────────────── 4. CLINICAL SYNTHESIS ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Clinical Synthesis</h2>
+          <p className="text-xs text-muted-foreground">Doctor's interpretation and care plan</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Doctor's Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write a clinical summary for the cardiovascular dimension..."
+                value={cvSummary}
+                onChange={(e) => setCvSummary(e.target.value)}
+                className="min-h-[160px] resize-none"
+              />
+              {autoNotesBlock && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Auto-linked Lab Notes</p>
+                  <div className="rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap text-foreground">
+                    {autoNotesBlock}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recommendations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Write recommendations for the cardiovascular care plan..."
+                value={cvRecommendations}
+                onChange={(e) => setCvRecommendations(e.target.value)}
+                className="min-h-[160px] resize-none"
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <Button onClick={handleSaveCv} disabled={saving} className="gap-2">
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : "Save Summary & Recommendations"}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
