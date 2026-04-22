@@ -34,8 +34,11 @@ import { DimensionMedicationsSection } from "@/components/patients/DimensionMedi
 import {
   CardioLabBiomarkerPanel,
   getAnnotations,
+  getAnnotationsForBiomarker,
   markIncluded,
   useAnnotationsVersion,
+  updateAnnotation,
+  deleteAnnotation,
   type LabAnnotation,
 } from "@/components/patients/CardioLabBiomarkerPanel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -2732,6 +2735,206 @@ function SkinMucousDimensionView({
   );
 }
 
+// ─────────────── Cardiovascular Risk Factor helpers ───────────────
+function ExpandableRiskRow({
+  label,
+  value,
+  recorded,
+  expanded,
+  onToggle,
+  expandable = true,
+  children,
+}: {
+  label: string;
+  value: React.ReactNode;
+  recorded: string;
+  expanded: boolean;
+  onToggle: () => void;
+  expandable?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={expandable ? onToggle : undefined}
+        className={cn(
+          "w-full grid grid-cols-[1fr_1.2fr_auto_24px] items-center gap-3 px-3 py-2 text-left",
+          expandable && "hover:bg-muted/40 cursor-pointer",
+        )}
+      >
+        <span className="font-medium text-sm">{label}</span>
+        <span className="text-sm">{value}</span>
+        <span className="text-xs text-muted-foreground">{recorded}</span>
+        {expandable ? (
+          expanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )
+        ) : (
+          <span />
+        )}
+      </button>
+      {expanded && expandable && (
+        <div className="px-3 pb-3 pt-1 bg-muted/20 border-t">{children}</div>
+      )}
+    </div>
+  );
+}
+
+function Sparkline({ points }: { points: number[] }) {
+  if (points.length < 2) return null;
+  const w = 48;
+  const h = 14;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+  const stepX = w / (points.length - 1);
+  const path = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${i * stepX} ${h - ((p - min) / range) * h}`)
+    .join(" ");
+  return (
+    <svg width={w} height={h} className="text-primary" aria-hidden>
+      <path d={path} fill="none" stroke="currentColor" strokeWidth={1.5} />
+    </svg>
+  );
+}
+
+// Inline annotation list with edit/delete for the marker detail sidebar.
+function AnnotationListEditor({ biomarkerKey }: { biomarkerKey: string }) {
+  useAnnotationsVersion();
+  const list = getAnnotationsForBiomarker(biomarkerKey)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+
+  if (list.length === 0) {
+    return (
+      <div className="mt-4">
+        <p className="text-xs font-medium text-muted-foreground mb-1.5">Annotations</p>
+        <p className="text-xs text-muted-foreground italic">
+          No annotations yet. Click a point on the graph to add one.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-medium text-muted-foreground mb-1.5">
+        Annotations ({list.length})
+      </p>
+      <ul className="space-y-1.5">
+        {list.map((a) => {
+          const isEditing = editingId === a.id;
+          const isDeleting = deletingId === a.id;
+          return (
+            <li key={a.id} className="rounded-md border bg-muted/30 p-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-foreground">{a.date}</span>
+                {!isEditing && !isDeleting && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditText(a.text);
+                        setEditingId(a.id);
+                      }}
+                      className="text-muted-foreground hover:text-foreground"
+                      title="Edit"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteReason("");
+                        setDeletingId(a.id);
+                      }}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {!isEditing && !isDeleting && (
+                <>
+                  <p className="text-foreground whitespace-pre-wrap mt-1">{a.text}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    — {a.doctor}
+                    {a.updatedAt ? " (edited)" : ""}
+                  </p>
+                </>
+              )}
+              {isEditing && (
+                <div className="mt-1 space-y-1.5">
+                  <Textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="min-h-[60px] text-xs resize-none"
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingId(null)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-6 text-xs"
+                      disabled={!editText.trim()}
+                      onClick={() => {
+                        updateAnnotation(a.id, { text: editText.trim() });
+                        setEditingId(null);
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {isDeleting && (
+                <div className="mt-1 space-y-1.5">
+                  <p className="text-[11px] text-muted-foreground">
+                    Deletion is logged for audit. Provide a reason.
+                  </p>
+                  <Textarea
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    placeholder="Reason for deletion"
+                    className="min-h-[50px] text-xs resize-none"
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setDeletingId(null)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-6 text-xs"
+                      disabled={!deleteReason.trim()}
+                      onClick={() => {
+                        deleteAnnotation(a.id, deleteReason.trim(), a.doctor);
+                        setDeletingId(null);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function CardiovascularDimensionView({
   patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
 }: {
@@ -2803,16 +3006,57 @@ function CardiovascularDimensionView({
     ? autoNotes.join("\n")
     : "";
 
-  // Onboarding risk factors table
-  const riskFactors = [
-    { label: "Waist-Hip Ratio", value: onboarding?.waist_to_hip_ratio != null ? String(onboarding.waist_to_hip_ratio) : "—" },
-    { label: "Exercise, MET (hours/week)", value: onboarding?.exercise_met_hours != null ? String(onboarding.exercise_met_hours) : "—" },
-    { label: "Smoking", value: onboarding?.smoking ?? "—" },
-    { label: "Genetic Predisposition", value: onboarding?.genetic_cardiovascular ? "Yes" : "No" },
-    { label: "Previous Illness", value: onboarding?.illness_cardiovascular ? "Yes" : "No" },
-  ];
-
+  // Onboarding date for Recorded column
   const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
+
+  // ── Cardiovascular risk factors (reordered + expandable + dummy history) ──
+  // Dummy: current illnesses
+  const cvCurrentIllnesses: { name: string; diagnosedDate: string; severity?: string }[] = [
+    { name: "Essential hypertension", diagnosedDate: "2023-03-20", severity: "Moderate" },
+    { name: "Hyperlipidemia (LDL)", diagnosedDate: "2024-02-10", severity: "Mild" },
+  ];
+  // Dummy: past illnesses (resolved)
+  const cvPastIllnesses: { name: string; from: string; to: string; resolution?: string }[] = [
+    { name: "Acute pericarditis", from: "2021-06-04", to: "2021-09-12", resolution: "Resolved with NSAIDs" },
+  ];
+  // Dummy: smoking history (changes over time)
+  const smokingCurrent = onboarding?.smoking ?? "no";
+  const smokingHistory: { date: string; value: string }[] = [
+    { date: "2018-01-01", value: "yes" },
+    { date: "2021-03-15", value: "no" },
+  ];
+  const smokingChanged = smokingHistory.length > 1;
+  const smokingPrev = smokingChanged ? smokingHistory[smokingHistory.length - 2] : null;
+  // Dummy: exercise MET hours history
+  const exerciseCurrent = onboarding?.exercise_met_hours != null ? Number(onboarding.exercise_met_hours) : 12;
+  const exerciseHistory: { date: string; value: number }[] = [
+    { date: "2022-04-10", value: 6 },
+    { date: "2023-04-22", value: 8 },
+    { date: "2024-04-12", value: 10 },
+    { date: "2025-04-09", value: exerciseCurrent },
+  ];
+  const exerciseTrend = exerciseHistory[exerciseHistory.length - 1].value - exerciseHistory[0].value;
+  // Dummy: waist-hip ratio history
+  const whrCurrent = onboarding?.waist_to_hip_ratio != null ? Number(onboarding.waist_to_hip_ratio) : 0.92;
+  const whrHistory: { date: string; value: number }[] = [
+    { date: "2022-04-10", value: 0.98 },
+    { date: "2023-04-22", value: 0.96 },
+    { date: "2024-04-12", value: 0.94 },
+    { date: "2025-04-09", value: whrCurrent },
+  ];
+  const whrTrend = whrHistory[whrHistory.length - 1].value - whrHistory[0].value;
+  const geneticPredisposition = onboarding?.genetic_cardiovascular ? "Yes" : "No";
+
+  type CvRiskRowKey = "current_illness" | "past_illness" | "genetic" | "smoking" | "exercise" | "whr";
+  const [expandedRiskRows, setExpandedRiskRows] = useState<Set<CvRiskRowKey>>(new Set());
+  const toggleRiskRow = (k: CvRiskRowKey) =>
+    setExpandedRiskRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+
 
   // Chart data for each marker
   const ldlData = sorted.filter((l) => l.ldl_mmol_l != null).map((l) => ({ date: l.result_date, value: Number(l.ldl_mmol_l) }));
@@ -2847,7 +3091,7 @@ function CardiovascularDimensionView({
     }
   };
 
-  const [cvSubTab, setCvSubTab] = useState<"risk_factors" | "lab_graphs" | "total_risk">("risk_factors");
+  const [cvSubTab, setCvSubTab] = useState<"risk_factors" | "lab_graphs">("risk_factors");
 
   // ── Annotation → Summary/Recommendations nudge state ──
   useAnnotationsVersion();
@@ -2974,42 +3218,159 @@ function CardiovascularDimensionView({
               >
                 Lab Results
               </button>
-              <button
-                onClick={() => { setCvSubTab("total_risk"); setSelectedMarker(null); }}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
-                  cvSubTab === "total_risk" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
-                }`}
-              >
-                Total Risk
-              </button>
             </div>
           </CardHeader>
           <CardContent>
             {cvSubTab === "risk_factors" && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Factor</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Recorded</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {riskFactors.map((f) => (
-                    <TableRow key={f.label}>
-                      <TableCell className="font-medium text-sm">{f.label}</TableCell>
-                      <TableCell className="text-sm">{f.value}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
-                    </TableRow>
-                  ))}
-                  {onboarding?.illness_cardiovascular_notes && (
-                    <TableRow>
-                      <TableCell className="font-medium text-sm">Previous Illness Notes</TableCell>
-                      <TableCell colSpan={2} className="text-sm">{onboarding.illness_cardiovascular_notes}</TableCell>
-                    </TableRow>
+              <div className="divide-y border rounded-md">
+                <ExpandableRiskRow
+                  label="Current Illnesses"
+                  value={`${cvCurrentIllnesses.length} active condition${cvCurrentIllnesses.length === 1 ? "" : "s"}`}
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("current_illness")}
+                  onToggle={() => toggleRiskRow("current_illness")}
+                >
+                  {cvCurrentIllnesses.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No active cardiovascular conditions.</p>
+                  ) : (
+                    <ul className="space-y-1.5 text-sm">
+                      {cvCurrentIllnesses.map((c) => (
+                        <li key={c.name} className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{c.name}</span>
+                          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Diagnosed {c.diagnosedDate}</span>
+                            {c.severity && <Badge variant="outline" className="text-[10px]">{c.severity}</Badge>}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </TableBody>
-              </Table>
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Past Illnesses"
+                  value={`${cvPastIllnesses.length} resolved`}
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("past_illness")}
+                  onToggle={() => toggleRiskRow("past_illness")}
+                >
+                  {cvPastIllnesses.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No past cardiovascular illnesses on record.</p>
+                  ) : (
+                    <ul className="space-y-1.5 text-sm">
+                      {cvPastIllnesses.map((c) => (
+                        <li key={c.name} className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{c.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {c.from} → {c.to}
+                            {c.resolution ? ` · ${c.resolution}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Genetic Predisposition"
+                  value={geneticPredisposition}
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("genetic")}
+                  onToggle={() => toggleRiskRow("genetic")}
+                >
+                  <p className="text-sm">
+                    {onboarding?.genetic_cardiovascular
+                      ? "Family history of cardiovascular disease recorded at onboarding."
+                      : "No reported family history of cardiovascular disease."}
+                  </p>
+                  {onboarding?.illness_cardiovascular_notes && (
+                    <p className="text-xs text-muted-foreground mt-1">{onboarding.illness_cardiovascular_notes}</p>
+                  )}
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Smoking"
+                  value={
+                    <span className="flex items-center gap-2">
+                      <span>{smokingCurrent}</span>
+                      {smokingChanged && smokingPrev && (
+                        <span className="text-[11px] text-muted-foreground italic">
+                          (changed from {smokingPrev.value}, {new Date(smokingHistory[smokingHistory.length - 1].date).toLocaleDateString(undefined, { month: "short", year: "numeric" })})
+                        </span>
+                      )}
+                    </span>
+                  }
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("smoking")}
+                  onToggle={() => toggleRiskRow("smoking")}
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Smoking status timeline</p>
+                  <ul className="space-y-1 text-sm">
+                    {smokingHistory.map((h) => (
+                      <li key={h.date} className="flex items-center justify-between">
+                        <span>{h.date}</span>
+                        <span className="font-medium">{h.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Exercise, MET (hours/week)"
+                  value={
+                    <span className="flex items-center gap-2">
+                      <span>{exerciseCurrent}</span>
+                      <Sparkline points={exerciseHistory.map((h) => h.value)} />
+                      <span className={cn("text-[11px]", exerciseTrend >= 0 ? "text-green-600" : "text-destructive")}>
+                        {exerciseTrend >= 0 ? "▲" : "▼"} {Math.abs(exerciseTrend).toFixed(1)}
+                      </span>
+                    </span>
+                  }
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("exercise")}
+                  onToggle={() => toggleRiskRow("exercise")}
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Exercise history</p>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {exerciseHistory.map((h) => (
+                        <tr key={h.date} className="border-t first:border-0">
+                          <td className="py-1 text-muted-foreground">{h.date}</td>
+                          <td className="py-1 text-right font-medium">{h.value} MET hrs</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ExpandableRiskRow>
+
+                <ExpandableRiskRow
+                  label="Waist-Hip Ratio"
+                  value={
+                    <span className="flex items-center gap-2">
+                      <span>{whrCurrent}</span>
+                      <Sparkline points={whrHistory.map((h) => h.value)} />
+                      <span className={cn("text-[11px]", whrTrend <= 0 ? "text-green-600" : "text-destructive")}>
+                        {whrTrend <= 0 ? "▼" : "▲"} {Math.abs(whrTrend).toFixed(2)}
+                      </span>
+                    </span>
+                  }
+                  recorded={onboardingDate}
+                  expanded={expandedRiskRows.has("whr")}
+                  onToggle={() => toggleRiskRow("whr")}
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Waist-Hip Ratio history</p>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {whrHistory.map((h) => (
+                        <tr key={h.date} className="border-t first:border-0">
+                          <td className="py-1 text-muted-foreground">{h.date}</td>
+                          <td className="py-1 text-right font-medium">{h.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ExpandableRiskRow>
+              </div>
             )}
 
             {cvSubTab === "lab_graphs" && (
@@ -3167,6 +3528,8 @@ function CardiovascularDimensionView({
                             }}
                           />
                         </div>
+                        {/* Annotations list (chronological) — manageable here too */}
+                        <AnnotationListEditor biomarkerKey={selectedMarker.key} />
                         {MARKER_DIMENSIONS[selectedMarker.key] && (
                           <div className="mt-4">
                             <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
@@ -3193,78 +3556,6 @@ function CardiovascularDimensionView({
                     </div>
                   );
                 })()}
-              </div>
-            )}
-
-            {cvSubTab === "total_risk" && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className={`flex items-center justify-center h-20 w-20 rounded-full ${scoreBg}`}>
-                    <span className={`text-3xl font-bold ${scoreColor}`}>{cvScore}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Risk Score: {cvScore}/10</p>
-                    <p className="text-sm text-muted-foreground">
-                      {cvScore <= 3 ? "Low risk — continue monitoring" : cvScore <= 6 ? "Moderate risk — consider intervention" : "High risk — action recommended"}
-                    </p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-sm font-medium mb-2">Contributing Factors</p>
-                  <div className="space-y-2 text-sm">
-                    {onboarding?.illness_cardiovascular && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">High</Badge>
-                        <span>Previous cardiovascular illness</span>
-                      </div>
-                    )}
-                    {onboarding?.genetic_cardiovascular && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Moderate</Badge>
-                        <span>Genetic predisposition</span>
-                      </div>
-                    )}
-                    {labResults[0]?.ldl_mmol_l && Number(labResults[0].ldl_mmol_l) > 3.0 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">High</Badge>
-                        <span>Elevated LDL: {labResults[0].ldl_mmol_l} mmol/L (target &lt; 3.0)</span>
-                      </div>
-                    )}
-                    {labResults[0]?.blood_pressure_systolic && Number(labResults[0].blood_pressure_systolic) > 140 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">High</Badge>
-                        <span>Elevated blood pressure: {labResults[0].blood_pressure_systolic}/{labResults[0].blood_pressure_diastolic} mmHg</span>
-                      </div>
-                    )}
-                    {labResults[0]?.hba1c_mmol_mol && Number(labResults[0].hba1c_mmol_mol) > 42 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">High</Badge>
-                        <span>Elevated HbA1c: {labResults[0].hba1c_mmol_mol} mmol/mol (target &lt; 42)</span>
-                      </div>
-                    )}
-                    {onboarding?.smoking === "yes" && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">High</Badge>
-                        <span>Active smoker</span>
-                      </div>
-                    )}
-                    {onboarding?.waist_to_hip_ratio && Number(onboarding.waist_to_hip_ratio) > 0.9 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Moderate</Badge>
-                        <span>Elevated waist-to-hip ratio: {onboarding.waist_to_hip_ratio}</span>
-                      </div>
-                    )}
-                    {onboarding?.exercise_met_hours != null && Number(onboarding.exercise_met_hours) < 5 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Moderate</Badge>
-                        <span>Low physical activity: {onboarding.exercise_met_hours} MET hrs/week</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
           </CardContent>
