@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, Fragment } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,18 @@ type ParsedRow = {
   reference?: string;
   parsed: string;
   verified: boolean;
+  dimension: string;
 };
+
+const DIMENSION_ORDER = [
+  "Cardiovascular Health",
+  "Metabolic Health",
+  "Liver Function",
+  "Kidney Function",
+  "Endocrine & Hormonal",
+  "Brain & Mental Health",
+  "Respiratory & Immune Health",
+] as const;
 
 type ExtractedValues = {
   ldl_mmol_l: string;
@@ -40,23 +51,23 @@ type ExtractedValues = {
 
 // Mock "AI extraction" results — matches values in /public/sample-lab-report.pdf
 const MOCK_EXTRACTED: ParsedRow[] = [
-  { field: "ldl_mmol_l", label: "LDL cholesterol", unit: "mmol/l", reference: "< 3.0", parsed: "3.42", verified: false },
-  { field: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", reference: "20 - 42", parsed: "38", verified: false },
-  { field: "blood_pressure_systolic", label: "Blood pressure (systolic)", unit: "mmHg", reference: "< 130", parsed: "128", verified: false },
-  { field: "blood_pressure_diastolic", label: "Blood pressure (diastolic)", unit: "mmHg", reference: "< 85", parsed: "82", verified: false },
-  { field: "alat_u_l", label: "ALAT", unit: "U/l", reference: "10 - 45", parsed: "29", verified: false },
-  { field: "afos_alp_u_l", label: "AFOS / ALP", unit: "U/l", reference: "35 - 105", parsed: "78", verified: false },
-  { field: "gt_u_l", label: "GT", unit: "U/l", reference: "10 - 65", parsed: "34", verified: false },
-  { field: "alat_asat_ratio", label: "ALAT / ASAT ratio", reference: "0.8 - 1.5", parsed: "1.12", verified: false },
-  { field: "egfr", label: "eGFR", unit: "ml/min/1.73 m²", reference: "> 60", parsed: "92", verified: false },
-  { field: "cystatin_c", label: "Cystatin C", unit: "mg/l", reference: "0.6 - 1.0", parsed: "0.94", verified: false },
-  { field: "u_alb_krea_abnormal", label: "U-Alb/Krea", reference: "Normal", parsed: "Normal", verified: false },
-  { field: "tsh_mu_l", label: "TSH", unit: "mU/l", reference: "0.4 - 4.0", parsed: "2.31", verified: false },
-  { field: "testosterone_estrogen_abnormal", label: "Testosterone / Estrogen", reference: "Normal", parsed: "Normal", verified: false },
-  { field: "apoe_e4", label: "APOE ε4", reference: "Negative", parsed: "Negative", verified: false },
-  { field: "pef_percent", label: "PEF", unit: "%", reference: "> 80", parsed: "94", verified: false },
-  { field: "fev1_percent", label: "FEV1", unit: "%", reference: "> 80", parsed: "91", verified: false },
-  { field: "fvc_percent", label: "FVC", unit: "%", reference: "> 80", parsed: "96", verified: false },
+  { field: "ldl_mmol_l", label: "LDL cholesterol", unit: "mmol/l", reference: "< 3.0", parsed: "3.42", verified: false, dimension: "Cardiovascular Health" },
+  { field: "blood_pressure_systolic", label: "Blood pressure (systolic)", unit: "mmHg", reference: "< 130", parsed: "128", verified: false, dimension: "Cardiovascular Health" },
+  { field: "blood_pressure_diastolic", label: "Blood pressure (diastolic)", unit: "mmHg", reference: "< 85", parsed: "82", verified: false, dimension: "Cardiovascular Health" },
+  { field: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", reference: "20 - 42", parsed: "38", verified: false, dimension: "Metabolic Health" },
+  { field: "alat_u_l", label: "ALAT", unit: "U/l", reference: "10 - 45", parsed: "29", verified: false, dimension: "Liver Function" },
+  { field: "afos_alp_u_l", label: "AFOS / ALP", unit: "U/l", reference: "35 - 105", parsed: "78", verified: false, dimension: "Liver Function" },
+  { field: "gt_u_l", label: "GT", unit: "U/l", reference: "10 - 65", parsed: "34", verified: false, dimension: "Liver Function" },
+  { field: "alat_asat_ratio", label: "ALAT / ASAT ratio", reference: "0.8 - 1.5", parsed: "1.12", verified: false, dimension: "Liver Function" },
+  { field: "egfr", label: "eGFR", unit: "ml/min/1.73 m²", reference: "> 60", parsed: "92", verified: false, dimension: "Kidney Function" },
+  { field: "cystatin_c", label: "Cystatin C", unit: "mg/l", reference: "0.6 - 1.0", parsed: "0.94", verified: false, dimension: "Kidney Function" },
+  { field: "u_alb_krea_abnormal", label: "U-Alb/Krea", reference: "Normal", parsed: "Normal", verified: false, dimension: "Kidney Function" },
+  { field: "tsh_mu_l", label: "TSH", unit: "mU/l", reference: "0.4 - 4.0", parsed: "2.31", verified: false, dimension: "Endocrine & Hormonal" },
+  { field: "testosterone_estrogen_abnormal", label: "Testosterone / Estrogen", reference: "Normal", parsed: "Normal", verified: false, dimension: "Endocrine & Hormonal" },
+  { field: "apoe_e4", label: "APOE ε4", reference: "Negative", parsed: "Negative", verified: false, dimension: "Brain & Mental Health" },
+  { field: "pef_percent", label: "PEF", unit: "%", reference: "> 80", parsed: "94", verified: false, dimension: "Respiratory & Immune Health" },
+  { field: "fev1_percent", label: "FEV1", unit: "%", reference: "> 80", parsed: "91", verified: false, dimension: "Respiratory & Immune Health" },
+  { field: "fvc_percent", label: "FVC", unit: "%", reference: "> 80", parsed: "96", verified: false, dimension: "Respiratory & Immune Health" },
 ];
 
 interface Props {
@@ -280,7 +291,7 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
               ) : (
                 <ScrollArea className="flex-1">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-muted/60 backdrop-blur border-b text-xs uppercase tracking-wide text-muted-foreground">
+                    <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur border-b text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
                         <th className="text-left font-medium px-3 py-2 w-10"></th>
                         <th className="text-left font-medium px-3 py-2">Test</th>
@@ -290,40 +301,62 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((r, i) => (
-                        <tr
-                          key={r.field}
-                          className={cn(
-                            "border-b transition-colors",
-                            r.verified ? "bg-accent/40" : "hover:bg-muted/40"
-                          )}
-                        >
-                          <td className="px-3 py-2">
-                            <button
-                              onClick={() => toggleVerified(i)}
-                              className={cn(
-                                "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                r.verified
-                                  ? "bg-primary border-primary text-primary-foreground"
-                                  : "border-muted-foreground/30 hover:border-primary"
-                              )}
-                              aria-label={r.verified ? "Mark unverified" : "Mark verified"}
-                            >
-                              {r.verified && <Check className="h-3 w-3" strokeWidth={3} />}
-                            </button>
-                          </td>
-                          <td className="px-3 py-2 font-medium">{r.label}</td>
-                          <td className="px-3 py-2">
-                            <Input
-                              value={r.parsed}
-                              onChange={(e) => updateRow(i, e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-muted-foreground text-xs">{r.unit ?? "—"}</td>
-                          <td className="px-3 py-2 text-muted-foreground text-xs">{r.reference ?? "—"}</td>
-                        </tr>
-                      ))}
+                      {DIMENSION_ORDER.filter((dim) => rows.some((r) => r.dimension === dim)).map((dim) => {
+                        const dimRows = rows
+                          .map((r, idx) => ({ r, idx }))
+                          .filter(({ r }) => r.dimension === dim);
+                        const dimVerified = dimRows.filter(({ r }) => r.verified).length;
+                        return (
+                          <Fragment key={dim}>
+                            <tr className="bg-muted/40 border-b border-t">
+                              <td colSpan={5} className="px-3 py-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                                    {dim}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {dimVerified}/{dimRows.length} verified
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            {dimRows.map(({ r, idx }) => (
+                              <tr
+                                key={r.field}
+                                className={cn(
+                                  "border-b transition-colors",
+                                  r.verified ? "bg-accent/40" : "hover:bg-muted/40"
+                                )}
+                              >
+                                <td className="px-3 py-2">
+                                  <button
+                                    onClick={() => toggleVerified(idx)}
+                                    className={cn(
+                                      "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                      r.verified
+                                        ? "bg-primary border-primary text-primary-foreground"
+                                        : "border-muted-foreground/30 hover:border-primary"
+                                    )}
+                                    aria-label={r.verified ? "Mark unverified" : "Mark verified"}
+                                  >
+                                    {r.verified && <Check className="h-3 w-3" strokeWidth={3} />}
+                                  </button>
+                                </td>
+                                <td className="px-3 py-2 font-medium">{r.label}</td>
+                                <td className="px-3 py-2">
+                                  <Input
+                                    value={r.parsed}
+                                    onChange={(e) => updateRow(idx, e.target.value)}
+                                    className="h-8 text-sm"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-muted-foreground text-xs">{r.unit ?? "—"}</td>
+                                <td className="px-3 py-2 text-muted-foreground text-xs">{r.reference ?? "—"}</td>
+                              </tr>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </ScrollArea>
