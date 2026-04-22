@@ -161,7 +161,19 @@ export function PatientMedicationsView({ patientName }: Props) {
   const [statusTab, setStatusTab] = useState<MedStatus>("active");
   const [sortBy, setSortBy] = useState<"alpha" | "dimension" | "renewal">("alpha");
   const [search, setSearch] = useState("");
-  const [acks, setAcks] = useState<AckRecord[]>([]);
+  const [alertLog, setAlertLog] = useState<AlertAction[]>([]);
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showResolved, setShowResolved] = useState(false);
+  const [expandedOverrides, setExpandedOverrides] = useState<Set<string>>(new Set());
+
+  // Alert action dialog state
+  const [overrideTarget, setOverrideTarget] = useState<Interaction | null>(null);
+  const [overrideStep, setOverrideStep] = useState<1 | 2>(1);
+  const [overrideReason, setOverrideReason] = useState("");
+  const [overrideNote, setOverrideNote] = useState("");
+  const [deferTarget, setDeferTarget] = useState<Interaction | null>(null);
+  const [deferDate, setDeferDate] = useState("");
+  const [resolveTarget, setResolveTarget] = useState<Interaction | null>(null);
 
   // Edit dialog state
   const [editing, setEditing] = useState<Medication | null>(null);
