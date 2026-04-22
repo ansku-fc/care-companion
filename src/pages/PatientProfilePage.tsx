@@ -2974,156 +2974,64 @@ function CardiovascularDimensionView({
             {cvSubTab === "lab_graphs" && (
               <div className="flex gap-4">
                 <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
-                  <Card
-                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "ldl_mmol_l" ? "border-primary" : ""}`}
-                    onClick={() => setSelectedMarker({ key: "ldl_mmol_l", label: "LDL", unit: "mmol/L" })}
-                  >
-                    <CardHeader className="pb-2"><CardTitle className="text-base">LDL (mmol/L)</CardTitle></CardHeader>
-                    <CardContent>
-                      {ldlData.length > 0 ? (
-                        <div className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={ldlData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <ReferenceArea y1={0} y2={3.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="LDL" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No LDL data available.</p>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "blood_pressure_systolic" ? "border-primary" : ""}`}
-                    onClick={() => setSelectedMarker({ key: "blood_pressure_systolic", label: "Blood Pressure (Systolic)", unit: "mmHg" })}
-                  >
-                    <CardHeader className="pb-2"><CardTitle className="text-base">Blood Pressure (mmHg)</CardTitle></CardHeader>
-                    <CardContent>
-                      {bpData.length > 0 ? (
-                        <div className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={bpData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <ReferenceArea y1={60} y2={140} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                              <Line type="monotone" dataKey="systolic" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} name="Systolic" />
-                              <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="Diastolic" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No BP data available.</p>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "alat_u_l" ? "border-primary" : ""}`}
-                    onClick={() => setSelectedMarker({ key: "alat_u_l", label: "ALAT", unit: "U/L" })}
-                  >
-                    <CardHeader className="pb-2"><CardTitle className="text-base">ALAT (U/L)</CardTitle></CardHeader>
-                    <CardContent>
-                      {alatData.length > 0 ? (
-                        <div className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={alatData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <ReferenceArea y1={0} y2={50} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="ALAT" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No ALAT data available.</p>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "afos_alp_u_l" ? "border-primary" : ""}`}
-                    onClick={() => setSelectedMarker({ key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L" })}
-                  >
-                    <CardHeader className="pb-2"><CardTitle className="text-base">AFOS/ALP (U/L)</CardTitle></CardHeader>
-                    <CardContent>
-                      {afosData.length > 0 ? (
-                        <div className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={afosData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <ReferenceArea y1={35} y2={105} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="AFOS/ALP" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No AFOS/ALP data available.</p>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "gt_u_l" ? "border-primary" : ""}`}
-                    onClick={() => setSelectedMarker({ key: "gt_u_l", label: "GT", unit: "U/L" })}
-                  >
-                    <CardHeader className="pb-2"><CardTitle className="text-base">GT (U/L)</CardTitle></CardHeader>
-                    <CardContent>
-                      {gtData.length > 0 ? (
-                        <div className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={gtData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <ReferenceArea y1={0} y2={60} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="GT" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No GT data available.</p>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "alat_asat_ratio" ? "border-primary" : ""}`}
-                    onClick={() => setSelectedMarker({ key: "alat_asat_ratio", label: "ALAT/ASAT Ratio", unit: "" })}
-                  >
-                    <CardHeader className="pb-2"><CardTitle className="text-base">ALAT/ASAT Ratio</CardTitle></CardHeader>
-                    <CardContent>
-                      {alatAsatData.length > 0 ? (
-                        <div className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={alatAsatData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <ReferenceArea y1={0} y2={1.0} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="ALAT/ASAT" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No ALAT/ASAT data available.</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <CardioLabBiomarkerPanel
+                    biomarkerKey="ldl_mmol_l"
+                    label="LDL"
+                    unit="mmol/L"
+                    refHigh={3.0}
+                    selected={selectedMarker?.key === "ldl_mmol_l"}
+                    onSelect={() => setSelectedMarker({ key: "ldl_mmol_l", label: "LDL", unit: "mmol/L" })}
+                  />
+                  <CardioLabBiomarkerPanel
+                    biomarkerKey="blood_pressure_systolic"
+                    label="Blood Pressure"
+                    unit="mmHg"
+                    refLow={60}
+                    refHigh={140}
+                    selected={selectedMarker?.key === "blood_pressure_systolic"}
+                    onSelect={() => setSelectedMarker({ key: "blood_pressure_systolic", label: "Blood Pressure (Systolic)", unit: "mmHg" })}
+                  />
+                  <CardioLabBiomarkerPanel
+                    biomarkerKey="alat_u_l"
+                    label="ALAT"
+                    unit="U/L"
+                    refHigh={50}
+                    selected={selectedMarker?.key === "alat_u_l"}
+                    onSelect={() => setSelectedMarker({ key: "alat_u_l", label: "ALAT", unit: "U/L" })}
+                  />
+                  <CardioLabBiomarkerPanel
+                    biomarkerKey="afos_alp_u_l"
+                    label="AFOS/ALP"
+                    unit="U/L"
+                    refLow={35}
+                    refHigh={105}
+                    selected={selectedMarker?.key === "afos_alp_u_l"}
+                    onSelect={() => setSelectedMarker({ key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L" })}
+                  />
+                  <CardioLabBiomarkerPanel
+                    biomarkerKey="gt_u_l"
+                    label="GT"
+                    unit="U/L"
+                    refHigh={60}
+                    selected={selectedMarker?.key === "gt_u_l"}
+                    onSelect={() => setSelectedMarker({ key: "gt_u_l", label: "GT", unit: "U/L" })}
+                  />
+                  <CardioLabBiomarkerPanel
+                    biomarkerKey="alat_asat_ratio"
+                    label="ALAT/ASAT Ratio"
+                    unit=""
+                    refHigh={1.0}
+                    selected={selectedMarker?.key === "alat_asat_ratio"}
+                    onSelect={() => setSelectedMarker({ key: "alat_asat_ratio", label: "ALAT/ASAT Ratio", unit: "" })}
+                  />
+                  <CardioLabBiomarkerPanel
+                    biomarkerKey="hba1c_mmol_mol"
+                    label="HbA1c"
+                    unit="mmol/mol"
+                    refHigh={42}
+                    selected={selectedMarker?.key === "hba1c_mmol_mol"}
+                    onSelect={() => setSelectedMarker({ key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" })}
+                  />
 
                   <Card
                     className={`cursor-pointer transition-colors hover:border-primary/50 ${selectedMarker?.key === "hba1c_mmol_mol" ? "border-primary" : ""}`}
