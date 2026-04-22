@@ -39,6 +39,7 @@ import {
   useAnnotationsVersion,
   updateAnnotation,
   deleteAnnotation,
+  getSeriesRowsForBiomarker,
   type LabAnnotation,
 } from "@/components/patients/CardioLabBiomarkerPanel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -2990,7 +2991,15 @@ function CardiovascularDimensionView({
   const [cvSummary, setCvSummary] = useState(cvCategory?.summary || "");
   const [cvRecommendations, setCvRecommendations] = useState((cvCategory as any)?.recommendations || "");
   const [saving, setSaving] = useState(false);
-  const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
+  const [selectedMarker, setSelectedMarker] = useState<{
+    key: string;
+    label: string;
+    unit: string;
+    refLow?: number;
+    refHigh?: number;
+    accentColorVar: string;
+  } | null>(null);
+  const [sidebarWindow, setSidebarWindow] = useState<"6m" | "1y" | "3y" | "all">("3y");
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
 
   // Auto-populate linked marker notes into summary
@@ -3371,191 +3380,190 @@ function CardiovascularDimensionView({
               </div>
             )}
 
-            {cvSubTab === "lab_graphs" && (
-              <div className="flex gap-4">
-                <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
-                  <CardioLabBiomarkerPanel
-                    biomarkerKey="ldl_mmol_l"
-                    label="LDL"
-                    unit="mmol/L"
-                    refHigh={3.0}
-                    selected={selectedMarker?.key === "ldl_mmol_l"}
-                    onSelect={() => setSelectedMarker({ key: "ldl_mmol_l", label: "LDL", unit: "mmol/L" })}
-                  />
-                  <CardioLabBiomarkerPanel
-                    biomarkerKey="blood_pressure_systolic"
-                    label="Blood Pressure"
-                    unit="mmHg"
-                    refLow={60}
-                    refHigh={140}
-                    selected={selectedMarker?.key === "blood_pressure_systolic"}
-                    onSelect={() => setSelectedMarker({ key: "blood_pressure_systolic", label: "Blood Pressure (Systolic)", unit: "mmHg" })}
-                  />
-                  <CardioLabBiomarkerPanel
-                    biomarkerKey="alat_u_l"
-                    label="ALAT"
-                    unit="U/L"
-                    refHigh={50}
-                    selected={selectedMarker?.key === "alat_u_l"}
-                    onSelect={() => setSelectedMarker({ key: "alat_u_l", label: "ALAT", unit: "U/L" })}
-                  />
-                  <CardioLabBiomarkerPanel
-                    biomarkerKey="afos_alp_u_l"
-                    label="AFOS/ALP"
-                    unit="U/L"
-                    refLow={35}
-                    refHigh={105}
-                    selected={selectedMarker?.key === "afos_alp_u_l"}
-                    onSelect={() => setSelectedMarker({ key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L" })}
-                  />
-                  <CardioLabBiomarkerPanel
-                    biomarkerKey="gt_u_l"
-                    label="GT"
-                    unit="U/L"
-                    refHigh={60}
-                    selected={selectedMarker?.key === "gt_u_l"}
-                    onSelect={() => setSelectedMarker({ key: "gt_u_l", label: "GT", unit: "U/L" })}
-                  />
-                  <CardioLabBiomarkerPanel
-                    biomarkerKey="alat_asat_ratio"
-                    label="ALAT/ASAT Ratio"
-                    unit=""
-                    refHigh={1.0}
-                    selected={selectedMarker?.key === "alat_asat_ratio"}
-                    onSelect={() => setSelectedMarker({ key: "alat_asat_ratio", label: "ALAT/ASAT Ratio", unit: "" })}
-                  />
-                  <CardioLabBiomarkerPanel
-                    biomarkerKey="hba1c_mmol_mol"
-                    label="HbA1c"
-                    unit="mmol/mol"
-                    refHigh={42}
-                    selected={selectedMarker?.key === "hba1c_mmol_mol"}
-                    onSelect={() => setSelectedMarker({ key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol" })}
-                  />
-                </div>
+            {cvSubTab === "lab_graphs" && (() => {
+              const CV_BIOMARKERS: Array<{
+                key: string;
+                label: string;
+                sidebarLabel?: string;
+                unit: string;
+                refLow?: number;
+                refHigh?: number;
+                accentColorVar: string;
+              }> = [
+                { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refHigh: 3.0, accentColorVar: "hsl(25 45% 30%)" },
+                { key: "blood_pressure_systolic", label: "Blood Pressure", sidebarLabel: "Blood Pressure (Systolic / Diastolic)", unit: "mmHg", refLow: 60, refHigh: 140, accentColorVar: "hsl(var(--destructive))" },
+                { key: "alat_u_l", label: "ALAT", unit: "U/L", refHigh: 50, accentColorVar: "hsl(200 70% 40%)" },
+                { key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L", refLow: 35, refHigh: 105, accentColorVar: "hsl(280 50% 45%)" },
+                { key: "gt_u_l", label: "GT", unit: "U/L", refHigh: 60, accentColorVar: "hsl(160 55% 35%)" },
+                { key: "alat_asat_ratio", label: "ALAT/ASAT Ratio", unit: "", refHigh: 1.0, accentColorVar: "hsl(40 70% 40%)" },
+                { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refHigh: 42, accentColorVar: "hsl(340 60% 45%)" },
+              ];
+              const selectMarker = (b: typeof CV_BIOMARKERS[number]) =>
+                setSelectedMarker({
+                  key: b.key,
+                  label: b.sidebarLabel ?? b.label,
+                  unit: b.unit,
+                  refLow: b.refLow,
+                  refHigh: b.refHigh,
+                  accentColorVar: b.accentColorVar,
+                });
 
-                {selectedMarker && (() => {
-                  const detailChartData = sorted
-                    .map((lab) => {
-                      const val = (lab as any)[selectedMarker.key];
-                      if (val === null || val === undefined) return null;
-                      return { date: lab.result_date, value: Number(val) };
-                    })
-                    .filter(Boolean) as { date: string; value: number }[];
+              return (
+                <div className="flex gap-4">
+                  <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
+                    {CV_BIOMARKERS.map((b) => (
+                      <CardioLabBiomarkerPanel
+                        key={b.key}
+                        biomarkerKey={b.key}
+                        label={b.label}
+                        unit={b.unit}
+                        refLow={b.refLow}
+                        refHigh={b.refHigh}
+                        accentColorVar={b.accentColorVar}
+                        selected={selectedMarker?.key === b.key}
+                        onSelect={() => selectMarker(b)}
+                      />
+                    ))}
+                  </div>
 
-                  const ref = {
-                    ...REFERENCE_VALUES[selectedMarker.key],
-                    ...customRefs[selectedMarker.key],
-                  };
+                  {selectedMarker && (() => {
+                    const rows = getSeriesRowsForBiomarker(
+                      selectedMarker.key,
+                      sidebarWindow,
+                      selectedMarker.refLow,
+                      selectedMarker.refHigh,
+                    );
+                    return (
+                      <div
+                        className="w-[380px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200 self-start sticky top-4 max-h-[calc(100vh-2rem)]"
+                        style={{ borderLeftWidth: 4, borderLeftColor: selectedMarker.accentColorVar }}
+                      >
+                        {/* Sticky header */}
+                        <div className="flex items-center justify-between p-4 border-b bg-card sticky top-0 z-10 rounded-t-lg">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: selectedMarker.accentColorVar }}
+                              aria-hidden
+                            />
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-sm truncate">{selectedMarker.label}</h3>
+                              {selectedMarker.unit && (
+                                <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
 
-                  return (
-                    <div className="w-[380px] shrink-0 border rounded-lg bg-card flex flex-col animate-in slide-in-from-right-5 duration-200">
-                      <div className="flex items-center justify-between p-4 border-b">
-                        <div>
-                          <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
-                          {selectedMarker.unit && (
-                            <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
+                        <div className="p-4 flex-1 overflow-auto space-y-4">
+                          {/* Time window selector — mirrors the graph window */}
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium text-muted-foreground">Data points</p>
+                            <div className="inline-flex rounded-md border bg-muted/50 p-0.5 text-[10px]">
+                              {(["6m", "1y", "3y", "all"] as const).map((w) => (
+                                <button
+                                  key={w}
+                                  onClick={() => setSidebarWindow(w)}
+                                  className={cn(
+                                    "px-1.5 py-0.5 rounded-sm transition-colors",
+                                    sidebarWindow === w
+                                      ? "bg-background text-foreground shadow-sm font-medium"
+                                      : "text-muted-foreground hover:text-foreground",
+                                  )}
+                                >
+                                  {w === "all" ? "All" : w}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {rows.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">No data recorded yet.</p>
+                          ) : (
+                            <div className="border rounded-md overflow-hidden">
+                              <div className="max-h-64 overflow-auto">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-muted/40 sticky top-0">
+                                    <tr>
+                                      <th className="text-left font-medium px-2 py-1.5">Date</th>
+                                      <th className="text-left font-medium px-2 py-1.5">Value</th>
+                                      <th className="text-left font-medium px-2 py-1.5">In range</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {rows.map((r) => (
+                                      <tr key={r.date} className="border-t">
+                                        <td className="px-2 py-1.5 text-muted-foreground">{r.date}</td>
+                                        <td className="px-2 py-1.5 font-medium">{r.value}</td>
+                                        <td className="px-2 py-1.5">
+                                          {r.inRange === null ? (
+                                            <span className="text-muted-foreground">—</span>
+                                          ) : r.inRange ? (
+                                            <span className="inline-flex items-center gap-1 text-[hsl(142_60%_35%)]">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142_60%_45%)]" />
+                                              Yes
+                                            </span>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 text-destructive">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                                              No
+                                            </span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <Label className="text-xs">Doctor Notes</Label>
+                            <Textarea
+                              placeholder="Add notes about this marker..."
+                              className="mt-1 min-h-[80px] text-xs resize-none"
+                              value={markerNotes[selectedMarker.key] || ""}
+                              onChange={(e) => {
+                                setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
+                              }}
+                            />
+                          </div>
+
+                          <AnnotationListEditor biomarkerKey={selectedMarker.key} />
+
+                          {MARKER_DIMENSIONS[selectedMarker.key] && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
+                                  const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
+                                  if (!dim) return null;
+                                  const DimIcon = dim.icon;
+                                  return (
+                                    <button
+                                      key={dimKey}
+                                      onClick={() => onNavigateDimension(dimKey)}
+                                      className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                                    >
+                                      <DimIcon className="h-3 w-3" />
+                                      {dim.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           )}
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
-                          <X className="h-4 w-4" />
-                        </Button>
                       </div>
-                      <div className="p-4 flex-1 overflow-auto">
-                        {detailChartData.length < 1 ? (
-                          <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
-                        ) : (
-                          <DraggableReferenceChart
-                            chartData={detailChartData}
-                            refValues={ref}
-                            onRefChange={(newRef) => {
-                              setCustomRefs((prev) => ({
-                                ...prev,
-                                [selectedMarker.key]: { ...(REFERENCE_VALUES[selectedMarker.key] || {}), ...prev[selectedMarker.key], ...newRef },
-                              }));
-                            }}
-                          />
-                        )}
-                        <div className="mt-4 space-y-3">
-                          <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs">Low</Label>
-                              <Input
-                                type="number"
-                                step="any"
-                                placeholder="—"
-                                className="h-8 text-xs"
-                                value={ref?.low ?? ""}
-                                onChange={(e) => {
-                                  const val = e.target.value === "" ? undefined : Number(e.target.value);
-                                  setCustomRefs((prev) => ({
-                                    ...prev,
-                                    [selectedMarker.key]: { ...prev[selectedMarker.key], low: val },
-                                  }));
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">High</Label>
-                              <Input
-                                type="number"
-                                step="any"
-                                placeholder="—"
-                                className="h-8 text-xs"
-                                value={ref?.high ?? ""}
-                                onChange={(e) => {
-                                  const val = e.target.value === "" ? undefined : Number(e.target.value);
-                                  setCustomRefs((prev) => ({
-                                    ...prev,
-                                    [selectedMarker.key]: { ...prev[selectedMarker.key], high: val },
-                                  }));
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-4">
-                          <Label className="text-xs">Doctor Notes</Label>
-                          <Textarea
-                            placeholder="Add notes about this marker..."
-                            className="mt-1 min-h-[80px] text-xs resize-none"
-                            value={markerNotes[selectedMarker.key] || ""}
-                            onChange={(e) => {
-                              setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
-                            }}
-                          />
-                        </div>
-                        {/* Annotations list (chronological) — manageable here too */}
-                        <AnnotationListEditor biomarkerKey={selectedMarker.key} />
-                        {MARKER_DIMENSIONS[selectedMarker.key] && (
-                          <div className="mt-4">
-                            <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
-                                const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
-                                if (!dim) return null;
-                                const DimIcon = dim.icon;
-                                return (
-                                  <button
-                                    key={dimKey}
-                                    onClick={() => onNavigateDimension(dimKey)}
-                                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-                                  >
-                                    <DimIcon className="h-3 w-3" />
-                                    {dim.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+                    );
+                  })()}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       </section>

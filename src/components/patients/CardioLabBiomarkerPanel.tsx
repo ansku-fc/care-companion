@@ -12,9 +12,9 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceArea,
-  ReferenceDot,
+  ReferenceLine,
 } from "recharts";
-import { MessageSquarePlus, StickyNote, Pencil, Trash2 } from "lucide-react";
+import { MessageSquarePlus, StickyNote, Pencil, Trash2, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ──────────────────────────────────────────────────────────────────────
@@ -264,6 +264,44 @@ function filterByWindow<T extends { date: string }>(data: T[], window: Window): 
   return data.filter((d) => new Date(d.date).getTime() >= cutoff);
 }
 
+export type LabSidebarRow = {
+  date: string;
+  value: number | string;
+  inRange: boolean | null;
+};
+
+export function getSeriesRowsForBiomarker(
+  key: string,
+  windowKey: "6m" | "1y" | "3y" | "all",
+  refLow?: number,
+  refHigh?: number,
+): LabSidebarRow[] {
+  const series = CARDIO_DUMMY_SERIES[key];
+  if (!series) return [];
+  if (series.bp) {
+    const filtered = filterByWindow(series.bp, windowKey);
+    return filtered.map((p) => {
+      const sysOut = (refHigh !== undefined && p.systolic > refHigh) || (refLow !== undefined && p.systolic < refLow);
+      const diaOut = p.diastolic > 90;
+      const inRange = !(sysOut || diaOut);
+      return {
+        date: p.date,
+        value: `${p.systolic}/${p.diastolic}`,
+        inRange: refLow !== undefined || refHigh !== undefined ? inRange : null,
+      };
+    });
+  }
+  const filtered = filterByWindow(series.single ?? [], windowKey);
+  return filtered.map((p) => {
+    const out = (refHigh !== undefined && p.value > refHigh) || (refLow !== undefined && p.value < refLow);
+    return {
+      date: p.date,
+      value: p.value,
+      inRange: refLow !== undefined || refHigh !== undefined ? !out : null,
+    };
+  });
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────────────────────────────
@@ -276,9 +314,11 @@ type Props = {
   selected?: boolean;
   onSelect?: () => void;
   doctor?: string;
+  accentColorVar?: string;
 };
 
 export function CardioLabBiomarkerPanel({
+  accentColorVar = "hsl(var(--primary))",
   biomarkerKey,
   label,
   unit,
@@ -448,16 +488,54 @@ export function CardioLabBiomarkerPanel({
       ? annotations.find((a) => a.id === activePopover.id)
       : null;
 
+  // Annotation dates that fall within the visible window
+  const annotationDates = useMemo(() => {
+    const visibleDates = new Set(data.map((d) => d.date));
+    return annotations
+      .filter((a) => visibleDates.has(a.date))
+      .map((a) => ({ ...a, idx: data.findIndex((d) => d.date === a.date) }))
+      .filter((a) => a.idx !== -1);
+  }, [annotations, data]);
+
+  // Custom dot renderer: paint out-of-range points red
+  const renderDot = (props: any) => {
+    const { cx, cy, payload, index } = props;
+    if (cx == null || cy == null) return null;
+    const v = payload?.value;
+    const out =
+      typeof v === "number" &&
+      ((refHigh !== undefined && v > refHigh) || (refLow !== undefined && v < refLow));
+    return (
+      <circle
+        key={`dot-${index}`}
+        cx={cx}
+        cy={cy}
+        r={4}
+        fill={out ? "hsl(var(--destructive))" : accentColorVar}
+        stroke="hsl(var(--background))"
+        strokeWidth={1}
+      />
+    );
+  };
+
   return (
     <Card
       className={cn(
-        "transition-colors",
-        selected ? "border-primary" : "hover:border-primary/50",
+        "transition-colors relative overflow-hidden",
+        selected ? "border-primary shadow-sm" : "hover:border-primary/50",
         onSelect && "cursor-pointer",
       )}
       onClick={onSelect}
     >
-      <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+      {/* Active highlight strip — matches biomarker line colour */}
+      {selected && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1"
+          style={{ backgroundColor: accentColorVar }}
+          aria-hidden
+        />
+      )}
+      <CardHeader className={cn("pb-2 flex-row items-center justify-between space-y-0", selected && "pl-5")}>
         <CardTitle className="text-base">
           {label} {unit && <span className="text-xs font-normal text-muted-foreground">({unit})</span>}
         </CardTitle>
@@ -492,82 +570,123 @@ export function CardioLabBiomarkerPanel({
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className={cn(selected && "pl-5")}>
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">No data in this time window.</p>
         ) : (
-          <div className="h-[200px]" onClick={(e) => e.stopPropagation()}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={data}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                onClick={handleChartClick}
+          <div onClick={(e) => e.stopPropagation()}>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={data}
+                  margin={{ top: 8, right: 56, left: 0, bottom: 0 }}
+                  onClick={handleChartClick}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                  <Tooltip content={renderTooltip} />
+
+                  {/* Reference range — green band with dashed boundary lines + edge labels */}
+                  {(refLow !== undefined || refHigh !== undefined) && (
+                    <ReferenceArea
+                      y1={refLow ?? 0}
+                      y2={refHigh ?? 9999}
+                      fill="hsl(142 70% 45%)"
+                      fillOpacity={0.1}
+                    />
+                  )}
+                  {refLow !== undefined && (
+                    <ReferenceLine
+                      y={refLow}
+                      stroke="hsl(142 60% 40%)"
+                      strokeDasharray="4 3"
+                      label={{
+                        value: `Low ${refLow}`,
+                        position: "right",
+                        fontSize: 9,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                    />
+                  )}
+                  {refHigh !== undefined && (
+                    <ReferenceLine
+                      y={refHigh}
+                      stroke="hsl(142 60% 40%)"
+                      strokeDasharray="4 3"
+                      label={{
+                        value: `High ${refHigh}`,
+                        position: "right",
+                        fontSize: 9,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                    />
+                  )}
+
+                  {isBP ? (
+                    <>
+                      <Line
+                        type="monotone"
+                        dataKey="systolic"
+                        stroke="hsl(var(--destructive))"
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        name="Systolic"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="diastolic"
+                        stroke={accentColorVar}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        name="Diastolic"
+                      />
+                    </>
+                  ) : (
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke={accentColorVar}
+                      strokeWidth={2}
+                      dot={renderDot as any}
+                      activeDot={{ r: 5 }}
+                      name={label}
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* X-axis annotation flags row — outside chart area, below dates */}
+            {annotationDates.length > 0 && (
+              <div
+                className="relative mt-1 h-5"
+                style={{
+                  // Match LineChart left/right margins (left ~50 for YAxis ticks, right 56)
+                  marginLeft: 50,
+                  marginRight: 56,
+                }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-                <Tooltip content={renderTooltip} />
-                {refLow !== undefined && refHigh !== undefined && (
-                  <ReferenceArea
-                    y1={refLow}
-                    y2={refHigh}
-                    fill="hsl(var(--primary))"
-                    fillOpacity={0.08}
-                    label={{ value: "Reference", position: "insideTopRight", fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                  />
-                )}
-                {refLow === undefined && refHigh !== undefined && (
-                  <ReferenceArea y1={0} y2={refHigh} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                )}
-                {refLow !== undefined && refHigh === undefined && (
-                  <ReferenceArea y1={refLow} y2={9999} fill="hsl(var(--primary))" fillOpacity={0.08} />
-                )}
-                {isBP ? (
-                  <>
-                    <Line
-                      type="monotone"
-                      dataKey="systolic"
-                      stroke="hsl(var(--destructive))"
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                      name="Systolic"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="diastolic"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                      name="Diastolic"
-                    />
-                  </>
-                ) : (
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                    name={label}
-                  />
-                )}
-                {/* Annotation markers */}
-                {annotations
-                  .filter((a) => data.find((d) => d.date === a.date))
-                  .map((a) => (
-                    <ReferenceDot
+                {annotationDates.map((a) => {
+                  const left = data.length === 1 ? 50 : (a.idx / (data.length - 1)) * 100;
+                  return (
+                    <button
                       key={a.id}
-                      x={a.date}
-                      y={yMin}
-                      r={6}
-                      fill="hsl(var(--accent-foreground))"
-                      stroke="hsl(var(--background))"
-                      strokeWidth={1.5}
-                      ifOverflow="extendDomain"
-                    />
-                  ))}
-              </LineChart>
-            </ResponsiveContainer>
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActivePopover({ kind: "view", id: a.id });
+                      }}
+                      title={`${a.date} — ${a.text}`}
+                      className="absolute -translate-x-1/2 top-0 inline-flex flex-col items-center text-foreground hover:text-primary transition-colors"
+                      style={{ left: `${left}%` }}
+                    >
+                      <span className="block w-px h-2 bg-foreground/60" aria-hidden />
+                      <Flag className="h-3 w-3 -mt-0.5 fill-primary/30 text-primary" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
