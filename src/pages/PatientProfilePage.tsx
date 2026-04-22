@@ -1965,7 +1965,6 @@ function HealthDimensionView({
         );
       case "hormones":
       case "endocrine":
-      case "metabolic":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Hormone Illness</dt><dd>{onboarding?.illness_hormone ? "Yes" : "No"}</dd></div>
@@ -1974,7 +1973,6 @@ function HealthDimensionView({
             <div><dt className="text-muted-foreground">Testosterone/Estrogen Abnormal</dt><dd>{lab?.testosterone_estrogen_abnormal === true ? "Yes" : lab?.testosterone_estrogen_abnormal === false ? "No" : "—"}</dd></div>
           </dl>
         );
-      case "skin_mucous":
       case "mucous_membranes":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -1995,7 +1993,6 @@ function HealthDimensionView({
           </dl>
         );
       case "nutrition":
-      case "body_composition":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">BMI</dt><dd>{onboarding?.bmi ?? "—"}</dd></div>
@@ -2034,7 +2031,6 @@ function HealthDimensionView({
           </dl>
         );
       case "kidney":
-      case "kidneys":
         return (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt className="text-muted-foreground">Kidney Illness</dt><dd>{onboarding?.illness_kidney ? "Yes" : "No"}</dd></div>
@@ -2054,17 +2050,6 @@ function HealthDimensionView({
             <div><dt className="text-muted-foreground">Other Substances</dt><dd>{onboarding?.other_substances ? "Yes" : "No"}</dd></div>
             {onboarding?.other_substances_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.other_substances_notes}</dd></div>}
             <div><dt className="text-muted-foreground">Substance Use (perceived)</dt><dd>{onboarding?.substance_use_perceived ?? "—"}</dd></div>
-          </dl>
-        );
-      case "cardiovascular":
-        return (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Cardiovascular Illness</dt><dd>{onboarding?.illness_cardiovascular ? "Yes" : "No"}</dd></div>
-            {onboarding?.illness_cardiovascular_notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd>{onboarding.illness_cardiovascular_notes}</dd></div>}
-            <div><dt className="text-muted-foreground">Genetic (Cardiovascular)</dt><dd>{onboarding?.genetic_cardiovascular ? "Yes" : "No"}</dd></div>
-            <div><dt className="text-muted-foreground">LDL</dt><dd>{lab?.ldl_mmol_l ? `${lab.ldl_mmol_l} mmol/L` : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">HbA1c</dt><dd>{lab?.hba1c_mmol_mol ? `${lab.hba1c_mmol_mol} mmol/mol` : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Blood Pressure</dt><dd>{lab?.blood_pressure_systolic ? `${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic}` : "—"}</dd></div>
           </dl>
         );
       case "cancer_risk":
@@ -2106,20 +2091,158 @@ function HealthDimensionView({
           </dl>
         );
       default:
-        return <p className="text-muted-foreground">No data available for this dimension.</p>;
+        return <p className="text-sm text-muted-foreground">No structured risk factors recorded for this dimension yet.</p>;
     }
   };
 
+  // ─── Score from main dimension (1–10) ───
+  const radarData = useMemo(
+    () => computeRadarData(onboarding, labResults, healthCategories),
+    [onboarding, labResults, healthCategories],
+  );
+  const mainDim = findMainDimension(dimensionKey) ?? null;
+  const score = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
+  const scoreColor = score <= 3 ? "text-green-600" : score <= 6 ? "text-amber-600" : "text-destructive";
+  const scoreBg = score <= 3 ? "bg-green-100" : score <= 6 ? "bg-amber-100" : "bg-red-100";
+
+  const [showRiskHistory, setShowRiskHistory] = useState(false);
+
+  // ─── Doctor's Summary & Recommendations (persisted on patient_health_categories) ───
+  const categoryKey = (mainDim?.label || dim.label).toLowerCase();
+  const storedCategory = healthCategories.find((c) => c.category.toLowerCase() === categoryKey);
+  const [summary, setSummary] = useState(storedCategory?.summary || "");
+  const [recommendations, setRecommendations] = useState((storedCategory as any)?.recommendations || "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setSummary(storedCategory?.summary || "");
+    setRecommendations((storedCategory as any)?.recommendations || "");
+  }, [storedCategory?.id]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("patient_health_categories")
+      .upsert({
+        patient_id: patient.id,
+        category: categoryKey,
+        summary,
+        recommendations,
+        status: storedCategory?.status || "normal",
+        updated_by: (await supabase.auth.getUser()).data.user?.id || "",
+      } as any, { onConflict: "patient_id,category" });
+    setSaving(false);
+    if (error) toast.error("Failed to save");
+    else { toast.success("Saved successfully"); onDataChanged?.(); }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Icon className="h-5 w-5 text-primary" />
-          {dim.label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>{renderContent()}</CardContent>
-    </Card>
+    <div className="space-y-4">
+      {/* ─────────────── 1. HEADER ─────────────── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+                <Icon className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{dim.label}</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Risk Index scale: 1 = no action needed → 10 = immediate action
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
+                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
+                <span className={`text-lg font-bold ${scoreColor}`}>{score}/10</span>
+              </div>
+              <Button
+                variant={showRiskHistory ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => setShowRiskHistory(!showRiskHistory)}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                {showRiskHistory ? "Hide History" : "Show History"}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        {showRiskHistory && (
+          <CardContent className="pt-0">
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Historical trend for this dimension will appear here once enough data points are available.
+            </p>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* ─────────────── 2. RISK PICTURE ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Picture</h2>
+          <p className="text-xs text-muted-foreground">What is driving the current risk index</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">{renderContent()}</CardContent>
+        </Card>
+      </section>
+
+      {/* ─────────────── 3. MEDICATIONS ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Medications</h2>
+          <p className="text-xs text-muted-foreground">What is being done about the risk</p>
+        </div>
+        <DimensionMedicationsSection
+          dimensionKey={dimensionKey}
+          dimensionLabel={dim.label}
+          onNavigateToMedications={() => onNavigateDimension("medications")}
+        />
+      </section>
+
+      {/* ─────────────── 4. DOCTOR'S SUMMARY & RECOMMENDATIONS ─────────────── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Clinical Synthesis</h2>
+          <p className="text-xs text-muted-foreground">Doctor's interpretation and plan</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor={`summary-${dimensionKey}`} className="text-sm font-medium">Doctor's Summary</Label>
+                <Textarea
+                  id={`summary-${dimensionKey}`}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Synthesize the risk picture above…"
+                  className="min-h-[140px] text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`recs-${dimensionKey}`} className="text-sm font-medium">Recommendations</Label>
+                <Textarea
+                  id={`recs-${dimensionKey}`}
+                  value={recommendations}
+                  onChange={(e) => setRecommendations(e.target.value)}
+                  placeholder="Next steps, lifestyle, follow-up…"
+                  className="min-h-[140px] text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
+                <Save className="h-3.5 w-3.5" />
+                {saving ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
   );
 }
 
