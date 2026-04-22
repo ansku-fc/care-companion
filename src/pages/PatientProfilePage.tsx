@@ -2002,27 +2002,21 @@ function HealthDimensionView({
     switch (dimensionKey) {
       case "senses":
       case "sensory_organs": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Vision Acuity" value={onboarding?.vision_acuity ?? "—"} recorded={onboardingDate} expanded={expanded.has("vision")} onToggle={() => toggle("vision")}>
+            <ExpandableRow label="Vision Acuity" value={onboarding?.vision_acuity ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("vision")} onToggle={() => toggleRow("vision")}>
               <p className="text-sm text-muted-foreground">Vision acuity score recorded during onboarding assessment.</p>
             </ExpandableRow>
-            <ExpandableRow label="Smell Issues" value={onboarding?.symptom_smell ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("smell")} onToggle={() => toggle("smell")}>
+            <ExpandableRow label="Smell Issues" value={onboarding?.symptom_smell ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("smell")} onToggle={() => toggleRow("smell")}>
               <p className="text-sm text-muted-foreground">Patient reported smell-related symptoms.</p>
             </ExpandableRow>
-            <ExpandableRow label="Vision Issues" value={onboarding?.symptom_vision ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("vision_issues")} onToggle={() => toggle("vision_issues")}>
+            <ExpandableRow label="Vision Issues" value={onboarding?.symptom_vision ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("vision_issues")} onToggle={() => toggleRow("vision_issues")}>
               <p className="text-sm text-muted-foreground">Patient reported vision-related symptoms.</p>
             </ExpandableRow>
-            <ExpandableRow label="Hearing Issues" value={onboarding?.symptom_hearing ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("hearing")} onToggle={() => toggle("hearing")}>
+            <ExpandableRow label="Hearing Issues" value={onboarding?.symptom_hearing ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("hearing")} onToggle={() => toggleRow("hearing")}>
               <p className="text-sm text-muted-foreground">Patient reported hearing-related symptoms.</p>
             </ExpandableRow>
-            <ExpandableRow label="Illness (Senses)" value={onboarding?.illness_senses ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("illness")} onToggle={() => toggle("illness")}>
+            <ExpandableRow label="Illness (Senses)" value={onboarding?.illness_senses ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("illness")} onToggle={() => toggleRow("illness")}>
               <p className="text-sm">{onboarding?.illness_senses_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
           </div>
@@ -2030,30 +2024,24 @@ function HealthDimensionView({
       }
       case "nervous_system":
       case "brain_mental": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Neurological Illness" value={onboarding?.illness_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("neuro_illness")} onToggle={() => toggle("neuro_illness")}>
+            <ExpandableRow label="Neurological Illness" value={onboarding?.illness_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_illness")} onToggle={() => toggleRow("neuro_illness")}>
               <p className="text-sm text-muted-foreground">History of neurological conditions.</p>
             </ExpandableRow>
-            <ExpandableRow label="Neurological Symptoms" value={onboarding?.symptom_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("neuro_symptoms")} onToggle={() => toggle("neuro_symptoms")}>
+            <ExpandableRow label="Neurological Symptoms" value={onboarding?.symptom_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_symptoms")} onToggle={() => toggleRow("neuro_symptoms")}>
               <p className="text-sm text-muted-foreground">Current neurological symptom reporting.</p>
             </ExpandableRow>
-            <ExpandableRow label="Balance Issues" value={onboarding?.symptom_balance ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("balance")} onToggle={() => toggle("balance")}>
+            <ExpandableRow label="Balance Issues" value={onboarding?.symptom_balance ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("balance")} onToggle={() => toggleRow("balance")}>
               <p className="text-sm text-muted-foreground">Balance and coordination concerns.</p>
             </ExpandableRow>
-            <ExpandableRow label="Genetic (Nervous System)" value={onboarding?.genetic_nervous_system ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("genetic")} onToggle={() => toggle("genetic")}>
+            <ExpandableRow label="Genetic (Nervous System)" value={onboarding?.genetic_nervous_system ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic")} onToggle={() => toggleRow("genetic")}>
               <p className="text-sm text-muted-foreground">Family history of neurological conditions.</p>
             </ExpandableRow>
-            <ExpandableRow label="Previous Brain Damage" value={onboarding?.prev_brain_damage ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("brain_damage")} onToggle={() => toggle("brain_damage")}>
+            <ExpandableRow label="Previous Brain Damage" value={onboarding?.prev_brain_damage ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("brain_damage")} onToggle={() => toggleRow("brain_damage")}>
               <p className="text-sm">{onboarding?.prev_brain_damage_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
-            <ExpandableRow label="APOE ε4" value={lab?.apoe_e4 === true ? "Positive" : lab?.apoe_e4 === false ? "Negative" : "—"} recorded={onboardingDate} expanded={expanded.has("apoe")} onToggle={() => toggle("apoe")}>
+            <ExpandableRow label="APOE ε4" value={lab?.apoe_e4 === true ? "Positive" : lab?.apoe_e4 === false ? "Negative" : "—"} recorded={onboardingDate} expanded={expandedRows.has("apoe")} onToggle={() => toggleRow("apoe")}>
               <p className="text-sm text-muted-foreground">APOE ε4 allele status from lab results. Associated with Alzheimer's risk.</p>
             </ExpandableRow>
           </div>
@@ -2061,12 +2049,6 @@ function HealthDimensionView({
       }
       case "physical_performance":
       case "exercise_functional": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         const exerciseCurrent = onboarding?.exercise_met_hours ?? "—";
         const exerciseHistory = [
           { date: "2023-06-01", value: 4 },
@@ -2076,7 +2058,7 @@ function HealthDimensionView({
         ];
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Exercise (MET hrs/week)" value={exerciseCurrent} recorded={onboardingDate} expanded={expanded.has("exercise")} onToggle={() => toggle("exercise")}>
+            <ExpandableRow label="Exercise (MET hrs/week)" value={exerciseCurrent} recorded={onboardingDate} expanded={expandedRows.has("exercise")} onToggle={() => toggleRow("exercise")}>
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Exercise history</p>
                 <table className="w-full text-sm">
@@ -2091,13 +2073,13 @@ function HealthDimensionView({
                 </table>
               </div>
             </ExpandableRow>
-            <ExpandableRow label="Mobility Restriction" value={onboarding?.symptom_mobility_restriction ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("mobility")} onToggle={() => toggle("mobility")}>
+            <ExpandableRow label="Mobility Restriction" value={onboarding?.symptom_mobility_restriction ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("mobility")} onToggle={() => toggleRow("mobility")}>
               <p className="text-sm text-muted-foreground">Patient-reported mobility limitations.</p>
             </ExpandableRow>
-            <ExpandableRow label="Musculoskeletal Illness" value={onboarding?.illness_musculoskeletal ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("msk_illness")} onToggle={() => toggle("msk_illness")}>
+            <ExpandableRow label="Musculoskeletal Illness" value={onboarding?.illness_musculoskeletal ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("msk_illness")} onToggle={() => toggleRow("msk_illness")}>
               <p className="text-sm">{onboarding?.illness_musculoskeletal_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
-            <ExpandableRow label="Joint Pain" value={onboarding?.symptom_joint_pain ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("joint_pain")} onToggle={() => toggle("joint_pain")}>
+            <ExpandableRow label="Joint Pain" value={onboarding?.symptom_joint_pain ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("joint_pain")} onToggle={() => toggleRow("joint_pain")}>
               <p className="text-sm text-muted-foreground">Current joint pain reporting.</p>
             </ExpandableRow>
           </div>
@@ -2105,27 +2087,21 @@ function HealthDimensionView({
       }
       case "respiratory":
       case "respiratory_immune": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Respiratory Symptoms" value={onboarding?.symptom_respiratory ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("resp_symptoms")} onToggle={() => toggle("resp_symptoms")}>
+            <ExpandableRow label="Respiratory Symptoms" value={onboarding?.symptom_respiratory ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("resp_symptoms")} onToggle={() => toggleRow("resp_symptoms")}>
               <p className="text-sm text-muted-foreground">Current respiratory symptom reporting.</p>
             </ExpandableRow>
-            <ExpandableRow label="Sleep Apnoea" value={onboarding?.symptom_sleep_apnoea ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("apnoea")} onToggle={() => toggle("apnoea")}>
+            <ExpandableRow label="Sleep Apnoea" value={onboarding?.symptom_sleep_apnoea ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("apnoea")} onToggle={() => toggleRow("apnoea")}>
               <p className="text-sm text-muted-foreground">Sleep apnoea screening result.</p>
             </ExpandableRow>
-            <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expanded.has("smoking")} onToggle={() => toggle("smoking")}>
+            <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("smoking")} onToggle={() => toggleRow("smoking")}>
               <p className="text-sm text-muted-foreground">Smoking status from onboarding.</p>
             </ExpandableRow>
-            <ExpandableRow label="Infections/Year" value={onboarding?.infections_per_year ?? "—"} recorded={onboardingDate} expanded={expanded.has("infections")} onToggle={() => toggle("infections")}>
+            <ExpandableRow label="Infections/Year" value={onboarding?.infections_per_year ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("infections")} onToggle={() => toggleRow("infections")}>
               <p className="text-sm text-muted-foreground">Self-reported frequency of infections.</p>
             </ExpandableRow>
-            <ExpandableRow label="Immune/Allergy Symptoms" value={onboarding?.symptom_immune_allergies ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("immune")} onToggle={() => toggle("immune")}>
+            <ExpandableRow label="Immune/Allergy Symptoms" value={onboarding?.symptom_immune_allergies ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("immune")} onToggle={() => toggleRow("immune")}>
               <p className="text-sm text-muted-foreground">Immune system and allergy-related symptoms.</p>
             </ExpandableRow>
           </div>
@@ -2133,12 +2109,6 @@ function HealthDimensionView({
       }
       case "sleep":
       case "sleep_recovery": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         const sleepHistory = [
           { date: "2023-06-01", hours: 6.5, quality: 6 },
           { date: "2023-12-01", hours: 7, quality: 7 },
@@ -2147,7 +2117,7 @@ function HealthDimensionView({
         ];
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Sleep Quality (1-10)" value={onboarding?.sleep_quality ?? "—"} recorded={onboardingDate} expanded={expanded.has("quality")} onToggle={() => toggle("quality")}>
+            <ExpandableRow label="Sleep Quality (1-10)" value={onboarding?.sleep_quality ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("quality")} onToggle={() => toggleRow("quality")}>
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Sleep history</p>
                 <table className="w-full text-sm">
@@ -2166,16 +2136,16 @@ function HealthDimensionView({
                 </table>
               </div>
             </ExpandableRow>
-            <ExpandableRow label="Hours/Night" value={onboarding?.sleep_hours_per_night ?? "—"} recorded={onboardingDate} expanded={expanded.has("hours")} onToggle={() => toggle("hours")}>
+            <ExpandableRow label="Hours/Night" value={onboarding?.sleep_hours_per_night ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("hours")} onToggle={() => toggleRow("hours")}>
               <p className="text-sm text-muted-foreground">Average hours of sleep per night.</p>
             </ExpandableRow>
-            <ExpandableRow label="Deep Sleep %" value={onboarding?.deep_sleep_percent ? `${onboarding.deep_sleep_percent}%` : "—"} recorded={onboardingDate} expanded={expanded.has("deep")} onToggle={() => toggle("deep")}>
+            <ExpandableRow label="Deep Sleep %" value={onboarding?.deep_sleep_percent ? `${onboarding.deep_sleep_percent}%` : "—"} recorded={onboardingDate} expanded={expandedRows.has("deep")} onToggle={() => toggleRow("deep")}>
               <p className="text-sm text-muted-foreground">Percentage of sleep time in deep sleep phase.</p>
             </ExpandableRow>
-            <ExpandableRow label="Insomnia" value={onboarding?.insomnia ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("insomnia")} onToggle={() => toggle("insomnia")}>
+            <ExpandableRow label="Insomnia" value={onboarding?.insomnia ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("insomnia")} onToggle={() => toggleRow("insomnia")}>
               <p className="text-sm text-muted-foreground">Reported insomnia symptoms.</p>
             </ExpandableRow>
-            <ExpandableRow label="Sleep Apnoea" value={onboarding?.symptom_sleep_apnoea ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("apnoea2")} onToggle={() => toggle("apnoea2")}>
+            <ExpandableRow label="Sleep Apnoea" value={onboarding?.symptom_sleep_apnoea ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("apnoea2")} onToggle={() => toggleRow("apnoea2")}>
               <p className="text-sm text-muted-foreground">Sleep apnoea screening from sleep assessment.</p>
             </ExpandableRow>
           </div>
@@ -2183,12 +2153,6 @@ function HealthDimensionView({
       }
       case "mental_health":
       case "mental_wellbeing": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         const gadHistory = [
           { date: "2023-06-01", score: 8 },
           { date: "2023-12-01", score: 6 },
@@ -2197,10 +2161,10 @@ function HealthDimensionView({
         ];
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Mental Health Illness" value={onboarding?.illness_mental_health ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("illness")} onToggle={() => toggle("illness")}>
+            <ExpandableRow label="Mental Health Illness" value={onboarding?.illness_mental_health ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("illness")} onToggle={() => toggleRow("illness")}>
               <p className="text-sm">{onboarding?.illness_mental_health_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
-            <ExpandableRow label="GAD-7 Score" value={onboarding?.gad7_score ?? "—"} recorded={onboardingDate} expanded={expanded.has("gad7")} onToggle={() => toggle("gad7")}>
+            <ExpandableRow label="GAD-7 Score" value={onboarding?.gad7_score ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("gad7")} onToggle={() => toggleRow("gad7")}>
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">GAD-7 history</p>
                 <table className="w-full text-sm">
@@ -2216,13 +2180,13 @@ function HealthDimensionView({
                 <p className="text-xs text-muted-foreground">Score ≥15 indicates severe anxiety</p>
               </div>
             </ExpandableRow>
-            <ExpandableRow label="Stress (perceived)" value={onboarding?.stress_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("stress")} onToggle={() => toggle("stress")}>
+            <ExpandableRow label="Stress (perceived)" value={onboarding?.stress_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("stress")} onToggle={() => toggleRow("stress")}>
               <p className="text-sm text-muted-foreground">Self-reported stress level (1-10 scale).</p>
             </ExpandableRow>
-            <ExpandableRow label="Job Strain" value={onboarding?.job_strain_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("job_strain")} onToggle={() => toggle("job_strain")}>
+            <ExpandableRow label="Job Strain" value={onboarding?.job_strain_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("job_strain")} onToggle={() => toggleRow("job_strain")}>
               <p className="text-sm text-muted-foreground">Perceived job strain level.</p>
             </ExpandableRow>
-            <ExpandableRow label="Social Support" value={onboarding?.social_support_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("social")} onToggle={() => toggle("social")}>
+            <ExpandableRow label="Social Support" value={onboarding?.social_support_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("social")} onToggle={() => toggleRow("social")}>
               <p className="text-sm text-muted-foreground">Perceived social support level.</p>
             </ExpandableRow>
           </div>
@@ -2230,24 +2194,18 @@ function HealthDimensionView({
       }
       case "substances":
       case "substance_use": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Alcohol (units/week)" value={onboarding?.alcohol_units_per_week ?? "—"} recorded={onboardingDate} expanded={expanded.has("alcohol")} onToggle={() => toggle("alcohol")}>
+            <ExpandableRow label="Alcohol (units/week)" value={onboarding?.alcohol_units_per_week ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("alcohol")} onToggle={() => toggleRow("alcohol")}>
               <p className="text-sm text-muted-foreground">Self-reported alcohol consumption. &gt;14 units/week is considered high risk.</p>
             </ExpandableRow>
-            <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expanded.has("smoking")} onToggle={() => toggle("smoking")}>
+            <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("smoking")} onToggle={() => toggleRow("smoking")}>
               <p className="text-sm text-muted-foreground">Current smoking status.</p>
             </ExpandableRow>
-            <ExpandableRow label="Other Substances" value={onboarding?.other_substances ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("substances")} onToggle={() => toggle("substances")}>
+            <ExpandableRow label="Other Substances" value={onboarding?.other_substances ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("substances")} onToggle={() => toggleRow("substances")}>
               <p className="text-sm">{onboarding?.other_substances_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
-            <ExpandableRow label="Substance Use (perceived)" value={onboarding?.substance_use_perceived ?? "—"} recorded={onboardingDate} expanded={expanded.has("perceived")} onToggle={() => toggle("perceived")}>
+            <ExpandableRow label="Substance Use (perceived)" value={onboarding?.substance_use_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("perceived")} onToggle={() => toggleRow("perceived")}>
               <p className="text-sm text-muted-foreground">Self-assessed substance use impact (1-10 scale).</p>
             </ExpandableRow>
           </div>
@@ -2257,36 +2215,30 @@ function HealthDimensionView({
       case "gynaecological_cancer":
       case "prostate_other_cancer":
       case "precancerous": {
-        const [expanded, setExpanded] = useState<Set<string>>(new Set());
-        const toggle = (k: string) => setExpanded(prev => {
-          const next = new Set(prev);
-          if (next.has(k)) next.delete(k); else next.add(k);
-          return next;
-        });
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Cancer Illness" value={onboarding?.illness_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("illness")} onToggle={() => toggle("illness")}>
+            <ExpandableRow label="Cancer Illness" value={onboarding?.illness_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("illness")} onToggle={() => toggleRow("illness")}>
               <p className="text-sm">{onboarding?.illness_cancer_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
-            <ExpandableRow label="Previous Cancer" value={onboarding?.prev_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("prev")} onToggle={() => toggle("prev")}>
+            <ExpandableRow label="Previous Cancer" value={onboarding?.prev_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("prev")} onToggle={() => toggleRow("prev")}>
               <p className="text-sm">{onboarding?.prev_cancer_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
-            <ExpandableRow label="Precancerous Conditions" value={onboarding?.prev_precancerous ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("precancerous")} onToggle={() => toggle("precancerous")}>
+            <ExpandableRow label="Precancerous Conditions" value={onboarding?.prev_precancerous ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("precancerous")} onToggle={() => toggleRow("precancerous")}>
               <p className="text-sm">{onboarding?.prev_precancerous_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
-            <ExpandableRow label="Genetic (Cancer)" value={onboarding?.genetic_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("genetic_cancer")} onToggle={() => toggle("genetic_cancer")}>
+            <ExpandableRow label="Genetic (Cancer)" value={onboarding?.genetic_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic_cancer")} onToggle={() => toggleRow("genetic_cancer")}>
               <p className="text-sm text-muted-foreground">Family history of cancer.</p>
             </ExpandableRow>
-            <ExpandableRow label="Genetic (Melanoma)" value={onboarding?.genetic_melanoma ? "Yes" : "No"} recorded={onboardingDate} expanded={expanded.has("genetic_melanoma")} onToggle={() => toggle("genetic_melanoma")}>
+            <ExpandableRow label="Genetic (Melanoma)" value={onboarding?.genetic_melanoma ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic_melanoma")} onToggle={() => toggleRow("genetic_melanoma")}>
               <p className="text-sm text-muted-foreground">Family history of melanoma.</p>
             </ExpandableRow>
-            <ExpandableRow label="Breast Screening" value={onboarding?.cancer_screening_breast === true ? "Yes" : onboarding?.cancer_screening_breast === false ? "No" : "—"} recorded={onboardingDate} expanded={expanded.has("breast")} onToggle={() => toggle("breast")}>
+            <ExpandableRow label="Breast Screening" value={onboarding?.cancer_screening_breast === true ? "Yes" : onboarding?.cancer_screening_breast === false ? "No" : "—"} recorded={onboardingDate} expanded={expandedRows.has("breast")} onToggle={() => toggleRow("breast")}>
               <p className="text-sm text-muted-foreground">Up to date with breast cancer screening.</p>
             </ExpandableRow>
-            <ExpandableRow label="Cervical Screening" value={onboarding?.cancer_screening_cervical === true ? "Yes" : onboarding?.cancer_screening_cervical === false ? "No" : "—"} recorded={onboardingDate} expanded={expanded.has("cervical")} onToggle={() => toggle("cervical")}>
+            <ExpandableRow label="Cervical Screening" value={onboarding?.cancer_screening_cervical === true ? "Yes" : onboarding?.cancer_screening_cervical === false ? "No" : "—"} recorded={onboardingDate} expanded={expandedRows.has("cervical")} onToggle={() => toggleRow("cervical")}>
               <p className="text-sm text-muted-foreground">Up to date with cervical cancer screening.</p>
             </ExpandableRow>
-            <ExpandableRow label="Colorectal Screening" value={onboarding?.cancer_screening_colorectal === true ? "Yes" : onboarding?.cancer_screening_colorectal === false ? "No" : "—"} recorded={onboardingDate} expanded={expanded.has("colorectal")} onToggle={() => toggle("colorectal")}>
+            <ExpandableRow label="Colorectal Screening" value={onboarding?.cancer_screening_colorectal === true ? "Yes" : onboarding?.cancer_screening_colorectal === false ? "No" : "—"} recorded={onboardingDate} expanded={expandedRows.has("colorectal")} onToggle={() => toggleRow("colorectal")}>
               <p className="text-sm text-muted-foreground">Up to date with colorectal cancer screening.</p>
             </ExpandableRow>
           </div>
