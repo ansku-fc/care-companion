@@ -2848,6 +2848,46 @@ function CardiovascularDimensionView({
 
   const [cvSubTab, setCvSubTab] = useState<"risk_factors" | "lab_graphs" | "total_risk">("risk_factors");
 
+  // ── Annotation → Summary/Recommendations nudge state ──
+  useAnnotationsVersion();
+  const cvBiomarkerKeys = ["ldl_mmol_l", "blood_pressure_systolic", "alat_u_l", "afos_alp_u_l", "gt_u_l", "alat_asat_ratio", "hba1c_mmol_mol"];
+  const cvAnnotations = getAnnotations().filter((a) => cvBiomarkerKeys.includes(a.biomarkerKey));
+  const newForSummary = cvAnnotations.filter((a) => !a.includedInSummary);
+  const newForRecommendations = cvAnnotations.filter((a) => !a.includedInRecommendations);
+  const [incorporateOpen, setIncorporateOpen] = useState<null | "summary" | "recommendations">(null);
+  const [selectedAnnIds, setSelectedAnnIds] = useState<Set<string>>(new Set());
+
+  const openIncorporate = (target: "summary" | "recommendations") => {
+    const list = target === "summary" ? newForSummary : newForRecommendations;
+    setSelectedAnnIds(new Set(list.map((a) => a.id)));
+    setIncorporateOpen(target);
+  };
+
+  const applyIncorporate = () => {
+    if (!incorporateOpen) return;
+    const list = incorporateOpen === "summary" ? newForSummary : newForRecommendations;
+    const chosen = list.filter((a) => selectedAnnIds.has(a.id));
+    if (chosen.length === 0) {
+      setIncorporateOpen(null);
+      return;
+    }
+    const draftBlock =
+      `\n\n— DRAFT (from lab annotations, edit before saving) —\n` +
+      chosen
+        .map((a) => `• [${a.biomarkerLabel} • ${a.date}] ${a.text} — ${a.doctor}`)
+        .join("\n");
+
+    if (incorporateOpen === "summary") {
+      setCvSummary((prev) => (prev ? prev + draftBlock : draftBlock.trimStart()));
+    } else {
+      setCvRecommendations((prev) => (prev ? prev + draftBlock : draftBlock.trimStart()));
+    }
+    markIncluded(chosen.map((a) => a.id), incorporateOpen);
+    setIncorporateOpen(null);
+    toast.info("Draft inserted — review and save when ready");
+  };
+
+
   return (
     <div className="space-y-4">
       {/* ─────────────── 1. HEADER ─────────────── */}
