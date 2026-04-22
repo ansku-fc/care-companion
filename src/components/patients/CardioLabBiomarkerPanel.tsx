@@ -318,6 +318,7 @@ type Props = {
 };
 
 export function CardioLabBiomarkerPanel({
+  accentColorVar = "hsl(var(--primary))",
   biomarkerKey,
   label,
   unit,
