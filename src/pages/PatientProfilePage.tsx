@@ -3611,19 +3611,11 @@ function CardiovascularDimensionView({
                             </div>
                           )}
 
-                          <div>
-                            <Label className="text-xs">Doctor Notes</Label>
-                            <Textarea
-                              placeholder="Add notes about this marker..."
-                              className="mt-1 min-h-[80px] text-xs resize-none"
-                              value={markerNotes[selectedMarker.key] || ""}
-                              onChange={(e) => {
-                                setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
-                              }}
-                            />
-                          </div>
+                          <AnnotationListEditor
+                            biomarkerKey={selectedMarker.key}
+                            biomarkerLabel={selectedMarker.label}
+                          />
 
-                          <AnnotationListEditor biomarkerKey={selectedMarker.key} />
 
                           {MARKER_DIMENSIONS[selectedMarker.key] && (
                             <div>
