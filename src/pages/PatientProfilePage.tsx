@@ -2148,8 +2148,8 @@ function GenericDimensionView({
   );
   const mainDim = findMainDimension(dimensionKey) ?? null;
   const score = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
-  const scoreColor = score <= 3 ? "text-green-600" : score <= 6 ? "text-amber-600" : "text-destructive";
-  const scoreBg = score <= 3 ? "bg-green-100" : score <= 6 ? "bg-amber-100" : "bg-red-100";
+  const scoreColor = "text-white";
+  const scoreBg = score <= 3 ? "bg-[hsl(28_35%_7%)]" : score <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
 
@@ -2200,14 +2200,14 @@ function GenericDimensionView({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
-                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-lg font-bold ${scoreColor}`}>{score}/10</span>
+              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
+                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
+                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{score}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
               </div>
               <Button
-                variant={showRiskHistory ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs bg-card text-foreground border-border shadow-card hover:bg-accent"
                 onClick={() => setShowRiskHistory(!showRiskHistory)}
               >
                 <Activity className="h-3.5 w-3.5" />
@@ -2331,8 +2331,8 @@ function SkinMucousDimensionView({
   }, [summary]);
   const [editSummary, setEditSummary] = useState(cleanSummary);
 
-  const scoreColor = skinScore <= 3 ? "text-green-600" : skinScore <= 6 ? "text-amber-600" : "text-destructive";
-  const scoreBg = skinScore <= 3 ? "bg-green-100" : skinScore <= 6 ? "bg-amber-100" : "bg-red-100";
+  const scoreColor = "text-white";
+  const scoreBg = skinScore <= 3 ? "bg-[hsl(28_35%_7%)]" : skinScore <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
 
   const riskHistory = useMemo(() => {
     // Simple history based on score
@@ -2463,14 +2463,14 @@ function SkinMucousDimensionView({
               Skin & Mucous Membranes
             </CardTitle>
             <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
-                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-lg font-bold ${scoreColor}`}>{skinScore}/10</span>
+              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
+                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
+                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{skinScore}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
               </div>
               <Button
-                variant={showRiskHistory ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs bg-card text-foreground border-border shadow-card hover:bg-accent"
                 onClick={() => setShowRiskHistory(!showRiskHistory)}
               >
                 <Activity className="h-3.5 w-3.5" />
@@ -3166,8 +3166,8 @@ function CardiovascularDimensionView({
   const gtData = sorted.filter((l) => l.gt_u_l != null).map((l) => ({ date: l.result_date, value: Number(l.gt_u_l) }));
   const alatAsatData = sorted.filter((l) => l.alat_asat_ratio != null).map((l) => ({ date: l.result_date, value: Number(l.alat_asat_ratio) }));
 
-  const scoreColor = cvScore <= 3 ? "text-green-600" : cvScore <= 6 ? "text-amber-600" : "text-destructive";
-  const scoreBg = cvScore <= 3 ? "bg-green-100" : cvScore <= 6 ? "bg-amber-100" : "bg-red-100";
+  const scoreColor = "text-white";
+  const scoreBg = cvScore <= 3 ? "bg-[hsl(28_35%_7%)]" : cvScore <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
 
   const handleSaveCv = async () => {
     setSaving(true);
@@ -3250,14 +3250,14 @@ function CardiovascularDimensionView({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
-                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-lg font-bold ${scoreColor}`}>{cvScore}/10</span>
+              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
+                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
+                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{cvScore}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
               </div>
               <Button
-                variant={showRiskHistory ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs bg-card text-foreground border-border shadow-card hover:bg-accent"
                 onClick={() => setShowRiskHistory(!showRiskHistory)}
               >
                 <Activity className="h-3.5 w-3.5" />
