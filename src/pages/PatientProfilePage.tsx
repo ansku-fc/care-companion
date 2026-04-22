@@ -36,6 +36,8 @@ import {
   getAnnotations,
   markIncluded,
   useAnnotationsVersion,
+  updateAnnotation,
+  deleteAnnotation,
   type LabAnnotation,
 } from "@/components/patients/CardioLabBiomarkerPanel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
