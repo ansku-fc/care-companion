@@ -2805,16 +2805,57 @@ function CardiovascularDimensionView({
     ? autoNotes.join("\n")
     : "";
 
-  // Onboarding risk factors table
-  const riskFactors = [
-    { label: "Waist-Hip Ratio", value: onboarding?.waist_to_hip_ratio != null ? String(onboarding.waist_to_hip_ratio) : "—" },
-    { label: "Exercise, MET (hours/week)", value: onboarding?.exercise_met_hours != null ? String(onboarding.exercise_met_hours) : "—" },
-    { label: "Smoking", value: onboarding?.smoking ?? "—" },
-    { label: "Genetic Predisposition", value: onboarding?.genetic_cardiovascular ? "Yes" : "No" },
-    { label: "Previous Illness", value: onboarding?.illness_cardiovascular ? "Yes" : "No" },
-  ];
-
+  // Onboarding date for Recorded column
   const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
+
+  // ── Cardiovascular risk factors (reordered + expandable + dummy history) ──
+  // Dummy: current illnesses
+  const cvCurrentIllnesses: { name: string; diagnosedDate: string; severity?: string }[] = [
+    { name: "Essential hypertension", diagnosedDate: "2023-03-20", severity: "Moderate" },
+    { name: "Hyperlipidemia (LDL)", diagnosedDate: "2024-02-10", severity: "Mild" },
+  ];
+  // Dummy: past illnesses (resolved)
+  const cvPastIllnesses: { name: string; from: string; to: string; resolution?: string }[] = [
+    { name: "Acute pericarditis", from: "2021-06-04", to: "2021-09-12", resolution: "Resolved with NSAIDs" },
+  ];
+  // Dummy: smoking history (changes over time)
+  const smokingCurrent = onboarding?.smoking ?? "no";
+  const smokingHistory: { date: string; value: string }[] = [
+    { date: "2018-01-01", value: "yes" },
+    { date: "2021-03-15", value: "no" },
+  ];
+  const smokingChanged = smokingHistory.length > 1;
+  const smokingPrev = smokingChanged ? smokingHistory[smokingHistory.length - 2] : null;
+  // Dummy: exercise MET hours history
+  const exerciseCurrent = onboarding?.exercise_met_hours != null ? Number(onboarding.exercise_met_hours) : 12;
+  const exerciseHistory: { date: string; value: number }[] = [
+    { date: "2022-04-10", value: 6 },
+    { date: "2023-04-22", value: 8 },
+    { date: "2024-04-12", value: 10 },
+    { date: "2025-04-09", value: exerciseCurrent },
+  ];
+  const exerciseTrend = exerciseHistory[exerciseHistory.length - 1].value - exerciseHistory[0].value;
+  // Dummy: waist-hip ratio history
+  const whrCurrent = onboarding?.waist_to_hip_ratio != null ? Number(onboarding.waist_to_hip_ratio) : 0.92;
+  const whrHistory: { date: string; value: number }[] = [
+    { date: "2022-04-10", value: 0.98 },
+    { date: "2023-04-22", value: 0.96 },
+    { date: "2024-04-12", value: 0.94 },
+    { date: "2025-04-09", value: whrCurrent },
+  ];
+  const whrTrend = whrHistory[whrHistory.length - 1].value - whrHistory[0].value;
+  const geneticPredisposition = onboarding?.genetic_cardiovascular ? "Yes" : "No";
+
+  type CvRiskRowKey = "current_illness" | "past_illness" | "genetic" | "smoking" | "exercise" | "whr";
+  const [expandedRiskRows, setExpandedRiskRows] = useState<Set<CvRiskRowKey>>(new Set());
+  const toggleRiskRow = (k: CvRiskRowKey) =>
+    setExpandedRiskRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+
 
   // Chart data for each marker
   const ldlData = sorted.filter((l) => l.ldl_mmol_l != null).map((l) => ({ date: l.result_date, value: Number(l.ldl_mmol_l) }));
