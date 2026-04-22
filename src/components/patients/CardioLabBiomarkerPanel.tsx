@@ -245,7 +245,7 @@ export function CardioLabBiomarkerPanel({
 
   const series = CARDIO_DUMMY_SERIES[biomarkerKey];
   const isBP = !!series?.bp;
-  const rawData = isBP ? series!.bp! : series?.single ?? [];
+  const rawData: Array<{ date: string }> = isBP ? series!.bp! : series?.single ?? [];
   const data = useMemo(() => filterByWindow(rawData, window), [rawData, window]);
 
   const annotations = useMemo(
