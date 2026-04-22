@@ -480,35 +480,98 @@ export function PatientMedicationsView({ patientName }: Props) {
       </div>
 
       {/* Interaction alerts */}
-      {interactions.length > 0 && (
+      {(interactions.length > 0 || alertLog.some((a) => a.type === "resolve")) && (
         <Card className="border-destructive/40">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
               <AlertTriangle className="h-4 w-4 text-destructive" />
               Drug Interaction Alerts
-              <Badge variant="destructive" className="ml-1">{interactions.filter((i) => !isAcknowledged(i)).length} unreviewed</Badge>
-              {interactions.some(isAcknowledged) && (
-                <Badge variant="outline" className="ml-1">{interactions.filter(isAcknowledged).length} reviewed</Badge>
-              )}
+              {(() => {
+                const unactioned = interactions.filter((i) => getDisplayState(i).kind === "unactioned").length;
+                const overridden = interactions.filter((i) => getDisplayState(i).kind === "overridden").length;
+                const deferred = interactions.filter((i) => getDisplayState(i).kind === "deferred").length;
+                const acked = interactions.filter((i) => getDisplayState(i).kind === "acknowledged").length;
+                return (
+                  <>
+                    {unactioned > 0 && <Badge variant="destructive" className="ml-1">{unactioned} requires action</Badge>}
+                    {overridden > 0 && <Badge variant="outline" className="ml-1">{overridden} overridden</Badge>}
+                    {deferred > 0 && <Badge variant="outline" className="ml-1">{deferred} deferred</Badge>}
+                    {acked > 0 && <Badge variant="outline" className="ml-1">{acked} reviewed</Badge>}
+                  </>
+                );
+              })()}
             </CardTitle>
+            <Button variant="ghost" size="sm" className="h-7 text-[11px] gap-1" onClick={() => setShowAuditLog(true)}>
+              <ScrollText className="h-3.5 w-3.5" /> Audit log
+            </Button>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
             {interactions.map((i, idx) => {
-              const acked = isAcknowledged(i);
-              const ackRec = ackByKey.get(interactionKey(i));
-              const stale = ackRec && ackRec.signature !== combinationSignature(meds, i);
-              if (acked) {
+              const state = getDisplayState(i);
+              const key = interactionKey(i);
+              const lastResurface = [...alertLog].reverse().find((a) => a.key === key && a.type === "resurface") as Extract<AlertAction, { type: "resurface" }> | undefined;
+              const showResurfaceBadge =
+                lastResurface &&
+                state.kind === "unactioned" &&
+                lastResurface.signature === combinationSignature(meds, i);
+
+              if (state.kind === "acknowledged") {
                 return (
                   <div key={idx} className="border rounded-md px-2.5 py-1.5 flex items-center gap-2 text-xs bg-muted/30">
                     <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span className="font-medium">{i.drugs[0]} × {i.drugs[1]}</span>
                     <Badge variant="outline" className="text-[10px]">reviewed</Badge>
                     <span className="text-muted-foreground ml-auto text-[11px]">
-                      by {ackRec?.by} · {ackRec ? new Date(ackRec.at).toLocaleString() : ""}
+                      by {state.by} · {new Date(state.at).toLocaleString()}
                     </span>
                   </div>
                 );
               }
+
+              if (state.kind === "overridden") {
+                const expanded = expandedOverrides.has(key);
+                return (
+                  <div key={idx} className="border rounded-md bg-muted/30 text-xs">
+                    <button
+                      className="w-full px-2.5 py-1.5 flex items-center gap-2 text-left"
+                      onClick={() => {
+                        const next = new Set(expandedOverrides);
+                        if (expanded) next.delete(key); else next.add(key);
+                        setExpandedOverrides(next);
+                      }}
+                    >
+                      {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                      <span className="font-medium">{i.drugs[0]} × {i.drugs[1]}</span>
+                      <Badge variant="outline" className="text-[10px]">overridden</Badge>
+                      <Badge className={cn("text-[10px] uppercase", SEVERITY_BADGE[i.severity])}>{i.severity}</Badge>
+                      <span className="text-muted-foreground ml-auto text-[11px]">
+                        {state.reasonLabel} · {state.by} · {new Date(state.at).toLocaleString()}
+                      </span>
+                    </button>
+                    {expanded && (
+                      <div className="px-3 pb-2 pt-0 space-y-1 text-[11px] text-muted-foreground border-t">
+                        <p className="pt-2"><span className="font-medium text-foreground">Reason:</span> {state.reasonLabel}</p>
+                        {state.note && <p><span className="font-medium text-foreground">Note:</span> {state.note}</p>}
+                        <p><span className="font-medium text-foreground">Original alert:</span> {i.description}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              if (state.kind === "deferred") {
+                return (
+                  <div key={idx} className="border rounded-md px-2.5 py-1.5 flex items-center gap-2 text-xs bg-muted/40 border-dashed">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-medium">{i.drugs[0]} × {i.drugs[1]}</span>
+                    <Badge className={cn("text-[10px] uppercase", SEVERITY_BADGE[i.severity])}>{i.severity}</Badge>
+                    <Badge variant="outline" className="text-[10px]">Deferred until {state.until}</Badge>
+                    <span className="text-muted-foreground ml-auto text-[11px]">by {state.by}</span>
+                  </div>
+                );
+              }
+
+              const isMild = i.severity === "mild";
               return (
                 <div
                   key={idx}
@@ -523,20 +586,73 @@ export function PatientMedicationsView({ patientName }: Props) {
                       <Badge className={cn("text-[10px] uppercase tracking-wide", SEVERITY_BADGE[i.severity])}>
                         {i.severity}
                       </Badge>
-                      {stale && (
+                      {showResurfaceBadge && (
                         <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/50 text-amber-700 dark:text-amber-400">
-                          <History className="h-2.5 w-2.5" /> Re-surfaced — combination changed
+                          <History className="h-2.5 w-2.5" /> Re-surfaced — {lastResurface!.reason}
                         </Badge>
                       )}
                     </div>
-                    <p className="text-foreground/80 leading-snug">{i.description}</p>
+                    <p className="text-foreground/80 leading-snug mb-2">{i.description}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {isMild ? (
+                        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1" onClick={() => handleSimpleAcknowledge(i)}>
+                          <ShieldCheck className="h-3 w-3" /> Acknowledge
+                        </Button>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="default" className="h-7 px-2 text-[11px] gap-1" onClick={() => setResolveTarget(i)}>
+                            <Replace className="h-3 w-3" /> Resolve
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1" onClick={() => { setOverrideTarget(i); setOverrideStep(1); setOverrideReason(""); setOverrideNote(""); }}>
+                            <ShieldCheck className="h-3 w-3" /> Override with reason
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1" onClick={() => { setDeferTarget(i); setDeferDate(""); }}>
+                            <Clock className="h-3 w-3" /> Defer
+                            {i.severity === "severe" && <span className="opacity-70 ml-0.5">· max 7d</span>}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1 shrink-0" onClick={() => handleAcknowledge(i)}>
-                    <ShieldCheck className="h-3 w-3" /> Acknowledge
-                  </Button>
                 </div>
               );
             })}
+
+            {(() => {
+              const resolved = alertLog.filter((a) => a.type === "resolve") as Extract<AlertAction, { type: "resolve" }>[];
+              if (resolved.length === 0) return null;
+              const latestByKey = new Map<string, typeof resolved[number]>();
+              resolved.forEach((r) => latestByKey.set(r.key, r));
+              const list = Array.from(latestByKey.values());
+              return (
+                <div className="border rounded-md bg-muted/20 text-xs mt-2">
+                  <button
+                    className="w-full px-2.5 py-1.5 flex items-center gap-2 text-left"
+                    onClick={() => setShowResolved((s) => !s)}
+                  >
+                    {showResolved ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                    <Check className="h-3.5 w-3.5 text-primary" />
+                    <span className="font-medium">Resolved alerts</span>
+                    <Badge variant="outline" className="text-[10px]">{list.length}</Badge>
+                  </button>
+                  {showResolved && (
+                    <div className="px-3 pb-2 pt-0 space-y-1 border-t">
+                      {list.map((r, ix) => {
+                        const drugs = r.key.split("__");
+                        return (
+                          <div key={ix} className="flex items-center gap-2 text-[11px] py-1">
+                            <Check className="h-3 w-3 text-primary" />
+                            <span className="font-medium text-foreground">{drugs.join(" × ")}</span>
+                            <span className="text-muted-foreground">{r.via}</span>
+                            <span className="text-muted-foreground ml-auto">by {r.by} · {new Date(r.at).toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}
