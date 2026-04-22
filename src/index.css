@@ -8,26 +8,26 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Foundation Clinic warm brand palette */
-    --background: 32 24% 95%;          /* #F7F4F0 warm off-white */
+    /* Foundation Clinic — warm brand palette with depth */
+    --background: 33 27% 92%;          /* #F5F1EB warm off-white */
     --foreground: 28 35% 7%;           /* #1A1109 near black */
 
-    --card: 35 22% 92%;                /* #EFEBE4 warm cream */
+    --card: 0 0% 100%;                 /* pure white cards */
     --card-foreground: 28 35% 7%;
 
-    --popover: 35 22% 92%;
+    --popover: 0 0% 100%;
     --popover-foreground: 28 35% 7%;
 
-    --primary: 25 52% 12%;             /* #2C1A0E dark brown */
+    --primary: 28 35% 7%;              /* #1A1109 near black primary */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 33 18% 88%;           /* warm beige */
+    --secondary: 33 22% 90%;
     --secondary-foreground: 28 35% 7%;
 
-    --muted: 33 14% 92%;               /* #EEEBE6 light warm grey */
+    --muted: 33 14% 92%;               /* #EEEBE6 */
     --muted-foreground: 25 9% 44%;     /* #7A6E64 warm mid-grey */
 
-    --accent: 33 18% 88%;
+    --accent: 33 22% 88%;
     --accent-foreground: 28 35% 7%;
 
     --destructive: 0 57% 39%;          /* #9B2B2B deep red */
@@ -39,20 +39,28 @@ All colors MUST be HSL.
     --warning: 28 63% 44%;             /* #B56E2A muted amber */
     --warning-foreground: 0 0% 100%;
 
-    --border: 32 13% 81%;              /* #D6CFC6 warm light grey */
-    --input: 32 13% 81%;
+    --border: 33 18% 84%;              /* #E0D9D0 warm light grey */
+    --input: 33 18% 84%;
     --ring: 25 52% 12%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 33 22% 88%;  /* #E8E2D9 light warm beige */
-    --sidebar-foreground: 25 9% 44%;
-    --sidebar-primary: 25 52% 12%;
+    /* Dark sidebar — near-black with warm white text */
+    --sidebar-background: 28 35% 7%;       /* #1A1109 */
+    --sidebar-foreground: 33 27% 94%;      /* #F7F4F0 */
+    --sidebar-primary: 25 52% 12%;         /* #2C1A0E active bg */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 33 18% 84%;
-    --sidebar-accent-foreground: 28 35% 7%;
-    --sidebar-border: 32 13% 78%;
-    --sidebar-ring: 25 52% 12%;
+    --sidebar-accent: 28 50% 9%;           /* #251408 hover */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 28 30% 14%;
+    --sidebar-ring: 33 27% 94%;
+
+    /* Layered warm shadow system */
+    --shadow-card: 0 1px 3px hsl(28 35% 7% / 0.06), 0 4px 12px hsl(28 35% 7% / 0.04);
+    --shadow-card-hover: 0 4px 16px hsl(28 35% 7% / 0.10);
+    --shadow-alert: 0 2px 8px hsl(28 35% 7% / 0.06);
+    --shadow-panel: 0 4px 20px hsl(28 35% 7% / 0.10);
+    --shadow-modal: 0 8px 32px hsl(28 35% 7% / 0.16);
   }
 
   .dark {
