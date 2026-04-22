@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,7 @@ import {
   ReferenceArea,
   ReferenceDot,
 } from "recharts";
-import { MessageSquarePlus, StickyNote } from "lucide-react";
+import { MessageSquarePlus, StickyNote, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ──────────────────────────────────────────────────────────────────────
@@ -28,8 +28,22 @@ export type LabAnnotation = {
   text: string;
   doctor: string;
   createdAt: string; // ISO timestamp
+  updatedAt?: string;
   includedInSummary?: boolean;
   includedInRecommendations?: boolean;
+};
+
+export type AnnotationDeletionLog = {
+  id: string;
+  annotationId: string;
+  biomarkerKey: string;
+  biomarkerLabel: string;
+  date: string;
+  text: string;
+  doctor: string;
+  deletedBy: string;
+  deletedAt: string;
+  reason: string;
 };
 
 const annotationStore: LabAnnotation[] = [
@@ -53,6 +67,8 @@ const annotationStore: LabAnnotation[] = [
   },
 ];
 
+const annotationDeletionLog: AnnotationDeletionLog[] = [];
+
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((l) => l());
 
@@ -64,6 +80,10 @@ export function getAnnotationsForBiomarker(key: string): LabAnnotation[] {
   return annotationStore.filter((a) => a.biomarkerKey === key);
 }
 
+export function getAnnotationDeletionLog(): AnnotationDeletionLog[] {
+  return [...annotationDeletionLog];
+}
+
 export function addAnnotation(a: Omit<LabAnnotation, "id" | "createdAt">): LabAnnotation {
   const ann: LabAnnotation = {
     ...a,
@@ -73,6 +93,35 @@ export function addAnnotation(a: Omit<LabAnnotation, "id" | "createdAt">): LabAn
   annotationStore.push(ann);
   notify();
   return ann;
+}
+
+export function updateAnnotation(id: string, patch: Partial<Pick<LabAnnotation, "text" | "date">>) {
+  const a = annotationStore.find((x) => x.id === id);
+  if (!a) return;
+  if (patch.text !== undefined) a.text = patch.text;
+  if (patch.date !== undefined) a.date = patch.date;
+  a.updatedAt = new Date().toISOString();
+  notify();
+}
+
+export function deleteAnnotation(id: string, reason: string, deletedBy: string) {
+  const idx = annotationStore.findIndex((x) => x.id === id);
+  if (idx === -1) return;
+  const a = annotationStore[idx];
+  annotationDeletionLog.push({
+    id: `del-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    annotationId: a.id,
+    biomarkerKey: a.biomarkerKey,
+    biomarkerLabel: a.biomarkerLabel,
+    date: a.date,
+    text: a.text,
+    doctor: a.doctor,
+    deletedBy,
+    deletedAt: new Date().toISOString(),
+    reason,
+  });
+  annotationStore.splice(idx, 1);
+  notify();
 }
 
 export function markIncluded(ids: string[], target: "summary" | "recommendations") {
@@ -87,10 +136,12 @@ export function markIncluded(ids: string[], target: "summary" | "recommendations
 
 export function useAnnotationsVersion() {
   const [, setV] = useState(0);
-  useMemo(() => {
+  useEffect(() => {
     const fn = () => setV((x) => x + 1);
     listeners.add(fn);
-    return () => listeners.delete(fn);
+    return () => {
+      listeners.delete(fn);
+    };
   }, []);
   return null;
 }
@@ -106,7 +157,7 @@ const LDL_DATA: Point[] = [
   { date: "2022-09-04", value: 4.7 },
   { date: "2023-02-18", value: 4.9 },
   { date: "2023-08-22", value: 4.6 },
-  { date: "2024-02-10", value: 4.5 }, // Atorvastatin started
+  { date: "2024-02-10", value: 4.5 },
   { date: "2024-05-14", value: 3.4 },
   { date: "2024-08-15", value: 2.9 },
   { date: "2024-12-03", value: 2.8 },
@@ -119,7 +170,7 @@ const BP_DATA: BPPoint[] = [
   { date: "2022-04-10", systolic: 138, diastolic: 88 },
   { date: "2022-10-15", systolic: 142, diastolic: 90 },
   { date: "2023-03-20", systolic: 148, diastolic: 92 },
-  { date: "2023-07-08", systolic: 145, diastolic: 91 }, // Lisinopril added
+  { date: "2023-07-08", systolic: 145, diastolic: 91 },
   { date: "2023-11-12", systolic: 132, diastolic: 84 },
   { date: "2024-04-22", systolic: 128, diastolic: 82 },
   { date: "2024-10-05", systolic: 124, diastolic: 80 },
@@ -239,9 +290,20 @@ export function CardioLabBiomarkerPanel({
 }: Props) {
   useAnnotationsVersion();
   const [window, setWindow] = useState<Window>("3y");
+
+  // Active popover for adding/viewing/editing annotations.
+  // type "add" → fresh annotation at a date; "view" → existing annotation by id
+  type ActivePopover =
+    | { kind: "add"; date: string }
+    | { kind: "view"; id: string }
+    | { kind: "edit"; id: string }
+    | { kind: "delete"; id: string }
+    | null;
+  const [activePopover, setActivePopover] = useState<ActivePopover>(null);
   const [draftText, setDraftText] = useState("");
   const [draftDate, setDraftDate] = useState<string>("");
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [editText, setEditText] = useState("");
+  const [deleteReason, setDeleteReason] = useState("");
 
   const series = CARDIO_DUMMY_SERIES[biomarkerKey];
   const isBP = !!series?.bp;
@@ -251,7 +313,7 @@ export function CardioLabBiomarkerPanel({
   const annotations = useMemo(
     () => getAnnotationsForBiomarker(biomarkerKey),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [biomarkerKey, annotationStore.length],
+    [biomarkerKey, annotationStore.length, annotationStore.map((a) => a.text + a.date).join("|")],
   );
 
   // Map annotation date → annotation list (multiple per date possible)
@@ -265,7 +327,7 @@ export function CardioLabBiomarkerPanel({
     return m;
   }, [annotations]);
 
-  // Y-domain for ReferenceDots (we plot annotations at the chart's lower bound)
+  // Y position for annotation dots (chart's lower bound)
   const yMin = useMemo(() => {
     if (data.length === 0) return 0;
     if (isBP) {
@@ -274,7 +336,28 @@ export function CardioLabBiomarkerPanel({
     return Math.min(...(data as unknown as Point[]).map((d) => d.value));
   }, [data, isBP]);
 
-  const handleAdd = () => {
+  const closestDateTo = (targetDate: string): string => {
+    if (data.length === 0) return targetDate;
+    const t = new Date(targetDate).getTime();
+    let best = data[0].date;
+    let bestDiff = Math.abs(new Date(best).getTime() - t);
+    for (const d of data) {
+      const diff = Math.abs(new Date(d.date).getTime() - t);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = d.date;
+      }
+    }
+    return best;
+  };
+
+  const openAddAt = (date: string) => {
+    setDraftDate(date);
+    setDraftText("");
+    setActivePopover({ kind: "add", date });
+  };
+
+  const handleSaveAdd = () => {
     if (!draftText.trim()) return;
     const date = draftDate || new Date().toISOString().slice(0, 10);
     addAnnotation({
@@ -286,7 +369,43 @@ export function CardioLabBiomarkerPanel({
     });
     setDraftText("");
     setDraftDate("");
-    setPopoverOpen(false);
+    setActivePopover(null);
+  };
+
+  const handleSaveEdit = (id: string) => {
+    if (!editText.trim()) return;
+    updateAnnotation(id, { text: editText.trim() });
+    setEditText("");
+    setActivePopover({ kind: "view", id });
+  };
+
+  const handleConfirmDelete = (id: string) => {
+    if (!deleteReason.trim()) return;
+    deleteAnnotation(id, deleteReason.trim(), doctor);
+    setDeleteReason("");
+    setActivePopover(null);
+  };
+
+  // Recharts onClick handler for the chart background / data points.
+  // Recharts passes { activeLabel, activePayload, ... } when a data point is clicked.
+  const handleChartClick = (e: any) => {
+    if (!e) return;
+    // Clicked data point
+    if (e.activeLabel) {
+      const date = e.activeLabel as string;
+      const existing = annByDate.get(date);
+      if (existing && existing.length > 0) {
+        setActivePopover({ kind: "view", id: existing[0].id });
+      } else {
+        openAddAt(date);
+      }
+      return;
+    }
+    // Clicked time period (no exact data point) — pick closest date
+    if (e.chartX !== undefined && data.length > 0) {
+      // We don't have direct x-scale access; fall back to today's date marker
+      openAddAt(closestDateTo(new Date().toISOString().slice(0, 10)));
+    }
   };
 
   const renderTooltip = ({ active, payload }: any) => {
@@ -306,7 +425,7 @@ export function CardioLabBiomarkerPanel({
             {label}: {payload[0].value} {unit}
           </p>
         )}
-        {dayAnns.length > 0 && (
+        {dayAnns.length > 0 ? (
           <div className="mt-1 pt-1 border-t">
             {dayAnns.map((a) => (
               <p key={a.id} className="text-[11px] italic text-muted-foreground max-w-[220px]">
@@ -314,11 +433,20 @@ export function CardioLabBiomarkerPanel({
                 {a.text}
               </p>
             ))}
+            <p className="text-[10px] text-muted-foreground mt-1">Click point to manage</p>
           </div>
+        ) : (
+          <p className="text-[10px] text-muted-foreground mt-1 pt-1 border-t">Click to add annotation</p>
         )}
       </div>
     );
   };
+
+  // Find the active annotation for popovers
+  const activeAnn =
+    activePopover && (activePopover.kind === "view" || activePopover.kind === "edit" || activePopover.kind === "delete")
+      ? annotations.find((a) => a.id === activePopover.id)
+      : null;
 
   return (
     <Card
@@ -352,44 +480,15 @@ export function CardioLabBiomarkerPanel({
             ))}
           </div>
 
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                title="Add annotation"
-              >
-                <MessageSquarePlus className="h-3.5 w-3.5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72" align="end">
-              <div className="space-y-2">
-                <p className="text-xs font-medium">Add annotation — {label}</p>
-                <input
-                  type="date"
-                  value={draftDate}
-                  onChange={(e) => setDraftDate(e.target.value)}
-                  className="w-full h-8 px-2 text-xs border rounded-md bg-background"
-                  placeholder="Date (defaults to today)"
-                />
-                <Textarea
-                  value={draftText}
-                  onChange={(e) => setDraftText(e.target.value)}
-                  placeholder="e.g. started Atorvastatin Feb 2024 — monitoring response"
-                  className="min-h-[70px] text-xs resize-none"
-                />
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setPopoverOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button size="sm" onClick={handleAdd} disabled={!draftText.trim()}>
-                    Save
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="Add annotation"
+            onClick={() => openAddAt(new Date().toISOString().slice(0, 10))}
+          >
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </CardHeader>
 
@@ -397,9 +496,13 @@ export function CardioLabBiomarkerPanel({
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">No data in this time window.</p>
         ) : (
-          <div className="h-[200px]">
+          <div className="h-[200px]" onClick={(e) => e.stopPropagation()}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <LineChart
+                data={data}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                onClick={handleChartClick}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
@@ -456,7 +559,7 @@ export function CardioLabBiomarkerPanel({
                       key={a.id}
                       x={a.date}
                       y={yMin}
-                      r={5}
+                      r={6}
                       fill="hsl(var(--accent-foreground))"
                       stroke="hsl(var(--background))"
                       strokeWidth={1.5}
@@ -468,14 +571,176 @@ export function CardioLabBiomarkerPanel({
           </div>
         )}
 
-        {annotations.length > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        {/* Annotation count + manageable list */}
+        <div className="mt-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <StickyNote className="h-3 w-3" />
             <span>
               {annotations.length} annotation{annotations.length === 1 ? "" : "s"} on this biomarker
             </span>
           </div>
-        )}
+          {annotations.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {annotations
+                .slice()
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map((a) => (
+                  <button
+                    key={a.id}
+                    onClick={() => setActivePopover({ kind: "view", id: a.id })}
+                    className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[10px] text-foreground hover:bg-muted transition-colors"
+                    title={a.text}
+                  >
+                    <span className="font-medium">{a.date}</span>
+                    <span className="max-w-[120px] truncate text-muted-foreground">{a.text}</span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Popovers (anchored invisibly, opened by chart/dot/list clicks) ─── */}
+        <Popover
+          open={activePopover !== null}
+          onOpenChange={(o) => {
+            if (!o) {
+              setActivePopover(null);
+              setEditText("");
+              setDeleteReason("");
+            }
+          }}
+        >
+          <PopoverTrigger asChild>
+            <span className="sr-only" aria-hidden>
+              annotation popover anchor
+            </span>
+          </PopoverTrigger>
+          <PopoverContent className="w-80" align="center" onClick={(e) => e.stopPropagation()}>
+            {activePopover?.kind === "add" && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium">Add annotation — {label}</p>
+                <input
+                  type="date"
+                  value={draftDate}
+                  onChange={(e) => setDraftDate(e.target.value)}
+                  className="w-full h-8 px-2 text-xs border rounded-md bg-background"
+                />
+                <Textarea
+                  value={draftText}
+                  onChange={(e) => setDraftText(e.target.value)}
+                  placeholder="e.g. started Atorvastatin Feb 2024 — monitoring response"
+                  className="min-h-[70px] text-xs resize-none"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setActivePopover(null)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSaveAdd} disabled={!draftText.trim()}>
+                    Save annotation
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activePopover?.kind === "view" && activeAnn && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium">{activeAnn.biomarkerLabel} — {activeAnn.date}</p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => {
+                        setEditText(activeAnn.text);
+                        setActivePopover({ kind: "edit", id: activeAnn.id });
+                      }}
+                      title="Edit"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      onClick={() => setActivePopover({ kind: "delete", id: activeAnn.id })}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{activeAnn.text}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  — {activeAnn.doctor}
+                  {activeAnn.updatedAt ? " (edited)" : ""}
+                </p>
+              </div>
+            )}
+
+            {activePopover?.kind === "edit" && activeAnn && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium">Edit annotation — {activeAnn.date}</p>
+                <Textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="min-h-[70px] text-xs resize-none"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActivePopover({ kind: "view", id: activeAnn.id })}
+                  >
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={() => handleSaveEdit(activeAnn.id)} disabled={!editText.trim()}>
+                    Save changes
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activePopover?.kind === "delete" && activeAnn && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-destructive">Delete annotation</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Annotations are part of the audit trail. A reason is required and will be logged.
+                </p>
+                <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                  <p className="font-medium">{activeAnn.date} — {activeAnn.biomarkerLabel}</p>
+                  <p className="text-muted-foreground italic">{activeAnn.text}</p>
+                </div>
+                <Textarea
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="Reason for deletion (required)"
+                  className="min-h-[60px] text-xs resize-none"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActivePopover({ kind: "view", id: activeAnn.id })}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleConfirmDelete(activeAnn.id)}
+                    disabled={!deleteReason.trim()}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
       </CardContent>
     </Card>
   );
