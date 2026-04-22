@@ -2200,14 +2200,14 @@ function GenericDimensionView({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
-                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-lg font-bold ${scoreColor}`}>{score}/10</span>
+              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
+                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
+                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{score}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
               </div>
               <Button
-                variant={showRiskHistory ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs bg-card text-foreground border-border shadow-card hover:bg-accent"
                 onClick={() => setShowRiskHistory(!showRiskHistory)}
               >
                 <Activity className="h-3.5 w-3.5" />
@@ -2463,14 +2463,14 @@ function SkinMucousDimensionView({
               Skin & Mucous Membranes
             </CardTitle>
             <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
-                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-lg font-bold ${scoreColor}`}>{skinScore}/10</span>
+              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
+                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
+                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{skinScore}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
               </div>
               <Button
-                variant={showRiskHistory ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs bg-card text-foreground border-border shadow-card hover:bg-accent"
                 onClick={() => setShowRiskHistory(!showRiskHistory)}
               >
                 <Activity className="h-3.5 w-3.5" />
@@ -3250,14 +3250,14 @@ function CardiovascularDimensionView({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${scoreBg}`}>
-                <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-lg font-bold ${scoreColor}`}>{cvScore}/10</span>
+              <div className={`flex flex-col items-end px-3 py-1.5 rounded-full leading-tight ${scoreBg} ${scoreColor}`}>
+                <span className="text-[9px] font-medium uppercase tracking-wider opacity-80">Risk Index</span>
+                <span className="text-lg font-bold -mt-0.5"><span className="text-xl">{cvScore}</span><span className="text-xs font-semibold opacity-80">/10</span></span>
               </div>
               <Button
-                variant={showRiskHistory ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs bg-card text-foreground border-border shadow-card hover:bg-accent"
                 onClick={() => setShowRiskHistory(!showRiskHistory)}
               >
                 <Activity className="h-3.5 w-3.5" />
