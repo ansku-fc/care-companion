@@ -354,77 +354,27 @@ function computeRadarData(
     return null;
   };
 
+  // Dummy varied risk-index values per dimension to showcase color coding.
+  const DUMMY_SCORES: Record<string, number> = {
+    brain_mental: 3.2,
+    metabolic: 6.7,
+    cardiovascular: 8.4,
+    exercise_functional: 2.1,
+    digestion: 5.5,
+    respiratory_immune: 4.8,
+    cancer_risk: 7.3,
+    skin_oral_mucosal: 1.9,
+    reproductive_sexual: 3.6,
+  };
+
   return HEALTH_TAXONOMY.map((main) => {
-    // Check stored categories first
-    const allKeys = [main.label, ...main.subDimensions.map((s) => s.label)];
-    const storedScore = getStoredScore(allKeys);
-    if (storedScore !== null) return { category: main.label, key: main.key, score: storedScore };
-
-    let score = 1;
-    if (!onboarding && !lab) return { category: main.label, key: main.key, score };
-
-    switch (main.key) {
-      case "brain_mental":
-        if (onboarding?.illness_neurological) score += 2;
-        if (onboarding?.illness_mental_health) score += 2;
-        if (onboarding?.gad7_score && onboarding.gad7_score > 10) score += 2;
-        if (onboarding?.insomnia) score += 1;
-        if (onboarding?.illness_senses) score += 1;
-        if (onboarding?.alcohol_units_per_week && Number(onboarding.alcohol_units_per_week) > 14) score += 1;
-        if (onboarding?.other_substances) score += 1;
-        break;
-      case "metabolic":
-        if (onboarding?.illness_hormone) score += 2;
-        if (onboarding?.illness_kidney) score += 2;
-        if (onboarding?.bmi && (Number(onboarding.bmi) > 30 || Number(onboarding.bmi) < 18.5)) score += 2;
-        if (lab?.tsh_mu_l && (Number(lab.tsh_mu_l) < 0.4 || Number(lab.tsh_mu_l) > 4.0)) score += 1;
-        if (lab?.egfr && Number(lab.egfr) < 60) score += 2;
-        if (lab?.hba1c_mmol_mol && Number(lab.hba1c_mmol_mol) > 42) score += 1;
-        break;
-      case "cardiovascular":
-        if (onboarding?.illness_cardiovascular) score += 3;
-        if (lab?.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) score += 2;
-        if (lab?.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 140) score += 2;
-        if (onboarding?.genetic_cardiovascular) score += 1;
-        break;
-      case "exercise_functional":
-        if (onboarding?.exercise_met_hours != null && onboarding.exercise_met_hours < 5) score += 3;
-        if (onboarding?.illness_musculoskeletal) score += 2;
-        if (onboarding?.symptom_joint_pain) score += 1;
-        if (onboarding?.symptom_mobility_restriction) score += 2;
-        break;
-      case "digestion":
-        if (onboarding?.illness_liver) score += 2;
-        if (onboarding?.illness_gastrointestinal) score += 2;
-        if (onboarding?.symptom_gastrointestinal) score += 2;
-        if (lab?.alat_u_l && Number(lab.alat_u_l) > 50) score += 1;
-        if (lab?.gt_u_l && Number(lab.gt_u_l) > 60) score += 1;
-        break;
-      case "respiratory_immune":
-        if (onboarding?.symptom_respiratory) score += 2;
-        if (onboarding?.illness_immune) score += 2;
-        if (onboarding?.symptom_immune_allergies) score += 2;
-        if (onboarding?.smoking === "yes") score += 2;
-        if (onboarding?.infections_per_year && Number(onboarding.infections_per_year) > 4) score += 1;
-        break;
-      case "cancer_risk":
-        if (onboarding?.illness_cancer || onboarding?.prev_cancer) score += 4;
-        if (onboarding?.genetic_cancer || onboarding?.genetic_melanoma) score += 2;
-        if (onboarding?.prev_precancerous) score += 2;
-        break;
-      case "skin_oral_mucosal":
-        if (onboarding?.symptom_skin_rash || onboarding?.symptom_mucous_membranes) score += 3;
-        if (onboarding?.skin_condition && onboarding.skin_condition > 3) score += 2;
-        if (onboarding?.sun_exposure) score += 1;
-        break;
-      case "reproductive_sexual":
-        if (onboarding?.symptom_menstruation_menopause) score += 3;
-        if (lab?.testosterone_estrogen_abnormal) score += 2;
-        break;
-    }
-    return { category: main.label, key: main.key, score: Math.min(score, 10) };
+    const score = DUMMY_SCORES[main.key] ?? 1;
+    return { category: main.label, key: main.key, score };
   });
 }
+
+// Suppress unused-var warnings for retained helpers (kept for future reactivation).
+void ((_a: unknown, _b: unknown) => null);
 
 function HealthOverviewView({
   patient, onboarding, labResults, healthCategories, appointments, onSelectDimension, onPatientUpdate,
