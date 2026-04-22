@@ -2202,8 +2202,7 @@ function GenericDimensionView({
             <div className="flex items-center gap-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{score}</span>
-                <span className="text-sm font-medium text-muted-foreground">/10</span>
+                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{Number(score).toFixed(1)}</span>
               </div>
               <Button
                 variant="outline"
@@ -2466,8 +2465,7 @@ function SkinMucousDimensionView({
             <div className="flex items-center gap-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{skinScore}</span>
-                <span className="text-sm font-medium text-muted-foreground">/10</span>
+                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{Number(skinScore).toFixed(1)}</span>
               </div>
               <Button
                 variant="outline"
@@ -3254,8 +3252,7 @@ function CardiovascularDimensionView({
             <div className="flex items-center gap-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
-                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{cvScore}</span>
-                <span className="text-sm font-medium text-muted-foreground">/10</span>
+                <span className={`text-2xl font-bold leading-none ${scoreColor}`}>{Number(cvScore).toFixed(1)}</span>
               </div>
               <Button
                 variant="outline"
