@@ -3356,7 +3356,10 @@ function CardiovascularDimensionView({
               </div>
             )}
 
-            {cvSubTab === "total_risk" && (
+          </CardContent>
+        </Card>
+      </section>
+{/* TOTAL_RISK_TAB_REMOVED */}
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className={`flex items-center justify-center h-20 w-20 rounded-full ${scoreBg}`}>
