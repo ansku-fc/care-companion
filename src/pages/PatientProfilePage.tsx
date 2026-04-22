@@ -2800,6 +2800,140 @@ function Sparkline({ points }: { points: number[] }) {
   );
 }
 
+// Inline annotation list with edit/delete for the marker detail sidebar.
+function AnnotationListEditor({ biomarkerKey }: { biomarkerKey: string }) {
+  useAnnotationsVersion();
+  const list = getAnnotationsForBiomarker(biomarkerKey)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+
+  if (list.length === 0) {
+    return (
+      <div className="mt-4">
+        <p className="text-xs font-medium text-muted-foreground mb-1.5">Annotations</p>
+        <p className="text-xs text-muted-foreground italic">
+          No annotations yet. Click a point on the graph to add one.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-medium text-muted-foreground mb-1.5">
+        Annotations ({list.length})
+      </p>
+      <ul className="space-y-1.5">
+        {list.map((a) => {
+          const isEditing = editingId === a.id;
+          const isDeleting = deletingId === a.id;
+          return (
+            <li key={a.id} className="rounded-md border bg-muted/30 p-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-foreground">{a.date}</span>
+                {!isEditing && !isDeleting && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditText(a.text);
+                        setEditingId(a.id);
+                      }}
+                      className="text-muted-foreground hover:text-foreground"
+                      title="Edit"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteReason("");
+                        setDeletingId(a.id);
+                      }}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {!isEditing && !isDeleting && (
+                <>
+                  <p className="text-foreground whitespace-pre-wrap mt-1">{a.text}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    — {a.doctor}
+                    {a.updatedAt ? " (edited)" : ""}
+                  </p>
+                </>
+              )}
+              {isEditing && (
+                <div className="mt-1 space-y-1.5">
+                  <Textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="min-h-[60px] text-xs resize-none"
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingId(null)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-6 text-xs"
+                      disabled={!editText.trim()}
+                      onClick={() => {
+                        updateAnnotation(a.id, { text: editText.trim() });
+                        setEditingId(null);
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {isDeleting && (
+                <div className="mt-1 space-y-1.5">
+                  <p className="text-[11px] text-muted-foreground">
+                    Deletion is logged for audit. Provide a reason.
+                  </p>
+                  <Textarea
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    placeholder="Reason for deletion"
+                    className="min-h-[50px] text-xs resize-none"
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setDeletingId(null)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-6 text-xs"
+                      disabled={!deleteReason.trim()}
+                      onClick={() => {
+                        deleteAnnotation(a.id, deleteReason.trim(), a.doctor);
+                        setDeletingId(null);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function CardiovascularDimensionView({
   patient, onboarding, labResults, healthCategories, markerNotes, setMarkerNotes, onNavigateDimension, onDataChanged,
 }: {
