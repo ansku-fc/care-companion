@@ -31,6 +31,7 @@ import { HealthFileUploads, type HealthDataTab } from "@/components/patients/Hea
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
+import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
 import {
   CardioLabBiomarkerPanel,
   getAnnotations,
@@ -239,7 +240,11 @@ const PatientProfilePage = () => {
                       setActiveSection(main.key);
                     }}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isMainActive ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                      isMainActive
+                        ? "bg-primary text-primary-foreground"
+                        : isSubActive
+                          ? "bg-primary/15 text-foreground font-medium"
+                          : "hover:bg-muted text-foreground"
                     }`}
                   >
                     <MainIcon className="h-4 w-4" />
@@ -1897,6 +1902,7 @@ function HealthDimensionView({
   const Icon = dim.icon;
   const lab = labResults[0] || null;
 
+  // Cardiovascular has no sub-dimensions and keeps its specialised view
   if (dimensionKey === "cardiovascular") {
     return (
       <CardiovascularDimensionView
@@ -1908,34 +1914,6 @@ function HealthDimensionView({
         setMarkerNotes={setMarkerNotes}
         onNavigateDimension={onNavigateDimension}
         onDataChanged={onDataChanged}
-      />
-    );
-  }
-
-  if (dimensionKey === "metabolic" || dimensionKey === "endocrine" || dimensionKey === "kidneys" || dimensionKey === "body_composition" || dimensionKey === "nutrition" || dimensionKey === "metabolism") {
-    return (
-      <MetabolicDimensionView
-        patient={patient}
-        onboarding={onboarding}
-        labResults={labResults}
-        healthCategories={healthCategories}
-        markerNotes={markerNotes}
-        setMarkerNotes={setMarkerNotes}
-        onNavigateDimension={onNavigateDimension}
-        onDataChanged={onDataChanged}
-      />
-    );
-  }
-
-  if (dimensionKey === "skin_mucous" || dimensionKey === "skin" || dimensionKey === "skin_oral_mucosal") {
-    return (
-      <SkinMucousDimensionView
-        patient={patient}
-        onboarding={onboarding}
-        labResults={labResults}
-        healthCategories={healthCategories}
-        onDataChanged={onDataChanged}
-        onNavigateDimension={onNavigateDimension}
       />
     );
   }
@@ -2249,6 +2227,53 @@ function HealthDimensionView({
     }
   };
 
+  // Determine whether this is a main dimension (with subs) or a sub-dimension
+  const mainDim = findMainDimension(dimensionKey);
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const parentScore = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
+
+  // Build sub-scores: simple heuristic — share parent's score across subs (placeholder).
+  const subScores: Record<string, number> = {};
+  if (mainDim) {
+    for (const s of mainDim.subDimensions) subScores[s.key] = parentScore;
+  }
+
+  // Sub-dimension page
+  if (mainDim && mainDim.key !== dimensionKey) {
+    return (
+      <SubDimensionView
+        parent={mainDim}
+        subKey={dimensionKey}
+        parentScore={parentScore}
+        subScore={subScores[dimensionKey] ?? parentScore}
+        patient={patient}
+        healthCategories={healthCategories}
+        onNavigateToParent={() => onNavigateDimension(mainDim.key)}
+        onNavigateToMedications={() => onNavigateDimension("medications")}
+        renderRiskFactors={renderContent}
+        onDataChanged={onDataChanged}
+      />
+    );
+  }
+
+  // Main-dimension overview page (with sub-dimensions)
+  if (mainDim && mainDim.subDimensions.length > 0) {
+    return (
+      <MainDimensionOverview
+        main={mainDim}
+        parentScore={parentScore}
+        subScores={subScores}
+        patient={patient}
+        healthCategories={healthCategories}
+        onNavigateToSub={(k) => onNavigateDimension(k)}
+        onNavigateToMedications={() => onNavigateDimension("medications")}
+        renderRiskFactors={renderContent}
+        onDataChanged={onDataChanged}
+      />
+    );
+  }
+
+  // Fallback — main dim with no subs (none currently except cardiovascular which is handled above)
   return (
     <GenericDimensionView
       dim={dim}
