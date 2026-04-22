@@ -43,7 +43,7 @@ All colors MUST be HSL.
     --input: 33 18% 84%;
     --ring: 25 52% 12%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
     /* Dark sidebar — near-black with warm white text */
     --sidebar-background: 28 35% 7%;       /* #1A1109 */
@@ -116,5 +116,20 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: 0.005em;
+    line-height: 1.55;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.018em;
+    line-height: 1.2;
+  }
+}
+
+@layer utilities {
+  .section-label {
+    @apply text-[11px] font-semibold uppercase text-muted-foreground;
+    letter-spacing: 0.14em;
   }
 }
