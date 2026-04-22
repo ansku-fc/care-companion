@@ -12,9 +12,9 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceArea,
-  ReferenceDot,
+  ReferenceLine,
 } from "recharts";
-import { MessageSquarePlus, StickyNote, Pencil, Trash2 } from "lucide-react";
+import { MessageSquarePlus, StickyNote, Pencil, Trash2, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ──────────────────────────────────────────────────────────────────────
