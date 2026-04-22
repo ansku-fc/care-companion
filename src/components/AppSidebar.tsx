@@ -45,17 +45,17 @@ export function AppSidebar() {
       <NavLink
         to={item.url}
         end={item.url === "/"}
-        className="relative rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-        activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium [&>span.active-pill]:opacity-100"
+        className="relative rounded-[10px] text-[hsl(240_3%_60%)] hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors [&>svg]:text-[hsl(240_3%_60%)] hover:[&>svg]:text-sidebar-foreground"
+        activeClassName="bg-sidebar-primary text-sidebar-foreground font-medium [&>svg]:text-sidebar-foreground [&>span.active-pill]:opacity-100"
       >
-        <span className="active-pill pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-sidebar-primary-foreground/80 opacity-0 transition-opacity" />
+        <span className="active-pill pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-accent opacity-0 transition-opacity" />
         <item.icon className={collapsed ? "h-[18px] w-[18px]" : "mr-3 h-[18px] w-[18px]"} />
         {!collapsed && <span className="text-[13px]">{item.title}</span>}
       </NavLink>
     );
     return (
       <SidebarMenuItem key={item.title} className="px-2 py-0.5">
-        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-xl">
+        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-[10px]">
           {link}
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -64,7 +64,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="border-t-2 border-t-[hsl(25_52%_12%)]">
+      <SidebarContent>
         <div className={collapsed ? "flex flex-col items-center gap-2 px-1 py-3" : "flex items-center justify-between gap-2 px-3 py-3"}>
           {collapsed ? (
             <>
@@ -100,7 +100,7 @@ export function AppSidebar() {
               {workflowNavItems.map(renderNavItem)}
 
               <li className="px-2 py-2">
-                <Separator className="bg-[hsl(25_30%_18%)]" />
+                <Separator className="bg-sidebar-border" />
               </li>
 
               {adminNavItems.map(renderNavItem)}
