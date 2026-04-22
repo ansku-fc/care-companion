@@ -17,16 +17,41 @@ type DimMed = {
   totalPills: number;
   renewalDate?: string;
   status: "active" | "past";
+  startDate?: string;
+  endDate?: string;
+  discontinuationReason?: string;
+  discontinuedBy?: string;
+  hadInteractionAlertAtDiscontinuation?: { drugs: [string, string]; severity: "severe" | "moderate" | "mild"; description: string };
 };
 
 const SEED_MEDS: DimMed[] = [
-  { id: "m1", name: "Atorvastatin", dose: "20 mg", frequency: "Once daily (evening)", dimension: "Cardiovascular Health", remainingPills: 18, totalPills: 90, renewalDate: "2026-05-08", status: "active" },
-  { id: "m2", name: "Lisinopril", dose: "10 mg", frequency: "Once daily (morning)", dimension: "Cardiovascular Health", remainingPills: 42, totalPills: 90, renewalDate: "2026-06-02", status: "active" },
+  { id: "m1", name: "Atorvastatin", dose: "20 mg", frequency: "Once daily (evening)", dimension: "Cardiovascular Health", remainingPills: 18, totalPills: 90, renewalDate: "2026-05-08", status: "active", startDate: "2024-02-10" },
+  { id: "m2", name: "Lisinopril", dose: "10 mg", frequency: "Once daily (morning)", dimension: "Cardiovascular Health", remainingPills: 42, totalPills: 90, renewalDate: "2026-06-02", status: "active", startDate: "2023-07-08" },
   { id: "m3", name: "Metformin", dose: "500 mg", frequency: "Twice daily with meals", dimension: "Metabolic Health", remainingPills: 6, totalPills: 180, renewalDate: "2026-04-29", status: "active" },
   { id: "m4", name: "Levothyroxine", dose: "75 mcg", frequency: "Once daily (fasting)", dimension: "Metabolic Health", remainingPills: 60, totalPills: 100, renewalDate: "2026-07-14", status: "active" },
   { id: "m5", name: "Sertraline", dose: "50 mg", frequency: "Once daily", dimension: "Brain & Mental Health", remainingPills: 24, totalPills: 60, renewalDate: "2026-05-20", status: "active" },
   { id: "m6", name: "Warfarin", dose: "3 mg", frequency: "Once daily", dimension: "Cardiovascular Health", remainingPills: 30, totalPills: 90, renewalDate: "2026-06-15", status: "active" },
   { id: "m7", name: "Ibuprofen", dose: "400 mg", frequency: "Up to 3x daily as needed", dimension: "Exercise & Functional Health", remainingPills: 12, totalPills: 60, renewalDate: "2026-05-15", status: "active" },
+  // ── Past medications (dummy) ──
+  {
+    id: "m-past-1",
+    name: "Aspirin",
+    dose: "100 mg",
+    frequency: "Once daily",
+    dimension: "Cardiovascular Health",
+    remainingPills: 0,
+    totalPills: 90,
+    status: "past",
+    startDate: "2022-01-15",
+    endDate: "2023-11-20",
+    discontinuationReason: "Replaced by Atorvastatin",
+    discontinuedBy: "Dr. Laine",
+    hadInteractionAlertAtDiscontinuation: {
+      drugs: ["Aspirin", "Warfarin"],
+      severity: "moderate",
+      description: "Combined antiplatelet + anticoagulant — bleeding risk monitored throughout treatment.",
+    },
+  },
 ];
 
 type DimInteraction = {
