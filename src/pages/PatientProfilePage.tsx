@@ -2226,6 +2226,53 @@ function HealthDimensionView({
     }
   };
 
+  // Determine whether this is a main dimension (with subs) or a sub-dimension
+  const mainDim = findMainDimension(dimensionKey);
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const parentScore = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
+
+  // Build sub-scores: simple heuristic — share parent's score across subs (placeholder).
+  const subScores: Record<string, number> = {};
+  if (mainDim) {
+    for (const s of mainDim.subDimensions) subScores[s.key] = parentScore;
+  }
+
+  // Sub-dimension page
+  if (mainDim && mainDim.key !== dimensionKey) {
+    return (
+      <SubDimensionView
+        parent={mainDim}
+        subKey={dimensionKey}
+        parentScore={parentScore}
+        subScore={subScores[dimensionKey] ?? parentScore}
+        patient={patient}
+        healthCategories={healthCategories}
+        onNavigateToParent={() => onNavigateDimension(mainDim.key)}
+        onNavigateToMedications={() => onNavigateDimension("medications")}
+        renderRiskFactors={renderContent}
+        onDataChanged={onDataChanged}
+      />
+    );
+  }
+
+  // Main-dimension overview page (with sub-dimensions)
+  if (mainDim && mainDim.subDimensions.length > 0) {
+    return (
+      <MainDimensionOverview
+        main={mainDim}
+        parentScore={parentScore}
+        subScores={subScores}
+        patient={patient}
+        healthCategories={healthCategories}
+        onNavigateToSub={(k) => onNavigateDimension(k)}
+        onNavigateToMedications={() => onNavigateDimension("medications")}
+        renderRiskFactors={renderContent}
+        onDataChanged={onDataChanged}
+      />
+    );
+  }
+
+  // Fallback — main dim with no subs (none currently except cardiovascular which is handled above)
   return (
     <GenericDimensionView
       dim={dim}
