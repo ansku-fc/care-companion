@@ -1,5 +1,7 @@
 import { Home, Calendar, ListTodo, Users, StickyNote, Clock, LogOut, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import logoFull from "@/assets/foundation-clinic-logo.png";
+import logoIcon from "@/assets/foundation-clinic-icon.png";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
@@ -65,9 +67,15 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className={collapsed ? "flex flex-col items-center gap-2 px-1 py-3" : "flex items-center justify-between gap-2 px-3 py-3"}>
+        <div className={collapsed ? "flex flex-col items-center gap-3 px-1 py-3" : "flex items-center justify-between gap-2 px-3 py-3"}>
           {collapsed ? (
             <>
+              <img
+                src={logoIcon}
+                alt="Foundation Clinic"
+                className="h-8 w-8 object-contain"
+                style={{ mixBlendMode: "screen" }}
+              />
               <Button
                 variant="ghost"
                 size="icon"
@@ -77,11 +85,15 @@ export function AppSidebar() {
               >
                 <PanelLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-bold tracking-tight text-sidebar-foreground">FC</span>
             </>
           ) : (
             <>
-              <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Foundation Clinic</span>
+              <img
+                src={logoFull}
+                alt="Foundation Clinic"
+                className="h-9 w-[140px] object-contain object-left"
+                style={{ mixBlendMode: "screen" }}
+              />
               <Button
                 variant="ghost"
                 size="icon"
