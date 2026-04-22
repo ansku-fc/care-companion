@@ -240,7 +240,7 @@ const PatientProfilePage = () => {
                       }
                       setActiveSection(main.key);
                     }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-[12.5px] transition-colors ${
                       isMainActive
                         ? "bg-primary text-primary-foreground"
                         : isSubActive
@@ -248,12 +248,12 @@ const PatientProfilePage = () => {
                           : "hover:bg-muted text-foreground"
                     }`}
                   >
-                    <MainIcon className="h-4 w-4" />
-                    <span className="flex-1 text-left">{main.number}. {main.label}</span>
+                    <MainIcon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 min-w-0 text-left truncate">{main.label}</span>
                     {hasSubs && (
                       isExpanded
-                        ? <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                        : <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                        ? <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                        : <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
                     )}
                   </button>
                   {hasSubs && isExpanded && (
@@ -264,14 +264,14 @@ const PatientProfilePage = () => {
                           <button
                             key={sub.key}
                             onClick={() => setActiveSection(sub.key)}
-                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors ${
+                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors ${
                               activeSection === sub.key
                                 ? "bg-primary text-primary-foreground"
                                 : "hover:bg-muted text-foreground"
                             }`}
                           >
-                            <SubIcon className="h-3.5 w-3.5" />
-                            {sub.label}
+                            <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="flex-1 min-w-0 text-left truncate">{sub.label}</span>
                           </button>
                         );
                       })}
