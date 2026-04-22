@@ -126,14 +126,19 @@ export function PatientOverviewView({
       : alertSeverity === "medium" ? "bg-[hsl(28_63%_44%/0.08)] border-[hsl(28_63%_44%/0.25)]"
         : "bg-card border-border";
 
-  // ── Risk index per main dimension ────────────────────────
-  const dimensionScore = (key: string): number => {
-    const cat = healthCategories.find((c) => c.category.toLowerCase() === key.toLowerCase());
-    if (!cat) return 1;
-    if (cat.status === "high") return 8;
-    if (cat.status === "medium") return 5;
-    return 2;
+  // ── Risk index per main dimension (dummy varied scores) ──
+  const DIMENSION_RISK_SCORES: Record<string, number> = {
+    brain_mental: 3.2,
+    metabolic: 6.7,
+    cardiovascular: 8.4,
+    exercise_functional: 2.1,
+    digestion: 5.5,
+    respiratory_immune: 4.8,
+    cancer_risk: 7.3,
+    skin_oral_mucosal: 1.9,
+    reproductive_sexual: 3.6,
   };
+  const dimensionScore = (key: string): number => DIMENSION_RISK_SCORES[key] ?? 1;
 
   // ── Inline add handlers ──────────────────────────────────
   const handleAddAllergy = async () => {
