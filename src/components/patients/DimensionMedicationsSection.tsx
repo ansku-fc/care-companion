@@ -261,7 +261,89 @@ export function DimensionMedicationsSection({ dimensionKey, dimensionLabel, onNa
             })}
           </div>
         )}
+
+        {/* ── Past medications ── */}
+        {pastMeds.length > 0 && (
+          <div className="pt-2 border-t">
+            <button
+              onClick={() => setPastOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {pastOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              <History className="h-3.5 w-3.5" />
+              Past medications ({pastMeds.length})
+            </button>
+
+            {pastOpen && (
+              <div className="mt-2 space-y-2">
+                {pastMeds.map((m) => {
+                  const isExpanded = expandedPastIds.has(m.id);
+                  const toggle = () =>
+                    setExpandedPastIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(m.id)) next.delete(m.id);
+                      else next.add(m.id);
+                      return next;
+                    });
+                  return (
+                    <div key={m.id} className="rounded-md border bg-muted/30 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium text-foreground">{m.name}</span>
+                            <span className="text-xs text-muted-foreground">{m.dose} • {m.frequency}</span>
+                            {m.hadInteractionAlertAtDiscontinuation && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggle(); }}
+                                className="inline-flex items-center gap-1 text-[10px] text-amber-600 hover:underline"
+                                title="Had active interaction alert at discontinuation"
+                              >
+                                <AlertTriangle className="h-3 w-3" /> Historical alert
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {m.startDate} → {m.endDate}
+                          </p>
+                          {m.discontinuationReason && (
+                            <p className="text-xs text-foreground mt-1">
+                              <span className="text-muted-foreground">Reason:</span> {m.discontinuationReason}
+                              {m.discontinuedBy && (
+                                <span className="text-muted-foreground"> • by {m.discontinuedBy}</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={toggle}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          {isExpanded ? "Hide" : "Details"}
+                        </button>
+                      </div>
+                      {isExpanded && m.hadInteractionAlertAtDiscontinuation && (
+                        <div className={cn("mt-2 rounded-md p-2 text-xs", SEVERITY_BORDER[m.hadInteractionAlertAtDiscontinuation.severity])}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                            <span className="font-medium text-foreground">
+                              {m.hadInteractionAlertAtDiscontinuation.drugs[0]} + {m.hadInteractionAlertAtDiscontinuation.drugs[1]}
+                            </span>
+                            <Badge className={cn("text-[9px] uppercase", SEVERITY_BADGE[m.hadInteractionAlertAtDiscontinuation.severity])}>
+                              {m.hadInteractionAlertAtDiscontinuation.severity}
+                            </Badge>
+                          </div>
+                          <p className="text-muted-foreground">{m.hadInteractionAlertAtDiscontinuation.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
+
