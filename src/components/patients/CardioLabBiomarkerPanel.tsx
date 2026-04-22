@@ -267,11 +267,12 @@ export function CardioLabBiomarkerPanel({
 
   // Y-domain for ReferenceDots (we plot annotations at the chart's lower bound)
   const yMin = useMemo(() => {
+  const yMin = useMemo(() => {
     if (data.length === 0) return 0;
     if (isBP) {
-      return Math.min(...(data as BPPoint[]).map((d) => d.diastolic));
+      return Math.min(...(data as unknown as BPPoint[]).map((d) => d.diastolic));
     }
-    return Math.min(...(data as Point[]).map((d) => d.value));
+    return Math.min(...(data as unknown as Point[]).map((d) => d.value));
   }, [data, isBP]);
 
   const handleAdd = () => {
