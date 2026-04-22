@@ -400,10 +400,21 @@ export function PatientMedicationsView({ patientName }: Props) {
 }
 
 function MedicationRow({ med, flagged }: { med: Medication; flagged: boolean }) {
+  const [renewed, setRenewed] = useState(false);
   const remainingPct = med.totalPills > 0 ? (med.remainingPills / med.totalPills) * 100 : 0;
   const renewIn = daysUntil(med.renewalDate);
   const lowSupply = med.status === "active" && remainingPct < 20;
   const renewSoon = renewIn !== null && renewIn <= 30 && renewIn >= 0;
+  const renewOverdue = renewIn !== null && renewIn < 0;
+  const showRenewBtn = med.status === "active" && (renewSoon || renewOverdue) && !renewed;
+
+  const handleRenew = () => {
+    setRenewed(true);
+    toast({
+      title: "Prescription renewed",
+      description: `${med.name} ${med.dose} — renewal request sent to pharmacy.`,
+    });
+  };
 
   return (
     <div
@@ -435,28 +446,50 @@ function MedicationRow({ med, flagged }: { med: Medication; flagged: boolean }) 
         </div>
 
         {/* Dates */}
-        <div className="col-span-6 md:col-span-3 grid grid-cols-2 gap-2">
-          <div>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Start</p>
-            <p className="text-xs font-medium">{fmtDate(med.startDate)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              {med.status === "past" ? "End" : "Renewal"}
-            </p>
-            <p className={cn(
-              "text-xs font-medium flex items-center gap-1",
-              renewSoon && "text-amber-600 dark:text-amber-400",
-            )}>
-              {med.status === "past" ? fmtDate(med.endDate) : fmtDate(med.renewalDate)}
-              {renewSoon && <CalendarIcon className="h-3 w-3" />}
-            </p>
-            {med.status === "active" && renewIn !== null && (
-              <p className="text-[10px] text-muted-foreground">
-                {renewIn >= 0 ? `in ${renewIn}d` : `${Math.abs(renewIn)}d overdue`}
+        <div className="col-span-6 md:col-span-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Start</p>
+              <p className="text-xs font-medium">{fmtDate(med.startDate)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {med.status === "past" ? "End" : "Renewal"}
               </p>
-            )}
+              <p className={cn(
+                "text-xs font-medium flex items-center gap-1",
+                renewSoon && "text-amber-600 dark:text-amber-400",
+                renewOverdue && "text-destructive",
+              )}>
+                {med.status === "past" ? fmtDate(med.endDate) : fmtDate(med.renewalDate)}
+                {(renewSoon || renewOverdue) && <CalendarIcon className="h-3 w-3" />}
+              </p>
+              {med.status === "active" && renewIn !== null && (
+                <p className={cn(
+                  "text-[10px] text-muted-foreground",
+                  renewOverdue && "text-destructive",
+                )}>
+                  {renewIn >= 0 ? `in ${renewIn}d` : `${Math.abs(renewIn)}d overdue`}
+                </p>
+              )}
+            </div>
           </div>
+          {showRenewBtn && (
+            <Button
+              size="sm"
+              variant={renewOverdue ? "destructive" : "default"}
+              onClick={handleRenew}
+              className="h-7 px-2 mt-2 text-[11px] gap-1"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Renew prescription
+            </Button>
+          )}
+          {renewed && (
+            <Badge variant="outline" className="mt-2 text-[10px] gap-1 border-primary/50 text-primary">
+              <Check className="h-2.5 w-2.5" /> Renewal sent
+            </Badge>
+          )}
         </div>
 
         {/* Supply */}
