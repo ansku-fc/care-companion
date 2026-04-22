@@ -338,22 +338,10 @@ const PatientProfilePage = () => {
 
 // Compute a simple score (1-10) for each of the 9 main health dimensions
 function computeRadarData(
-  onboarding: Tables<"patient_onboarding"> | null,
-  labResults: Tables<"patient_lab_results">[],
-  healthCategories: Tables<"patient_health_categories">[],
+  _onboarding: Tables<"patient_onboarding"> | null,
+  _labResults: Tables<"patient_lab_results">[],
+  _healthCategories: Tables<"patient_health_categories">[],
 ) {
-  const lab = labResults[0] || null;
-  const catMap = new Map(healthCategories.map((c) => [c.category.toLowerCase(), c]));
-
-  const getStoredScore = (keys: string[]): number | null => {
-    const statusScores: Record<string, number> = { normal: 2, monitor: 4, attention: 6, warning: 8, critical: 10 };
-    for (const k of keys) {
-      const stored = catMap.get(k.toLowerCase());
-      if (stored) return statusScores[stored.status] ?? 3;
-    }
-    return null;
-  };
-
   // Dummy varied risk-index values per dimension to showcase color coding.
   const DUMMY_SCORES: Record<string, number> = {
     brain_mental: 3.2,
@@ -372,9 +360,6 @@ function computeRadarData(
     return { category: main.label, key: main.key, score };
   });
 }
-
-// Suppress unused-var warnings for retained helpers (kept for future reactivation).
-void ((_a: unknown, _b: unknown) => null);
 
 function HealthOverviewView({
   patient, onboarding, labResults, healthCategories, appointments, onSelectDimension, onPatientUpdate,
