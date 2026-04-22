@@ -148,6 +148,10 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
     setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, parsed: value, verified: false } : r)));
   };
 
+  const updateUnit = (idx: number, unit: string) => {
+    setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, unit, verified: false } : r)));
+  };
+
   const toggleVerified = (idx: number) => {
     setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, verified: !r.verified } : r)));
   };
