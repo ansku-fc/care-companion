@@ -275,18 +275,7 @@ export function PatientMedicationsView({ patientName }: Props) {
     setNoteText("");
   };
 
-  const handleAcknowledge = (i: Interaction) => {
-    const sig = combinationSignature(meds, i);
-    const ts = new Date().toISOString();
-    setAcks((prev) => [
-      ...prev.filter((a) => a.key !== interactionKey(i)),
-      { key: interactionKey(i), signature: sig, by: CURRENT_DOCTOR, at: ts },
-    ]);
-    toast({
-      title: "Interaction acknowledged",
-      description: `${i.drugs.join(" × ")} reviewed by ${CURRENT_DOCTOR}.`,
-    });
-  };
+
 
   // ---- Alert state derivation (latest action per interaction key) ----
   const alertStateByKey = useMemo(() => {
