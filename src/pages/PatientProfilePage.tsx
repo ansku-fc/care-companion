@@ -2095,6 +2095,37 @@ function HealthDimensionView({
     }
   };
 
+  return (
+    <GenericDimensionView
+      dim={dim}
+      dimensionKey={dimensionKey}
+      patient={patient}
+      onboarding={onboarding}
+      labResults={labResults}
+      healthCategories={healthCategories}
+      onNavigateDimension={onNavigateDimension}
+      onDataChanged={onDataChanged}
+      renderRiskPicture={renderContent}
+    />
+  );
+}
+
+function GenericDimensionView({
+  dim, dimensionKey, patient, onboarding, labResults, healthCategories,
+  onNavigateDimension, onDataChanged, renderRiskPicture,
+}: {
+  dim: { label: string; icon: React.ComponentType<{ className?: string }> };
+  dimensionKey: string;
+  patient: Tables<"patients">;
+  onboarding: Tables<"patient_onboarding"> | null;
+  labResults: Tables<"patient_lab_results">[];
+  healthCategories: Tables<"patient_health_categories">[];
+  onNavigateDimension: (section: string) => void;
+  onDataChanged?: () => void;
+  renderRiskPicture: () => React.ReactNode;
+}) {
+  const Icon = dim.icon;
+
   // ─── Score from main dimension (1–10) ───
   const radarData = useMemo(
     () => computeRadarData(onboarding, labResults, healthCategories),
@@ -2107,7 +2138,7 @@ function HealthDimensionView({
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
 
-  // ─── Doctor's Summary & Recommendations (persisted on patient_health_categories) ───
+  // ─── Doctor's Summary & Recommendations ───
   const categoryKey = (mainDim?.label || dim.label).toLowerCase();
   const storedCategory = healthCategories.find((c) => c.category.toLowerCase() === categoryKey);
   const [summary, setSummary] = useState(storedCategory?.summary || "");
@@ -2138,7 +2169,7 @@ function HealthDimensionView({
 
   return (
     <div className="space-y-4">
-      {/* ─────────────── 1. HEADER ─────────────── */}
+      {/* 1. HEADER */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -2179,18 +2210,18 @@ function HealthDimensionView({
         )}
       </Card>
 
-      {/* ─────────────── 2. RISK PICTURE ─────────────── */}
+      {/* 2. RISK PICTURE */}
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Picture</h2>
           <p className="text-xs text-muted-foreground">What is driving the current risk index</p>
         </div>
         <Card>
-          <CardContent className="pt-6">{renderContent()}</CardContent>
+          <CardContent className="pt-6">{renderRiskPicture()}</CardContent>
         </Card>
       </section>
 
-      {/* ─────────────── 3. MEDICATIONS ─────────────── */}
+      {/* 3. MEDICATIONS */}
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Medications</h2>
@@ -2203,7 +2234,7 @@ function HealthDimensionView({
         />
       </section>
 
-      {/* ─────────────── 4. DOCTOR'S SUMMARY & RECOMMENDATIONS ─────────────── */}
+      {/* 4. CLINICAL SYNTHESIS */}
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Clinical Synthesis</h2>
