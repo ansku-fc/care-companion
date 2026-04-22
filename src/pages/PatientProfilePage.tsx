@@ -3320,7 +3320,6 @@ function CardiovascularDimensionView({
                   value={
                     <span className="flex items-center gap-2">
                       <span>{exerciseCurrent}</span>
-                      <Sparkline points={exerciseHistory.map((h) => h.value)} />
                       <span className={cn("text-[11px]", exerciseTrend >= 0 ? "text-green-600" : "text-destructive")}>
                         {exerciseTrend >= 0 ? "▲" : "▼"} {Math.abs(exerciseTrend).toFixed(1)}
                       </span>
@@ -3348,7 +3347,6 @@ function CardiovascularDimensionView({
                   value={
                     <span className="flex items-center gap-2">
                       <span>{whrCurrent}</span>
-                      <Sparkline points={whrHistory.map((h) => h.value)} />
                       <span className={cn("text-[11px]", whrTrend <= 0 ? "text-green-600" : "text-destructive")}>
                         {whrTrend <= 0 ? "▼" : "▲"} {Math.abs(whrTrend).toFixed(2)}
                       </span>
