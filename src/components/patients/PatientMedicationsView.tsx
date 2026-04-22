@@ -288,17 +288,126 @@ export function PatientMedicationsView({ patientName }: Props) {
     });
   };
 
-  // Re-surface previously acknowledged alerts whose signature changed
-  const ackByKey = useMemo(() => {
-    const map = new Map<string, AckRecord>();
-    acks.forEach((a) => map.set(a.key, a));
+  // ---- Alert state derivation (latest action per interaction key) ----
+  const alertStateByKey = useMemo(() => {
+    const map = new Map<string, AlertState>();
+    interactions.forEach((i) => map.set(interactionKey(i), { kind: "unactioned" }));
+    alertLog.forEach((a) => { if (!map.has(a.key)) map.set(a.key, { kind: "unactioned" }); });
+    const sortedLog = [...alertLog].sort((a, b) => a.at.localeCompare(b.at));
+    sortedLog.forEach((a) => {
+      if (a.type === "acknowledge") map.set(a.key, { kind: "acknowledged", signature: a.signature, by: a.by, at: a.at });
+      else if (a.type === "override") map.set(a.key, { kind: "overridden", signature: a.signature, reason: a.reason, reasonLabel: a.reasonLabel, note: a.note, by: a.by, at: a.at });
+      else if (a.type === "defer") map.set(a.key, { kind: "deferred", signature: a.signature, until: a.until, by: a.by, at: a.at });
+      else if (a.type === "resolve") map.set(a.key, { kind: "resolved", signature: a.signature, via: a.via, by: a.by, at: a.at });
+    });
     return map;
-  }, [acks]);
+  }, [alertLog, interactions]);
 
-  const isAcknowledged = (i: Interaction) => {
-    const rec = ackByKey.get(interactionKey(i));
-    if (!rec) return false;
-    return rec.signature === combinationSignature(meds, i);
+  // Re-surface logic
+  useEffect(() => {
+    const now = new Date();
+    const newEvents: AlertAction[] = [];
+    interactions.forEach((i) => {
+      const state = alertStateByKey.get(interactionKey(i));
+      if (!state || state.kind === "unactioned" || state.kind === "resolved") return;
+      const currentSig = combinationSignature(meds, i);
+      if ("signature" in state && state.signature !== currentSig) {
+        const latest = [...alertLog].reverse().find((a) => a.key === interactionKey(i));
+        if (latest?.type === "resurface" && latest.signature === currentSig) return;
+        newEvents.push({
+          type: "resurface", key: interactionKey(i), signature: currentSig,
+          severity: i.severity, previousState: state.kind,
+          reason: "Combination changed (dose/frequency or medication added/removed)",
+          at: now.toISOString(),
+        });
+        return;
+      }
+      if (state.kind === "deferred" && new Date(state.until) < now) {
+        const latest = [...alertLog].reverse().find((a) => a.key === interactionKey(i));
+        if (latest?.type === "resurface" && latest.reason.includes("Defer expired")) return;
+        newEvents.push({
+          type: "resurface", key: interactionKey(i), signature: currentSig,
+          severity: i.severity, previousState: state.kind,
+          reason: `Defer expired (was due ${state.until})`,
+          at: now.toISOString(),
+        });
+      }
+    });
+    if (newEvents.length) setAlertLog((prev) => [...prev, ...newEvents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meds, interactions]);
+
+  const getDisplayState = (i: Interaction): AlertState => {
+    const state = alertStateByKey.get(interactionKey(i));
+    if (!state) return { kind: "unactioned" };
+    const currentSig = combinationSignature(meds, i);
+    if (state.kind !== "unactioned" && state.kind !== "resolved" && "signature" in state && state.signature !== currentSig) {
+      return { kind: "unactioned" };
+    }
+    if (state.kind === "deferred" && new Date(state.until) < new Date()) {
+      return { kind: "unactioned" };
+    }
+    return state;
+  };
+
+  const logAlertAction = (action: AlertAction) => setAlertLog((prev) => [...prev, action]);
+
+  const handleSimpleAcknowledge = (i: Interaction) => {
+    const ts = new Date().toISOString();
+    logAlertAction({
+      type: "acknowledge", key: interactionKey(i), signature: combinationSignature(meds, i),
+      severity: i.severity, by: CURRENT_DOCTOR, at: ts,
+    });
+    toast({ title: "Mild interaction acknowledged", description: `${i.drugs.join(" × ")} reviewed.` });
+  };
+
+  const handleConfirmOverride = () => {
+    if (!overrideTarget || !overrideReason) return;
+    const ts = new Date().toISOString();
+    const reasonLabel = OVERRIDE_REASONS.find((r) => r.value === overrideReason)?.label || overrideReason;
+    logAlertAction({
+      type: "override", key: interactionKey(overrideTarget),
+      signature: combinationSignature(meds, overrideTarget),
+      severity: overrideTarget.severity, reason: overrideReason, reasonLabel,
+      note: overrideNote.trim() || undefined, by: CURRENT_DOCTOR, at: ts,
+    });
+    toast({ title: "Interaction overridden", description: `${overrideTarget.drugs.join(" × ")} — ${reasonLabel}` });
+    setOverrideTarget(null); setOverrideStep(1); setOverrideReason(""); setOverrideNote("");
+  };
+
+  const handleConfirmDefer = () => {
+    if (!deferTarget || !deferDate) return;
+    const ts = new Date().toISOString();
+    logAlertAction({
+      type: "defer", key: interactionKey(deferTarget),
+      signature: combinationSignature(meds, deferTarget),
+      severity: deferTarget.severity, until: deferDate, by: CURRENT_DOCTOR, at: ts,
+    });
+    toast({
+      title: "Alert deferred · task created",
+      description: `${deferTarget.drugs.join(" × ")} — review by ${deferDate}. Added to Tasks.`,
+    });
+    setDeferTarget(null); setDeferDate("");
+  };
+
+  const handleResolveSelectMed = (medId: string) => {
+    const i = resolveTarget;
+    if (!i) return;
+    const m = meds.find((mm) => mm.id === medId);
+    if (!m) return;
+    setResolveTarget(null);
+    setDiscontinueTarget(m);
+    setDiscontinueStep(1);
+    setPendingResolveFor(interactionKey(i));
+  };
+
+  const [pendingResolveFor, setPendingResolveFor] = useState<string | null>(null);
+
+  const maxDeferDate = (sev: Interaction["severity"]) => {
+    if (sev !== "severe") return undefined;
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
   };
 
   const handlePrint = () => {
