@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LabResultsStep, defaultLabResults, type LabResultsData } from "./LabResultsStep";
+import { LabResultsVerifyDialog } from "./LabResultsVerifyDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 
 interface Props {
   patientId: string;

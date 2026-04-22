@@ -295,7 +295,7 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                           key={r.field}
                           className={cn(
                             "border-b transition-colors",
-                            r.verified ? "bg-emerald-50/60 dark:bg-emerald-950/20" : "hover:bg-muted/40"
+                            r.verified ? "bg-accent/40" : "hover:bg-muted/40"
                           )}
                         >
                           <td className="px-3 py-2">
@@ -304,7 +304,7 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                               className={cn(
                                 "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
                                 r.verified
-                                  ? "bg-emerald-500 border-emerald-500 text-white"
+                                  ? "bg-primary border-primary text-primary-foreground"
                                   : "border-muted-foreground/30 hover:border-primary"
                               )}
                               aria-label={r.verified ? "Mark unverified" : "Mark verified"}
@@ -333,12 +333,12 @@ export function LabResultsVerifyDialog({ open, onOpenChange, patientId, onSaved 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {allVerified ? (
                     <>
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      <Check className="h-3.5 w-3.5 text-primary" />
                       All rows verified
                     </>
                   ) : (
                     <>
-                      <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                      <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
                       Verify each row before saving
                     </>
                   )}
