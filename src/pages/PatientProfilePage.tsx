@@ -308,9 +308,45 @@ const PatientProfilePage = () => {
 
       {/* Main content */}
       <div className={`flex-1 flex flex-col overflow-auto`}>
-        <Button variant="ghost" size="sm" onClick={() => navigate("/patients")} className="gap-1.5 mb-4">
-          <ArrowLeft className="h-4 w-4" /> Back to Patients
-        </Button>
+        {(() => {
+          // Derive back target from current section using the dimension hierarchy.
+          let label = "Back to Patients";
+          let onBack: () => void = () => navigate("/patients");
+
+          if (activeSection === "overview") {
+            label = "Back to Patients";
+            onBack = () => navigate("/patients");
+          } else if (
+            ["details", "medications", "visits", "health_overview", "lab_results"].includes(activeSection)
+          ) {
+            label = "Back to Overview";
+            onBack = () => setActiveSection("overview");
+          } else {
+            // Dimension or sub-dimension
+            const isMain = HEALTH_TAXONOMY.some((m) => m.key === activeSection);
+            if (isMain) {
+              label = "Back to Overview";
+              onBack = () => setActiveSection("overview");
+            } else {
+              const parent = HEALTH_TAXONOMY.find((m) =>
+                m.subDimensions.some((s) => s.key === activeSection),
+              );
+              if (parent) {
+                label = `Back to ${parent.label}`;
+                onBack = () => setActiveSection(parent.key);
+              } else {
+                label = "Back to Overview";
+                onBack = () => setActiveSection("overview");
+              }
+            }
+          }
+
+          return (
+            <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 mb-4 self-start">
+              <ArrowLeft className="h-4 w-4" /> {label}
+            </Button>
+          );
+        })()}
 
         {activeSection === "overview" ? (
           <PatientOverviewView
