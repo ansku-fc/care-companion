@@ -2890,7 +2890,7 @@ function CardiovascularDimensionView({
     }
   };
 
-  const [cvSubTab, setCvSubTab] = useState<"risk_factors" | "lab_graphs" | "total_risk">("risk_factors");
+  const [cvSubTab, setCvSubTab] = useState<"risk_factors" | "lab_graphs">("risk_factors");
 
   // ── Annotation → Summary/Recommendations nudge state ──
   useAnnotationsVersion();
@@ -3016,14 +3016,6 @@ function CardiovascularDimensionView({
                 }`}
               >
                 Lab Results
-              </button>
-              <button
-                onClick={() => { setCvSubTab("total_risk"); setSelectedMarker(null); }}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-sm font-medium transition-all ${
-                  cvSubTab === "total_risk" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"
-                }`}
-              >
-                Total Risk
               </button>
             </div>
           </CardHeader>
