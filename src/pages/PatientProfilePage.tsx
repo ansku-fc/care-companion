@@ -2148,8 +2148,8 @@ function GenericDimensionView({
   );
   const mainDim = findMainDimension(dimensionKey) ?? null;
   const score = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
-  const scoreColor = score <= 3 ? "text-green-600" : score <= 6 ? "text-amber-600" : "text-destructive";
-  const scoreBg = score <= 3 ? "bg-green-100" : score <= 6 ? "bg-amber-100" : "bg-red-100";
+  const scoreColor = "text-white";
+  const scoreBg = score <= 3 ? "bg-[hsl(28_35%_7%)]" : score <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
 
@@ -2331,8 +2331,8 @@ function SkinMucousDimensionView({
   }, [summary]);
   const [editSummary, setEditSummary] = useState(cleanSummary);
 
-  const scoreColor = skinScore <= 3 ? "text-green-600" : skinScore <= 6 ? "text-amber-600" : "text-destructive";
-  const scoreBg = skinScore <= 3 ? "bg-green-100" : skinScore <= 6 ? "bg-amber-100" : "bg-red-100";
+  const scoreColor = "text-white";
+  const scoreBg = skinScore <= 3 ? "bg-[hsl(28_35%_7%)]" : skinScore <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
 
   const riskHistory = useMemo(() => {
     // Simple history based on score
@@ -3166,8 +3166,8 @@ function CardiovascularDimensionView({
   const gtData = sorted.filter((l) => l.gt_u_l != null).map((l) => ({ date: l.result_date, value: Number(l.gt_u_l) }));
   const alatAsatData = sorted.filter((l) => l.alat_asat_ratio != null).map((l) => ({ date: l.result_date, value: Number(l.alat_asat_ratio) }));
 
-  const scoreColor = cvScore <= 3 ? "text-green-600" : cvScore <= 6 ? "text-amber-600" : "text-destructive";
-  const scoreBg = cvScore <= 3 ? "bg-green-100" : cvScore <= 6 ? "bg-amber-100" : "bg-red-100";
+  const scoreColor = "text-white";
+  const scoreBg = cvScore <= 3 ? "bg-[hsl(28_35%_7%)]" : cvScore <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
 
   const handleSaveCv = async () => {
     setSaving(true);

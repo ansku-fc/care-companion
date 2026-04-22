@@ -184,8 +184,8 @@ export function computeCompositeScore(subs: SubDimScore[]): number {
   return Math.max(1, Math.min(10, Math.round(avg)));
 }
 
-const scoreColorFn = (s: number) => s <= 3 ? "text-green-600" : s <= 6 ? "text-amber-600" : "text-destructive";
-const scoreBgFn = (s: number) => s <= 3 ? "bg-green-100" : s <= 6 ? "bg-amber-100" : "bg-red-100";
+const scoreColorFn = (_s: number) => "text-white";
+const scoreBgFn = (s: number) => s <= 3 ? "bg-[hsl(28_35%_7%)]" : s <= 6 ? "bg-[hsl(28_63%_44%)]" : "bg-[hsl(0_57%_39%)]";
 
 interface Props {
   patient: Tables<"patients">;
