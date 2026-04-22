@@ -64,25 +64,36 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="border-t-2 border-t-[hsl(25_52%_12%)]">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-2 py-3">
-            <div className="flex items-center justify-between w-full gap-2">
-              {collapsed ? (
-                <span className="text-sm font-bold tracking-tight text-sidebar-foreground mx-auto">FC</span>
-              ) : (
-                <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Foundation Clinic</span>
-              )}
+        <div className={collapsed ? "flex flex-col items-center gap-2 px-1 py-3" : "flex items-center justify-between gap-2 px-3 py-3"}>
+          {collapsed ? (
+            <>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleSidebar}
-                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title="Expand sidebar"
                 className="h-7 w-7 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent"
               >
                 <PanelLeft className="h-4 w-4" />
               </Button>
-            </div>
-          </SidebarGroupLabel>
+              <span className="text-sm font-bold tracking-tight text-sidebar-foreground">FC</span>
+            </>
+          ) : (
+            <>
+              <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Foundation Clinic</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                title="Collapse sidebar"
+                className="h-7 w-7 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+        <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {workflowNavItems.map(renderNavItem)}
