@@ -2917,7 +2917,9 @@ function AnnotationListEditor({
       <p className="text-xs font-medium text-muted-foreground mb-1.5">
         Annotations ({list.length})
       </p>
+      {renderAddSection()}
       <ul className="space-y-1.5">
+
         {list.map((a) => {
           const isEditing = editingId === a.id;
           const isDeleting = deletingId === a.id;
