@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Beaker, Activity, Save, X } from "lucide-react";
+import { Beaker, Activity, Save, X, ChevronDown, ChevronRight } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceArea,
@@ -207,6 +207,12 @@ export function MetabolicDimensionView({
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
   const [saving, setSaving] = useState(false);
   const [showRiskHistory, setShowRiskHistory] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const toggleRow = (k: string) => setExpandedRows((prev) => {
+    const next = new Set(prev);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    return next;
+  });
 
   const metCategory = healthCategories.find((c) => c.category.toLowerCase() === "metabolic");
   const [summary, setSummary] = useState(metCategory?.summary || "");
@@ -242,14 +248,14 @@ export function MetabolicDimensionView({
 
   const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
 
-  const riskFactors = [
-    { label: "BMI", value: onboarding?.bmi != null ? String(onboarding.bmi) : "—" },
-    { label: "Waist Circumference (cm)", value: onboarding?.waist_circumference_cm != null ? String(onboarding.waist_circumference_cm) : "—" },
-    { label: "Waist-Hip Ratio", value: onboarding?.waist_to_hip_ratio != null ? String(onboarding.waist_to_hip_ratio) : "—" },
-    { label: "Endocrine / Hormone Illness", value: onboarding?.illness_hormone ? "Yes" : "No" },
-    { label: "Kidney Illness", value: onboarding?.illness_kidney ? "Yes" : "No" },
-    { label: "Weight (kg)", value: onboarding?.weight_kg != null ? String(onboarding.weight_kg) : "—" },
-    { label: "Height (cm)", value: onboarding?.height_cm != null ? String(onboarding.height_cm) : "—" },
+  const riskFactors: { key: string; label: string; value: string; detail: React.ReactNode }[] = [
+    { key: "bmi", label: "BMI", value: onboarding?.bmi != null ? String(onboarding.bmi) : "—", detail: <p className="text-sm text-muted-foreground">Body Mass Index. Normal range 18.5–24.9.</p> },
+    { key: "waist", label: "Waist Circumference (cm)", value: onboarding?.waist_circumference_cm != null ? String(onboarding.waist_circumference_cm) : "—", detail: <p className="text-sm text-muted-foreground">Elevated risk above 102 cm (men) / 88 cm (women).</p> },
+    { key: "whr", label: "Waist-Hip Ratio", value: onboarding?.waist_to_hip_ratio != null ? String(onboarding.waist_to_hip_ratio) : "—", detail: <p className="text-sm text-muted-foreground">Cardiometabolic risk increases above 0.9 (men) / 0.85 (women).</p> },
+    { key: "hormone", label: "Endocrine / Hormone Illness", value: onboarding?.illness_hormone ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">History of endocrine or hormonal conditions.</p> },
+    { key: "kidney", label: "Kidney Illness", value: onboarding?.illness_kidney ? "Yes" : "No", detail: <p className="text-sm">{onboarding?.illness_kidney_notes || "No additional notes recorded."}</p> },
+    { key: "weight", label: "Weight (kg)", value: onboarding?.weight_kg != null ? String(onboarding.weight_kg) : "—", detail: <p className="text-sm text-muted-foreground">Body weight recorded during onboarding assessment.</p> },
+    { key: "height", label: "Height (cm)", value: onboarding?.height_cm != null ? String(onboarding.height_cm) : "—", detail: <p className="text-sm text-muted-foreground">Patient height recorded during onboarding.</p> },
   ];
 
   const handleSave = async () => {
@@ -531,28 +537,29 @@ export function MetabolicDimensionView({
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Risk Factors from Onboarding</CardTitle></CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Factor</TableHead><TableHead>Value</TableHead><TableHead>Recorded</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {riskFactors.map((f) => (
-                      <TableRow key={f.label}>
-                        <TableCell className="font-medium text-sm">{f.label}</TableCell>
-                        <TableCell className="text-sm">{f.value}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{onboardingDate}</TableCell>
-                      </TableRow>
-                    ))}
-                    {onboarding?.illness_kidney_notes && (
-                      <TableRow>
-                        <TableCell className="font-medium text-sm">Kidney Illness Notes</TableCell>
-                        <TableCell colSpan={2} className="text-sm">{onboarding.illness_kidney_notes}</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                <div className="divide-y border rounded-md">
+                  {riskFactors.map((f) => {
+                    const expanded = expandedRows.has(f.key);
+                    return (
+                      <div key={f.key} className="border-b last:border-0">
+                        <button
+                          onClick={() => toggleRow(f.key)}
+                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <span className="font-medium text-sm">{f.label}</span>
+                            <span className="text-sm text-muted-foreground">{f.value}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{onboardingDate}</span>
+                            {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </div>
+                        </button>
+                        {expanded && <div className="px-4 pb-4 pt-0">{f.detail}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}
