@@ -418,19 +418,24 @@ const PatientProfilePage = () => {
             onSelectDimension={setActiveSection}
             markerNotes={markerNotes}
             setMarkerNotes={setMarkerNotes}
+            initialTab="labs"
             labResultsSlot={
               <LabResultsView
                 patientId={patient.id}
+                patientName={patient.full_name}
                 labResults={labResults}
                 onLabResultsAdded={fetchData}
                 onNavigateDimension={setActiveSection}
                 markerNotes={markerNotes}
                 setMarkerNotes={setMarkerNotes}
+                reviewMode={reviewMode}
+                onReviewComplete={() => setSearchParams({}, { replace: true })}
               />
             }
           />
         ) : activeSection === "lab_results_legacy" ? (
-          <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
+          <LabResultsView patientId={patient.id} patientName={patient.full_name} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
+
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
