@@ -4,9 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pill, Plus, AlertTriangle, RefreshCw, ChevronDown, ChevronRight, History } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  CARTER_MEDICATIONS,
+  CARTER_INTERACTIONS,
+} from "@/lib/patientClinicalData";
 
-// ── Mock medication data — keep aligned with PatientMedicationsView ──
-// In a future iteration these should be lifted to a shared store / fetched.
+// ── Mock medication data — sourced from the central clinical data module ──
 type DimMed = {
   id: string;
   name: string;
@@ -25,14 +28,19 @@ type DimMed = {
 };
 
 const SEED_MEDS: DimMed[] = [
-  { id: "m1", name: "Atorvastatin", dose: "20 mg", frequency: "Once daily (evening)", dimension: "Cardiovascular Health", remainingPills: 18, totalPills: 90, renewalDate: "2026-05-08", status: "active", startDate: "2024-02-10" },
-  { id: "m2", name: "Lisinopril", dose: "10 mg", frequency: "Once daily (morning)", dimension: "Cardiovascular Health", remainingPills: 42, totalPills: 90, renewalDate: "2026-06-02", status: "active", startDate: "2023-07-08" },
-  { id: "m3", name: "Metformin", dose: "500 mg", frequency: "Twice daily with meals", dimension: "Metabolic Health", remainingPills: 6, totalPills: 180, renewalDate: "2026-04-29", status: "active" },
-  { id: "m4", name: "Levothyroxine", dose: "75 mcg", frequency: "Once daily (fasting)", dimension: "Metabolic Health", remainingPills: 60, totalPills: 100, renewalDate: "2026-07-14", status: "active" },
-  { id: "m5", name: "Sertraline", dose: "50 mg", frequency: "Once daily", dimension: "Brain & Mental Health", remainingPills: 24, totalPills: 60, renewalDate: "2026-05-20", status: "active" },
-  { id: "m6", name: "Warfarin", dose: "3 mg", frequency: "Once daily", dimension: "Cardiovascular Health", remainingPills: 30, totalPills: 90, renewalDate: "2026-06-15", status: "active" },
-  { id: "m7", name: "Ibuprofen", dose: "400 mg", frequency: "Up to 3x daily as needed", dimension: "Exercise & Functional Health", remainingPills: 12, totalPills: 60, renewalDate: "2026-05-15", status: "active" },
-  // ── Past medications (dummy) ──
+  ...CARTER_MEDICATIONS.map((m) => ({
+    id: m.id,
+    name: m.name,
+    dose: m.dose,
+    frequency: m.frequency,
+    dimension: m.dimension,
+    remainingPills: m.remainingPills,
+    totalPills: m.totalPills,
+    renewalDate: m.renewalDate,
+    status: m.status,
+    startDate: m.startDate,
+  })),
+  // Past
   {
     id: "m-past-1",
     name: "Aspirin",
@@ -60,12 +68,11 @@ type DimInteraction = {
   description: string;
 };
 
-const SEED_INTERACTIONS: DimInteraction[] = [
-  { drugs: ["Warfarin", "Ibuprofen"], severity: "severe", description: "NSAIDs significantly increase bleeding risk when combined with anticoagulants." },
-  { drugs: ["Warfarin", "Sertraline"], severity: "moderate", description: "SSRIs may potentiate anticoagulant effect — monitor INR closely." },
-  { drugs: ["Lisinopril", "Ibuprofen"], severity: "moderate", description: "NSAIDs reduce ACE inhibitor efficacy and raise renal injury risk." },
-  { drugs: ["Atorvastatin", "Warfarin"], severity: "mild", description: "May modestly increase INR — periodic monitoring advised." },
-];
+const SEED_INTERACTIONS: DimInteraction[] = CARTER_INTERACTIONS.map((i) => ({
+  drugs: i.drugs,
+  severity: i.severity,
+  description: i.description,
+}));
 
 // Map dimension key (from healthDimensions) → human dimension label used on meds
 const DIMENSION_LABEL_MAP: Record<string, string[]> = {
