@@ -121,7 +121,13 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
             </div>
           )}
 
+          <ContextualPreview
+            task={task}
+            onNavigate={(path) => { onOpenChange(false); navigate(path); }}
+          />
+
           <Separator />
+
 
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Status</p>
