@@ -179,7 +179,21 @@ const CalendarPage = () => {
   const selectedDayKey = format(selectedDate, "yyyy-MM-dd");
   const dayAppointments = apptsByDay.get(selectedDayKey) ?? [];
 
+  const tasksByDay = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    tasks.forEach((t) => {
+      if (!t.due_date) return;
+      const key = t.due_date.slice(0, 10);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    });
+    return map;
+  }, [tasks]);
+  const dayTasks = tasksByDay.get(selectedDayKey) ?? [];
+
   const typeStyle = (type: string) => TYPE_STYLES[type] ?? TYPE_STYLES.consultation;
+
+  const openTaskDetail = (t: Task) => { setTaskDetail(t); setTaskPanelOpen(true); };
 
   return (
     <div className="space-y-6">
