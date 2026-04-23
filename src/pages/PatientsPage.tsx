@@ -81,8 +81,17 @@ const PatientsPage = () => {
     return Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
   };
 
-  const getInitials = (name: string) =>
-    name.split(" ").map((n) => n[0]).join("").toUpperCase();
+  const getInitials = (name: string) => {
+    // Supports "Surname, First" → "FS" (first-name initial + surname initial)
+    // Falls back to "First Last" → "FL" for legacy values.
+    if (name.includes(",")) {
+      const [surname, rest = ""] = name.split(",").map((s) => s.trim());
+      const firstInitial = rest.split(/\s+/)[0]?.[0] ?? "";
+      const surnameInitial = surname[0] ?? "";
+      return (firstInitial + surnameInitial).toUpperCase();
+    }
+    return name.split(/\s+/).map((n) => n[0]).join("").toUpperCase();
+  };
 
   return (
     <div className="space-y-6">
