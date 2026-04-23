@@ -125,7 +125,9 @@ export function VisitConsultationView({ patient, appointment, onBack, onSaved }:
   });
   const [labResults, setLabResults] = useState<LabResultsData>({ ...defaultLabResults });
   const [saving, setSaving] = useState(false);
+  const [followUpPrompt, setFollowUpPrompt] = useState(false);
   const { user } = useAuth();
+  const { openNewTask } = useTaskActions();
 
   const updateField = (field: keyof VisitFormData, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
