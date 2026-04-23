@@ -65,6 +65,23 @@ export function PatientOverviewView({
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
   const [newConsideration, setNewConsideration] = useState({ title: "", description: "", category: "other" });
 
+  const [showBioForm, setShowBioForm] = useState(false);
+  const [bioForm, setBioForm] = useState({
+    height_cm: "",
+    weight_kg: "",
+    waist_circumference_cm: "",
+    waist_to_hip_ratio: "",
+  });
+
+  useEffect(() => {
+    setBioForm({
+      height_cm: onboarding?.height_cm?.toString() ?? "",
+      weight_kg: onboarding?.weight_kg?.toString() ?? "",
+      waist_circumference_cm: onboarding?.waist_circumference_cm?.toString() ?? "",
+      waist_to_hip_ratio: onboarding?.waist_to_hip_ratio?.toString() ?? "",
+    });
+  }, [onboarding]);
+
   const fetchOverviewData = async () => {
     const [diagRes, medRes, teamRes, allergyRes, considRes] = await Promise.all([
       supabase.from("patient_diagnoses").select("*").eq("patient_id", patient.id).eq("status", "active").order("diagnosed_date", { ascending: false }),
