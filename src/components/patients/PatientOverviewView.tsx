@@ -207,6 +207,62 @@ export function PatientOverviewView({
     fetchOverviewData();
   };
 
+  // Compute BMI from current form values (or stored values) when both height and weight are present
+  const parseNum = (v: string | null | undefined): number | null => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = typeof v === "number" ? v : parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const formHeight = parseNum(bioForm.height_cm);
+  const formWeight = parseNum(bioForm.weight_kg);
+  const computedBmi =
+    formHeight && formWeight && formHeight > 0
+      ? +(formWeight / Math.pow(formHeight / 100, 2)).toFixed(1)
+      : onboarding?.bmi ?? null;
+
+  const handleSaveBiometrics = async () => {
+    if (!user) return;
+    const height = parseNum(bioForm.height_cm);
+    const weight = parseNum(bioForm.weight_kg);
+    const waist = parseNum(bioForm.waist_circumference_cm);
+    const whr = parseNum(bioForm.waist_to_hip_ratio);
+    const bmi =
+      height && weight && height > 0
+        ? +(weight / Math.pow(height / 100, 2)).toFixed(1)
+        : null;
+
+    let error;
+    if (onboarding) {
+      const res = await supabase
+        .from("patient_onboarding")
+        .update({
+          height_cm: height,
+          weight_kg: weight,
+          waist_circumference_cm: waist,
+          waist_to_hip_ratio: whr,
+          bmi,
+        })
+        .eq("id", onboarding.id);
+      error = res.error;
+    } else {
+      const res = await supabase.from("patient_onboarding").insert({
+        patient_id: patient.id,
+        created_by: user.id,
+        height_cm: height,
+        weight_kg: weight,
+        waist_circumference_cm: waist,
+        waist_to_hip_ratio: whr,
+        bmi,
+      });
+      error = res.error;
+    }
+
+    if (error) { toast.error("Failed to save biometrics"); return; }
+    toast.success("Biometrics updated");
+    setShowBioForm(false);
+    onDataChanged();
+  };
+
   // ─────────────────────────────────────────────────────────
   return (
     <div className="space-y-4 p-1 overflow-auto h-full">
