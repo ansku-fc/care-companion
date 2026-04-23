@@ -287,9 +287,14 @@ const PatientProfilePage = () => {
                       </div>
                     );
                   })}
-                </>
+                </div>
               );
             })()}
+            {/* spacer */}
+            {(() => null)()}
+            {/* end dimensions */}
+            {/* close wrapper started above */}
+            </>
           </div>
         </ScrollArea>
       </div>
