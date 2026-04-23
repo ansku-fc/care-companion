@@ -588,66 +588,214 @@ export function PatientOverviewView({
           ) : (
             <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2">
               {(() => {
-                // Dummy historical baseline (previous measurement)
-                const prevDate = "18 Aug 2025";
-                // Use stored values when present, otherwise fall back to demo values
                 const height = onboarding?.height_cm ?? 188;
                 const weight = onboarding?.weight_kg ?? 84;
                 const bmi = computedBmi ?? 23.8;
                 const waist = onboarding?.waist_circumference_cm ?? 88;
                 const whr = onboarding?.waist_to_hip_ratio ?? 0.92;
 
-                const items: Array<{
+                // unit + lower-is-better flag for delta colouring
+                type HistoryEntry = { date: string; value: number };
+                type Item = {
                   label: string;
-                  value: string;
-                  delta?: { value: string; direction: "up" | "down"; positive: boolean; prev: string };
-                }> = [
+                  unit: string;
+                  current: number;
+                  decimals: number;
+                  lowerIsBetter: boolean;
+                  staticValue?: boolean; // height — no delta
+                  history: HistoryEntry[]; // newest first, current excluded
+                };
+
+                const items: Item[] = [
                   {
                     label: "Height",
-                    value: `${height} cm`,
+                    unit: "cm",
+                    current: height,
+                    decimals: 0,
+                    lowerIsBetter: false,
+                    staticValue: true,
+                    history: [
+                      { date: "12 Aug 2025", value: 188 },
+                      { date: "03 Feb 2025", value: 188 },
+                      { date: "15 Jul 2024", value: 188 },
+                      { date: "20 Jan 2024", value: 188 },
+                      { date: "10 Jun 2023", value: 188 },
+                    ],
                   },
                   {
                     label: "Weight",
-                    value: `${weight} kg`,
-                    delta: { value: "2.1 kg", direction: "down", positive: true, prev: `previously 86.1 kg on ${prevDate}` },
+                    unit: "kg",
+                    current: weight,
+                    decimals: 1,
+                    lowerIsBetter: true,
+                    history: [
+                      { date: "12 Aug 2025", value: 86.1 },
+                      { date: "03 Feb 2025", value: 87.5 },
+                      { date: "15 Jul 2024", value: 88.3 },
+                      { date: "20 Jan 2024", value: 89.5 },
+                      { date: "10 Jun 2023", value: 89.5 },
+                    ],
                   },
                   {
                     label: "BMI",
-                    value: `${bmi}`,
-                    delta: { value: "0.6", direction: "down", positive: true, prev: `previously 24.4 on ${prevDate}` },
+                    unit: "",
+                    current: bmi,
+                    decimals: 1,
+                    lowerIsBetter: true,
+                    history: [
+                      { date: "12 Aug 2025", value: 24.4 },
+                      { date: "03 Feb 2025", value: 24.8 },
+                      { date: "15 Jul 2024", value: 25.0 },
+                      { date: "20 Jan 2024", value: 25.3 },
+                      { date: "10 Jun 2023", value: 25.3 },
+                    ],
                   },
                   {
                     label: "Waist",
-                    value: `${waist} cm`,
-                    delta: { value: "1.5 cm", direction: "down", positive: true, prev: `previously 89.5 cm on ${prevDate}` },
+                    unit: "cm",
+                    current: waist,
+                    decimals: 0,
+                    lowerIsBetter: true,
+                    history: [
+                      { date: "12 Aug 2025", value: 89.5 },
+                      { date: "03 Feb 2025", value: 90.5 },
+                      { date: "15 Jul 2024", value: 91.0 },
+                      { date: "20 Jan 2024", value: 92.5 },
+                      { date: "10 Jun 2023", value: 92.5 },
+                    ],
                   },
                   {
                     label: "W/H Ratio",
-                    value: `${whr}`,
-                    delta: { value: "0.02", direction: "down", positive: true, prev: `previously 0.94 on ${prevDate}` },
+                    unit: "",
+                    current: whr,
+                    decimals: 2,
+                    lowerIsBetter: true,
+                    history: [
+                      { date: "12 Aug 2025", value: 0.94 },
+                      { date: "03 Feb 2025", value: 0.95 },
+                      { date: "15 Jul 2024", value: 0.95 },
+                      { date: "20 Jan 2024", value: 0.96 },
+                      { date: "10 Jun 2023", value: 0.96 },
+                    ],
                   },
                 ];
-                return items.map((item) => (
-                  <div key={item.label}>
-                    <dt className="text-xs text-muted-foreground">{item.label}</dt>
-                    <dd className="text-sm font-medium text-foreground flex items-baseline gap-1.5">
-                      <span>{item.value}</span>
-                      {item.delta && (
-                        <span
-                          title={item.delta.prev}
-                          className={cn(
-                            "text-[11px] font-medium tabular-nums inline-flex items-center gap-0.5 cursor-help",
-                            item.delta.positive
-                              ? "text-[hsl(142_71%_35%)]"
-                              : "text-[hsl(0_57%_39%)]",
-                          )}
-                        >
-                          {item.delta.direction === "down" ? "▼" : "▲"} {item.delta.value}
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                ));
+
+                const fmt = (n: number, d: number) => n.toFixed(d);
+
+                const getDelta = (
+                  curr: number,
+                  prev: number | undefined,
+                  unit: string,
+                  decimals: number,
+                  lowerIsBetter: boolean,
+                ) => {
+                  if (prev === undefined) return null;
+                  const diff = +(curr - prev).toFixed(decimals);
+                  if (diff === 0) return { text: "—", positive: null as null | boolean, dir: null as null | "up" | "down" };
+                  const direction: "up" | "down" = diff < 0 ? "down" : "up";
+                  const positive = lowerIsBetter ? diff < 0 : diff > 0;
+                  const abs = Math.abs(diff).toFixed(decimals);
+                  return {
+                    text: `${direction === "down" ? "▼" : "▲"} ${abs}${unit ? " " + unit : ""}`,
+                    positive,
+                    dir: direction,
+                  };
+                };
+
+                const ImprovedColor = "text-[hsl(142_71%_35%)]";
+                const WorsenedColor = "text-[hsl(0_57%_39%)]";
+
+                return items.map((item) => {
+                  const prevEntry = item.history[0];
+                  const headlineDelta = item.staticValue
+                    ? null
+                    : getDelta(item.current, prevEntry?.value, item.unit, item.decimals, item.lowerIsBetter);
+
+                  // Build full series newest-first including current
+                  const series: HistoryEntry[] = [
+                    { date: "Today", value: item.current },
+                    ...item.history,
+                  ];
+
+                  return (
+                    <Popover key={item.label}>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">{item.label}</dt>
+                        <dd className="text-sm font-medium text-foreground flex items-baseline gap-1.5">
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex items-baseline gap-1.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+                            >
+                              <span>{fmt(item.current, item.decimals)}{item.unit ? ` ${item.unit}` : ""}</span>
+                              {headlineDelta && headlineDelta.positive !== null && (
+                                <span
+                                  className={cn(
+                                    "text-[11px] font-medium tabular-nums inline-flex items-center gap-0.5",
+                                    headlineDelta.positive ? ImprovedColor : WorsenedColor,
+                                  )}
+                                >
+                                  {headlineDelta.text}
+                                </span>
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                        </dd>
+                      </div>
+
+                      <PopoverContent align="start" className="w-72 p-0">
+                        <div className="px-3 py-2 border-b">
+                          <p className="text-xs font-semibold text-foreground">{item.label} history</p>
+                          <p className="text-[10px] text-muted-foreground">Last {series.length} measurements</p>
+                        </div>
+                        <div className="max-h-64 overflow-auto">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/40 text-muted-foreground">
+                              <tr>
+                                <th className="text-left font-medium px-3 py-1.5">Date</th>
+                                <th className="text-left font-medium px-3 py-1.5">Value</th>
+                                <th className="text-left font-medium px-3 py-1.5">Change</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {series.map((entry, idx) => {
+                                const prev = series[idx + 1];
+                                const delta = item.staticValue
+                                  ? { text: "—", positive: null, dir: null }
+                                  : getDelta(entry.value, prev?.value, item.unit, item.decimals, item.lowerIsBetter);
+                                return (
+                                  <tr key={entry.date + idx} className="border-t">
+                                    <td className="px-3 py-1.5 text-foreground whitespace-nowrap">{entry.date}</td>
+                                    <td className="px-3 py-1.5 text-foreground tabular-nums whitespace-nowrap">
+                                      {fmt(entry.value, item.decimals)}{item.unit ? ` ${item.unit}` : ""}
+                                    </td>
+                                    <td className={cn(
+                                      "px-3 py-1.5 tabular-nums whitespace-nowrap",
+                                      delta && delta.positive === true && ImprovedColor,
+                                      delta && delta.positive === false && WorsenedColor,
+                                      (!delta || delta.positive === null) && "text-muted-foreground",
+                                    )}>
+                                      {delta ? delta.text : "—"}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="px-3 py-1.5 border-t text-right">
+                          <button
+                            type="button"
+                            className="text-[11px] text-primary hover:underline"
+                            onClick={() => toast.info("Full measurement history coming soon")}
+                          >
+                            See all
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                });
               })()}
             </dl>
           )}
