@@ -1,0 +1,1 @@
+ALTER TABLE public.patient_allergies ADD COLUMN IF NOT EXISTS icd_code text;

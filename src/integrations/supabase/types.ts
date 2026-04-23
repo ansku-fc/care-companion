@@ -170,6 +170,7 @@ export type Database = {
           allergen: string
           created_at: string
           created_by: string
+          icd_code: string | null
           id: string
           notes: string | null
           patient_id: string
@@ -182,6 +183,7 @@ export type Database = {
           allergen: string
           created_at?: string
           created_by: string
+          icd_code?: string | null
           id?: string
           notes?: string | null
           patient_id: string
@@ -194,6 +196,7 @@ export type Database = {
           allergen?: string
           created_at?: string
           created_by?: string
+          icd_code?: string | null
           id?: string
           notes?: string | null
           patient_id?: string
