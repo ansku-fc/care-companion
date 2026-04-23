@@ -88,6 +88,10 @@ const PatientProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    setActiveSection("overview");
+  }, [id]);
+
   const fetchData = async () => {
     if (!id) return;
     setLoading(true);
