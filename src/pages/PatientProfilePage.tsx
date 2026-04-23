@@ -33,6 +33,7 @@ import { PatientMedicationsView } from "@/components/patients/PatientMedications
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
+import { HealthDataView } from "@/components/patients/HealthDataView";
 import {
   CardioLabBiomarkerPanel,
   getAnnotations,
@@ -156,11 +157,19 @@ const PatientProfilePage = () => {
               const hasNewLabs = labResults.some(l => new Date(l.result_date) >= thirtyDaysAgo);
               const hasLabReviewTasks = patientTasks.some(t => t.category === "clinical_review" && ["todo", "in_progress"].includes(t.status));
               const labNotification = hasNewLabs || hasLabReviewTasks;
+              const isOnHealthData = activeSection === "lab_results";
+              const isInDimension = HEALTH_TAXONOMY.some(
+                (m) => m.key === activeSection || m.subDimensions.some((s) => s.key === activeSection),
+              );
               return (
                 <button
                   onClick={() => setActiveSection("lab_results")}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                    isOnHealthData
+                      ? "bg-primary text-primary-foreground"
+                      : isInDimension
+                        ? "bg-primary/15 text-foreground font-medium"
+                        : "hover:bg-muted text-foreground"
                   }`}
                 >
                   <FlaskConical className="h-4 w-4" />
@@ -194,7 +203,6 @@ const PatientProfilePage = () => {
               Visits
             </button>
 
-            <Separator className="my-2" />
             {(() => {
               const isOnOverview = activeSection === "overview";
               const isOnDimension =
@@ -206,10 +214,10 @@ const PatientProfilePage = () => {
               const sectionOpen = dimensionsSectionOpen ?? defaultOpen;
 
               return (
-                <>
+                <div className="ml-3 mt-1 pl-2 border-l border-border/60">
                   <button
                     onClick={() => setDimensionsSectionOpen(!sectionOpen)}
-                    className="w-full flex items-center justify-between px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                    className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
                   >
                     <span>Health Dimensions</span>
                     {sectionOpen
@@ -279,7 +287,7 @@ const PatientProfilePage = () => {
                       </div>
                     );
                   })}
-                </>
+                </div>
               );
             })()}
           </div>
@@ -305,8 +313,8 @@ const PatientProfilePage = () => {
             // Dimension or sub-dimension
             const isMain = HEALTH_TAXONOMY.some((m) => m.key === activeSection);
             if (isMain) {
-              label = "Back to Overview";
-              onBack = () => setActiveSection("overview");
+              label = "Back to Health Data";
+              onBack = () => setActiveSection("lab_results");
             } else {
               const parent = HEALTH_TAXONOMY.find((m) =>
                 m.subDimensions.some((s) => s.key === activeSection),
@@ -315,8 +323,8 @@ const PatientProfilePage = () => {
                 label = `Back to ${parent.label}`;
                 onBack = () => setActiveSection(parent.key);
               } else {
-                label = "Back to Overview";
-                onBack = () => setActiveSection("overview");
+                label = "Back to Health Data";
+                onBack = () => setActiveSection("lab_results");
               }
             }
           }
@@ -355,6 +363,8 @@ const PatientProfilePage = () => {
             onPatientUpdate={(updated) => setPatient(updated)}
           />
         ) : activeSection === "lab_results" ? (
+          <HealthDataView onSelectDimension={setActiveSection} />
+        ) : activeSection === "lab_results_legacy" ? (
           <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
         ) : (
           <HealthDimensionView
