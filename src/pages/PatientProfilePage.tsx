@@ -35,6 +35,7 @@ import { MainDimensionOverview, SubDimensionView } from "@/components/patients/D
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
 import { PatientCareTeamView } from "@/components/patients/PatientCareTeamView";
 import { HealthDataView } from "@/components/patients/HealthDataView";
+import { HealthDataHub } from "@/components/patients/HealthDataHub";
 import {
   CARTER_DIAGNOSES,
   getDiagnosesForDimension,
@@ -401,7 +402,24 @@ const PatientProfilePage = () => {
             onPatientUpdate={(updated) => setPatient(updated)}
           />
         ) : activeSection === "lab_results" ? (
-          <HealthDataView onSelectDimension={setActiveSection} />
+          <HealthDataHub
+            patientId={patient.id}
+            labResults={labResults}
+            onLabResultsAdded={fetchData}
+            onSelectDimension={setActiveSection}
+            markerNotes={markerNotes}
+            setMarkerNotes={setMarkerNotes}
+            labResultsSlot={
+              <LabResultsView
+                patientId={patient.id}
+                labResults={labResults}
+                onLabResultsAdded={fetchData}
+                onNavigateDimension={setActiveSection}
+                markerNotes={markerNotes}
+                setMarkerNotes={setMarkerNotes}
+              />
+            }
+          />
         ) : activeSection === "lab_results_legacy" ? (
           <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
         ) : (
