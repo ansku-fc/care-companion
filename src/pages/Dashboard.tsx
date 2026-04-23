@@ -15,7 +15,7 @@ const clinicalHoursData = [
   { tier: "Tier 2", hours: 2, target: 6 },
   { tier: "Tier 3", hours: 1.5, target: 4 },
   { tier: "Tier 4", hours: 0.5, target: 2 },
-  { tier: "Children", hours: 2, target: 4 },
+  { tier: "Child", hours: 2, target: 4 },
   { tier: "Onboarding", hours: 1, target: 3 },
   { tier: "Acute", hours: 0, target: 2 },
   { tier: "Case Mgmt", hours: 1.5, target: 3 },

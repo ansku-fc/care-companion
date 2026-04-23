@@ -7,7 +7,7 @@ const tiers = [
   { name: "Tier 2", hours: 8, target: 15 },
   { name: "Tier 3", hours: 5, target: 10 },
   { name: "Tier 4", hours: 2, target: 5 },
-  { name: "Children", hours: 6, target: 10 },
+  { name: "Child", hours: 6, target: 10 },
   { name: "Onboarding", hours: 3, target: 8 },
   { name: "Acute", hours: 4, target: 6 },
   { name: "Case Management", hours: 7, target: 12 },
