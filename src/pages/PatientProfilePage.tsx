@@ -252,7 +252,7 @@ const PatientProfilePage = () => {
                                   }
                                   setActiveSection(main.key);
                                 }}
-                                className={`w-full flex min-h-8 items-center gap-2 px-2 py-1.5 rounded-md text-[12.5px] transition-colors ${
+                                className={`w-full flex min-h-8 items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] leading-4 transition-colors ${
                                   isMainActive
                                     ? "bg-primary text-primary-foreground"
                                     : isSubActive
@@ -261,11 +261,11 @@ const PatientProfilePage = () => {
                                 }`}
                               >
                                 <MainIcon className="h-3.5 w-3.5 shrink-0" />
-                                <span className="flex-1 min-w-0 text-left truncate">{main.label}</span>
+                                <span className="min-w-0 flex-1 text-left whitespace-nowrap">{main.label}</span>
                                 {hasSubs && (
                                   isExpanded
-                                    ? <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
-                                    : <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
+                                    ? <span className="ml-auto flex h-4 w-4 shrink-0 basis-4 items-center justify-center"><ChevronDown className="h-3 w-3 shrink-0 opacity-50" /></span>
+                                    : <span className="ml-auto flex h-4 w-4 shrink-0 basis-4 items-center justify-center"><ChevronRight className="h-3 w-3 shrink-0 opacity-50" /></span>
                                 )}
                               </button>
                               {hasSubs && isExpanded && (
@@ -276,14 +276,14 @@ const PatientProfilePage = () => {
                                       <button
                                         key={sub.key}
                                         onClick={() => setActiveSection(sub.key)}
-                                        className={`w-full flex min-h-8 items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors ${
+                                        className={`w-full flex min-h-8 items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] leading-4 transition-colors ${
                                           activeSection === sub.key
                                             ? "bg-primary text-primary-foreground"
                                             : "hover:bg-muted text-foreground"
                                         }`}
                                       >
                                         <SubIcon className="h-3.5 w-3.5 shrink-0" />
-                                        <span className="flex-1 min-w-0 text-left truncate">{sub.label}</span>
+                                        <span className="min-w-0 flex-1 text-left whitespace-nowrap">{sub.label}</span>
                                       </button>
                                     );
                                   })}
