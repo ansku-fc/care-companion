@@ -308,6 +308,16 @@ const PatientProfilePage = () => {
               <Calendar className="h-4 w-4" />
               Visits
             </button>
+
+            <button
+              onClick={() => setActiveSection("care_team")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "care_team" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Care Team
+            </button>
           </div>
         </ScrollArea>
       </div>
