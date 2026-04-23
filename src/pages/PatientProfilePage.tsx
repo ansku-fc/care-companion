@@ -4140,7 +4140,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
-  const [healthDataTab, setHealthDataTab] = useState<HealthDataTab>("lab_results");
+  // (legacy tab state removed; lab results render directly now)
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
