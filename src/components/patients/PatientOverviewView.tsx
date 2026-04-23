@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   AlertTriangle, Plus, Pill, Stethoscope, ClipboardList, Users,
-  FlaskConical, Calendar as CalendarIcon, Pencil, Trash2,
+  FlaskConical, Calendar as CalendarIcon, Pencil, Trash2, FileText,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -191,8 +191,12 @@ export function PatientOverviewView({
   // ─────────────────────────────────────────────────────────
   return (
     <div className="space-y-4 p-1 overflow-auto h-full">
-      {/* 1. EDIT DETAILS BUTTON — top right */}
-      <div className="flex justify-end">
+      {/* 1. HEADER BUTTONS — top right */}
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" className="text-xs gap-1.5">
+          <FileText className="h-3.5 w-3.5" />
+          Generate Patient Report
+        </Button>
         <Button variant="ghost" size="sm" className="text-xs" onClick={() => onSelectSection("details")}>
           Edit details
         </Button>
