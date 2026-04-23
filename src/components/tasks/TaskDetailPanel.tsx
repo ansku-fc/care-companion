@@ -176,3 +176,126 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
     </Sheet>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Contextual preview — renders a clinical snippet based on task type so the
+// doctor sees the source content (lab rows, drug interaction, low supply…)
+// inline, with a deep link to the full view.
+// ---------------------------------------------------------------------------
+
+type PreviewKind = "labs" | "interaction" | "renewal" | null;
+
+function detectKind(task: Task): PreviewKind {
+  const hay = `${task.title} ${task.created_from ?? ""} ${task.description ?? ""}`.toLowerCase();
+  if (/lab result|new lab|review.*lab/.test(hay)) return "labs";
+  if (/interaction|warfarin|ibuprofen/.test(hay)) return "interaction";
+  if (/renew|prescription|metformin|refill|supply/.test(hay)) return "renewal";
+  return null;
+}
+
+function ContextualPreview({
+  task,
+  onNavigate,
+}: {
+  task: Task;
+  onNavigate: (path: string) => void;
+}) {
+  const kind = detectKind(task);
+  if (!kind || !task.patient_id) return null;
+
+  const base = `/patients/${task.patient_id}`;
+
+  if (kind === "labs") {
+    const rows = [
+      { name: "LDL Cholesterol", value: "4.8 mmol/L", ref: "< 3.0", out: "high" as const },
+      { name: "HbA1c",            value: "58 mmol/mol", ref: "< 42",  out: "high" as const },
+      { name: "ALAT",             value: "62 U/L",     ref: "< 45",  out: "high" as const },
+    ];
+    return (
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <FlaskConical className="h-3.5 w-3.5" /> New lab results
+        </div>
+        <div className="space-y-1.5">
+          {rows.map((r) => (
+            <div key={r.name} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block px-1 py-px rounded text-[9px] font-bold bg-primary/15 text-primary">NEW</span>
+                <span className="font-medium">{r.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-destructive">
+                  {r.out === "high" ? "▲" : "▼"} {r.value}
+                </span>
+                <span className="text-muted-foreground tabular-nums">ref {r.ref}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => onNavigate(`${base}?tab=health-data&hd=labs&highlight=new`)}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
+        >
+          Go to full lab view <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+
+  if (kind === "interaction") {
+    return (
+      <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+        <div className="flex items-center gap-1.5">
+          <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-destructive">Drug interaction</span>
+          <Badge className="bg-destructive text-destructive-foreground text-[9px] uppercase ml-auto">Severe</Badge>
+        </div>
+        <p className="text-xs font-semibold">Warfarin × Ibuprofen</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Concurrent use significantly increases bleeding risk. NSAIDs displace warfarin from
+          plasma proteins and impair platelet function. Recommend alternative analgesic
+          (paracetamol) and INR monitoring within 3–5 days if continued.
+        </p>
+        <button
+          onClick={() => onNavigate(`${base}?tab=medications`)}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
+        >
+          Go to medications <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+
+  if (kind === "renewal") {
+    return (
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <Pill className="h-3.5 w-3.5" /> Prescription renewal
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold">Metformin 500 mg · twice daily</p>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Current supply</span>
+            <span className="font-semibold text-destructive">6 / 180 (3%)</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div className="h-full bg-destructive" style={{ width: "3%" }} />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+            <span>Last dispensed</span>
+            <span>14 Jan 2026</span>
+          </div>
+        </div>
+        <button
+          onClick={() => onNavigate(`${base}?tab=medications&focus=metformin`)}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
+        >
+          Renew prescription <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
+
