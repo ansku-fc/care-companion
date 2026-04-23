@@ -700,7 +700,7 @@ export function PatientOverviewView({
               </div>
             </div>
           ) : (
-            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2">
+            <dl className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-x-3 gap-y-2 text-[13px]">
               <div>
                 <dt className="text-xs text-muted-foreground">Age</dt>
                 <dd className="text-sm font-medium text-foreground">
