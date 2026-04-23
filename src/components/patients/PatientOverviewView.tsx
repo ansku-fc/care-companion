@@ -610,13 +610,14 @@ export function PatientOverviewView({
               </div>
             </div>
           ) : (
-            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2">
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2">
               {(() => {
                 const height = onboarding?.height_cm ?? 188;
                 const weight = onboarding?.weight_kg ?? 84;
                 const bmi = computedBmi ?? 23.8;
                 const waist = onboarding?.waist_circumference_cm ?? 88;
-                const whr = onboarding?.waist_to_hip_ratio ?? 0.92;
+                const hip = 96;
+                const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
 
                 // unit + lower-is-better flag for delta colouring
                 type HistoryEntry = { date: string; value: number };
@@ -675,17 +676,31 @@ export function PatientOverviewView({
                     ],
                   },
                   {
-                    label: "Waist",
+                    label: "Waist Circumference",
                     unit: "cm",
                     current: waist,
                     decimals: 0,
                     lowerIsBetter: true,
                     history: [
-                      { date: "12 Aug 2025", value: 89.5 },
-                      { date: "03 Feb 2025", value: 90.5 },
-                      { date: "15 Jul 2024", value: 91.0 },
-                      { date: "20 Jan 2024", value: 92.5 },
-                      { date: "10 Jun 2023", value: 92.5 },
+                      { date: "12 Aug 2025", value: 90 },
+                      { date: "03 Feb 2025", value: 90 },
+                      { date: "15 Jul 2024", value: 91 },
+                      { date: "20 Jan 2024", value: 92 },
+                      { date: "10 Jun 2023", value: 92 },
+                    ],
+                  },
+                  {
+                    label: "Hip Circumference",
+                    unit: "cm",
+                    current: hip,
+                    decimals: 0,
+                    lowerIsBetter: false,
+                    history: [
+                      { date: "12 Aug 2025", value: 96 },
+                      { date: "03 Feb 2025", value: 96 },
+                      { date: "15 Jul 2024", value: 97 },
+                      { date: "20 Jan 2024", value: 97 },
+                      { date: "10 Jun 2023", value: 97 },
                     ],
                   },
                   {
