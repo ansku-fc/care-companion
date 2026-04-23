@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical,
   Stethoscope, Clock, Play, Pencil, X, ChevronLeft, ChevronRight,
-  User, FileText, ExternalLink, StickyNote, Import, Briefcase
+  User, FileText, ExternalLink, StickyNote, Import, Briefcase, CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { useTasks } from "@/hooks/useTasks";
+import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
+import { priorityMeta, type Task } from "@/lib/tasks";
+import { cn } from "@/lib/utils";
 
 // --- Dummy data ---
 const DUMMY_PATIENT_ID = "4d46d1a0-0000-0000-0000-000000000000";
