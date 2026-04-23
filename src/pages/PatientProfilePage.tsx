@@ -36,6 +36,12 @@ import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
 import { PatientCareTeamView } from "@/components/patients/PatientCareTeamView";
 import { HealthDataView } from "@/components/patients/HealthDataView";
 import {
+  CARTER_DIAGNOSES,
+  getDiagnosesForDimension,
+  fmtClinicalDate,
+  type ClinicalDimensionKey,
+} from "@/lib/patientClinicalData";
+import {
   CardioLabBiomarkerPanel,
   getAnnotations,
   getAnnotationsForBiomarker,
@@ -1970,6 +1976,36 @@ function HealthDimensionView({
       </div>
     );
 
+    // Shared "Current Illnesses" row from CARTER_DIAGNOSES
+    const renderCurrentIllnessesRow = (label: ClinicalDimensionKey, rowKey: string) => {
+      const items = getDiagnosesForDimension(label);
+      return (
+        <ExpandableRow
+          label="Current Illnesses"
+          value={`${items.length} active condition${items.length === 1 ? "" : "s"}`}
+          recorded={onboardingDate}
+          expanded={expandedRows.has(rowKey)}
+          onToggle={() => toggleRow(rowKey)}
+        >
+          {items.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No active conditions for this dimension.</p>
+          ) : (
+            <ul className="space-y-1.5 text-sm">
+              {items.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline" className="text-[10px]">{c.icd10}</Badge>
+                    <span>Diagnosed {fmtClinicalDate(c.diagnosedDate)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ExpandableRow>
+      );
+    };
+
     // Common risk history computation
     const computeRiskHistory = (scoreFn: (lab: typeof labResults[0]) => number) => {
       const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
@@ -2015,6 +2051,7 @@ function HealthDimensionView({
       case "brain_mental": {
         return (
           <div className="divide-y border rounded-md">
+            {renderCurrentIllnessesRow("Brain & Mental Health", "current_illness")}
             <ExpandableRow label="Neurological Illness" value={onboarding?.illness_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_illness")} onToggle={() => toggleRow("neuro_illness")}>
               <p className="text-sm text-muted-foreground">History of neurological conditions.</p>
             </ExpandableRow>
@@ -2230,6 +2267,28 @@ function HealthDimensionView({
             <ExpandableRow label="Colorectal Screening" value={onboarding?.cancer_screening_colorectal === true ? "Yes" : onboarding?.cancer_screening_colorectal === false ? "No" : "—"} recorded={onboardingDate} expanded={expandedRows.has("colorectal")} onToggle={() => toggleRow("colorectal")}>
               <p className="text-sm text-muted-foreground">Up to date with colorectal cancer screening.</p>
             </ExpandableRow>
+          </div>
+        );
+      }
+      case "metabolic":
+      case "metabolism":
+      case "endocrine":
+      case "kidneys":
+      case "nutrition":
+      case "body_composition": {
+        return (
+          <div className="divide-y border rounded-md">
+            {renderCurrentIllnessesRow("Metabolic Health", "current_illness")}
+          </div>
+        );
+      }
+      case "digestion":
+      case "gastrointestinal":
+      case "liver":
+      case "gut": {
+        return (
+          <div className="divide-y border rounded-md">
+            {renderCurrentIllnessesRow("Digestion", "current_illness")}
           </div>
         );
       }
@@ -3296,15 +3355,20 @@ function CardiovascularDimensionView({
   const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
 
   // ── Cardiovascular risk factors (reordered + expandable + dummy history) ──
-  // Dummy: current illnesses
-  const cvCurrentIllnesses: { name: string; diagnosedDate: string; severity?: string }[] = [
-    { name: "Essential hypertension", diagnosedDate: "2023-03-20", severity: "Moderate" },
-    { name: "Hyperlipidemia (LDL)", diagnosedDate: "2024-02-10", severity: "Mild" },
-  ];
-  // Dummy: past illnesses (resolved)
-  const cvPastIllnesses: { name: string; from: string; to: string; resolution?: string }[] = [
-    { name: "Acute pericarditis", from: "2021-06-04", to: "2021-09-12", resolution: "Resolved with NSAIDs" },
-  ];
+  // Pull from single source of truth (shared clinical data)
+  const cvCurrentIllnesses = getDiagnosesForDimension("Cardiovascular Health").map((d) => ({
+    name: d.name,
+    diagnosedDate: fmtClinicalDate(d.diagnosedDate),
+    severity: undefined as string | undefined,
+  }));
+  const cvPastIllnesses = CARTER_DIAGNOSES
+    .filter((d) => d.dimension === "Cardiovascular Health" && d.status === "resolved")
+    .map((d) => ({
+      name: d.name,
+      from: d.diagnosedDate,
+      to: d.resolvedDate ?? "—",
+      resolution: undefined as string | undefined,
+    }));
   // Dummy: smoking history (changes over time)
   const smokingCurrent = onboarding?.smoking ?? "no";
   const smokingHistory: { date: string; value: string }[] = [
