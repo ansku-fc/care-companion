@@ -861,8 +861,8 @@ export function PatientOverviewView({
                   return (
                     <Popover key={item.label}>
                       <div>
-                        <dt className="text-xs text-muted-foreground">{item.label}</dt>
-                        <dd className="text-sm font-medium text-foreground flex items-baseline gap-1.5">
+                        <dt className="text-[11px] text-muted-foreground">{item.label}</dt>
+                        <dd className="text-[12px] font-medium text-foreground flex items-baseline gap-1.5">
                           <PopoverTrigger asChild>
                             <button
                               type="button"
@@ -872,7 +872,7 @@ export function PatientOverviewView({
                               {headlineDelta && headlineDelta.positive !== null && (
                                 <span
                                   className={cn(
-                                    "text-[11px] font-medium tabular-nums inline-flex items-center gap-0.5",
+                                    "text-[10px] font-medium tabular-nums inline-flex items-center gap-0.5",
                                     headlineDelta.positive ? ImprovedColor : WorsenedColor,
                                   )}
                                 >
