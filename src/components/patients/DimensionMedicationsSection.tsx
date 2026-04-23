@@ -86,15 +86,18 @@ const DIMENSION_LABEL_MAP: Record<string, string[]> = {
   brain_mental: ["Brain & Mental Health"],
   brain: ["Brain & Mental Health"],
   mental_health: ["Brain & Mental Health"],
+  mental_wellbeing: ["Brain & Mental Health"],
+  sleep_recovery: ["Brain & Mental Health"],
   exercise: ["Exercise & Functional Health"],
   exercise_functional: ["Exercise & Functional Health"],
   musculoskeletal: ["Exercise & Functional Health"],
   respiratory: ["Respiratory & Immune Health"],
   immune: ["Respiratory & Immune Health"],
   respiratory_immune: ["Respiratory & Immune Health"],
-  digestion: ["Digestion & Liver Health"],
-  liver: ["Digestion & Liver Health"],
-  digestion_liver: ["Digestion & Liver Health"],
+  digestion: ["Digestion", "Digestion & Liver Health"],
+  liver: ["Digestion", "Digestion & Liver Health"],
+  digestion_liver: ["Digestion", "Digestion & Liver Health"],
+  gastrointestinal: ["Digestion", "Digestion & Liver Health"],
 };
 
 const SEVERITY_BORDER: Record<DimInteraction["severity"], string> = {
