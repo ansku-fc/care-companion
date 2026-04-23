@@ -558,11 +558,11 @@ export function PatientOverviewView({
                 </div>
               )}
 
-              {medications.length === 0 && !showMedForm ? (
+              {displayMedications.length === 0 && !showMedForm ? (
                 <p className="text-xs text-muted-foreground">No active medications recorded.</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {medications.map((m) => (
+                  {displayMedications.slice(0, 4).map((m: any) => (
                     <li key={m.id} className="flex items-baseline justify-between gap-3 text-sm">
                       <div className="min-w-0">
                         <span className="font-medium">{m.medication_name}</span>
