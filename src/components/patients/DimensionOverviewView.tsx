@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Activity, Save, X } from "lucide-react";
+import { Activity, Save, X, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -20,6 +20,7 @@ import {
   getBiomarkersForSubDimension,
   type BiomarkerDef,
 } from "@/components/patients/dimensionRegistry";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { cn } from "@/lib/utils";
 
 // ────────────────────────────────────────────────────────────────────
@@ -88,11 +89,15 @@ function LabResultsBlock({
   filter,
   onFilterChange,
   filterOptions,
+  patientId,
+  patientName,
 }: {
   biomarkers: BiomarkerDef[];
   filter?: string;
   onFilterChange?: (k: string) => void;
   filterOptions?: { key: string; label: string }[];
+  patientId?: string;
+  patientName?: string;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<SelectedMarker | null>(null);
   const [sidebarWindow, setSidebarWindow] = useState<"6m" | "1y" | "3y" | "all">("3y");
@@ -160,6 +165,8 @@ function LabResultsBlock({
                 accentColorVar="#2C1A0E"
                 selected={selectedMarker?.key === b.key}
                 onSelect={() => selectMarker(b)}
+                patientId={patientId}
+                patientName={patientName}
               />
             ))}
           </div>
@@ -240,19 +247,24 @@ function LabResultsBlock({
 // ────────────────────────────────────────────────────────────────────
 function ClinicalSynthesis({
   patientId,
+  patientName,
   categoryKey,
+  categoryLabel,
   initialSummary,
   initialRecommendations,
   storedStatus,
   onSaved,
 }: {
   patientId: string;
+  patientName?: string;
   categoryKey: string;
+  categoryLabel: string;
   initialSummary: string;
   initialRecommendations: string;
   storedStatus?: string;
   onSaved?: () => void;
 }) {
+  const { openNewTask } = useTaskActions();
   const [summary, setSummary] = useState(initialSummary);
   const [recommendations, setRecommendations] = useState(initialRecommendations);
   const [saving, setSaving] = useState(false);
@@ -302,7 +314,24 @@ function ClinicalSynthesis({
             />
           </div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() =>
+              openNewTask({
+                title: `Follow up on ${categoryLabel}${patientName ? ` — ${patientName}` : ""}`,
+                patient_id: patientId,
+                category: "clinical",
+                created_from: `${categoryLabel} review`,
+                description: recommendations || undefined,
+              })
+            }
+          >
+            <ListChecks className="h-3.5 w-3.5" />
+            Create task
+          </Button>
           <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
             <Save className="h-3.5 w-3.5" />
             {saving ? "Saving…" : "Save"}
