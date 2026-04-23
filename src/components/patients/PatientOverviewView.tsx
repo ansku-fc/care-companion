@@ -624,7 +624,10 @@ export function PatientOverviewView({
                               a.severity === "mild" && "bg-muted text-muted-foreground border-border",
                             )}
                           >
-                            {a.allergen}
+                            {icd && (
+                              <span className="text-[10px] tabular-nums opacity-60">{icd}</span>
+                            )}
+                            <span>{a.allergen}</span>
                             <button
                               onClick={async () => {
                                 await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
