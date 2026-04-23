@@ -75,6 +75,7 @@ export function PatientOverviewView({
 }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { openNewTask } = useTaskActions();
 
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
