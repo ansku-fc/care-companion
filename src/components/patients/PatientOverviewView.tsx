@@ -148,6 +148,48 @@ export function PatientOverviewView({
   );
   const recentLabsTop3 = sortedLabs.slice(0, 3);
 
+  // ── Carter, Jay-Z dummy clinical data overlay ────────────
+  // If this is Carter, use the central source-of-truth for diagnoses & meds
+  // so they stay consistent across Overview, Health Data, dimensions, and Medications.
+  const carterPatient = isCarter(patient.id, patient.full_name);
+  const displayDiagnoses = useMemo(() => {
+    if (carterPatient && diagnoses.length === 0) {
+      return CARTER_DIAGNOSES.filter((d) => d.status === "active").map((d) => ({
+        id: d.id,
+        diagnosis: d.name,
+        diagnosed_date: d.diagnosedDate,
+        dimension: d.dimension,
+        icd_code: d.icd10,
+      }));
+    }
+    return diagnoses.map((d) => ({ ...d, dimension: undefined as string | undefined }));
+  }, [carterPatient, diagnoses]);
+
+  const displayMedications = useMemo(() => {
+    if (carterPatient && medications.length === 0) {
+      return CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => ({
+        id: m.id,
+        medication_name: m.name,
+        dose: m.dose,
+        frequency: m.frequency,
+      }));
+    }
+    return medications;
+  }, [carterPatient, medications]);
+
+  // Active drug interactions (from central data)
+  const activeInteractions = useMemo(() => {
+    if (!carterPatient) return [];
+    const activeNames = new Set(
+      CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => m.name),
+    );
+    return CARTER_INTERACTIONS.filter(
+      (i) => activeNames.has(i.drugs[0]) && activeNames.has(i.drugs[1]),
+    );
+  }, [carterPatient]);
+  const severeInteractions = activeInteractions.filter((i) => i.severity === "severe");
+  const moderateInteractions = activeInteractions.filter((i) => i.severity === "moderate");
+
   // ── Alerts ───────────────────────────────────────────────
   const openTasks = tasks.filter((t) => t.status !== "done");
   const severeAllergies = allergies.filter((a: any) => a.severity === "severe");
@@ -157,10 +199,14 @@ export function PatientOverviewView({
     (t) => t.due_date && new Date(t.due_date).getTime() < Date.now(),
   ).length;
 
-  const hasAlerts = openTasks.length > 0 || severeAllergies.length > 0 || moderateAllergies.length > 0;
+  const hasAlerts =
+    openTasks.length > 0 ||
+    severeAllergies.length > 0 ||
+    moderateAllergies.length > 0 ||
+    activeInteractions.length > 0;
   const alertSeverity: "high" | "medium" | "none" =
-    severeAllergies.length > 0 || overdueTasksCount > 0 ? "high"
-      : (openTasks.length > 0 || moderateAllergies.length > 0) ? "medium"
+    severeAllergies.length > 0 || overdueTasksCount > 0 || severeInteractions.length > 0 ? "high"
+      : (openTasks.length > 0 || moderateAllergies.length > 0 || moderateInteractions.length > 0) ? "medium"
         : "none";
 
   const alertBarClass =
