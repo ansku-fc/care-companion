@@ -4165,6 +4165,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   reviewMode?: boolean;
   onReviewComplete?: () => void;
 }) {
+  const { notifyChanged } = useTaskActions();
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   // (legacy tab state removed; lab results render directly now)
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
