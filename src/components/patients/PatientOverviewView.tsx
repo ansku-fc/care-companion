@@ -578,6 +578,7 @@ export function PatientOverviewView({
                                 key={`${a.name}-${a.icd10}`}
                                 value={`${a.name} ${a.icd10}`}
                                 onSelect={() => setNewAllergy((p) => ({ ...p, allergen: a.name, icd_code: a.icd10 }))}
+                                className="group"
                               >
                                 <span className="flex-1">{a.name}</span>
                                 <span className="text-[11px] tabular-nums text-muted-foreground group-data-[selected=true]:text-accent-foreground">{a.icd10}</span>
