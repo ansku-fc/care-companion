@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical,
   Stethoscope, Clock, Play, Pencil, X, ChevronLeft, ChevronRight,
-  User, FileText, ExternalLink, StickyNote, Import, Briefcase
+  User, FileText, ExternalLink, StickyNote, Import, Briefcase, CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { useTasks } from "@/hooks/useTasks";
+import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
+import { priorityMeta, type Task } from "@/lib/tasks";
+import { cn } from "@/lib/utils";
 
 // --- Dummy data ---
 const DUMMY_PATIENT_ID = "4d46d1a0-0000-0000-0000-000000000000";
@@ -113,7 +117,11 @@ const CalendarPage = () => {
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<any>(null);
   const [importNoteAppt, setImportNoteAppt] = useState<any>(null);
+  const [taskDetail, setTaskDetail] = useState<Task | null>(null);
+  const [taskPanelOpen, setTaskPanelOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const { tasks, patientName } = useTasks();
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -171,7 +179,21 @@ const CalendarPage = () => {
   const selectedDayKey = format(selectedDate, "yyyy-MM-dd");
   const dayAppointments = apptsByDay.get(selectedDayKey) ?? [];
 
+  const tasksByDay = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    tasks.forEach((t) => {
+      if (!t.due_date) return;
+      const key = t.due_date.slice(0, 10);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    });
+    return map;
+  }, [tasks]);
+  const dayTasks = tasksByDay.get(selectedDayKey) ?? [];
+
   const typeStyle = (type: string) => TYPE_STYLES[type] ?? TYPE_STYLES.consultation;
+
+  const openTaskDetail = (t: Task) => { setTaskDetail(t); setTaskPanelOpen(true); };
 
   return (
     <div className="space-y-6">
@@ -224,9 +246,11 @@ const CalendarPage = () => {
               {calendarDays.map((day) => {
                 const key = format(day, "yyyy-MM-dd");
                 const dayAppts = apptsByDay.get(key) ?? [];
+                const dayTaskList = tasksByDay.get(key) ?? [];
                 const inMonth = isSameMonth(day, currentMonth);
                 const selected = isSameDay(day, selectedDate);
                 const today = isToday(day);
+                const totalItems = dayAppts.length + dayTaskList.length;
 
                 return (
                   <button
@@ -242,7 +266,7 @@ const CalendarPage = () => {
                       {format(day, "d")}
                     </span>
                     <div className="w-full space-y-0.5 overflow-hidden">
-                      {dayAppts.slice(0, 3).map((a: any) => {
+                      {dayAppts.slice(0, 2).map((a: any) => {
                         const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
                         return (
                           <div key={a.id} className={`text-[10px] leading-tight truncate px-1 py-0.5 rounded ${s.bg} ${s.text}`}>
@@ -250,8 +274,25 @@ const CalendarPage = () => {
                           </div>
                         );
                       })}
-                      {dayAppts.length > 3 && (
-                        <div className="text-[10px] text-muted-foreground px-1">+{dayAppts.length - 3} more</div>
+                      {dayTaskList.slice(0, 2).map((t) => {
+                        const meta = priorityMeta(t.priority);
+                        const done = t.status === "done";
+                        return (
+                          <div
+                            key={t.id}
+                            className={cn(
+                              "text-[10px] leading-tight truncate px-1 py-0.5 rounded border border-dashed flex items-center gap-1",
+                              done ? "border-muted-foreground/30 text-muted-foreground line-through" : "border-primary/40 bg-primary/5 text-foreground",
+                            )}
+                          >
+                            <CheckSquare className="h-2.5 w-2.5 shrink-0" />
+                            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", meta.dot)} />
+                            <span className="truncate">{t.title}</span>
+                          </div>
+                        );
+                      })}
+                      {totalItems > 4 && (
+                        <div className="text-[10px] text-muted-foreground px-1">+{totalItems - 4} more</div>
                       )}
                     </div>
                   </button>
@@ -268,12 +309,17 @@ const CalendarPage = () => {
               <CalendarDays className="h-4 w-4 text-primary" />
               {format(selectedDate, "EEEE, MMMM d")}
             </CardTitle>
-            <p className="text-xs text-muted-foreground">{dayAppointments.length} appointment{dayAppointments.length !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-muted-foreground">
+              {dayAppointments.length} appointment{dayAppointments.length !== 1 ? "s" : ""}
+              {dayTasks.length > 0 && ` · ${dayTasks.length} task${dayTasks.length === 1 ? "" : "s"}`}
+            </p>
           </CardHeader>
           <CardContent>
             <ScrollArea className="max-h-[calc(100vh-280px)]">
-              {dayAppointments.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">No appointments scheduled.</p>
+              {dayAppointments.length === 0 && dayTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No appointments or tasks scheduled.</p>
+              ) : dayAppointments.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic px-1">No appointments.</p>
               ) : (
                 <div className="space-y-3">
                   {dayAppointments.map((a: any) => {
@@ -401,10 +447,53 @@ const CalendarPage = () => {
                   })}
                 </div>
               )}
+
+              {dayTasks.length > 0 && (
+                <div className="mt-4 pt-4 border-t space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                    <CheckSquare className="h-3 w-3" /> Tasks due
+                  </p>
+                  {dayTasks.map((t) => {
+                    const meta = priorityMeta(t.priority);
+                    const done = t.status === "done";
+                    const pname = patientName(t.patient_id);
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => openTaskDetail(t)}
+                        className={cn(
+                          "w-full text-left rounded-lg border border-dashed p-2.5 space-y-1 transition-colors hover:bg-muted/40",
+                          done ? "border-muted-foreground/30 opacity-70" : "border-primary/40 bg-primary/5",
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <CheckSquare className={cn("h-3.5 w-3.5 shrink-0", done && "text-muted-foreground")} />
+                          <span className={cn("h-2 w-2 rounded-full shrink-0", meta.dot)} />
+                          <p className={cn("text-sm font-medium flex-1 truncate", done && "line-through text-muted-foreground")}>
+                            {t.title}
+                          </p>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground pl-6 truncate">
+                          {pname && <span className="font-medium text-foreground/80">{pname}</span>}
+                          {pname && t.assignee_name && " · "}
+                          {t.assignee_name}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </ScrollArea>
           </CardContent>
         </Card>
       </div>
+
+      <TaskDetailPanel
+        task={taskDetail}
+        patientName={taskDetail ? patientName(taskDetail.patient_id) : null}
+        open={taskPanelOpen}
+        onOpenChange={setTaskPanelOpen}
+      />
 
       {/* Appointment Detail Dialog */}
       <Dialog open={!!detailAppt} onOpenChange={(open) => !open && setDetailAppt(null)}>

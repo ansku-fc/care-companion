@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
 import { BiometricMiniChart } from "./BiometricMiniChart";
 import { PatientTasksCard } from "@/components/tasks/PatientTasksCard";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   ResponsiveContainer,
   LineChart,
@@ -74,6 +75,7 @@ export function PatientOverviewView({
 }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { openNewTask } = useTaskActions();
 
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
@@ -403,6 +405,26 @@ export function PatientOverviewView({
                     {moderateInteractions.length} moderate drug interaction{moderateInteractions.length === 1 ? "" : "s"}
                   </button>
                 )}
+                <button
+                  onClick={() => {
+                    const parts: string[] = [];
+                    if (severeAllergies.length) parts.push(`${severeAllergies.length} severe allergies`);
+                    if (severeInteractions.length) parts.push(`${severeInteractions.length} severe interactions`);
+                    if (overdueTasksCount) parts.push(`${overdueTasksCount} overdue tasks`);
+                    const summary = parts.join(", ") || "active alerts";
+                    openNewTask({
+                      title: `Review alerts — ${patient.full_name}`,
+                      description: `Active alerts: ${summary}`,
+                      patient_id: patient.id,
+                      category: "clinical",
+                      priority: alertSeverity === "high" ? "urgent" : "high",
+                      created_from: "Patient Overview alerts bar",
+                    });
+                  }}
+                  className="ml-auto text-xs text-primary hover:underline font-medium whitespace-nowrap"
+                >
+                  → Create task
+                </button>
               </div>
             </div>
           )}
