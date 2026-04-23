@@ -2051,6 +2051,7 @@ function HealthDimensionView({
       case "brain_mental": {
         return (
           <div className="divide-y border rounded-md">
+            {renderCurrentIllnessesRow("Brain & Mental Health", "current_illness")}
             <ExpandableRow label="Neurological Illness" value={onboarding?.illness_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_illness")} onToggle={() => toggleRow("neuro_illness")}>
               <p className="text-sm text-muted-foreground">History of neurological conditions.</p>
             </ExpandableRow>
