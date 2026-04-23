@@ -63,9 +63,7 @@ import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   ensureSeeded as ensureLabReviewSeeded,
   getNewMarkers,
-  isMarkerNew,
   verifyMarker,
-  hasUnreviewed,
   subscribeLabReview,
   completeLabReviewTask,
 } from "@/lib/labReview";
