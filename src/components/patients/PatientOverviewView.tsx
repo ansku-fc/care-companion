@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { cn } from "@/lib/utils";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
+import { BiometricMiniChart } from "./BiometricMiniChart";
 import {
   ResponsiveContainer,
   LineChart,
