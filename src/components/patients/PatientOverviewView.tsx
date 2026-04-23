@@ -701,6 +701,12 @@ export function PatientOverviewView({
             </div>
           ) : (
             <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2">
+              <div>
+                <dt className="text-xs text-muted-foreground">Age</dt>
+                <dd className="text-sm font-medium text-foreground">
+                  {age !== null ? `${age} years` : "—"}
+                </dd>
+              </div>
               {(() => {
                 const height = onboarding?.height_cm ?? 188;
                 const weight = onboarding?.weight_kg ?? 84;
