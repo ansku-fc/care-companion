@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   AlertTriangle, Plus, Pill, Stethoscope, ClipboardList, Users,
-  FlaskConical, Calendar as CalendarIcon, Pencil, Trash2, FileText,
+  FlaskConical, Calendar as CalendarIcon, Pencil, Trash2, FileText, Ruler,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,17 +35,19 @@ function scoreBorderColor(score: number): string {
 
 interface Props {
   patient: Tables<"patients">;
+  onboarding: Tables<"patient_onboarding"> | null;
   appointments: Tables<"appointments">[];
   labResults: Tables<"patient_lab_results">[];
   healthCategories: Tables<"patient_health_categories">[];
   tasks: any[];
   onSelectSection: (key: string) => void;
   onTasksChanged: () => void;
+  onDataChanged: () => void;
 }
 
 export function PatientOverviewView({
-  patient, appointments, labResults, healthCategories,
-  tasks, onSelectSection, onTasksChanged,
+  patient, onboarding, appointments, labResults, healthCategories,
+  tasks, onSelectSection, onTasksChanged, onDataChanged,
 }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
