@@ -77,6 +77,7 @@ const TIER_LABELS: Record<string, string> = {
 const PatientProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [patient, setPatient] = useState<Tables<"patients"> | null>(null);
   const [onboarding, setOnboarding] = useState<Tables<"patient_onboarding"> | null>(null);
   const [labResults, setLabResults] = useState<Tables<"patient_lab_results">[]>([]);
@@ -90,9 +91,16 @@ const PatientProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
+  // Honour deep-links like /patients/:id?tab=lab_results&review=1
   useEffect(() => {
-    setActiveSection("overview");
-  }, [id]);
+    const tab = searchParams.get("tab");
+    if (tab === "lab_results") setActiveSection("lab_results");
+    else setActiveSection("overview");
+    // Note: we keep the ?review=1 param so HealthDataHub/LabResultsView can read it.
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reviewMode = searchParams.get("review") === "1";
+
 
   const fetchData = async () => {
     if (!id) return;
