@@ -615,12 +615,12 @@ export function PatientOverviewView({
           </CardContent>
         </Card>
 
-      {/* 3b. BIOMETRICS */}
-      <Card className="shadow-card">
-        <CardContent className="py-4 space-y-3">
+      {/* Biometrics — third column of Row 2 */}
+      <Card className="shadow-card lg:col-span-1">
+        <CardContent className="py-3 px-3 space-y-2">
           <div className="flex items-center gap-2">
-            <Ruler className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Biometrics</h3>
+            <Ruler className="h-3.5 w-3.5 text-primary" />
+            <h3 className="text-[13px] font-semibold">Biometrics</h3>
             <Button
               variant="ghost" size="sm"
               className="ml-auto h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
