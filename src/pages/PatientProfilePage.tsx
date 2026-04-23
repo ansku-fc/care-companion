@@ -1782,112 +1782,122 @@ function PatientDetailsView({
   visitNotes: Tables<"visit_notes">[];
   appointments: Tables<"appointments">[];
 }) {
+  const [related, setRelated] = useState<Array<{ id: string; full_name: string; relationship_type: string }>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: rels } = await supabase
+        .from("patient_relationships")
+        .select("related_patient_id, relationship_type")
+        .eq("patient_id", patient.id);
+      if (!rels || rels.length === 0) {
+        if (!cancelled) setRelated([]);
+        return;
+      }
+      const ids = rels.map((r: any) => r.related_patient_id);
+      const { data: people } = await supabase
+        .from("patients")
+        .select("id, full_name")
+        .in("id", ids);
+      const merged = (rels as any[])
+        .map((r) => {
+          const p = people?.find((pp: any) => pp.id === r.related_patient_id);
+          return p ? { id: p.id, full_name: p.full_name, relationship_type: r.relationship_type } : null;
+        })
+        .filter(Boolean) as Array<{ id: string; full_name: string; relationship_type: string }>;
+      if (!cancelled) setRelated(merged);
+    })();
+    return () => { cancelled = true; };
+  }, [patient.id]);
+
+  const navigate = useNavigate();
+  const fmt = (d: string | null | undefined) =>
+    d ? new Date(d).toLocaleDateString("en-GB") : "—";
+  const addressLine = [patient.address, patient.post_code, patient.city, patient.country].filter(Boolean).join(", ") || "—";
+
   return (
-    <Tabs defaultValue="personal" className="space-y-4">
-      <TabsList className="w-full">
-       <TabsTrigger value="personal" className="flex-1">Personal Information</TabsTrigger>
-        <TabsTrigger value="contact" className="flex-1">Contact Details</TabsTrigger>
-        <TabsTrigger value="family" className="flex-1">Family History</TabsTrigger>
-        <TabsTrigger value="visits" className="flex-1">Visit History</TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div><dt className="text-muted-foreground">Full Name</dt><dd className="font-medium">{patient.full_name}</dd></div>
+            <div><dt className="text-muted-foreground">Date of Birth</dt><dd>{fmt(patient.date_of_birth)}</dd></div>
+            <div><dt className="text-muted-foreground">Gender</dt><dd>{patient.gender || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Age</dt><dd>{age ?? "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Tier</dt><dd>{patient.tier ? (TIER_LABELS[patient.tier] || patient.tier) : "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Date Joined</dt><dd>{fmt(patient.created_at)}</dd></div>
+            <div><dt className="text-muted-foreground">Insurance</dt><dd>{patient.insurance_provider || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Insurance #</dt><dd>{patient.insurance_number || "—"}</dd></div>
+          </dl>
+        </CardContent>
+      </Card>
 
-      <TabsContent value="personal">
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <div><dt className="text-muted-foreground">Full Name</dt><dd className="font-medium">{patient.full_name}</dd></div>
-              <div><dt className="text-muted-foreground">Gender</dt><dd>{patient.gender || "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Date of Birth</dt><dd>{patient.date_of_birth || "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Age</dt><dd>{age ?? "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Tier</dt><dd>{patient.tier ? (TIER_LABELS[patient.tier] || patient.tier) : "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Date Joined</dt><dd>{new Date(patient.created_at).toLocaleDateString()}</dd></div>
-              <div><dt className="text-muted-foreground">Insurance</dt><dd>{patient.insurance_provider || "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Insurance #</dt><dd>{patient.insurance_number || "—"}</dd></div>
-            </dl>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Contact Details</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div className="col-span-2"><dt className="text-muted-foreground">Address</dt><dd>{addressLine}</dd></div>
+            <div><dt className="text-muted-foreground">Email</dt><dd>{patient.email || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Phone</dt><dd>{patient.phone || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Emergency Contact Name</dt><dd>{patient.emergency_contact_name || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Emergency Contact Phone</dt><dd>{patient.emergency_contact_phone || "—"}</dd></div>
+          </dl>
+        </CardContent>
+      </Card>
 
-      </TabsContent>
-
-      <TabsContent value="contact">
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Contact Details</CardTitle></CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <div><dt className="text-muted-foreground">Email</dt><dd>{patient.email || "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Phone</dt><dd>{patient.phone || "—"}</dd></div>
-              <div className="col-span-2"><dt className="text-muted-foreground">Address</dt><dd>{[patient.address, patient.post_code, patient.city, patient.country].filter(Boolean).join(", ") || "—"}</dd></div>
-              <div><dt className="text-muted-foreground">Emergency Contact</dt><dd>{patient.emergency_contact_name ? `${patient.emergency_contact_name} (${patient.emergency_contact_phone || ""})` : "—"}</dd></div>
-            </dl>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="family">
-        <FamilyHistoryView />
-      </TabsContent>
-
-      <TabsContent value="visits">
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Visit History</CardTitle></CardHeader>
-          <CardContent>
-            {visitNotes.length === 0 && appointments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No visit history yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {appointments.map((appt) => (
-                  <div key={appt.id} className="flex items-start justify-between border-b pb-3 last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{appt.title}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{appt.appointment_type.replace("_", " ")}</p>
-                      {appt.notes && <p className="text-xs text-muted-foreground mt-1">{appt.notes}</p>}
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-                      {new Date(appt.start_time).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-                {visitNotes.map((vn) => (
-                  <div key={vn.id} className="flex items-start justify-between border-b pb-3 last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{vn.chief_complaint || "Visit Note"}</p>
-                      {vn.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{vn.notes}</p>}
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-                      {new Date(vn.visit_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="mt-4">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Lab Results</CardTitle>
-              <AddLabResultsDialog patientId={patient.id} onSaved={onLabResultsAdded} />
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Billing</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div>
+              <dt className="text-muted-foreground">Payer</dt>
+              <dd>{(patient as any).payer_same_as_patient === false
+                ? ((patient as any).payer_name || "Different payer")
+                : "Same as patient"}</dd>
             </div>
-          </CardHeader>
-          <CardContent>
-            {labResults.length > 0 ? (
-              <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-                <div><dt className="text-muted-foreground">Date</dt><dd>{labResults[0].result_date}</dd></div>
-                <div><dt className="text-muted-foreground">LDL</dt><dd>{labResults[0].ldl_mmol_l ? `${labResults[0].ldl_mmol_l} mmol/L` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">HbA1c</dt><dd>{labResults[0].hba1c_mmol_mol ? `${labResults[0].hba1c_mmol_mol} mmol/mol` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">BP</dt><dd>{labResults[0].blood_pressure_systolic ? `${labResults[0].blood_pressure_systolic}/${labResults[0].blood_pressure_diastolic}` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">eGFR</dt><dd>{labResults[0].egfr ?? "—"}</dd></div>
-                <div><dt className="text-muted-foreground">TSH</dt><dd>{labResults[0].tsh_mu_l ? `${labResults[0].tsh_mu_l} mU/L` : "—"}</dd></div>
-              </dl>
-            ) : (
-              <p className="text-sm text-muted-foreground">No lab results yet.</p>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+            <div>
+              <dt className="text-muted-foreground">Billing Email Address</dt>
+              <dd>{(patient as any).billing_email || "—"}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Related Patients</CardTitle></CardHeader>
+        <CardContent>
+          {related.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No related patients linked.</p>
+          ) : (
+            <ul className="divide-y">
+              {related.map((r) => (
+                <li key={r.id} className="flex items-center justify-between py-2 text-sm">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => navigate(`/patients/${r.id}`)}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {r.full_name}
+                    </button>
+                    <Badge variant="secondary" className="text-[10px]">{r.relationship_type}</Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/patients/${r.id}`)}
+                    className="text-xs"
+                  >
+                    Open record
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 function HealthDimensionView({
