@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -59,6 +59,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
+import {
+  ensureSeeded as ensureLabReviewSeeded,
+  getNewMarkers,
+  verifyMarker,
+  subscribeLabReview,
+  completeLabReviewTask,
+} from "@/lib/labReview";
 
 // Legacy flat list for backward compat in dimension views
 const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
@@ -77,6 +85,7 @@ const TIER_LABELS: Record<string, string> = {
 const PatientProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [patient, setPatient] = useState<Tables<"patients"> | null>(null);
   const [onboarding, setOnboarding] = useState<Tables<"patient_onboarding"> | null>(null);
   const [labResults, setLabResults] = useState<Tables<"patient_lab_results">[]>([]);
@@ -90,9 +99,16 @@ const PatientProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
+  // Honour deep-links like /patients/:id?tab=lab_results&review=1
   useEffect(() => {
-    setActiveSection("overview");
-  }, [id]);
+    const tab = searchParams.get("tab");
+    if (tab === "lab_results") setActiveSection("lab_results");
+    else setActiveSection("overview");
+    // Note: we keep the ?review=1 param so HealthDataHub/LabResultsView can read it.
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reviewMode = searchParams.get("review") === "1";
+
 
   const fetchData = async () => {
     if (!id) return;
@@ -410,19 +426,24 @@ const PatientProfilePage = () => {
             onSelectDimension={setActiveSection}
             markerNotes={markerNotes}
             setMarkerNotes={setMarkerNotes}
+            initialTab="labs"
             labResultsSlot={
               <LabResultsView
                 patientId={patient.id}
+                patientName={patient.full_name}
                 labResults={labResults}
                 onLabResultsAdded={fetchData}
                 onNavigateDimension={setActiveSection}
                 markerNotes={markerNotes}
                 setMarkerNotes={setMarkerNotes}
+                reviewMode={reviewMode}
+                onReviewComplete={() => setSearchParams({}, { replace: true })}
               />
             }
           />
         ) : activeSection === "lab_results_legacy" ? (
-          <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
+          <LabResultsView patientId={patient.id} patientName={patient.full_name} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
+
         ) : (
           <HealthDimensionView
             dimensionKey={activeSection}
@@ -4131,17 +4152,25 @@ const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: str
   fvc_percent: { low: 80, label: "FVC" },
 };
 
-function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes }: {
+function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes, reviewMode, onReviewComplete }: {
   patientId: string;
+  patientName?: string | null;
   labResults: Tables<"patient_lab_results">[];
   onLabResultsAdded: () => void;
   onNavigateDimension: (section: string) => void;
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  reviewMode?: boolean;
+  onReviewComplete?: () => void;
 }) {
+  const { notifyChanged } = useTaskActions();
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   // (legacy tab state removed; lab results render directly now)
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
+  // Local re-render trigger for the lab-review store
+  const [, forceTick] = useState(0);
+  const [reviewBanner, setReviewBanner] = useState(false);
+
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
   const isSyncing = React.useRef(false);
@@ -4274,6 +4303,49 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   // Use canonical Cardio panel chart whenever the biomarker has shared series data
   const useSharedPanel = !!(selectedMarker && CARDIO_DUMMY_SERIES[selectedMarker.key]);
 
+  // ---- Lab review flow (AWAITING REVIEW) ----
+  React.useEffect(() => {
+    ensureLabReviewSeeded(patientId, patientName);
+    const unsub = subscribeLabReview(() => forceTick((n) => n + 1));
+    return unsub;
+  }, [patientId, patientName]);
+
+  const newMarkers = getNewMarkers(patientId);
+  const newKeys = new Set(newMarkers.map((m) => m.key));
+
+  // Filter normal categories to hide rows currently shown in AWAITING REVIEW.
+  const visibleCategories = React.useMemo(() => {
+    if (newKeys.size === 0) return categories;
+    return categories.map((cat) => ({
+      ...cat,
+      rows: cat.rows.filter((r) => !newKeys.has(r.key as string)),
+    })).filter((cat) => cat.rows.length > 0);
+  }, [categories, newKeys.size]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleVerifyMarker = async (key: string) => {
+    const cleared = verifyMarker(patientId, key);
+    if (cleared) {
+      setReviewBanner(true);
+      setTimeout(() => setReviewBanner(false), 2500);
+      await completeLabReviewTask(patientId);
+      notifyChanged();
+      onReviewComplete?.();
+      toast.success("All new results reviewed");
+    }
+  };
+
+  // Lookup helper: latest value + out-of-range for a marker (for the AWAITING REVIEW preview).
+  const latestForMarker = (key: string) => {
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const lab = sorted[i];
+      const val = key === "_bp" ? lab.blood_pressure_systolic : (lab as any)[key];
+      if (val !== null && val !== undefined) {
+        return { lab, oor: isOutOfRange(key, lab), display: getCellValue(lab, key) };
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between shrink-0">
@@ -4283,6 +4355,67 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         </h2>
         <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
       </div>
+
+      {reviewBanner && (
+        <div className="rounded-[14px] border border-success/40 bg-success/10 px-4 py-2.5 text-sm text-success font-medium animate-in fade-in slide-in-from-top-1">
+          ✓ All new results reviewed. The task has been marked as completed.
+        </div>
+      )}
+
+      {newMarkers.length > 0 && (
+        <Card className="rounded-[20px] shadow-card overflow-hidden border-l-4 border-l-warning">
+          <CardContent className="p-0">
+            <div className="px-4 py-2.5 bg-warning/5 flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-warning">
+                Awaiting Review
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                · {newMarkers.length} new result{newMarkers.length === 1 ? "" : "s"} to verify
+              </span>
+            </div>
+            <div className="divide-y">
+              {newMarkers.map((m) => {
+                const latest = latestForMarker(m.key);
+                const oor = latest?.oor;
+                return (
+                  <div
+                    key={m.key}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-primary/[0.04] transition-colors",
+                      selectedMarker?.key === m.key && "bg-primary/10",
+                    )}
+                    onClick={() => handleRowClick(m.key, m.label, m.unit)}
+                  >
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-primary">NEW</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{m.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{m.unit}</p>
+                    </div>
+                    {latest && (
+                      <span className={cn(
+                        "text-sm font-semibold tabular-nums",
+                        oor ? "text-[hsl(0_72%_45%)]" : "text-foreground",
+                      )}>
+                        {latest.display}
+                        {oor === "high" && " ▲"}
+                        {oor === "low" && " ▼"}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-3 text-xs gap-1 rounded-full"
+                      onClick={(e) => { e.stopPropagation(); handleVerifyMarker(m.key); }}
+                    >
+                      ✓ Verify
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "70vh" }}>
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
@@ -4306,7 +4439,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                       </tr>
                     </thead>
                     <tbody>
-                      {categories.map((cat) => (
+                      {visibleCategories.map((cat) => (
                         <React.Fragment key={cat.title}>
                           <tr>
                             <td colSpan={2} className="font-semibold text-[10px] uppercase tracking-[0.08em] text-muted-foreground py-2.5 px-4 bg-muted/30">
@@ -4349,7 +4482,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                       </tr>
                     </thead>
                     <tbody>
-                      {categories.map((cat) => (
+                      {visibleCategories.map((cat) => (
                         <React.Fragment key={cat.title}>
                           <tr>
                             <td colSpan={sorted.length} className="bg-muted/30 py-2.5 px-4">
