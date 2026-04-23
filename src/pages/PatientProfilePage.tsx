@@ -154,8 +154,8 @@ const PatientProfilePage = () => {
           )}
         </div>
 
-        <ScrollArea className="flex-1">
-          <div className="p-2">
+        <ScrollArea className="flex-1 w-full">
+          <div className="p-2 w-full min-w-0 max-w-full overflow-hidden">
             <button
               onClick={() => setActiveSection("overview")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
