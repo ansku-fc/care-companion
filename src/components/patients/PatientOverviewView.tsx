@@ -587,26 +587,69 @@ export function PatientOverviewView({
             </div>
           ) : (
             <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2">
-              <div>
-                <dt className="text-xs text-muted-foreground">Height</dt>
-                <dd className="text-sm font-medium text-foreground">{onboarding?.height_cm ? `${onboarding.height_cm} cm` : "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">Weight</dt>
-                <dd className="text-sm font-medium text-foreground">{onboarding?.weight_kg ? `${onboarding.weight_kg} kg` : "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">BMI</dt>
-                <dd className="text-sm font-medium text-foreground">{computedBmi ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">Waist</dt>
-                <dd className="text-sm font-medium text-foreground">{onboarding?.waist_circumference_cm ? `${onboarding.waist_circumference_cm} cm` : "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">W/H Ratio</dt>
-                <dd className="text-sm font-medium text-foreground">{onboarding?.waist_to_hip_ratio ?? "—"}</dd>
-              </div>
+              {(() => {
+                // Dummy historical baseline (previous measurement)
+                const prevDate = "18 Aug 2025";
+                const items: Array<{
+                  label: string;
+                  value: string;
+                  delta?: { value: string; direction: "up" | "down"; positive: boolean; prev: string };
+                }> = [
+                  {
+                    label: "Height",
+                    value: onboarding?.height_cm ? `${onboarding.height_cm} cm` : "—",
+                  },
+                  {
+                    label: "Weight",
+                    value: onboarding?.weight_kg ? `${onboarding.weight_kg} kg` : "—",
+                    delta: onboarding?.weight_kg
+                      ? { value: "2.1 kg", direction: "down", positive: true, prev: `previously 86.1 kg on ${prevDate}` }
+                      : undefined,
+                  },
+                  {
+                    label: "BMI",
+                    value: computedBmi != null ? `${computedBmi}` : "—",
+                    delta: computedBmi != null
+                      ? { value: "0.6", direction: "down", positive: true, prev: `previously 24.4 on ${prevDate}` }
+                      : undefined,
+                  },
+                  {
+                    label: "Waist",
+                    value: onboarding?.waist_circumference_cm ? `${onboarding.waist_circumference_cm} cm` : "—",
+                    delta: onboarding?.waist_circumference_cm
+                      ? { value: "1.5 cm", direction: "down", positive: true, prev: `previously 89.5 cm on ${prevDate}` }
+                      : undefined,
+                  },
+                  {
+                    label: "W/H Ratio",
+                    value: onboarding?.waist_to_hip_ratio != null ? `${onboarding.waist_to_hip_ratio}` : "—",
+                    delta: onboarding?.waist_to_hip_ratio != null
+                      ? { value: "0.02", direction: "down", positive: true, prev: `previously 0.94 on ${prevDate}` }
+                      : undefined,
+                  },
+                ];
+                return items.map((item) => (
+                  <div key={item.label}>
+                    <dt className="text-xs text-muted-foreground">{item.label}</dt>
+                    <dd className="text-sm font-medium text-foreground flex items-baseline gap-1.5">
+                      <span>{item.value}</span>
+                      {item.delta && (
+                        <span
+                          title={item.delta.prev}
+                          className={cn(
+                            "text-[11px] font-medium tabular-nums inline-flex items-center gap-0.5 cursor-help",
+                            item.delta.positive
+                              ? "text-[hsl(142_71%_35%)]"
+                              : "text-[hsl(0_57%_39%)]",
+                          )}
+                        >
+                          {item.delta.direction === "down" ? "▼" : "▲"} {item.delta.value}
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                ));
+              })()}
             </dl>
           )}
         </CardContent>
