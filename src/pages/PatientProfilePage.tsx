@@ -194,26 +194,6 @@ const PatientProfilePage = () => {
               Visits
             </button>
 
-            <button
-              onClick={() => setActiveSection("health_overview")}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                activeSection === "health_overview" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-              }`}
-            >
-              <Radar className="h-4 w-4" />
-              Health Report
-            </button>
-
-            <button
-              onClick={() => setActiveSection("details")}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                activeSection === "details" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              Patient Details
-            </button>
-
             <Separator className="my-2" />
             {(() => {
               const isOnOverview = activeSection === "overview";
