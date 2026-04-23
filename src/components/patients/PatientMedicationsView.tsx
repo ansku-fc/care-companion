@@ -19,10 +19,11 @@ import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle, Pill, Search, Plus, Calendar as CalendarIcon, RefreshCw, Check,
   MoreVertical, Pencil, Ban, FileText, Printer, ShieldCheck, MessageSquare, History,
-  Clock, ChevronDown, ChevronRight, Replace, ScrollText,
+  Clock, ChevronDown, ChevronRight, Replace, ScrollText, ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   CARTER_MEDICATIONS,
   CARTER_INTERACTIONS,
@@ -166,9 +167,11 @@ const SEVERITY_ORDER: Record<Interaction["severity"], number> = { mild: 0, moder
 
 interface Props {
   patientName: string;
+  patientId?: string;
 }
 
-export function PatientMedicationsView({ patientName }: Props) {
+export function PatientMedicationsView({ patientName, patientId }: Props) {
+  const { openNewTask } = useTaskActions();
   const [meds, setMeds] = useState<Medication[]>(INITIAL_MEDS);
   const [statusTab, setStatusTab] = useState<MedStatus>("active");
   const [sortBy, setSortBy] = useState<"alpha" | "dimension" | "renewal">("alpha");
