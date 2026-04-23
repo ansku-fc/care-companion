@@ -59,6 +59,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  ensureSeeded as ensureLabReviewSeeded,
+  getNewMarkers,
+  isMarkerNew,
+  verifyMarker,
+  hasUnreviewed,
+  subscribeLabReview,
+  completeLabReviewTask,
+} from "@/lib/labReview";
 
 // Legacy flat list for backward compat in dimension views
 const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
