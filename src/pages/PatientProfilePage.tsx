@@ -4303,6 +4303,48 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   // Use canonical Cardio panel chart whenever the biomarker has shared series data
   const useSharedPanel = !!(selectedMarker && CARDIO_DUMMY_SERIES[selectedMarker.key]);
 
+  // ---- Lab review flow (AWAITING REVIEW) ----
+  React.useEffect(() => {
+    ensureLabReviewSeeded(patientId, patientName);
+    const unsub = subscribeLabReview(() => forceTick((n) => n + 1));
+    return unsub;
+  }, [patientId, patientName]);
+
+  const newMarkers = getNewMarkers(patientId);
+  const newKeys = new Set(newMarkers.map((m) => m.key));
+
+  // Filter normal categories to hide rows currently shown in AWAITING REVIEW.
+  const visibleCategories = React.useMemo(() => {
+    if (newKeys.size === 0) return categories;
+    return categories.map((cat) => ({
+      ...cat,
+      rows: cat.rows.filter((r) => !newKeys.has(r.key as string)),
+    })).filter((cat) => cat.rows.length > 0);
+  }, [categories, newKeys.size]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleVerifyMarker = async (key: string) => {
+    const cleared = verifyMarker(patientId, key);
+    if (cleared) {
+      setReviewBanner(true);
+      setTimeout(() => setReviewBanner(false), 2500);
+      await completeLabReviewTask(patientId);
+      onReviewComplete?.();
+      toast.success("All new results reviewed");
+    }
+  };
+
+  // Lookup helper: latest value + out-of-range for a marker (for the AWAITING REVIEW preview).
+  const latestForMarker = (key: string) => {
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const lab = sorted[i];
+      const val = key === "_bp" ? lab.blood_pressure_systolic : (lab as any)[key];
+      if (val !== null && val !== undefined) {
+        return { lab, oor: isOutOfRange(key, lab), display: getCellValue(lab, key) };
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between shrink-0">
@@ -4312,6 +4354,67 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
         </h2>
         <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
       </div>
+
+      {reviewBanner && (
+        <div className="rounded-[14px] border border-success/40 bg-success/10 px-4 py-2.5 text-sm text-success font-medium animate-in fade-in slide-in-from-top-1">
+          ✓ All new results reviewed. The task has been marked as completed.
+        </div>
+      )}
+
+      {newMarkers.length > 0 && (
+        <Card className="rounded-[20px] shadow-card overflow-hidden border-l-4 border-l-warning">
+          <CardContent className="p-0">
+            <div className="px-4 py-2.5 bg-warning/5 flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-warning">
+                Awaiting Review
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                · {newMarkers.length} new result{newMarkers.length === 1 ? "" : "s"} to verify
+              </span>
+            </div>
+            <div className="divide-y">
+              {newMarkers.map((m) => {
+                const latest = latestForMarker(m.key);
+                const oor = latest?.oor;
+                return (
+                  <div
+                    key={m.key}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-primary/[0.04] transition-colors",
+                      selectedMarker?.key === m.key && "bg-primary/10",
+                    )}
+                    onClick={() => handleRowClick(m.key, m.label, m.unit)}
+                  >
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-primary">NEW</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{m.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{m.unit}</p>
+                    </div>
+                    {latest && (
+                      <span className={cn(
+                        "text-sm font-semibold tabular-nums",
+                        oor ? "text-[hsl(0_72%_45%)]" : "text-foreground",
+                      )}>
+                        {latest.display}
+                        {oor === "high" && " ▲"}
+                        {oor === "low" && " ▼"}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-3 text-xs gap-1 rounded-full"
+                      onClick={(e) => { e.stopPropagation(); handleVerifyMarker(m.key); }}
+                    >
+                      ✓ Verify
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "70vh" }}>
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
