@@ -234,8 +234,7 @@ const PatientProfilePage = () => {
                           const MainIcon = main.icon;
                           const isMainActive = activeSection === main.key;
                           const isSubActive = main.subDimensions.some((s) => s.key === activeSection);
-                          const expandedKey = Object.keys(expandedGroups).find((k) => expandedGroups[k]);
-                          const isExpanded = expandedKey ? expandedKey === main.key : isSubActive;
+                          const isExpanded = expandedGroups[main.key] ?? isSubActive;
                           const hasSubs = main.subDimensions.length > 0;
 
                           return (
@@ -243,12 +242,10 @@ const PatientProfilePage = () => {
                               <button
                                 onClick={() => {
                                   if (hasSubs) {
-                                    setExpandedGroups((prev) => {
-                                      const wasOpen = prev[main.key];
-                                      return wasOpen ? {} : { [main.key]: true };
-                                    });
-                                  } else {
-                                    setExpandedGroups({});
+                                    setExpandedGroups((prev) => ({
+                                      ...prev,
+                                      [main.key]: !(prev[main.key] ?? isSubActive),
+                                    }));
                                   }
                                   setActiveSection(main.key);
                                 }}
@@ -262,11 +259,6 @@ const PatientProfilePage = () => {
                               >
                                 <MainIcon className="h-3.5 w-3.5 shrink-0" />
                                 <span className="min-w-0 flex-1 text-left whitespace-nowrap">{main.label}</span>
-                                {hasSubs && (
-                                  isExpanded
-                                    ? <span className="ml-auto flex h-4 w-4 shrink-0 basis-4 items-center justify-center"><ChevronDown className="h-3 w-3 shrink-0 opacity-50" /></span>
-                                    : <span className="ml-auto flex h-4 w-4 shrink-0 basis-4 items-center justify-center"><ChevronRight className="h-3 w-3 shrink-0 opacity-50" /></span>
-                                )}
                               </button>
                               {hasSubs && isExpanded && (
                                 <div className="ml-4 mt-0.5 mb-1 border-l border-border/40 pl-2">
