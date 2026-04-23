@@ -981,9 +981,55 @@ export type Database = {
           },
         ]
       }
+      patient_relationships: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          patient_id: string
+          related_patient_id: string
+          relationship_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          patient_id: string
+          related_patient_id: string
+          relationship_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          patient_id?: string
+          related_patient_id?: string
+          relationship_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_relationships_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_relationships_related_patient_id_fkey"
+            columns: ["related_patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
+          billing_email: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -1000,6 +1046,8 @@ export type Database = {
           insurance_number: string | null
           insurance_provider: string | null
           notes: string | null
+          payer_name: string | null
+          payer_same_as_patient: boolean
           phone: string | null
           post_code: string | null
           tier: Database["public"]["Enums"]["patient_tier"] | null
@@ -1007,6 +1055,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          billing_email?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -1023,6 +1072,8 @@ export type Database = {
           insurance_number?: string | null
           insurance_provider?: string | null
           notes?: string | null
+          payer_name?: string | null
+          payer_same_as_patient?: boolean
           phone?: string | null
           post_code?: string | null
           tier?: Database["public"]["Enums"]["patient_tier"] | null
@@ -1030,6 +1081,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          billing_email?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -1046,6 +1098,8 @@ export type Database = {
           insurance_number?: string | null
           insurance_provider?: string | null
           notes?: string | null
+          payer_name?: string | null
+          payer_same_as_patient?: boolean
           phone?: string | null
           post_code?: string | null
           tier?: Database["public"]["Enums"]["patient_tier"] | null
