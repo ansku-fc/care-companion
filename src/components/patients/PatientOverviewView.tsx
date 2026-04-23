@@ -335,7 +335,7 @@ export function PatientOverviewView({
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4 p-1 overflow-auto h-full">
+    <div className="space-y-3 p-1 overflow-auto h-full text-[13px]">
       {/* 1. HEADER BUTTONS — top right */}
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" className="text-xs gap-1.5">
