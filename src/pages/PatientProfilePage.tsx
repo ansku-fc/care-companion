@@ -33,6 +33,7 @@ import { PatientMedicationsView } from "@/components/patients/PatientMedications
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
+import { PatientCareTeamView } from "@/components/patients/PatientCareTeamView";
 import { HealthDataView } from "@/components/patients/HealthDataView";
 import {
   CardioLabBiomarkerPanel,
@@ -333,7 +334,7 @@ const PatientProfilePage = () => {
             label = "Back to Patients";
             onBack = () => navigate("/patients");
           } else if (
-            ["details", "medications", "visits", "health_overview", "lab_results"].includes(activeSection)
+            ["details", "medications", "visits", "care_team", "health_overview", "lab_results"].includes(activeSection)
           ) {
             label = "Back to Overview";
             onBack = () => setActiveSection("overview");
@@ -382,6 +383,8 @@ const PatientProfilePage = () => {
           <PatientMedicationsView patientName={patient.full_name} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
+        ) : activeSection === "care_team" ? (
+          <PatientCareTeamView patientId={patient.id} patientName={patient.full_name} />
         ) : activeSection === "health_overview" ? (
           <HealthOverviewView
             patient={patient}
