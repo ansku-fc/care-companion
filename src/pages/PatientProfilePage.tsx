@@ -203,7 +203,6 @@ const PatientProfilePage = () => {
               Visits
             </button>
 
-            <Separator className="my-2" />
             {(() => {
               const isOnOverview = activeSection === "overview";
               const isOnDimension =
@@ -215,10 +214,10 @@ const PatientProfilePage = () => {
               const sectionOpen = dimensionsSectionOpen ?? defaultOpen;
 
               return (
-                <>
+                <div className="ml-3 mt-1 pl-2 border-l border-border/60">
                   <button
                     onClick={() => setDimensionsSectionOpen(!sectionOpen)}
-                    className="w-full flex items-center justify-between px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                    className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
                   >
                     <span>Health Dimensions</span>
                     {sectionOpen
@@ -364,6 +363,8 @@ const PatientProfilePage = () => {
             onPatientUpdate={(updated) => setPatient(updated)}
           />
         ) : activeSection === "lab_results" ? (
+          <HealthDataView onSelectDimension={setActiveSection} />
+        ) : activeSection === "lab_results_legacy" ? (
           <LabResultsView patientId={patient.id} labResults={labResults} onLabResultsAdded={fetchData} onNavigateDimension={setActiveSection} markerNotes={markerNotes} setMarkerNotes={setMarkerNotes} />
         ) : (
           <HealthDimensionView
