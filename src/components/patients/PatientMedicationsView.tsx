@@ -1138,7 +1138,7 @@ function EditMedicationDialog({ med, onClose, onSave }: { med: Medication; onClo
 
 // ---------------- Row ----------------
 function MedicationRow({
-  med, flagged, onEdit, onDiscontinue, onTogglePRN, onAddNote,
+  med, flagged, onEdit, onDiscontinue, onTogglePRN, onAddNote, patientId, patientName,
 }: {
   med: Medication;
   flagged: boolean;
@@ -1146,7 +1146,10 @@ function MedicationRow({
   onDiscontinue: () => void;
   onTogglePRN: () => void;
   onAddNote: () => void;
+  patientId?: string;
+  patientName?: string;
 }) {
+  const { openNewTask } = useTaskActions();
   const [renewed, setRenewed] = useState(false);
   const remainingPct = med.totalPills > 0 ? (med.remainingPills / med.totalPills) * 100 : 0;
   const renewIn = daysUntil(med.renewalDate);
