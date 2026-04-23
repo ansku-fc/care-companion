@@ -90,7 +90,9 @@ export function PatientOverviewView({
       height_cm: onboarding?.height_cm?.toString() ?? "",
       weight_kg: onboarding?.weight_kg?.toString() ?? "",
       waist_circumference_cm: onboarding?.waist_circumference_cm?.toString() ?? "",
-      waist_to_hip_ratio: onboarding?.waist_to_hip_ratio?.toString() ?? "",
+      hip_circumference_cm: onboarding?.waist_circumference_cm && onboarding?.waist_to_hip_ratio
+        ? (onboarding.waist_circumference_cm / onboarding.waist_to_hip_ratio).toFixed(0)
+        : "",
     });
   }, [onboarding]);
 
