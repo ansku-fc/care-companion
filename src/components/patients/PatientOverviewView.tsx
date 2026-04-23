@@ -402,222 +402,218 @@ export function PatientOverviewView({
         </CardContent>
       </Card>
 
-      {/* 3. CLINICAL SNAPSHOT — TWO COLUMNS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* LEFT: Active Diagnoses + Allergies */}
-        <div className="space-y-4">
-          {/* Active Diagnoses */}
-          <Card className="shadow-card">
-            <CardContent className="py-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Stethoscope className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-semibold">Active Diagnoses</h3>
-                <button
-                  onClick={() => onSelectSection("lab_results")}
-                  className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+      {/* 3. ROW 1 — Diagnoses | Medications */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Active Diagnoses */}
+        <Card className="shadow-card">
+          <CardContent className="py-3 px-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-3.5 w-3.5 text-primary" />
+              <h3 className="text-[13px] font-semibold">Active Diagnoses</h3>
+              <button
+                onClick={() => onSelectSection("lab_results")}
+                className="ml-auto text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+              >
+                See all ({displayDiagnoses.length}) →
+              </button>
+            </div>
+            {displayDiagnoses.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">No active diagnoses recorded.</p>
+            ) : (
+              <ul className="space-y-1">
+                {displayDiagnoses.slice(0, 3).map((d: any) => (
+                  <li key={d.id} className="flex items-baseline justify-between gap-3 text-[12px]">
+                    <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
+                      <span className="font-medium">{d.diagnosis}</span>
+                      {d.dimension && (
+                        <button
+                          onClick={() => {
+                            const key = DIMENSION_LABEL_TO_KEY[d.dimension as keyof typeof DIMENSION_LABEL_TO_KEY];
+                            if (key) onSelectSection(key);
+                          }}
+                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
+                        >
+                          {d.dimension}
+                        </button>
+                      )}
+                    </div>
+                    {d.diagnosed_date && (
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                        {fmtClinicalDate(d.diagnosed_date)}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Active Medications */}
+        <Card className="shadow-card">
+          <CardContent className="py-3 px-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Pill className="h-3.5 w-3.5 text-primary" />
+              <h3 className="text-[13px] font-semibold">Active Medications</h3>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="ghost" size="sm"
+                  className="h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowMedForm((v) => !v)}
                 >
-                  See all →
+                  <Plus className="h-3 w-3" /> Add
+                </Button>
+                <button
+                  onClick={() => onSelectSection("medications")}
+                  className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  See all ({displayMedications.length}) →
                 </button>
               </div>
-              {displayDiagnoses.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No active diagnoses recorded.</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {displayDiagnoses.map((d: any) => (
-                    <li key={d.id} className="flex items-baseline justify-between gap-3 text-sm">
-                      <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
-                        <span className="font-medium">{d.diagnosis}</span>
-                        {d.dimension && (
-                          <button
-                            onClick={() => {
-                              const key = DIMENSION_LABEL_TO_KEY[d.dimension as keyof typeof DIMENSION_LABEL_TO_KEY];
-                              if (key) onSelectSection(key);
-                            }}
-                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
-                          >
-                            {d.dimension}
-                          </button>
-                        )}
-                      </div>
-                      {d.diagnosed_date && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {fmtClinicalDate(d.diagnosed_date)}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Allergies — inline tags */}
-          <Card className="shadow-card">
-            <CardContent className="py-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-semibold">Allergies</h3>
-                <Button
-                  variant="ghost" size="sm"
-                  className="ml-auto h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowAllergyForm((v) => !v)}
-                >
-                  <Plus className="h-3 w-3" /> Add
-                </Button>
-              </div>
-
-              {showAllergyForm && (
-                <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-                  <Input placeholder="Allergen" value={newAllergy.allergen} onChange={(e) => setNewAllergy((p) => ({ ...p, allergen: e.target.value }))} className="h-8 text-sm" />
-                  <Input placeholder="Reaction (optional)" value={newAllergy.reaction} onChange={(e) => setNewAllergy((p) => ({ ...p, reaction: e.target.value }))} className="h-8 text-sm" />
-                  <Select value={newAllergy.severity} onValueChange={(v) => setNewAllergy((p) => ({ ...p, severity: v }))}>
-                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mild">Mild</SelectItem>
-                      <SelectItem value="moderate">Moderate</SelectItem>
-                      <SelectItem value="severe">Severe</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex gap-2">
-                    <Button size="sm" className="h-7 text-xs" onClick={handleAddAllergy} disabled={!newAllergy.allergen.trim()}>Add</Button>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAllergyForm(false)}>Cancel</Button>
-                  </div>
+            {showMedForm && (
+              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Medication name *" value={newMed.medication_name} onChange={(e) => setNewMed((p) => ({ ...p, medication_name: e.target.value }))} className="h-8 text-sm" />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Dose" value={newMed.dose} onChange={(e) => setNewMed((p) => ({ ...p, dose: e.target.value }))} className="h-8 text-sm" />
+                  <Input placeholder="Frequency" value={newMed.frequency} onChange={(e) => setNewMed((p) => ({ ...p, frequency: e.target.value }))} className="h-8 text-sm" />
                 </div>
-              )}
-
-              {allergies.length === 0 && !showAllergyForm ? (
-                <p className="text-xs text-muted-foreground">No allergies recorded.</p>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {allergies.map((a: any) => (
-                    <span
-                      key={a.id}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border",
-                        a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)]",
-                        a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
-                        a.severity === "mild" && "bg-muted text-muted-foreground border-border",
-                      )}
-                    >
-                      {a.allergen}
-                      <button
-                        onClick={async () => {
-                          await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
-                          fetchOverviewData();
-                        }}
-                        className="opacity-50 hover:opacity-100"
-                        aria-label={`Remove ${a.allergen}`}
-                      >
-                        <Trash2 className="h-2.5 w-2.5" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* RIGHT: Active Medications + Clinical Considerations */}
-        <div className="space-y-4">
-          {/* Active Medications */}
-          <Card className="shadow-card">
-            <CardContent className="py-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Pill className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-semibold">Active Medications</h3>
-                <div className="ml-auto flex items-center gap-2">
-                  <Button
-                    variant="ghost" size="sm"
-                    className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowMedForm((v) => !v)}
-                  >
-                    <Plus className="h-3 w-3" /> Add
-                  </Button>
-                  <button
-                    onClick={() => onSelectSection("medications")}
-                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-                  >
-                    See all →
-                  </button>
+                <Input placeholder="Indication" value={newMed.indication} onChange={(e) => setNewMed((p) => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" onClick={handleAddMedication} disabled={!newMed.medication_name.trim()}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowMedForm(false)}>Cancel</Button>
                 </div>
               </div>
+            )}
 
-              {showMedForm && (
-                <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-                  <Input placeholder="Medication name *" value={newMed.medication_name} onChange={(e) => setNewMed((p) => ({ ...p, medication_name: e.target.value }))} className="h-8 text-sm" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Dose" value={newMed.dose} onChange={(e) => setNewMed((p) => ({ ...p, dose: e.target.value }))} className="h-8 text-sm" />
-                    <Input placeholder="Frequency" value={newMed.frequency} onChange={(e) => setNewMed((p) => ({ ...p, frequency: e.target.value }))} className="h-8 text-sm" />
-                  </div>
-                  <Input placeholder="Indication" value={newMed.indication} onChange={(e) => setNewMed((p) => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
-                  <div className="flex gap-2">
-                    <Button size="sm" className="h-7 text-xs" onClick={handleAddMedication} disabled={!newMed.medication_name.trim()}>Add</Button>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowMedForm(false)}>Cancel</Button>
-                  </div>
-                </div>
-              )}
-
-              {displayMedications.length === 0 && !showMedForm ? (
-                <p className="text-xs text-muted-foreground">No active medications recorded.</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {displayMedications.slice(0, 4).map((m: any) => (
-                    <li key={m.id} className="flex items-baseline justify-between gap-3 text-sm">
-                      <div className="min-w-0">
-                        <span className="font-medium">{m.medication_name}</span>
-                        {m.dose && <span className="text-muted-foreground ml-1.5">{m.dose}</span>}
-                      </div>
-                      {m.frequency && <span className="text-xs text-muted-foreground whitespace-nowrap">{m.frequency}</span>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Clinical Considerations */}
-          <Card className="shadow-card">
-            <CardContent className="py-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-semibold">Clinical Considerations</h3>
-                <Button
-                  variant="ghost" size="sm"
-                  className="ml-auto h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowConsiderationForm((v) => !v)}
-                >
-                  <Plus className="h-3 w-3" /> Add
-                </Button>
-              </div>
-
-              {showConsiderationForm && (
-                <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-                  <Input placeholder="Title" value={newConsideration.title} onChange={(e) => setNewConsideration((p) => ({ ...p, title: e.target.value }))} className="h-8 text-sm" />
-                  <Input placeholder="Description (optional)" value={newConsideration.description} onChange={(e) => setNewConsideration((p) => ({ ...p, description: e.target.value }))} className="h-8 text-sm" />
-                  <div className="flex gap-2">
-                    <Button size="sm" className="h-7 text-xs" onClick={handleAddConsideration} disabled={!newConsideration.title.trim()}>Add</Button>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowConsiderationForm(false)}>Cancel</Button>
-                  </div>
-                </div>
-              )}
-
-              {considerations.length === 0 && !showConsiderationForm ? (
-                <p className="text-xs text-muted-foreground">No clinical considerations recorded.</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {considerations.map((c: any) => (
-                    <li key={c.id} className="text-sm">
-                      <p className="font-medium">{c.title}</p>
-                      {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            {displayMedications.length === 0 && !showMedForm ? (
+              <p className="text-[11px] text-muted-foreground">No active medications recorded.</p>
+            ) : (
+              <ul className="space-y-1">
+                {displayMedications.slice(0, 3).map((m: any) => (
+                  <li key={m.id} className="flex items-baseline justify-between gap-3 text-[12px]">
+                    <div className="min-w-0">
+                      <span className="font-medium">{m.medication_name}</span>
+                      {m.dose && <span className="text-muted-foreground ml-1.5">{m.dose}</span>}
+                    </div>
+                    {m.frequency && <span className="text-[11px] text-muted-foreground whitespace-nowrap">{m.frequency}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* ROW 2 — Allergies | Considerations | Biometrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Allergies */}
+        <Card className="shadow-card">
+          <CardContent className="py-3 px-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-primary" />
+              <h3 className="text-[13px] font-semibold">Allergies</h3>
+              <Button
+                variant="ghost" size="sm"
+                className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowAllergyForm((v) => !v)}
+              >
+                <Plus className="h-3 w-3" /> Add
+              </Button>
+            </div>
+
+            {showAllergyForm && (
+              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Allergen" value={newAllergy.allergen} onChange={(e) => setNewAllergy((p) => ({ ...p, allergen: e.target.value }))} className="h-8 text-sm" />
+                <Input placeholder="Reaction (optional)" value={newAllergy.reaction} onChange={(e) => setNewAllergy((p) => ({ ...p, reaction: e.target.value }))} className="h-8 text-sm" />
+                <Select value={newAllergy.severity} onValueChange={(v) => setNewAllergy((p) => ({ ...p, severity: v }))}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mild">Mild</SelectItem>
+                    <SelectItem value="moderate">Moderate</SelectItem>
+                    <SelectItem value="severe">Severe</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" onClick={handleAddAllergy} disabled={!newAllergy.allergen.trim()}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAllergyForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {allergies.length === 0 && !showAllergyForm ? (
+              <p className="text-[11px] text-muted-foreground">No allergies recorded.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {allergies.map((a: any) => (
+                  <span
+                    key={a.id}
+                    className={cn(
+                      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border",
+                      a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)]",
+                      a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
+                      a.severity === "mild" && "bg-muted text-muted-foreground border-border",
+                    )}
+                  >
+                    {a.allergen}
+                    <button
+                      onClick={async () => {
+                        await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
+                        fetchOverviewData();
+                      }}
+                      className="opacity-50 hover:opacity-100"
+                      aria-label={`Remove ${a.allergen}`}
+                    >
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Clinical Considerations */}
+        <Card className="shadow-card">
+          <CardContent className="py-3 px-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-3.5 w-3.5 text-primary" />
+              <h3 className="text-[13px] font-semibold">Clinical Considerations</h3>
+              <Button
+                variant="ghost" size="sm"
+                className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowConsiderationForm((v) => !v)}
+              >
+                <Plus className="h-3 w-3" /> Add
+              </Button>
+            </div>
+
+            {showConsiderationForm && (
+              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Title" value={newConsideration.title} onChange={(e) => setNewConsideration((p) => ({ ...p, title: e.target.value }))} className="h-8 text-sm" />
+                <Input placeholder="Description (optional)" value={newConsideration.description} onChange={(e) => setNewConsideration((p) => ({ ...p, description: e.target.value }))} className="h-8 text-sm" />
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" onClick={handleAddConsideration} disabled={!newConsideration.title.trim()}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowConsiderationForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {considerations.length === 0 && !showConsiderationForm ? (
+              <p className="text-[11px] text-muted-foreground">No clinical considerations recorded.</p>
+            ) : (
+              <ul className="space-y-1">
+                {considerations.slice(0, 3).map((c: any) => (
+                  <li key={c.id} className="text-[12px]">
+                    <p className="font-medium leading-tight">{c.title}</p>
+                    {c.description && <p className="text-[11px] text-muted-foreground leading-tight">{c.description}</p>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
 
       {/* 3b. BIOMETRICS */}
       <Card className="shadow-card">
