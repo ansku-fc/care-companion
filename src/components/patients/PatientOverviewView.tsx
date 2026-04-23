@@ -198,7 +198,7 @@ export function PatientOverviewView({
           Generate Patient Report
         </Button>
         <Button variant="ghost" size="sm" className="text-xs" onClick={() => onSelectSection("details")}>
-          Edit details
+          Edit patient details
         </Button>
       </div>
 

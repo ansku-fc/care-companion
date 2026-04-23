@@ -132,6 +132,14 @@ const PatientProfilePage = () => {
       <div className="w-64 shrink-0 border rounded-lg bg-card flex flex-col">
         <div className="px-4 py-3 border-b flex items-center gap-2 flex-wrap">
           <p className="font-medium text-sm truncate flex-1 min-w-0">{patient.full_name}</p>
+          <button
+            onClick={() => setActiveSection("details")}
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            aria-label="Edit patient details"
+            title="Edit patient details"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
           {patient.tier && (
             <Badge className="text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
               {TIER_LABELS[patient.tier] || patient.tier}
