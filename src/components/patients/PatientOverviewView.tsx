@@ -83,6 +83,8 @@ export function PatientOverviewView({
     waist_to_hip_ratio: "",
   });
 
+  const [historyModalLabel, setHistoryModalLabel] = useState<string | null>(null);
+
   useEffect(() => {
     setBioForm({
       height_cm: onboarding?.height_cm?.toString() ?? "",
