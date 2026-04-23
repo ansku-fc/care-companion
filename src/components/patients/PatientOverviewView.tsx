@@ -590,6 +590,13 @@ export function PatientOverviewView({
               {(() => {
                 // Dummy historical baseline (previous measurement)
                 const prevDate = "18 Aug 2025";
+                // Use stored values when present, otherwise fall back to demo values
+                const height = onboarding?.height_cm ?? 188;
+                const weight = onboarding?.weight_kg ?? 84;
+                const bmi = computedBmi ?? 23.8;
+                const waist = onboarding?.waist_circumference_cm ?? 88;
+                const whr = onboarding?.waist_to_hip_ratio ?? 0.92;
+
                 const items: Array<{
                   label: string;
                   value: string;
@@ -597,35 +604,27 @@ export function PatientOverviewView({
                 }> = [
                   {
                     label: "Height",
-                    value: onboarding?.height_cm ? `${onboarding.height_cm} cm` : "—",
+                    value: `${height} cm`,
                   },
                   {
                     label: "Weight",
-                    value: onboarding?.weight_kg ? `${onboarding.weight_kg} kg` : "—",
-                    delta: onboarding?.weight_kg
-                      ? { value: "2.1 kg", direction: "down", positive: true, prev: `previously 86.1 kg on ${prevDate}` }
-                      : undefined,
+                    value: `${weight} kg`,
+                    delta: { value: "2.1 kg", direction: "down", positive: true, prev: `previously 86.1 kg on ${prevDate}` },
                   },
                   {
                     label: "BMI",
-                    value: computedBmi != null ? `${computedBmi}` : "—",
-                    delta: computedBmi != null
-                      ? { value: "0.6", direction: "down", positive: true, prev: `previously 24.4 on ${prevDate}` }
-                      : undefined,
+                    value: `${bmi}`,
+                    delta: { value: "0.6", direction: "down", positive: true, prev: `previously 24.4 on ${prevDate}` },
                   },
                   {
                     label: "Waist",
-                    value: onboarding?.waist_circumference_cm ? `${onboarding.waist_circumference_cm} cm` : "—",
-                    delta: onboarding?.waist_circumference_cm
-                      ? { value: "1.5 cm", direction: "down", positive: true, prev: `previously 89.5 cm on ${prevDate}` }
-                      : undefined,
+                    value: `${waist} cm`,
+                    delta: { value: "1.5 cm", direction: "down", positive: true, prev: `previously 89.5 cm on ${prevDate}` },
                   },
                   {
                     label: "W/H Ratio",
-                    value: onboarding?.waist_to_hip_ratio != null ? `${onboarding.waist_to_hip_ratio}` : "—",
-                    delta: onboarding?.waist_to_hip_ratio != null
-                      ? { value: "0.02", direction: "down", positive: true, prev: `previously 0.94 on ${prevDate}` }
-                      : undefined,
+                    value: `${whr}`,
+                    delta: { value: "0.02", direction: "down", positive: true, prev: `previously 0.94 on ${prevDate}` },
                   },
                 ];
                 return items.map((item) => (
