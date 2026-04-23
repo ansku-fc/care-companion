@@ -2270,6 +2270,28 @@ function HealthDimensionView({
           </div>
         );
       }
+      case "metabolic":
+      case "metabolism":
+      case "endocrine":
+      case "kidneys":
+      case "nutrition":
+      case "body_composition": {
+        return (
+          <div className="divide-y border rounded-md">
+            {renderCurrentIllnessesRow("Metabolic Health", "current_illness")}
+          </div>
+        );
+      }
+      case "digestion":
+      case "gastrointestinal":
+      case "liver":
+      case "gut": {
+        return (
+          <div className="divide-y border rounded-md">
+            {renderCurrentIllnessesRow("Digestion", "current_illness")}
+          </div>
+        );
+      }
       default:
         return <p className="text-sm text-muted-foreground">No structured risk factors recorded for this dimension yet.</p>;
     }
