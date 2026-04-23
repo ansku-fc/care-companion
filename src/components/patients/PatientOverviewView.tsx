@@ -582,19 +582,28 @@ export function PatientOverviewView({
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-muted-foreground">W/H Ratio</label>
+                  <label className="text-[11px] text-muted-foreground">Hip (cm)</label>
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={bioForm.waist_to_hip_ratio}
-                    onChange={(e) => setBioForm((p) => ({ ...p, waist_to_hip_ratio: e.target.value }))}
+                    value={bioForm.hip_circumference_cm}
+                    onChange={(e) => setBioForm((p) => ({ ...p, hip_circumference_cm: e.target.value }))}
                     className="h-8 text-sm"
                   />
                 </div>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                BMI: <span className="font-medium text-foreground">{computedBmi ?? "—"}</span> (auto-calculated)
-              </p>
+              <div className="flex flex-wrap gap-x-6 gap-y-1">
+                <p className="text-[11px] text-muted-foreground">
+                  BMI: <span className="font-medium text-foreground">{computedBmi ?? "—"}</span> (auto-calculated)
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  W/H Ratio: <span className="font-medium text-foreground">{(() => {
+                    const w = parseNum(bioForm.waist_circumference_cm);
+                    const h = parseNum(bioForm.hip_circumference_cm);
+                    return w && h && h > 0 ? (w / h).toFixed(2) : "—";
+                  })()}</span> (auto-calculated)
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button size="sm" className="h-7 text-xs" onClick={handleSaveBiometrics}>Save</Button>
                 <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBioForm(false)}>Cancel</Button>
