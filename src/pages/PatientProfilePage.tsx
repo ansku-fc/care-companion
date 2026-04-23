@@ -36,6 +36,12 @@ import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
 import { PatientCareTeamView } from "@/components/patients/PatientCareTeamView";
 import { HealthDataView } from "@/components/patients/HealthDataView";
 import {
+  CARTER_DIAGNOSES,
+  getDiagnosesForDimension,
+  fmtClinicalDate,
+  type ClinicalDimensionKey,
+} from "@/lib/patientClinicalData";
+import {
   CardioLabBiomarkerPanel,
   getAnnotations,
   getAnnotationsForBiomarker,
