@@ -253,12 +253,6 @@ function ContextualPreview({
             </div>
           ))}
         </div>
-        <button
-          onClick={() => onNavigate(`${base}?tab=health-data&hd=labs&highlight=new`)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
-        >
-          Go to full lab view <ArrowRight className="h-3 w-3" />
-        </button>
       </div>
     );
   }
