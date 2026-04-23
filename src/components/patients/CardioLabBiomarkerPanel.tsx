@@ -14,8 +14,9 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from "recharts";
-import { MessageSquarePlus, StickyNote, Pencil, Trash2, Flag } from "lucide-react";
+import { MessageSquarePlus, StickyNote, Pencil, Trash2, Flag, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 
 // ──────────────────────────────────────────────────────────────────────
 // In-memory annotation store (module-scoped). Resets on full reload.
@@ -460,6 +461,8 @@ type Props = {
   onSelect?: () => void;
   doctor?: string;
   accentColorVar?: string;
+  patientId?: string;
+  patientName?: string;
 };
 
 export function CardioLabBiomarkerPanel({
@@ -472,8 +475,11 @@ export function CardioLabBiomarkerPanel({
   selected,
   onSelect,
   doctor = "Dr. Laine",
+  patientId,
+  patientName,
 }: Props) {
   useAnnotationsVersion();
+  const { openNewTask } = useTaskActions();
   const [window, setWindow] = useState<Window>("3y");
 
   // Active popover for adding/viewing/editing annotations.
@@ -715,6 +721,23 @@ export function CardioLabBiomarkerPanel({
             onClick={() => openAddAt(new Date().toISOString().slice(0, 10))}
           >
             <MessageSquarePlus className="h-3.5 w-3.5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="Create task from this result"
+            onClick={() =>
+              openNewTask({
+                title: `Review ${label} result${patientName ? ` — ${patientName}` : ""}`,
+                patient_id: patientId ?? null,
+                category: "clinical",
+                created_from: `${label} lab result`,
+              })
+            }
+          >
+            <ListChecks className="h-3.5 w-3.5" />
           </Button>
         </div>
       </CardHeader>
