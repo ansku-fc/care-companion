@@ -96,6 +96,7 @@ export function verifyMarker(patientId: string, key: string): boolean {
   const set = state.get(patientId);
   if (!set || !set.has(key)) return false;
   set.delete(key);
+  if (set.size === 0) cleared.add(patientId);
   notify();
   return set.size === 0;
 }
