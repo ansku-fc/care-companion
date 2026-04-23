@@ -33,6 +33,7 @@ import { PatientMedicationsView } from "@/components/patients/PatientMedications
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
+import { HealthDataView } from "@/components/patients/HealthDataView";
 import {
   CardioLabBiomarkerPanel,
   getAnnotations,
@@ -156,11 +157,19 @@ const PatientProfilePage = () => {
               const hasNewLabs = labResults.some(l => new Date(l.result_date) >= thirtyDaysAgo);
               const hasLabReviewTasks = patientTasks.some(t => t.category === "clinical_review" && ["todo", "in_progress"].includes(t.status));
               const labNotification = hasNewLabs || hasLabReviewTasks;
+              const isOnHealthData = activeSection === "lab_results";
+              const isInDimension = HEALTH_TAXONOMY.some(
+                (m) => m.key === activeSection || m.subDimensions.some((s) => s.key === activeSection),
+              );
               return (
                 <button
                   onClick={() => setActiveSection("lab_results")}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeSection === "lab_results" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                    isOnHealthData
+                      ? "bg-primary text-primary-foreground"
+                      : isInDimension
+                        ? "bg-primary/15 text-foreground font-medium"
+                        : "hover:bg-muted text-foreground"
                   }`}
                 >
                   <FlaskConical className="h-4 w-4" />
