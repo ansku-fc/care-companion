@@ -66,21 +66,13 @@ export function HealthDataHub({
       {/* Tab body */}
       <div className="flex-1 min-h-0 overflow-auto">
         {tab === "dimensions" && (
-          <HealthDataViewBody onSelectDimension={onSelectDimension} />
+          <div className="[&>div>div:first-child]:hidden">
+            <HealthDataView onSelectDimension={onSelectDimension} />
+          </div>
         )}
         {tab === "labs" && labResultsSlot}
         {tab === "diagnoses" && <DiagnosesView onSelectDimension={onSelectDimension} />}
       </div>
-    </div>
-  );
-}
-
-// Strip the duplicate "Health Data" page header from HealthDataView when shown
-// inside the hub (the hub already renders the title).
-function HealthDataViewBody({ onSelectDimension }: { onSelectDimension: (k: string) => void }) {
-  return (
-    <div className="[&>div>div:first-child]:hidden">
-      <HealthDataView onSelectDimension={onSelectDimension} />
     </div>
   );
 }
