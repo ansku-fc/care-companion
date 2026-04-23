@@ -4438,7 +4438,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                       </tr>
                     </thead>
                     <tbody>
-                      {categories.map((cat) => (
+                      {visibleCategories.map((cat) => (
                         <React.Fragment key={cat.title}>
                           <tr>
                             <td colSpan={2} className="font-semibold text-[10px] uppercase tracking-[0.08em] text-muted-foreground py-2.5 px-4 bg-muted/30">
@@ -4481,7 +4481,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                       </tr>
                     </thead>
                     <tbody>
-                      {categories.map((cat) => (
+                      {visibleCategories.map((cat) => (
                         <React.Fragment key={cat.title}>
                           <tr>
                             <td colSpan={sorted.length} className="bg-muted/30 py-2.5 px-4">
