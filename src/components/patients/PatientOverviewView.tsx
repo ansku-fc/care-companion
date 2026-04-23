@@ -239,7 +239,8 @@ export function PatientOverviewView({
     const height = parseNum(bioForm.height_cm);
     const weight = parseNum(bioForm.weight_kg);
     const waist = parseNum(bioForm.waist_circumference_cm);
-    const whr = parseNum(bioForm.waist_to_hip_ratio);
+    const hip = parseNum(bioForm.hip_circumference_cm);
+    const whr = waist && hip && hip > 0 ? +(waist / hip).toFixed(2) : null;
     const bmi =
       height && weight && height > 0
         ? +(weight / Math.pow(height / 100, 2)).toFixed(1)
