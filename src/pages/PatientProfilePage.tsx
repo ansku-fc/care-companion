@@ -4196,8 +4196,20 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   ];
 
   const allLabs = [...labResults, ...dummyLabs.filter(d => !labResults.some(r => r.id === d.id))] as Tables<"patient_lab_results">[];
+
+  // For Korhonen, Elena: synthesize a "NEW" most-recent column with the unreviewed values.
+  const korhonenNewLab = hasKorhonenNewColumn(patientId, patientName)
+    ? ({
+        id: "korhonen-new-results",
+        result_date: KORHONEN_NEW_DATE,
+        ldl_mmol_l: KORHONEN_NEW_VALUES.ldl_mmol_l,
+        hba1c_mmol_mol: KORHONEN_NEW_VALUES.hba1c_mmol_mol,
+        alat_u_l: KORHONEN_NEW_VALUES.alat_u_l,
+      } as unknown as Tables<"patient_lab_results">)
+    : null;
+  const labsWithNew = korhonenNewLab ? [...allLabs, korhonenNewLab] : allLabs;
   // Chronological: oldest first (left), newest last (right)
-  const sorted = [...allLabs].sort((a, b) => a.result_date.localeCompare(b.result_date));
+  const sorted = [...labsWithNew].sort((a, b) => a.result_date.localeCompare(b.result_date));
 
   const categories = [
     {
