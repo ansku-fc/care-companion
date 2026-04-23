@@ -906,7 +906,6 @@ export function PatientOverviewView({
           )}
         </CardContent>
       </Card>
-      </div>
 
       {(() => {
         const height = onboarding?.height_cm ?? 188;
