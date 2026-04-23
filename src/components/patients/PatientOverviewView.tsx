@@ -81,7 +81,7 @@ export function PatientOverviewView({
   const [considerations, setConsiderations] = useState<any[]>([]);
 
   const [showAllergyForm, setShowAllergyForm] = useState(false);
-  const [newAllergy, setNewAllergy] = useState({ allergen: "", reaction: "", severity: "moderate" });
+  const [newAllergy, setNewAllergy] = useState({ allergen: "", icd_code: "", reaction: "", severity: "moderate" });
   const [showMedForm, setShowMedForm] = useState(false);
   const [newMed, setNewMed] = useState({ medication_name: "", dose: "", frequency: "", indication: "", start_date: "" });
   const [showConsiderationForm, setShowConsiderationForm] = useState(false);
@@ -234,15 +234,18 @@ export function PatientOverviewView({
   // ── Inline add handlers ──────────────────────────────────
   const handleAddAllergy = async () => {
     if (!user || !newAllergy.allergen.trim()) return;
+    const name = newAllergy.allergen.trim();
+    const icd = newAllergy.icd_code.trim() || findAllergen(name)?.icd10 || null;
     const { error } = await supabase.from("patient_allergies" as any).insert({
       patient_id: patient.id, created_by: user.id,
-      allergen: newAllergy.allergen.trim(),
+      allergen: name,
+      icd_code: icd,
       reaction: newAllergy.reaction.trim() || null,
       severity: newAllergy.severity,
     } as any);
     if (error) { toast.error("Failed to add allergy"); return; }
     toast.success("Allergy added");
-    setNewAllergy({ allergen: "", reaction: "", severity: "moderate" });
+    setNewAllergy({ allergen: "", icd_code: "", reaction: "", severity: "moderate" });
     setShowAllergyForm(false);
     fetchOverviewData();
   };
