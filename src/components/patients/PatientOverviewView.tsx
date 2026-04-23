@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { cn } from "@/lib/utils";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
+import { BiometricMiniChart } from "./BiometricMiniChart";
 import {
   ResponsiveContainer,
   LineChart,
@@ -80,7 +81,7 @@ export function PatientOverviewView({
     height_cm: "",
     weight_kg: "",
     waist_circumference_cm: "",
-    waist_to_hip_ratio: "",
+    hip_circumference_cm: "",
   });
 
   const [historyModalLabel, setHistoryModalLabel] = useState<string | null>(null);
@@ -90,7 +91,9 @@ export function PatientOverviewView({
       height_cm: onboarding?.height_cm?.toString() ?? "",
       weight_kg: onboarding?.weight_kg?.toString() ?? "",
       waist_circumference_cm: onboarding?.waist_circumference_cm?.toString() ?? "",
-      waist_to_hip_ratio: onboarding?.waist_to_hip_ratio?.toString() ?? "",
+      hip_circumference_cm: onboarding?.waist_circumference_cm && onboarding?.waist_to_hip_ratio
+        ? (onboarding.waist_circumference_cm / onboarding.waist_to_hip_ratio).toFixed(0)
+        : "",
     });
   }, [onboarding]);
 
@@ -237,7 +240,8 @@ export function PatientOverviewView({
     const height = parseNum(bioForm.height_cm);
     const weight = parseNum(bioForm.weight_kg);
     const waist = parseNum(bioForm.waist_circumference_cm);
-    const whr = parseNum(bioForm.waist_to_hip_ratio);
+    const hip = parseNum(bioForm.hip_circumference_cm);
+    const whr = waist && hip && hip > 0 ? +(waist / hip).toFixed(2) : null;
     const bmi =
       height && weight && height > 0
         ? +(weight / Math.pow(height / 100, 2)).toFixed(1)
@@ -579,32 +583,42 @@ export function PatientOverviewView({
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-muted-foreground">W/H Ratio</label>
+                  <label className="text-[11px] text-muted-foreground">Hip (cm)</label>
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={bioForm.waist_to_hip_ratio}
-                    onChange={(e) => setBioForm((p) => ({ ...p, waist_to_hip_ratio: e.target.value }))}
+                    value={bioForm.hip_circumference_cm}
+                    onChange={(e) => setBioForm((p) => ({ ...p, hip_circumference_cm: e.target.value }))}
                     className="h-8 text-sm"
                   />
                 </div>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                BMI: <span className="font-medium text-foreground">{computedBmi ?? "—"}</span> (auto-calculated)
-              </p>
+              <div className="flex flex-wrap gap-x-6 gap-y-1">
+                <p className="text-[11px] text-muted-foreground">
+                  BMI: <span className="font-medium text-foreground">{computedBmi ?? "—"}</span> (auto-calculated)
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  W/H Ratio: <span className="font-medium text-foreground">{(() => {
+                    const w = parseNum(bioForm.waist_circumference_cm);
+                    const h = parseNum(bioForm.hip_circumference_cm);
+                    return w && h && h > 0 ? (w / h).toFixed(2) : "—";
+                  })()}</span> (auto-calculated)
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button size="sm" className="h-7 text-xs" onClick={handleSaveBiometrics}>Save</Button>
                 <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBioForm(false)}>Cancel</Button>
               </div>
             </div>
           ) : (
-            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2">
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2">
               {(() => {
                 const height = onboarding?.height_cm ?? 188;
                 const weight = onboarding?.weight_kg ?? 84;
                 const bmi = computedBmi ?? 23.8;
                 const waist = onboarding?.waist_circumference_cm ?? 88;
-                const whr = onboarding?.waist_to_hip_ratio ?? 0.92;
+                const hip = 96;
+                const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
 
                 // unit + lower-is-better flag for delta colouring
                 type HistoryEntry = { date: string; value: number };
@@ -663,17 +677,31 @@ export function PatientOverviewView({
                     ],
                   },
                   {
-                    label: "Waist",
+                    label: "Waist Circumference",
                     unit: "cm",
                     current: waist,
                     decimals: 0,
                     lowerIsBetter: true,
                     history: [
-                      { date: "12 Aug 2025", value: 89.5 },
-                      { date: "03 Feb 2025", value: 90.5 },
-                      { date: "15 Jul 2024", value: 91.0 },
-                      { date: "20 Jan 2024", value: 92.5 },
-                      { date: "10 Jun 2023", value: 92.5 },
+                      { date: "12 Aug 2025", value: 90 },
+                      { date: "03 Feb 2025", value: 90 },
+                      { date: "15 Jul 2024", value: 91 },
+                      { date: "20 Jan 2024", value: 92 },
+                      { date: "10 Jun 2023", value: 92 },
+                    ],
+                  },
+                  {
+                    label: "Hip Circumference",
+                    unit: "cm",
+                    current: hip,
+                    decimals: 0,
+                    lowerIsBetter: false,
+                    history: [
+                      { date: "12 Aug 2025", value: 96 },
+                      { date: "03 Feb 2025", value: 96 },
+                      { date: "15 Jul 2024", value: 97 },
+                      { date: "20 Jan 2024", value: 97 },
+                      { date: "10 Jun 2023", value: 97 },
                     ],
                   },
                   {
@@ -756,54 +784,12 @@ export function PatientOverviewView({
                       </div>
 
                       <PopoverContent align="start" className="w-80 p-0">
-                        <div className="px-3 py-2 border-b flex items-baseline justify-between">
-                          <p className="text-xs font-semibold text-foreground">{item.label} history</p>
-                          <p className="text-[10px] text-muted-foreground">Last {series.length}</p>
-                        </div>
-                        <div className="px-2 pt-2 pb-1 h-36">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                              data={[...series].reverse()}
-                              margin={{ top: 6, right: 8, left: 0, bottom: 4 }}
-                            >
-                              <defs>
-                                <linearGradient id={`bio-mini-${item.label}`} x1="0" y1="0" x2="1" y2="0">
-                                  <stop offset="0%" stopColor="hsl(270 70% 60%)" />
-                                  <stop offset="100%" stopColor="hsl(180 70% 45%)" />
-                                </linearGradient>
-                              </defs>
-                              <XAxis
-                                dataKey="date"
-                                tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                                interval="preserveStartEnd"
-                                tickLine={false}
-                                axisLine={false}
-                              />
-                              <YAxis hide domain={["auto", "auto"]} />
-                              <RTooltip
-                                contentStyle={{
-                                  backgroundColor: "hsl(var(--background))",
-                                  border: "1px solid hsl(var(--border))",
-                                  borderRadius: 6,
-                                  fontSize: 11,
-                                  padding: "4px 8px",
-                                }}
-                                formatter={(v: number) => [
-                                  `${(+v).toFixed(item.decimals)}${item.unit ? " " + item.unit : ""}`,
-                                  item.label,
-                                ]}
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="value"
-                                stroke={`url(#bio-mini-${item.label})`}
-                                strokeWidth={2}
-                                dot={{ r: 2.5, fill: "hsl(270 70% 55%)", strokeWidth: 0 }}
-                                activeDot={{ r: 4 }}
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
+                        <BiometricMiniChart
+                          label={`${item.label} history`}
+                          unit={item.unit}
+                          decimals={item.decimals}
+                          series={series}
+                        />
                         <div className="px-3 py-1.5 border-t text-right">
                           <button
                             type="button"
@@ -829,7 +815,8 @@ export function PatientOverviewView({
         const weight = onboarding?.weight_kg ?? 84;
         const bmi = computedBmi ?? 23.8;
         const waist = onboarding?.waist_circumference_cm ?? 88;
-        const whr = onboarding?.waist_to_hip_ratio ?? 0.92;
+        const hip = 96;
+        const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
         const allItems = [
           { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true,
             history: [
@@ -849,11 +836,17 @@ export function PatientOverviewView({
               { date: "15 Jul 2024", value: 25.0 }, { date: "20 Jan 2024", value: 25.3 },
               { date: "10 Jun 2023", value: 25.3 },
             ], refRange: { low: 18.5, high: 24.9, label: "Healthy 18.5–24.9" } },
-          { label: "Waist", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true,
+          { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true,
             history: [
-              { date: "12 Aug 2025", value: 89.5 }, { date: "03 Feb 2025", value: 90.5 },
-              { date: "15 Jul 2024", value: 91.0 }, { date: "20 Jan 2024", value: 92.5 },
-              { date: "10 Jun 2023", value: 92.5 },
+              { date: "12 Aug 2025", value: 90 }, { date: "03 Feb 2025", value: 90 },
+              { date: "15 Jul 2024", value: 91 }, { date: "20 Jan 2024", value: 92 },
+              { date: "10 Jun 2023", value: 92 },
+            ] },
+          { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false,
+            history: [
+              { date: "12 Aug 2025", value: 96 }, { date: "03 Feb 2025", value: 96 },
+              { date: "15 Jul 2024", value: 97 }, { date: "20 Jan 2024", value: 97 },
+              { date: "10 Jun 2023", value: 97 },
             ] },
           { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true,
             history: [
