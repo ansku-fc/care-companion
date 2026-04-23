@@ -252,7 +252,7 @@ const PatientProfilePage = () => {
                                   }
                                   setActiveSection(main.key);
                                 }}
-                                className={`w-full flex min-h-8 items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] leading-4 transition-colors ${
+                                className={`w-full flex min-h-8 items-center gap-1.5 px-2 py-1.5 rounded-md text-[11.5px] leading-4 transition-colors ${
                                   isMainActive
                                     ? "bg-primary text-primary-foreground"
                                     : isSubActive
@@ -276,7 +276,7 @@ const PatientProfilePage = () => {
                                       <button
                                         key={sub.key}
                                         onClick={() => setActiveSection(sub.key)}
-                                        className={`w-full flex min-h-8 items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] leading-4 transition-colors ${
+                                        className={`w-full flex min-h-8 items-center gap-1.5 px-2 py-1.5 rounded-md text-[11.5px] leading-4 transition-colors ${
                                           activeSection === sub.key
                                             ? "bg-primary text-primary-foreground"
                                             : "hover:bg-muted text-foreground"
