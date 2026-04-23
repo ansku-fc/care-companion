@@ -14,7 +14,6 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceArea,
-  defs as _defs,
 } from "recharts";
 import { cn } from "@/lib/utils";
 
