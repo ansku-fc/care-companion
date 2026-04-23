@@ -17,9 +17,7 @@ const TIER_OPTIONS = [
   { value: "tier_3", label: "Tier 3" },
   { value: "tier_4", label: "Tier 4" },
   { value: "children", label: "Child" },
-  { value: "onboarding", label: "Onboarding" },
-  { value: "acute", label: "Acute" },
-  { value: "case_management", label: "Case Management" },
+  { value: "none", label: "No Tier" },
 ];
 
 type SortField = "name" | "date";
@@ -49,7 +47,9 @@ const PatientsPage = () => {
     let list = patients.filter((p) =>
       p.full_name.toLowerCase().includes(search.toLowerCase())
     );
-    if (tierFilter !== "all") {
+    if (tierFilter === "none") {
+      list = list.filter((p) => !p.tier);
+    } else if (tierFilter !== "all") {
       list = list.filter((p) => p.tier === tierFilter);
     }
     list.sort((a, b) => {
