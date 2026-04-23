@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import {
   AlertTriangle, Plus, Pill, Stethoscope, ClipboardList, Users,
   FlaskConical, Calendar as CalendarIcon, Pencil, Trash2, FileText, Ruler,
 } from "lucide-react";
+import { COMMON_ALLERGENS, findAllergen } from "@/lib/allergens";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
