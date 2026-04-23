@@ -23,6 +23,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import {
+  CARTER_MEDICATIONS,
+  CARTER_INTERACTIONS,
+} from "@/lib/patientClinicalData";
 
 type MedStatus = "active" | "past";
 
@@ -55,17 +59,25 @@ type Medication = {
 
 const CURRENT_DOCTOR = "Dr. M. Virtanen";
 
+// Build initial medication list from the central source-of-truth (Carter, Jay-Z).
+// All active meds come from CARTER_MEDICATIONS plus a couple of past records for UI completeness.
 const INITIAL_MEDS: Medication[] = [
-  { id: "m1", name: "Atorvastatin", dose: "20 mg", frequency: "Once daily (evening)", indication: "Hyperlipidaemia", dimension: "Cardiovascular Health", startDate: "2024-02-12", remainingPills: 18, totalPills: 90, renewalDate: "2026-05-08", status: "active" },
-  { id: "m2", name: "Lisinopril", dose: "10 mg", frequency: "Once daily (morning)", indication: "Hypertension", dimension: "Cardiovascular Health", startDate: "2023-11-04", remainingPills: 42, totalPills: 90, renewalDate: "2026-06-02", status: "active" },
-  { id: "m3", name: "Metformin", dose: "500 mg", frequency: "Twice daily with meals", indication: "Type 2 Diabetes", dimension: "Metabolic Health", startDate: "2024-05-18", remainingPills: 6, totalPills: 180, renewalDate: "2026-04-29", status: "active" },
-  { id: "m4", name: "Levothyroxine", dose: "75 mcg", frequency: "Once daily (fasting)", indication: "Hypothyroidism", dimension: "Metabolic Health", startDate: "2022-09-01", remainingPills: 60, totalPills: 100, renewalDate: "2026-07-14", status: "active" },
-  { id: "m5", name: "Sertraline", dose: "50 mg", frequency: "Once daily", indication: "Anxiety Disorder", dimension: "Brain & Mental Health", startDate: "2024-08-22", remainingPills: 24, totalPills: 60, renewalDate: "2026-05-20", status: "active" },
-  { id: "m6", name: "Warfarin", dose: "3 mg", frequency: "Once daily", indication: "Atrial Fibrillation", dimension: "Cardiovascular Health", startDate: "2025-01-10", remainingPills: 30, totalPills: 90, renewalDate: "2026-06-15", status: "active" },
-  { id: "m7", name: "Ibuprofen", dose: "400 mg", frequency: "Up to 3x daily as needed", indication: "Joint pain", dimension: "Exercise & Functional Health", startDate: "2026-03-01", remainingPills: 12, totalPills: 60, renewalDate: "2026-05-15", status: "active", prn: true },
-  { id: "m8", name: "Amoxicillin", dose: "500 mg", frequency: "3x daily for 7 days", indication: "Respiratory infection", dimension: "Respiratory & Immune Health", startDate: "2025-11-02", endDate: "2025-11-09", remainingPills: 0, totalPills: 21, status: "past", discontinueReason: "completed_course" },
-  { id: "m9", name: "Omeprazole", dose: "20 mg", frequency: "Once daily", indication: "GERD / Acid Reflux", dimension: "Digestion & Liver Health", startDate: "2024-06-15", endDate: "2025-02-20", remainingPills: 0, totalPills: 240, status: "past", discontinueReason: "completed_course" },
-  { id: "m10", name: "Prednisolone", dose: "10 mg", frequency: "Tapering schedule", indication: "Inflammatory flare", dimension: "Respiratory & Immune Health", startDate: "2024-01-08", endDate: "2024-02-05", remainingPills: 0, totalPills: 28, status: "past", discontinueReason: "completed_course" },
+  ...CARTER_MEDICATIONS.map((m) => ({
+    id: m.id,
+    name: m.name,
+    dose: m.dose,
+    frequency: m.frequency,
+    indication: m.indication,
+    dimension: m.dimension,
+    startDate: m.startDate,
+    remainingPills: m.remainingPills,
+    totalPills: m.totalPills,
+    renewalDate: m.renewalDate,
+    status: m.status,
+    prn: m.prn,
+  })),
+  // Past medications (for the "Past" tab)
+  { id: "m-past-1", name: "Aspirin", dose: "100 mg", frequency: "Once daily", indication: "Cardiovascular risk", dimension: "Cardiovascular Health", startDate: "2022-01-15", endDate: "2023-11-20", remainingPills: 0, totalPills: 90, status: "past", discontinueReason: "replaced" },
 ];
 
 type Interaction = {
@@ -74,12 +86,12 @@ type Interaction = {
   description: string;
 };
 
-const INTERACTIONS: Interaction[] = [
-  { drugs: ["Warfarin", "Ibuprofen"], severity: "severe", description: "NSAIDs significantly increase bleeding risk when combined with anticoagulants. Avoid concurrent use." },
-  { drugs: ["Warfarin", "Sertraline"], severity: "moderate", description: "SSRIs may potentiate anticoagulant effect — monitor INR closely." },
-  { drugs: ["Lisinopril", "Ibuprofen"], severity: "moderate", description: "NSAIDs reduce ACE inhibitor efficacy and raise renal injury risk." },
-  { drugs: ["Atorvastatin", "Warfarin"], severity: "mild", description: "May modestly increase INR — periodic monitoring advised." },
-];
+// Drug interactions sourced from the central clinical data module.
+const INTERACTIONS: Interaction[] = CARTER_INTERACTIONS.map((i) => ({
+  drugs: i.drugs,
+  severity: i.severity,
+  description: i.description,
+}));
 
 function detectInteractions(meds: Medication[]): Interaction[] {
   const activeNames = new Set(meds.filter((m) => m.status === "active").map((m) => m.name));

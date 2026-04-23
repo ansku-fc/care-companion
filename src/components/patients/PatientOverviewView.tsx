@@ -26,6 +26,14 @@ import {
   YAxis,
   Tooltip as RTooltip,
 } from "recharts";
+import {
+  CARTER_DIAGNOSES,
+  CARTER_MEDICATIONS,
+  CARTER_INTERACTIONS,
+  DIMENSION_LABEL_TO_KEY,
+  fmtClinicalDate,
+  isCarter,
+} from "@/lib/patientClinicalData";
 
 const TIER_LABELS: Record<string, string> = {
   tier_1: "Tier 1", tier_2: "Tier 2", tier_3: "Tier 3", tier_4: "Tier 4",
@@ -140,6 +148,48 @@ export function PatientOverviewView({
   );
   const recentLabsTop3 = sortedLabs.slice(0, 3);
 
+  // ── Carter, Jay-Z dummy clinical data overlay ────────────
+  // If this is Carter, use the central source-of-truth for diagnoses & meds
+  // so they stay consistent across Overview, Health Data, dimensions, and Medications.
+  const carterPatient = isCarter(patient.id, patient.full_name);
+  const displayDiagnoses = useMemo(() => {
+    if (carterPatient && diagnoses.length === 0) {
+      return CARTER_DIAGNOSES.filter((d) => d.status === "active").map((d) => ({
+        id: d.id,
+        diagnosis: d.name,
+        diagnosed_date: d.diagnosedDate,
+        dimension: d.dimension,
+        icd_code: d.icd10,
+      }));
+    }
+    return diagnoses.map((d) => ({ ...d, dimension: undefined as string | undefined }));
+  }, [carterPatient, diagnoses]);
+
+  const displayMedications = useMemo(() => {
+    if (carterPatient && medications.length === 0) {
+      return CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => ({
+        id: m.id,
+        medication_name: m.name,
+        dose: m.dose,
+        frequency: m.frequency,
+      }));
+    }
+    return medications;
+  }, [carterPatient, medications]);
+
+  // Active drug interactions (from central data)
+  const activeInteractions = useMemo(() => {
+    if (!carterPatient) return [];
+    const activeNames = new Set(
+      CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => m.name),
+    );
+    return CARTER_INTERACTIONS.filter(
+      (i) => activeNames.has(i.drugs[0]) && activeNames.has(i.drugs[1]),
+    );
+  }, [carterPatient]);
+  const severeInteractions = activeInteractions.filter((i) => i.severity === "severe");
+  const moderateInteractions = activeInteractions.filter((i) => i.severity === "moderate");
+
   // ── Alerts ───────────────────────────────────────────────
   const openTasks = tasks.filter((t) => t.status !== "done");
   const severeAllergies = allergies.filter((a: any) => a.severity === "severe");
@@ -149,10 +199,14 @@ export function PatientOverviewView({
     (t) => t.due_date && new Date(t.due_date).getTime() < Date.now(),
   ).length;
 
-  const hasAlerts = openTasks.length > 0 || severeAllergies.length > 0 || moderateAllergies.length > 0;
+  const hasAlerts =
+    openTasks.length > 0 ||
+    severeAllergies.length > 0 ||
+    moderateAllergies.length > 0 ||
+    activeInteractions.length > 0;
   const alertSeverity: "high" | "medium" | "none" =
-    severeAllergies.length > 0 || overdueTasksCount > 0 ? "high"
-      : (openTasks.length > 0 || moderateAllergies.length > 0) ? "medium"
+    severeAllergies.length > 0 || overdueTasksCount > 0 || severeInteractions.length > 0 ? "high"
+      : (openTasks.length > 0 || moderateAllergies.length > 0 || moderateInteractions.length > 0) ? "medium"
         : "none";
 
   const alertBarClass =
@@ -326,6 +380,22 @@ export function PatientOverviewView({
                     {moderateAllergies.length} moderate allerg{moderateAllergies.length === 1 ? "y" : "ies"}
                   </span>
                 )}
+                {severeInteractions.length > 0 && (
+                  <button
+                    onClick={() => onSelectSection("medications")}
+                    className="text-[hsl(0_57%_39%)] font-medium hover:underline"
+                  >
+                    {severeInteractions.length} severe drug interaction{severeInteractions.length === 1 ? "" : "s"}
+                  </button>
+                )}
+                {moderateInteractions.length > 0 && (
+                  <button
+                    onClick={() => onSelectSection("medications")}
+                    className="text-[hsl(28_63%_44%)] hover:underline"
+                  >
+                    {moderateInteractions.length} moderate drug interaction{moderateInteractions.length === 1 ? "" : "s"}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -342,17 +412,36 @@ export function PatientOverviewView({
               <div className="flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold">Active Diagnoses</h3>
+                <button
+                  onClick={() => onSelectSection("lab_results")}
+                  className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  See all →
+                </button>
               </div>
-              {diagnoses.length === 0 ? (
+              {displayDiagnoses.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No active diagnoses recorded.</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {diagnoses.map((d) => (
+                  {displayDiagnoses.map((d: any) => (
                     <li key={d.id} className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="font-medium">{d.diagnosis}</span>
+                      <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
+                        <span className="font-medium">{d.diagnosis}</span>
+                        {d.dimension && (
+                          <button
+                            onClick={() => {
+                              const key = DIMENSION_LABEL_TO_KEY[d.dimension as keyof typeof DIMENSION_LABEL_TO_KEY];
+                              if (key) onSelectSection(key);
+                            }}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
+                          >
+                            {d.dimension}
+                          </button>
+                        )}
+                      </div>
                       {d.diagnosed_date && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(d.diagnosed_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                          {fmtClinicalDate(d.diagnosed_date)}
                         </span>
                       )}
                     </li>
@@ -469,11 +558,11 @@ export function PatientOverviewView({
                 </div>
               )}
 
-              {medications.length === 0 && !showMedForm ? (
+              {displayMedications.length === 0 && !showMedForm ? (
                 <p className="text-xs text-muted-foreground">No active medications recorded.</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {medications.map((m) => (
+                  {displayMedications.slice(0, 4).map((m: any) => (
                     <li key={m.id} className="flex items-baseline justify-between gap-3 text-sm">
                       <div className="min-w-0">
                         <span className="font-medium">{m.medication_name}</span>
