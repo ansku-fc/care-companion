@@ -39,6 +39,7 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   if (!task) return null;
   const meta = priorityMeta(task.priority);
   const role = assigneeRole(task.assignee_name);
+  const kind = detectKind(task);
 
   const updateStatus = async (status: TaskStatus) => {
     const { error } = await supabase.from("tasks").update({ status }).eq("id", task.id);
