@@ -614,10 +614,11 @@ export function PatientOverviewView({
             )}
           </CardContent>
         </Card>
+      </div>
 
-      {/* Biometrics — third column of Row 2 */}
-      <Card className="shadow-card lg:col-span-1">
-        <CardContent className="py-3 px-3 space-y-2">
+      {/* ROW 3 — Biometrics full width */}
+      <Card className="shadow-card">
+        <CardContent className="py-3 px-4 space-y-2">
           <div className="flex items-center gap-2">
             <Ruler className="h-3.5 w-3.5 text-primary" />
             <h3 className="text-[13px] font-semibold">Biometrics</h3>
