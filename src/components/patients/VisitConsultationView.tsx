@@ -10,8 +10,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Calendar, ClipboardList, Save } from "lucide-react";
+import { ArrowLeft, Calendar, ClipboardList, Save, ListChecks } from "lucide-react";
 import { LabResultsStep, defaultLabResults, type LabResultsData } from "./LabResultsStep";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import type { Tables } from "@/integrations/supabase/types";
 
 const VISIT_REASONS = [
@@ -207,13 +208,20 @@ export function VisitConsultationView({ patient, appointment, onBack, onSaved }:
       }
 
       toast.success("Visit saved successfully");
-      onSaved();
+      setFollowUpPrompt(true);
     } catch (e: any) {
       toast.error(e.message || "Failed to save visit");
     } finally {
       setSaving(false);
     }
   };
+
+  const visitReasonLabel = form.visit_reason === "Other" ? form.visit_reason_other : form.visit_reason;
+  const followUpDueDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().slice(0, 10);
+  })();
 
   return (
     <div className="space-y-4">

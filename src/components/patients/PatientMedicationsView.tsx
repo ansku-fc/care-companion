@@ -19,10 +19,11 @@ import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle, Pill, Search, Plus, Calendar as CalendarIcon, RefreshCw, Check,
   MoreVertical, Pencil, Ban, FileText, Printer, ShieldCheck, MessageSquare, History,
-  Clock, ChevronDown, ChevronRight, Replace, ScrollText,
+  Clock, ChevronDown, ChevronRight, Replace, ScrollText, ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   CARTER_MEDICATIONS,
   CARTER_INTERACTIONS,
@@ -166,9 +167,11 @@ const SEVERITY_ORDER: Record<Interaction["severity"], number> = { mild: 0, moder
 
 interface Props {
   patientName: string;
+  patientId?: string;
 }
 
-export function PatientMedicationsView({ patientName }: Props) {
+export function PatientMedicationsView({ patientName, patientId }: Props) {
+  const { openNewTask } = useTaskActions();
   const [meds, setMeds] = useState<Medication[]>(INITIAL_MEDS);
   const [statusTab, setStatusTab] = useState<MedStatus>("active");
   const [sortBy, setSortBy] = useState<"alpha" | "dimension" | "renewal">("alpha");
@@ -724,6 +727,8 @@ export function PatientMedicationsView({ patientName }: Props) {
                       onDiscontinue={() => { setDiscontinueTarget(m); setDiscontinueStep(1); }}
                       onTogglePRN={() => handleTogglePRN(m)}
                       onAddNote={() => { setNoteTarget(m); setNoteText(""); }}
+                      patientId={patientId}
+                      patientName={patientName}
                     />
                   ))}
                 </div>
@@ -740,6 +745,8 @@ export function PatientMedicationsView({ patientName }: Props) {
                 onDiscontinue={() => { setDiscontinueTarget(m); setDiscontinueStep(1); }}
                 onTogglePRN={() => handleTogglePRN(m)}
                 onAddNote={() => { setNoteTarget(m); setNoteText(""); }}
+                patientId={patientId}
+                patientName={patientName}
               />
             ))}
           </div>
@@ -891,7 +898,27 @@ export function PatientMedicationsView({ patientName }: Props) {
               })}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
+            {resolveTarget && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const drugs = resolveTarget.drugs.join(" × ");
+                  openNewTask({
+                    title: `Book pharmacist review — ${drugs}`,
+                    patient_id: patientId ?? null,
+                    category: "care_coordination",
+                    priority: resolveTarget.severity === "severe" ? "urgent" : "high",
+                    assignee_name: "Nurse Mäkinen",
+                    created_from: `${drugs} interaction`,
+                    description: resolveTarget.description,
+                  });
+                  setResolveTarget(null);
+                }}
+              >
+                <ListChecks className="h-3.5 w-3.5" /> Create task instead
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setResolveTarget(null)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
@@ -1115,7 +1142,7 @@ function EditMedicationDialog({ med, onClose, onSave }: { med: Medication; onClo
 
 // ---------------- Row ----------------
 function MedicationRow({
-  med, flagged, onEdit, onDiscontinue, onTogglePRN, onAddNote,
+  med, flagged, onEdit, onDiscontinue, onTogglePRN, onAddNote, patientId, patientName,
 }: {
   med: Medication;
   flagged: boolean;
@@ -1123,7 +1150,10 @@ function MedicationRow({
   onDiscontinue: () => void;
   onTogglePRN: () => void;
   onAddNote: () => void;
+  patientId?: string;
+  patientName?: string;
 }) {
+  const { openNewTask } = useTaskActions();
   const [renewed, setRenewed] = useState(false);
   const remainingPct = med.totalPills > 0 ? (med.remainingPills / med.totalPills) * 100 : 0;
   const renewIn = daysUntil(med.renewalDate);
@@ -1214,16 +1244,37 @@ function MedicationRow({
             </div>
           </div>
           {showRenewBtn && (
-            <Button
-              size="sm"
-              variant={renewOverdue ? "destructive" : "default"}
-              onClick={handleRenew}
-              className="h-7 px-2 mt-2 text-[11px] gap-1"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Renew prescription
-              <span className="text-[10px] opacity-80 ml-1">· {renewReason}</span>
-            </Button>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <Button
+                size="sm"
+                variant={renewOverdue ? "destructive" : "default"}
+                onClick={handleRenew}
+                className="h-7 px-2 text-[11px] gap-1"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Renew prescription
+                <span className="text-[10px] opacity-80 ml-1">· {renewReason}</span>
+              </Button>
+              {lowSupply && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-[11px] gap-1"
+                  onClick={() =>
+                    openNewTask({
+                      title: `Renew ${med.name}${patientName ? ` — ${patientName}` : ""}`,
+                      patient_id: patientId ?? null,
+                      category: "care_coordination",
+                      priority: remainingPct < 10 ? "high" : "medium",
+                      assignee_name: "Nurse Mäkinen",
+                      created_from: `${med.name} low supply (${Math.round(remainingPct)}%)`,
+                    })
+                  }
+                >
+                  <ListChecks className="h-3 w-3" /> Create renewal task
+                </Button>
+              )}
+            </div>
           )}
           {renewed && (
             <Badge variant="outline" className="mt-2 text-[10px] gap-1 border-primary/50 text-primary">

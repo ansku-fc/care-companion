@@ -385,7 +385,7 @@ const PatientProfilePage = () => {
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
         ) : activeSection === "medications" ? (
-          <PatientMedicationsView patientName={patient.full_name} />
+          <PatientMedicationsView patientName={patient.full_name} patientId={patient.id} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
         ) : activeSection === "care_team" ? (
@@ -3775,6 +3775,8 @@ function CardiovascularDimensionView({
                         accentColorVar={b.accentColorVar}
                         selected={selectedMarker?.key === b.key}
                         onSelect={() => selectMarker(b)}
+                        patientId={patient?.id}
+                        patientName={patient?.full_name}
                       />
                     ))}
                   </div>
