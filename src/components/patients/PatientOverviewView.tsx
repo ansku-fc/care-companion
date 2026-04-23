@@ -905,8 +905,8 @@ export function PatientOverviewView({
           )}
         </CardContent>
       </Card>
+      </div>
 
-      {/* Biometric history modal */}
       {(() => {
         const height = onboarding?.height_cm ?? 188;
         const weight = onboarding?.weight_kg ?? 84;
