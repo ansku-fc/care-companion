@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
 import { BiometricMiniChart } from "./BiometricMiniChart";
 import { PatientTasksCard } from "@/components/tasks/PatientTasksCard";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   ResponsiveContainer,
   LineChart,
