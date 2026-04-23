@@ -178,9 +178,6 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
     { value: "tier_3", label: "Tier 3" },
     { value: "tier_4", label: "Tier 4" },
     { value: "children", label: "Child" },
-    { value: "onboarding", label: "Onboarding" },
-    { value: "acute", label: "Acute" },
-    { value: "case_management", label: "Case Management" },
   ];
 
   if (step === 0) {

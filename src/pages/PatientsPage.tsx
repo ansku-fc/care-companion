@@ -49,7 +49,9 @@ const PatientsPage = () => {
     let list = patients.filter((p) =>
       p.full_name.toLowerCase().includes(search.toLowerCase())
     );
-    if (tierFilter !== "all") {
+    if (tierFilter === "none") {
+      list = list.filter((p) => !p.tier);
+    } else if (tierFilter !== "all") {
       list = list.filter((p) => p.tier === tierFilter);
     }
     list.sort((a, b) => {
