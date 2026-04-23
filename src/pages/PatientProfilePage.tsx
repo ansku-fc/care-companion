@@ -59,6 +59,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   ensureSeeded as ensureLabReviewSeeded,
   getNewMarkers,
