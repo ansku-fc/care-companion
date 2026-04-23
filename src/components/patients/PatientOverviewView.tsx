@@ -783,54 +783,12 @@ export function PatientOverviewView({
                       </div>
 
                       <PopoverContent align="start" className="w-80 p-0">
-                        <div className="px-3 py-2 border-b flex items-baseline justify-between">
-                          <p className="text-xs font-semibold text-foreground">{item.label} history</p>
-                          <p className="text-[10px] text-muted-foreground">Last {series.length}</p>
-                        </div>
-                        <div className="px-2 pt-2 pb-1 h-36">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                              data={[...series].reverse()}
-                              margin={{ top: 6, right: 8, left: 0, bottom: 4 }}
-                            >
-                              <defs>
-                                <linearGradient id={`bio-mini-${item.label}`} x1="0" y1="0" x2="1" y2="0">
-                                  <stop offset="0%" stopColor="hsl(270 70% 60%)" />
-                                  <stop offset="100%" stopColor="hsl(180 70% 45%)" />
-                                </linearGradient>
-                              </defs>
-                              <XAxis
-                                dataKey="date"
-                                tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                                interval="preserveStartEnd"
-                                tickLine={false}
-                                axisLine={false}
-                              />
-                              <YAxis hide domain={["auto", "auto"]} />
-                              <RTooltip
-                                contentStyle={{
-                                  backgroundColor: "hsl(var(--background))",
-                                  border: "1px solid hsl(var(--border))",
-                                  borderRadius: 6,
-                                  fontSize: 11,
-                                  padding: "4px 8px",
-                                }}
-                                formatter={(v: number) => [
-                                  `${(+v).toFixed(item.decimals)}${item.unit ? " " + item.unit : ""}`,
-                                  item.label,
-                                ]}
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="value"
-                                stroke={`url(#bio-mini-${item.label})`}
-                                strokeWidth={2}
-                                dot={{ r: 2.5, fill: "hsl(270 70% 55%)", strokeWidth: 0 }}
-                                activeDot={{ r: 4 }}
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
+                        <BiometricMiniChart
+                          label={`${item.label} history`}
+                          unit={item.unit}
+                          decimals={item.decimals}
+                          series={series}
+                        />
                         <div className="px-3 py-1.5 border-t text-right">
                           <button
                             type="button"
