@@ -4330,6 +4330,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
       setReviewBanner(true);
       setTimeout(() => setReviewBanner(false), 2500);
       await completeLabReviewTask(patientId);
+      notifyChanged();
       onReviewComplete?.();
       toast.success("All new results reviewed");
     }
