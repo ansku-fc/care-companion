@@ -696,16 +696,16 @@ export function PatientOverviewView({
               </div>
             </div>
           ) : (
-            <dl className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-x-2 gap-y-2 text-[12px]">
-              <div>
-                <dt className="text-[11px] text-muted-foreground">Age</dt>
-                <dd className="text-[12px] font-medium text-foreground">
-                  {age !== null ? `${age} years` : "—"}
+            <dl className="flex flex-wrap gap-x-3 gap-y-1.5 text-[12px]">
+              <div className="min-w-[60px]">
+                <dt className="text-[11px] text-muted-foreground leading-tight">Age</dt>
+                <dd className="text-[12px] font-medium text-foreground leading-tight">
+                  {age !== null ? `${age} y` : "—"}
                 </dd>
               </div>
-              <div>
-                <dt className="text-[11px] text-muted-foreground">Gender</dt>
-                <dd className="text-[12px] font-medium text-foreground capitalize">
+              <div className="min-w-[60px]">
+                <dt className="text-[11px] text-muted-foreground leading-tight">Gender</dt>
+                <dd className="text-[12px] font-medium text-foreground capitalize leading-tight">
                   {patient.gender || "Male"}
                 </dd>
               </div>
