@@ -154,7 +154,7 @@ const PatientProfilePage = () => {
           )}
         </div>
 
-        <ScrollArea className="flex-1 w-full">
+        <ScrollArea className="flex-1 w-full [&>[data-radix-scroll-area-viewport]>div]:!block">
           <div className="p-2 w-full min-w-0 max-w-full overflow-hidden">
             <button
               onClick={() => setActiveSection("overview")}
