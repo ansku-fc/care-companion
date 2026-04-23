@@ -894,7 +894,27 @@ export function PatientMedicationsView({ patientName, patientId }: Props) {
               })}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
+            {resolveTarget && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const drugs = resolveTarget.drugs.join(" × ");
+                  openNewTask({
+                    title: `Book pharmacist review — ${drugs}`,
+                    patient_id: patientId ?? null,
+                    category: "care_coordination",
+                    priority: resolveTarget.severity === "severe" ? "urgent" : "high",
+                    assignee_name: "Nurse Mäkinen",
+                    created_from: `${drugs} interaction`,
+                    description: resolveTarget.description,
+                  });
+                  setResolveTarget(null);
+                }}
+              >
+                <ListChecks className="h-3.5 w-3.5" /> Create task instead
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setResolveTarget(null)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
