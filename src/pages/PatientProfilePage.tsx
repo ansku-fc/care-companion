@@ -357,12 +357,14 @@ const PatientProfilePage = () => {
         {activeSection === "overview" ? (
           <PatientOverviewView
             patient={patient}
+            onboarding={onboarding}
             appointments={appointments}
             labResults={labResults}
             healthCategories={healthCategories}
             tasks={patientTasks}
             onSelectSection={setActiveSection}
             onTasksChanged={fetchData}
+            onDataChanged={fetchData}
           />
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
@@ -1792,20 +1794,6 @@ function PatientDetailsView({
           </CardContent>
         </Card>
 
-        {onboarding && (
-          <Card className="mt-4">
-            <CardHeader><CardTitle className="text-lg">Biometrics</CardTitle></CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-                <div><dt className="text-muted-foreground">Height</dt><dd>{onboarding.height_cm ? `${onboarding.height_cm} cm` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">Weight</dt><dd>{onboarding.weight_kg ? `${onboarding.weight_kg} kg` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">BMI</dt><dd>{onboarding.bmi ?? "—"}</dd></div>
-                <div><dt className="text-muted-foreground">Waist</dt><dd>{onboarding.waist_circumference_cm ? `${onboarding.waist_circumference_cm} cm` : "—"}</dd></div>
-                <div><dt className="text-muted-foreground">W/H Ratio</dt><dd>{onboarding.waist_to_hip_ratio ?? "—"}</dd></div>
-              </dl>
-            </CardContent>
-          </Card>
-        )}
       </TabsContent>
 
       <TabsContent value="contact">
