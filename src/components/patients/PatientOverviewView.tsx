@@ -514,6 +514,104 @@ export function PatientOverviewView({
         </div>
       </div>
 
+      {/* 3b. BIOMETRICS */}
+      <Card className="shadow-card">
+        <CardContent className="py-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Ruler className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Biometrics</h3>
+            <Button
+              variant="ghost" size="sm"
+              className="ml-auto h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowBioForm((v) => !v)}
+            >
+              {showBioForm ? "Cancel" : (
+                <>
+                  <Pencil className="h-3 w-3" /> Edit
+                </>
+              )}
+            </Button>
+          </div>
+
+          {showBioForm ? (
+            <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Height (cm)</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.height_cm}
+                    onChange={(e) => setBioForm((p) => ({ ...p, height_cm: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Weight (kg)</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.weight_kg}
+                    onChange={(e) => setBioForm((p) => ({ ...p, weight_kg: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Waist (cm)</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.waist_circumference_cm}
+                    onChange={(e) => setBioForm((p) => ({ ...p, waist_circumference_cm: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">W/H Ratio</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.waist_to_hip_ratio}
+                    onChange={(e) => setBioForm((p) => ({ ...p, waist_to_hip_ratio: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                BMI: <span className="font-medium text-foreground">{computedBmi ?? "—"}</span> (auto-calculated)
+              </p>
+              <div className="flex gap-2">
+                <Button size="sm" className="h-7 text-xs" onClick={handleSaveBiometrics}>Save</Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBioForm(false)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2">
+              <div>
+                <dt className="text-xs text-muted-foreground">Height</dt>
+                <dd className="text-sm font-medium text-foreground">{onboarding?.height_cm ? `${onboarding.height_cm} cm` : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Weight</dt>
+                <dd className="text-sm font-medium text-foreground">{onboarding?.weight_kg ? `${onboarding.weight_kg} kg` : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">BMI</dt>
+                <dd className="text-sm font-medium text-foreground">{computedBmi ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Waist</dt>
+                <dd className="text-sm font-medium text-foreground">{onboarding?.waist_circumference_cm ? `${onboarding.waist_circumference_cm} cm` : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">W/H Ratio</dt>
+                <dd className="text-sm font-medium text-foreground">{onboarding?.waist_to_hip_ratio ?? "—"}</dd>
+              </div>
+            </dl>
+          )}
+        </CardContent>
+      </Card>
+
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
       <div className="space-y-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
