@@ -126,51 +126,71 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
             onNavigate={(path) => { onOpenChange(false); navigate(path); }}
           />
 
-          <Separator />
-
-
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Status</p>
-            <Select value={task.status} onValueChange={(v) => updateStatus(v as TaskStatus)}>
-              <SelectTrigger><SelectValue>{statusLabel(task.status)}</SelectValue></SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Notes</p>
+          {kind === "labs" ? (
+            <>
+              <Separator />
               <Button
-                size="sm" variant="ghost" className="h-7 text-xs"
-                onClick={saveNotes} disabled={savingNote || notes === (task.description ?? "")}
+                className="w-full gap-1.5"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate(`/patients/${task.patient_id}?tab=lab_results&review=1`);
+                }}
               >
-                Save
+                Go to full lab view <ArrowRight className="h-3.5 w-3.5" />
               </Button>
-            </div>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={5}
-              placeholder="Add a comment or update…"
-            />
-          </div>
+              <p className="text-[11px] text-muted-foreground text-center italic">
+                This task completes automatically once all new results are verified.
+              </p>
+            </>
+          ) : (
+            <>
+              <Separator />
 
-          <Separator />
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Status</p>
+                <Select value={task.status} onValueChange={(v) => updateStatus(v as TaskStatus)}>
+                  <SelectTrigger><SelectValue>{statusLabel(task.status)}</SelectValue></SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openEditTask(task)}>
-              <Pencil className="h-3.5 w-3.5" /> Edit
-            </Button>
-            <Button variant="ghost" className="text-destructive hover:text-destructive gap-1.5" onClick={deleteTask}>
-              <Trash2 className="h-3.5 w-3.5" /> Delete
-            </Button>
-          </div>
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">Notes</p>
+                  <Button
+                    size="sm" variant="ghost" className="h-7 text-xs"
+                    onClick={saveNotes} disabled={savingNote || notes === (task.description ?? "")}
+                  >
+                    Save
+                  </Button>
+                </div>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={5}
+                  placeholder="Add a comment or update…"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openEditTask(task)}>
+                  <Pencil className="h-3.5 w-3.5" /> Edit
+                </Button>
+                <Button variant="ghost" className="text-destructive hover:text-destructive gap-1.5" onClick={deleteTask}>
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </Button>
+              </div>
+            </>
+          )}
+
         </div>
       </SheetContent>
     </Sheet>
