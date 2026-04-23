@@ -161,25 +161,123 @@ const PatientProfilePage = () => {
               const isInDimension = HEALTH_TAXONOMY.some(
                 (m) => m.key === activeSection || m.subDimensions.some((s) => s.key === activeSection),
               );
+              // Auto-expand when on Health Data page or inside any dimension
+              const defaultOpen = isOnHealthData || isInDimension;
+              const sectionOpen = dimensionsSectionOpen ?? defaultOpen;
+
               return (
-                <button
-                  onClick={() => setActiveSection("lab_results")}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                    isOnHealthData
-                      ? "bg-primary text-primary-foreground"
-                      : isInDimension
-                        ? "bg-primary/15 text-foreground font-medium"
-                        : "hover:bg-muted text-foreground"
-                  }`}
-                >
-                  <FlaskConical className="h-4 w-4" />
-                  Health Data
-                  {labNotification && (
-                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                      !
+                <>
+                  <button
+                    onClick={() => {
+                      setActiveSection("lab_results");
+                      // Ensure expanded when navigating to Health Data
+                      if (!sectionOpen) setDimensionsSectionOpen(true);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                      isOnHealthData
+                        ? "bg-primary text-primary-foreground"
+                        : isInDimension
+                          ? "bg-primary/15 text-foreground font-medium"
+                          : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <FlaskConical className="h-4 w-4" />
+                    <span className="flex-1 text-left">Health Data</span>
+                    {labNotification && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                        !
+                      </span>
+                    )}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDimensionsSectionOpen(!sectionOpen);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDimensionsSectionOpen(!sectionOpen);
+                        }
+                      }}
+                      className="opacity-60 hover:opacity-100 cursor-pointer"
+                      aria-label={sectionOpen ? "Collapse dimensions" : "Expand dimensions"}
+                    >
+                      {sectionOpen
+                        ? <ChevronDown className="h-3.5 w-3.5" />
+                        : <ChevronRight className="h-3.5 w-3.5" />}
                     </span>
+                  </button>
+
+                  {sectionOpen && (
+                    <div className="ml-4 border-l border-border/50 pl-2 mt-0.5 mb-1">
+                      {HEALTH_TAXONOMY.map((main) => {
+                        const MainIcon = main.icon;
+                        const isMainActive = activeSection === main.key;
+                        const isSubActive = main.subDimensions.some((s) => s.key === activeSection);
+                        const expandedKey = Object.keys(expandedGroups).find((k) => expandedGroups[k]);
+                        const isExpanded = expandedKey ? expandedKey === main.key : isSubActive;
+                        const hasSubs = main.subDimensions.length > 0;
+
+                        return (
+                          <div key={main.key}>
+                            <button
+                              onClick={() => {
+                                if (hasSubs) {
+                                  setExpandedGroups((prev) => {
+                                    const wasOpen = prev[main.key];
+                                    return wasOpen ? {} : { [main.key]: true };
+                                  });
+                                } else {
+                                  setExpandedGroups({});
+                                }
+                                setActiveSection(main.key);
+                              }}
+                              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12.5px] transition-colors ${
+                                isMainActive
+                                  ? "bg-primary text-primary-foreground"
+                                  : isSubActive
+                                    ? "bg-primary/15 text-foreground font-medium"
+                                    : "hover:bg-muted text-foreground"
+                              }`}
+                            >
+                              <MainIcon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="flex-1 min-w-0 text-left truncate">{main.label}</span>
+                              {hasSubs && (
+                                isExpanded
+                                  ? <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+                                  : <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
+                              )}
+                            </button>
+                            {hasSubs && isExpanded && (
+                              <div className="ml-4 border-l border-border/40 pl-2 mt-0.5 mb-1">
+                                {main.subDimensions.map((sub) => {
+                                  const SubIcon = sub.icon;
+                                  return (
+                                    <button
+                                      key={sub.key}
+                                      onClick={() => setActiveSection(sub.key)}
+                                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors ${
+                                        activeSection === sub.key
+                                          ? "bg-primary text-primary-foreground"
+                                          : "hover:bg-muted text-foreground"
+                                      }`}
+                                    >
+                                      <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                                      <span className="flex-1 min-w-0 text-left truncate">{sub.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                </button>
+                </>
               );
             })()}
 
@@ -202,94 +300,6 @@ const PatientProfilePage = () => {
               <Calendar className="h-4 w-4" />
               Visits
             </button>
-
-            {(() => {
-              const isOnOverview = activeSection === "overview";
-              const isOnDimension =
-                HEALTH_TAXONOMY.some(
-                  (m) => m.key === activeSection || m.subDimensions.some((s) => s.key === activeSection),
-                );
-              // Default: collapsed on Overview, expanded when inside any dimension.
-              const defaultOpen = isOnDimension || (!isOnOverview && !["medications", "visits", "health_overview", "details", "lab_results"].includes(activeSection));
-              const sectionOpen = dimensionsSectionOpen ?? defaultOpen;
-
-              return (
-                <div className="ml-3 mt-1 pl-2 border-l border-border/60">
-                  <button
-                    onClick={() => setDimensionsSectionOpen(!sectionOpen)}
-                    className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-                  >
-                    <span>Health Dimensions</span>
-                    {sectionOpen
-                      ? <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-                      : <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
-                  </button>
-
-                  {sectionOpen && HEALTH_TAXONOMY.map((main) => {
-                    const MainIcon = main.icon;
-                    const isMainActive = activeSection === main.key;
-                    const isSubActive = main.subDimensions.some((s) => s.key === activeSection);
-                    const expandedKey = Object.keys(expandedGroups).find((k) => expandedGroups[k]);
-                    const isExpanded = expandedKey ? expandedKey === main.key : isSubActive;
-                    const hasSubs = main.subDimensions.length > 0;
-
-                    return (
-                      <div key={main.key}>
-                        <button
-                          onClick={() => {
-                            if (hasSubs) {
-                              setExpandedGroups((prev) => {
-                                const wasOpen = prev[main.key];
-                                return wasOpen ? {} : { [main.key]: true };
-                              });
-                            } else {
-                              setExpandedGroups({});
-                            }
-                            setActiveSection(main.key);
-                          }}
-                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-[12.5px] transition-colors ${
-                            isMainActive
-                              ? "bg-primary text-primary-foreground"
-                              : isSubActive
-                                ? "bg-primary/15 text-foreground font-medium"
-                                : "hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          <MainIcon className="h-4 w-4 shrink-0" />
-                          <span className="flex-1 min-w-0 text-left truncate">{main.label}</span>
-                          {hasSubs && (
-                            isExpanded
-                              ? <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                              : <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                          )}
-                        </button>
-                        {hasSubs && isExpanded && (
-                          <div className="ml-4 border-l border-border/50 pl-2 mt-0.5 mb-1">
-                            {main.subDimensions.map((sub) => {
-                              const SubIcon = sub.icon;
-                              return (
-                                <button
-                                  key={sub.key}
-                                  onClick={() => setActiveSection(sub.key)}
-                                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors ${
-                                    activeSection === sub.key
-                                      ? "bg-primary text-primary-foreground"
-                                      : "hover:bg-muted text-foreground"
-                                  }`}
-                                >
-                                  <SubIcon className="h-3.5 w-3.5 shrink-0" />
-                                  <span className="flex-1 min-w-0 text-left truncate">{sub.label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
           </div>
         </ScrollArea>
       </div>
