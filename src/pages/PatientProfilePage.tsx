@@ -217,12 +217,14 @@ const PatientProfilePage = () => {
                           setDimensionsSectionOpen(!sectionOpen);
                         }
                       }}
-                      className="opacity-60 hover:opacity-100 cursor-pointer"
+                      className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center opacity-60 hover:opacity-100 cursor-pointer"
                       aria-label={sectionOpen ? "Collapse dimensions" : "Expand dimensions"}
                     >
-                      {sectionOpen
-                        ? <ChevronDown className="h-3.5 w-3.5" />
-                        : <ChevronRight className="h-3.5 w-3.5" />}
+                      <ChevronRight
+                        className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                          sectionOpen ? "rotate-90" : ""
+                        }`}
+                      />
                     </span>
                   </button>
 
