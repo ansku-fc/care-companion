@@ -126,12 +126,6 @@ const Dashboard = () => {
   );
   const completedToday = tasks.filter((t) => isCompletedToday(t));
 
-  const stats = [
-    { title: "Today's Appointments",        value: "5",                            icon: CalendarDays,  tone: "text-primary",     onClick: () => scrollTo(scheduleRef) },
-    { title: "Urgent Tasks",                value: String(urgentTasks.length),     icon: AlertTriangle, tone: "text-destructive", onClick: () => navigate("/tasks?priority=urgent") },
-    { title: "Patients with Active Alerts", value: "4",                            icon: Users,         tone: "text-warning",     onClick: () => navigate("/patients?filter=alerts") },
-    { title: "Pending Prescription Renewals", value: "2",                          icon: Pill,          tone: "text-success",     onClick: () => navigate("/patients?filter=renewals") },
-  ];
 
   const statusDot = (status: "upcoming" | "in_progress" | "completed") => {
     if (status === "in_progress") return "bg-success animate-pulse";
