@@ -972,13 +972,13 @@ export function PatientOverviewView({
 
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
       <Card className="shadow-card">
-        <CardContent className="py-2 px-3">
-          <div className="flex items-center gap-2 mb-1">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-2 mb-2">
             <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Health Dimensions
             </h3>
           </div>
-          <ul className="space-y-0">
+          <ul className="space-y-0.5">
             {[...HEALTH_TAXONOMY]
               .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
               .sort((a, b) => b.score - a.score)
@@ -990,22 +990,22 @@ export function PatientOverviewView({
                   <li key={dim.key}>
                     <button
                       onClick={() => onSelectSection(dim.key)}
-                      className="w-full flex items-center gap-3 px-1 py-0.5 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center gap-3 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-1.5 w-56 shrink-0">
-                        <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <div className="flex items-center gap-2 w-60 shrink-0">
+                        <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
                           {dim.label}
                         </span>
                       </div>
-                      <div className="flex-1 h-2 rounded-full bg-muted/60 overflow-hidden">
+                      <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{ width: `${widthPct}%`, backgroundColor: barColor }}
                         />
                       </div>
                       <span
-                        className={cn("text-[12px] font-semibold tabular-nums w-8 text-right", scoreColorClass(score))}
+                        className={cn("text-[13px] font-semibold tabular-nums w-10 text-right", scoreColorClass(score))}
                       >
                         {score.toFixed(1)}
                       </span>
