@@ -62,7 +62,7 @@ type SidebarSection = "details" | string;
 
 const TIER_LABELS: Record<string, string> = {
   tier_1: "Tier 1", tier_2: "Tier 2", tier_3: "Tier 3", tier_4: "Tier 4",
-  children: "Children", onboarding: "Onboarding", acute: "Acute", case_management: "Case Management",
+  children: "Child", onboarding: "Onboarding", acute: "Acute", case_management: "Case Management",
 };
 
 const PatientProfilePage = () => {
