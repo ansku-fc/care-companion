@@ -16,6 +16,15 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { cn } from "@/lib/utils";
+import { BiometricHistoryModal } from "./BiometricHistoryModal";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+} from "recharts";
 
 const TIER_LABELS: Record<string, string> = {
   tier_1: "Tier 1", tier_2: "Tier 2", tier_3: "Tier 3", tier_4: "Tier 4",
