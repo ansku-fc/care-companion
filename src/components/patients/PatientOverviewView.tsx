@@ -380,6 +380,22 @@ export function PatientOverviewView({
                     {moderateAllergies.length} moderate allerg{moderateAllergies.length === 1 ? "y" : "ies"}
                   </span>
                 )}
+                {severeInteractions.length > 0 && (
+                  <button
+                    onClick={() => onSelectSection("medications")}
+                    className="text-[hsl(0_57%_39%)] font-medium hover:underline"
+                  >
+                    {severeInteractions.length} severe drug interaction{severeInteractions.length === 1 ? "" : "s"}
+                  </button>
+                )}
+                {moderateInteractions.length > 0 && (
+                  <button
+                    onClick={() => onSelectSection("medications")}
+                    className="text-[hsl(28_63%_44%)] hover:underline"
+                  >
+                    {moderateInteractions.length} moderate drug interaction{moderateInteractions.length === 1 ? "" : "s"}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -396,17 +412,36 @@ export function PatientOverviewView({
               <div className="flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold">Active Diagnoses</h3>
+                <button
+                  onClick={() => onSelectSection("lab_results")}
+                  className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  See all →
+                </button>
               </div>
-              {diagnoses.length === 0 ? (
+              {displayDiagnoses.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No active diagnoses recorded.</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {diagnoses.map((d) => (
+                  {displayDiagnoses.map((d: any) => (
                     <li key={d.id} className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="font-medium">{d.diagnosis}</span>
+                      <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
+                        <span className="font-medium">{d.diagnosis}</span>
+                        {d.dimension && (
+                          <button
+                            onClick={() => {
+                              const key = DIMENSION_LABEL_TO_KEY[d.dimension as keyof typeof DIMENSION_LABEL_TO_KEY];
+                              if (key) onSelectSection(key);
+                            }}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
+                          >
+                            {d.dimension}
+                          </button>
+                        )}
+                      </div>
                       {d.diagnosed_date && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(d.diagnosed_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                          {fmtClinicalDate(d.diagnosed_date)}
                         </span>
                       )}
                     </li>
