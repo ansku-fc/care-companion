@@ -1149,7 +1149,10 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                 <div className="flex gap-2">
                   <Button size="sm" className="h-7 text-xs" disabled={!newAllergy.allergen.trim()} onClick={async () => {
                     if (!user) return;
-                    const { error } = await supabase.from("patient_allergies" as any).insert({ patient_id: patient.id, created_by: user.id, allergen: newAllergy.allergen.trim(), reaction: newAllergy.reaction.trim() || null, severity: newAllergy.severity } as any);
+                    const { findAllergen } = await import("@/lib/allergens");
+                    const name = newAllergy.allergen.trim();
+                    const icd = findAllergen(name)?.icd10 ?? null;
+                    const { error } = await supabase.from("patient_allergies" as any).insert({ patient_id: patient.id, created_by: user.id, allergen: name, icd_code: icd, reaction: newAllergy.reaction.trim() || null, severity: newAllergy.severity } as any);
                     if (error) { toast.error("Failed to add allergy"); return; }
                     toast.success("Allergy added");
                     setNewAllergy({ allergen: "", reaction: "", severity: "moderate" });

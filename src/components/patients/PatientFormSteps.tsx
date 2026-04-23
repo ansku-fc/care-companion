@@ -12,14 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowDownAZ, LayoutGrid, X, ChevronsUpDown } from "lucide-react";
 import type { OnboardingFormData } from "./AddPatientDialog";
 import { IllnessMedicationEditor } from "./IllnessMedicationEditor";
-
-const COMMON_ALLERGENS = [
-  "Penicillin", "Amoxicillin", "Sulfonamides", "Aspirin", "Ibuprofen",
-  "Codeine", "Morphine", "Latex", "Peanuts", "Tree Nuts",
-  "Shellfish", "Fish", "Eggs", "Milk / Dairy", "Wheat / Gluten",
-  "Soy", "Sesame", "Bee Venom", "Wasp Venom", "Dust Mites",
-  "Pollen", "Mold", "Pet Dander", "Nickel", "Contrast Dye",
-];
+import { COMMON_ALLERGENS, findAllergen } from "@/lib/allergens";
 
 type SortMode = "category" | "alphabetical";
 
@@ -307,25 +300,31 @@ export function PatientFormSteps({ step, form, updateField }: Props) {
                 <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-2 max-h-[250px] overflow-y-auto" align="start">
-              {COMMON_ALLERGENS.map((allergen) => {
-                const checked = form.allergies.includes(allergen);
-                return (
-                  <label
-                    key={allergen}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(v) => {
-                        if (v) updateField("allergies", [...form.allergies, allergen]);
-                        else updateField("allergies", form.allergies.filter((x) => x !== allergen));
-                      }}
-                    />
-                    {allergen}
-                  </label>
-                );
-              })}
+            <PopoverContent className="w-[320px] p-2 max-h-[280px] overflow-y-auto" align="start">
+              {(["Drug", "Food", "Environmental"] as const).map((cat) => (
+                <div key={cat} className="mb-2 last:mb-0">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">{cat}</p>
+                  {COMMON_ALLERGENS.filter((a) => a.category === cat).map((allergen) => {
+                    const checked = form.allergies.includes(allergen.name);
+                    return (
+                      <label
+                        key={allergen.name}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            if (v) updateField("allergies", [...form.allergies, allergen.name]);
+                            else updateField("allergies", form.allergies.filter((x) => x !== allergen.name));
+                          }}
+                        />
+                        <span className="flex-1">{allergen.name}</span>
+                        <span className="text-[11px] text-muted-foreground tabular-nums">{allergen.icd10}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ))}
             </PopoverContent>
           </Popover>
         </div>
