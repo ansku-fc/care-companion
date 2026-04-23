@@ -3302,15 +3302,20 @@ function CardiovascularDimensionView({
   const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
 
   // ── Cardiovascular risk factors (reordered + expandable + dummy history) ──
-  // Dummy: current illnesses
-  const cvCurrentIllnesses: { name: string; diagnosedDate: string; severity?: string }[] = [
-    { name: "Essential hypertension", diagnosedDate: "2023-03-20", severity: "Moderate" },
-    { name: "Hyperlipidemia (LDL)", diagnosedDate: "2024-02-10", severity: "Mild" },
-  ];
-  // Dummy: past illnesses (resolved)
-  const cvPastIllnesses: { name: string; from: string; to: string; resolution?: string }[] = [
-    { name: "Acute pericarditis", from: "2021-06-04", to: "2021-09-12", resolution: "Resolved with NSAIDs" },
-  ];
+  // Pull from single source of truth (shared clinical data)
+  const cvCurrentIllnesses = getDiagnosesForDimension("Cardiovascular Health").map((d) => ({
+    name: d.name,
+    diagnosedDate: fmtClinicalDate(d.diagnosedDate),
+    severity: undefined as string | undefined,
+  }));
+  const cvPastIllnesses = CARTER_DIAGNOSES
+    .filter((d) => d.dimension === "Cardiovascular Health" && d.status === "resolved")
+    .map((d) => ({
+      name: d.name,
+      from: d.diagnosedDate,
+      to: d.resolvedDate ?? "—",
+      resolution: undefined as string | undefined,
+    }));
   // Dummy: smoking history (changes over time)
   const smokingCurrent = onboarding?.smoking ?? "no";
   const smokingHistory: { date: string; value: string }[] = [
