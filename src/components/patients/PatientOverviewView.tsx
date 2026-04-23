@@ -26,6 +26,14 @@ import {
   YAxis,
   Tooltip as RTooltip,
 } from "recharts";
+import {
+  CARTER_DIAGNOSES,
+  CARTER_MEDICATIONS,
+  CARTER_INTERACTIONS,
+  DIMENSION_LABEL_TO_KEY,
+  fmtClinicalDate,
+  isCarter,
+} from "@/lib/patientClinicalData";
 
 const TIER_LABELS: Record<string, string> = {
   tier_1: "Tier 1", tier_2: "Tier 2", tier_3: "Tier 3", tier_4: "Tier 4",
