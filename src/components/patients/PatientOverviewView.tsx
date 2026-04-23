@@ -531,7 +531,64 @@ export function PatientOverviewView({
 
             {showAllergyForm && (
               <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-                <Input placeholder="Allergen" value={newAllergy.allergen} onChange={(e) => setNewAllergy((p) => ({ ...p, allergen: e.target.value }))} className="h-8 text-sm" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="h-8 w-full justify-between text-sm font-normal"
+                    >
+                      {newAllergy.allergen ? (
+                        <span className="flex items-center gap-1.5 truncate">
+                          <span className="truncate">{newAllergy.allergen}</span>
+                          {newAllergy.icd_code && (
+                            <span className="text-[11px] text-muted-foreground tabular-nums">{newAllergy.icd_code}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Search allergen…</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command
+                      filter={(value, search) => {
+                        if (!search) return 1;
+                        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput
+                        placeholder="Type to search…"
+                        value={newAllergy.allergen}
+                        onValueChange={(v) =>
+                          setNewAllergy((p) => ({ ...p, allergen: v, icd_code: findAllergen(v)?.icd10 ?? "" }))
+                        }
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-xs text-muted-foreground">
+                            Press Add to use “{newAllergy.allergen}” as a custom allergen.
+                          </span>
+                        </CommandEmpty>
+                        {(["Drug", "Food", "Environmental"] as const).map((cat) => (
+                          <CommandGroup key={cat} heading={cat}>
+                            {COMMON_ALLERGENS.filter((a) => a.category === cat).map((a) => (
+                              <CommandItem
+                                key={`${a.name}-${a.icd10}`}
+                                value={`${a.name} ${a.icd10}`}
+                                onSelect={() => setNewAllergy((p) => ({ ...p, allergen: a.name, icd_code: a.icd10 }))}
+                              >
+                                <span className="flex-1">{a.name}</span>
+                                <span className="text-[11px] text-muted-foreground tabular-nums">{a.icd10}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input placeholder="Reaction (optional)" value={newAllergy.reaction} onChange={(e) => setNewAllergy((p) => ({ ...p, reaction: e.target.value }))} className="h-8 text-sm" />
                 <Select value={newAllergy.severity} onValueChange={(v) => setNewAllergy((p) => ({ ...p, severity: v }))}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
@@ -551,31 +608,49 @@ export function PatientOverviewView({
             {allergies.length === 0 && !showAllergyForm ? (
               <p className="text-[11px] text-muted-foreground">No allergies recorded.</p>
             ) : (
-              <div className="flex flex-wrap gap-1">
-                {allergies.map((a: any) => (
-                  <span
-                    key={a.id}
-                    className={cn(
-                      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border",
-                      a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)]",
-                      a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
-                      a.severity === "mild" && "bg-muted text-muted-foreground border-border",
-                    )}
-                  >
-                    {a.allergen}
-                    <button
-                      onClick={async () => {
-                        await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
-                        fetchOverviewData();
-                      }}
-                      className="opacity-50 hover:opacity-100"
-                      aria-label={`Remove ${a.allergen}`}
-                    >
-                      <Trash2 className="h-2.5 w-2.5" />
-                    </button>
-                  </span>
-                ))}
-              </div>
+              <TooltipProvider delayDuration={150}>
+                <div className="flex flex-wrap gap-1">
+                  {allergies.map((a: any) => {
+                    const icd = a.icd_code || findAllergen(a.allergen)?.icd10;
+                    return (
+                      <Tooltip key={a.id}>
+                        <TooltipTrigger asChild>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border cursor-default",
+                              a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)]",
+                              a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
+                              a.severity === "mild" && "bg-muted text-muted-foreground border-border",
+                            )}
+                          >
+                            {a.allergen}
+                            <button
+                              onClick={async () => {
+                                await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
+                                fetchOverviewData();
+                              }}
+                              className="opacity-50 hover:opacity-100"
+                              aria-label={`Remove ${a.allergen}`}
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">
+                          {icd ? (
+                            <span>
+                              ICD-10: <span className="font-medium tabular-nums">{icd}</span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">No ICD-10 code</span>
+                          )}
+                          {a.reaction && <div className="text-muted-foreground">{a.reaction}</div>}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </TooltipProvider>
             )}
           </CardContent>
         </Card>
