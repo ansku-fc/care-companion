@@ -16,6 +16,15 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { cn } from "@/lib/utils";
+import { BiometricHistoryModal } from "./BiometricHistoryModal";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+} from "recharts";
 
 const TIER_LABELS: Record<string, string> = {
   tier_1: "Tier 1", tier_2: "Tier 2", tier_3: "Tier 3", tier_4: "Tier 4",
@@ -73,6 +82,8 @@ export function PatientOverviewView({
     waist_circumference_cm: "",
     waist_to_hip_ratio: "",
   });
+
+  const [historyModalLabel, setHistoryModalLabel] = useState<string | null>(null);
 
   useEffect(() => {
     setBioForm({
@@ -744,51 +755,60 @@ export function PatientOverviewView({
                         </dd>
                       </div>
 
-                      <PopoverContent align="start" className="w-72 p-0">
-                        <div className="px-3 py-2 border-b">
+                      <PopoverContent align="start" className="w-80 p-0">
+                        <div className="px-3 py-2 border-b flex items-baseline justify-between">
                           <p className="text-xs font-semibold text-foreground">{item.label} history</p>
-                          <p className="text-[10px] text-muted-foreground">Last {series.length} measurements</p>
+                          <p className="text-[10px] text-muted-foreground">Last {series.length}</p>
                         </div>
-                        <div className="max-h-64 overflow-auto">
-                          <table className="w-full text-xs">
-                            <thead className="bg-muted/40 text-muted-foreground">
-                              <tr>
-                                <th className="text-left font-medium px-3 py-1.5">Date</th>
-                                <th className="text-left font-medium px-3 py-1.5">Value</th>
-                                <th className="text-left font-medium px-3 py-1.5">Change</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {series.map((entry, idx) => {
-                                const prev = series[idx + 1];
-                                const delta = item.staticValue
-                                  ? { text: "—", positive: null, dir: null }
-                                  : getDelta(entry.value, prev?.value, item.unit, item.decimals, item.lowerIsBetter);
-                                return (
-                                  <tr key={entry.date + idx} className="border-t">
-                                    <td className="px-3 py-1.5 text-foreground whitespace-nowrap">{entry.date}</td>
-                                    <td className="px-3 py-1.5 text-foreground tabular-nums whitespace-nowrap">
-                                      {fmt(entry.value, item.decimals)}{item.unit ? ` ${item.unit}` : ""}
-                                    </td>
-                                    <td className={cn(
-                                      "px-3 py-1.5 tabular-nums whitespace-nowrap",
-                                      delta && delta.positive === true && ImprovedColor,
-                                      delta && delta.positive === false && WorsenedColor,
-                                      (!delta || delta.positive === null) && "text-muted-foreground",
-                                    )}>
-                                      {delta ? delta.text : "—"}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                        <div className="px-2 pt-2 pb-1 h-36">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                              data={[...series].reverse()}
+                              margin={{ top: 6, right: 8, left: 0, bottom: 4 }}
+                            >
+                              <defs>
+                                <linearGradient id={`bio-mini-${item.label}`} x1="0" y1="0" x2="1" y2="0">
+                                  <stop offset="0%" stopColor="hsl(270 70% 60%)" />
+                                  <stop offset="100%" stopColor="hsl(180 70% 45%)" />
+                                </linearGradient>
+                              </defs>
+                              <XAxis
+                                dataKey="date"
+                                tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                                interval="preserveStartEnd"
+                                tickLine={false}
+                                axisLine={false}
+                              />
+                              <YAxis hide domain={["auto", "auto"]} />
+                              <RTooltip
+                                contentStyle={{
+                                  backgroundColor: "hsl(var(--background))",
+                                  border: "1px solid hsl(var(--border))",
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  padding: "4px 8px",
+                                }}
+                                formatter={(v: number) => [
+                                  `${(+v).toFixed(item.decimals)}${item.unit ? " " + item.unit : ""}`,
+                                  item.label,
+                                ]}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke={`url(#bio-mini-${item.label})`}
+                                strokeWidth={2}
+                                dot={{ r: 2.5, fill: "hsl(270 70% 55%)", strokeWidth: 0 }}
+                                activeDot={{ r: 4 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
                         </div>
                         <div className="px-3 py-1.5 border-t text-right">
                           <button
                             type="button"
                             className="text-[11px] text-primary hover:underline"
-                            onClick={() => toast.info("Full measurement history coming soon")}
+                            onClick={() => setHistoryModalLabel(item.label)}
                           >
                             See all
                           </button>
@@ -802,6 +822,63 @@ export function PatientOverviewView({
           )}
         </CardContent>
       </Card>
+
+      {/* Biometric history modal */}
+      {(() => {
+        const height = onboarding?.height_cm ?? 188;
+        const weight = onboarding?.weight_kg ?? 84;
+        const bmi = computedBmi ?? 23.8;
+        const waist = onboarding?.waist_circumference_cm ?? 88;
+        const whr = onboarding?.waist_to_hip_ratio ?? 0.92;
+        const allItems = [
+          { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true,
+            history: [
+              { date: "12 Aug 2025", value: 188 }, { date: "03 Feb 2025", value: 188 },
+              { date: "15 Jul 2024", value: 188 }, { date: "20 Jan 2024", value: 188 },
+              { date: "10 Jun 2023", value: 188 },
+            ] },
+          { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true,
+            history: [
+              { date: "12 Aug 2025", value: 86.1 }, { date: "03 Feb 2025", value: 87.5 },
+              { date: "15 Jul 2024", value: 88.3 }, { date: "20 Jan 2024", value: 89.5 },
+              { date: "10 Jun 2023", value: 89.5 },
+            ] },
+          { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true,
+            history: [
+              { date: "12 Aug 2025", value: 24.4 }, { date: "03 Feb 2025", value: 24.8 },
+              { date: "15 Jul 2024", value: 25.0 }, { date: "20 Jan 2024", value: 25.3 },
+              { date: "10 Jun 2023", value: 25.3 },
+            ], refRange: { low: 18.5, high: 24.9, label: "Healthy 18.5–24.9" } },
+          { label: "Waist", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true,
+            history: [
+              { date: "12 Aug 2025", value: 89.5 }, { date: "03 Feb 2025", value: 90.5 },
+              { date: "15 Jul 2024", value: 91.0 }, { date: "20 Jan 2024", value: 92.5 },
+              { date: "10 Jun 2023", value: 92.5 },
+            ] },
+          { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true,
+            history: [
+              { date: "12 Aug 2025", value: 0.94 }, { date: "03 Feb 2025", value: 0.95 },
+              { date: "15 Jul 2024", value: 0.95 }, { date: "20 Jan 2024", value: 0.96 },
+              { date: "10 Jun 2023", value: 0.96 },
+            ], refRange: { low: 0, high: 0.95, label: "Healthy < 0.95" } },
+        ];
+        const active = allItems.find((i) => i.label === historyModalLabel);
+        if (!active) return null;
+        return (
+          <BiometricHistoryModal
+            open={!!historyModalLabel}
+            onOpenChange={(v) => !v && setHistoryModalLabel(null)}
+            metricLabel={active.label}
+            patientName={patient.full_name}
+            unit={active.unit}
+            decimals={active.decimals}
+            lowerIsBetter={active.lowerIsBetter}
+            staticValue={active.staticValue}
+            series={[{ date: "Today", value: active.current }, ...active.history]}
+            refRange={(active as any).refRange}
+          />
+        );
+      })()}
 
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
       <div className="space-y-2">
