@@ -80,7 +80,7 @@ export function PatientOverviewView({
     height_cm: "",
     weight_kg: "",
     waist_circumference_cm: "",
-    waist_to_hip_ratio: "",
+    hip_circumference_cm: "",
   });
 
   const [historyModalLabel, setHistoryModalLabel] = useState<string | null>(null);
