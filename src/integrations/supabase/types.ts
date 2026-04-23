@@ -1172,6 +1172,7 @@ export type Database = {
           category: Database["public"]["Enums"]["task_category"]
           created_at: string
           created_by: string
+          created_from: string | null
           description: string | null
           due_date: string | null
           id: string
@@ -1188,6 +1189,7 @@ export type Database = {
           category: Database["public"]["Enums"]["task_category"]
           created_at?: string
           created_by: string
+          created_from?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -1204,6 +1206,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["task_category"]
           created_at?: string
           created_by?: string
+          created_from?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -1317,8 +1320,11 @@ export type Database = {
         | "client_communication"
         | "care_coordination"
         | "documentation_reporting"
+        | "clinical"
+        | "referral"
+        | "administrative"
       task_priority: "urgent" | "high" | "medium" | "low"
-      task_status: "todo" | "in_progress" | "done"
+      task_status: "todo" | "in_progress" | "done" | "deferred"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1469,9 +1475,12 @@ export const Constants = {
         "client_communication",
         "care_coordination",
         "documentation_reporting",
+        "clinical",
+        "referral",
+        "administrative",
       ],
       task_priority: ["urgent", "high", "medium", "low"],
-      task_status: ["todo", "in_progress", "done"],
+      task_status: ["todo", "in_progress", "done", "deferred"],
     },
   },
 } as const

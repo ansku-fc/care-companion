@@ -21,6 +21,7 @@ import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { cn } from "@/lib/utils";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
 import { BiometricMiniChart } from "./BiometricMiniChart";
+import { PatientTasksCard } from "@/components/tasks/PatientTasksCard";
 import {
   ResponsiveContainer,
   LineChart,
@@ -407,6 +408,9 @@ export function PatientOverviewView({
           )}
         </CardContent>
       </Card>
+
+      {/* TASKS for this patient */}
+      <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
 
       {/* 3. ROW 1 — Diagnoses | Medications */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

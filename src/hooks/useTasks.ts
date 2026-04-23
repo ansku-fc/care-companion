@@ -1,0 +1,44 @@
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
+import type { Task } from "@/lib/tasks";
+
+interface UseTasksOptions {
+  patientId?: string;
+}
+
+export function useTasks(options: UseTasksOptions = {}) {
+  const { patientId } = options;
+  const { subscribe } = useTaskActions();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [patients, setPatients] = useState<{ id: string; full_name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTasks = useCallback(async () => {
+    let q = supabase
+      .from("tasks")
+      .select("*")
+      .order("due_date", { ascending: true, nullsFirst: false });
+    if (patientId) q = q.eq("patient_id", patientId);
+    const { data } = await q;
+    setTasks((data ?? []) as Task[]);
+    setLoading(false);
+  }, [patientId]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchTasks();
+    supabase
+      .from("patients")
+      .select("id, full_name")
+      .order("full_name")
+      .then(({ data }) => setPatients(data ?? []));
+    const unsubscribe = subscribe(fetchTasks);
+    return unsubscribe;
+  }, [fetchTasks, subscribe]);
+
+  const patientName = (id: string | null) =>
+    id ? patients.find((p) => p.id === id)?.full_name ?? null : null;
+
+  return { tasks, patients, patientName, loading, refetch: fetchTasks };
+}
