@@ -26,7 +26,18 @@ const SEED: Record<string, NewMarker[]> = {
 const state = new Map<string, Set<string>>();
 const labels = new Map<string, NewMarker>(); // marker key → meta (for rendering)
 const listeners = new Set<() => void>();
-let initialized = new Set<string>();
+const initialized = new Set<string>();
+// Track which patients have been verified-cleared so we don't re-seed.
+const cleared = new Set<string>();
+
+// Hardcoded NEW values for Korhonen, Elena (most recent unreviewed column).
+export const KORHONEN_NEW_VALUES: Record<string, number> = {
+  ldl_mmol_l: 4.8,
+  hba1c_mmol_mol: 58,
+  alat_u_l: 62,
+};
+// Date label for the synthesized "NEW" column shown to the doctor.
+export const KORHONEN_NEW_DATE = new Date().toISOString().slice(0, 10);
 
 function notify() { listeners.forEach((l) => l()); }
 
@@ -35,21 +46,32 @@ export function subscribeLabReview(listener: () => void): () => void {
   return () => { listeners.delete(listener); };
 }
 
-/** Seed the unreviewed set for a patient on first access. */
+function isKorhonen(patientId: string, patientName?: string | null) {
+  const key = (patientName ?? "").toLowerCase();
+  if (key.includes("korhonen")) return "korhonen";
+  return null;
+}
+
+/** Seed the unreviewed set for a patient. Re-runs if name was unknown earlier. */
 export function ensureSeeded(patientId: string, patientName?: string | null) {
+  if (cleared.has(patientId)) return;
+  const seedKey = isKorhonen(patientId, patientName);
+  if (!seedKey) return;
+  // Already seeded for this patient with a known name — don't reset progress.
   if (initialized.has(patientId)) return;
   initialized.add(patientId);
-  const key = (patientName ?? "").toLowerCase();
-  const match = Object.entries(SEED).find(([k]) => key.includes(k));
-  if (match) {
-    const set = new Set<string>();
-    for (const m of match[1]) {
-      set.add(m.key);
-      labels.set(m.key, m);
-    }
-    state.set(patientId, set);
-    notify();
+  const set = new Set<string>();
+  for (const m of SEED[seedKey]) {
+    set.add(m.key);
+    labels.set(m.key, m);
   }
+  state.set(patientId, set);
+  notify();
+}
+
+/** True if this patient has the synthesized Korhonen NEW lab column. */
+export function hasKorhonenNewColumn(patientId: string, patientName?: string | null): boolean {
+  return !!isKorhonen(patientId, patientName);
 }
 
 export function getNewMarkers(patientId: string): NewMarker[] {
