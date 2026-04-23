@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { cn } from "@/lib/utils";
+import {
+  CARTER_DIAGNOSES,
+  DIMENSION_LABEL_TO_KEY,
+  fmtClinicalDate,
+} from "@/lib/patientClinicalData";
 
 // Same dummy varied risk-index values used elsewhere
 const DIMENSION_RISK_SCORES: Record<string, number> = {
@@ -57,6 +64,10 @@ export function HealthDataView({ onSelectDimension }: Props) {
   const elevatedCount = HEALTH_TAXONOMY.filter(
     (m) => (DIMENSION_RISK_SCORES[m.key] ?? 0) >= 4,
   ).length;
+
+  const activeDx = CARTER_DIAGNOSES.filter((d) => d.status === "active");
+  const pastDx = CARTER_DIAGNOSES.filter((d) => d.status === "resolved");
+  const [pastOpen, setPastOpen] = useState(false);
 
   return (
     <div className="space-y-5 p-1 overflow-auto h-full">
@@ -122,6 +133,92 @@ export function HealthDataView({ onSelectDimension }: Props) {
           );
         })}
       </div>
+
+      {/* Diagnoses */}
+      <section className="space-y-2 pt-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Diagnoses
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {activeDx.length} active · {pastDx.length} past
+          </p>
+        </div>
+
+        <Card className="shadow-card">
+          <CardContent className="p-0 divide-y">
+            {activeDx.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => onSelectDimension(DIMENSION_LABEL_TO_KEY[d.dimension])}
+                className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{d.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="text-[10px]">{d.icd10}</Badge>
+                    <span className="text-[11px] text-muted-foreground">{d.dimension}</span>
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  Diagnosed {fmtClinicalDate(d.diagnosedDate)}
+                </span>
+              </button>
+            ))}
+            {activeDx.length === 0 && (
+              <p className="px-4 py-6 text-sm text-muted-foreground text-center">
+                No active diagnoses recorded.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Past Diagnoses (collapsible) */}
+        <Card className="shadow-card">
+          <button
+            onClick={() => setPastOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+          >
+            <span className="text-sm font-medium text-foreground">
+              Past Diagnoses ({pastDx.length})
+            </span>
+            {pastOpen ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          {pastOpen && (
+            <CardContent className="p-0 divide-y border-t">
+              {pastDx.length === 0 ? (
+                <p className="px-4 py-4 text-sm text-muted-foreground">
+                  No resolved diagnoses on record.
+                </p>
+              ) : (
+                pastDx.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => onSelectDimension(DIMENSION_LABEL_TO_KEY[d.dimension])}
+                    className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{d.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-[10px]">{d.icd10}</Badge>
+                        <span className="text-[11px] text-muted-foreground">{d.dimension}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {fmtClinicalDate(d.diagnosedDate)}
+                      {d.resolvedDate ? ` → ${fmtClinicalDate(d.resolvedDate)}` : ""}
+                    </span>
+                  </button>
+                ))
+              )}
+            </CardContent>
+          )}
+        </Card>
+      </section>
     </div>
   );
 }
