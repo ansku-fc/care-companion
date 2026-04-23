@@ -4144,17 +4144,24 @@ const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: str
   fvc_percent: { low: 80, label: "FVC" },
 };
 
-function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes }: {
+function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes, reviewMode, onReviewComplete }: {
   patientId: string;
+  patientName?: string | null;
   labResults: Tables<"patient_lab_results">[];
   onLabResultsAdded: () => void;
   onNavigateDimension: (section: string) => void;
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  reviewMode?: boolean;
+  onReviewComplete?: () => void;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   // (legacy tab state removed; lab results render directly now)
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
+  // Local re-render trigger for the lab-review store
+  const [, forceTick] = useState(0);
+  const [reviewBanner, setReviewBanner] = useState(false);
+
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
   const isSyncing = React.useRef(false);
