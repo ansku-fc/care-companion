@@ -188,7 +188,7 @@ const PatientProfilePage = () => {
                       // Ensure expanded when navigating to Health Data
                       if (!sectionOpen) setDimensionsSectionOpen(true);
                     }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    className={`relative w-full flex items-center gap-2 pl-3 pr-9 py-2 rounded-md text-sm transition-colors ${
                       isOnHealthData
                         ? "bg-primary text-primary-foreground"
                         : isInDimension
@@ -196,10 +196,10 @@ const PatientProfilePage = () => {
                           : "hover:bg-muted text-foreground"
                     }`}
                   >
-                    <FlaskConical className="h-4 w-4" />
-                    <span className="flex-1 text-left">Health Data</span>
+                    <FlaskConical className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">Health Data</span>
                     {labNotification && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                         !
                       </span>
                     )}
@@ -217,7 +217,7 @@ const PatientProfilePage = () => {
                           setDimensionsSectionOpen(!sectionOpen);
                         }
                       }}
-                      className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center opacity-60 hover:opacity-100 cursor-pointer"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center opacity-60 hover:opacity-100 cursor-pointer"
                       aria-label={sectionOpen ? "Collapse dimensions" : "Expand dimensions"}
                     >
                       <ChevronRight
