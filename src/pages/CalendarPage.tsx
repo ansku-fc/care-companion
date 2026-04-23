@@ -117,7 +117,11 @@ const CalendarPage = () => {
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<any>(null);
   const [importNoteAppt, setImportNoteAppt] = useState<any>(null);
+  const [taskDetail, setTaskDetail] = useState<Task | null>(null);
+  const [taskPanelOpen, setTaskPanelOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const { tasks, patientName } = useTasks();
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
