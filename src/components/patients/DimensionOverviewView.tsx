@@ -472,6 +472,8 @@ export function MainDimensionOverview({
                   filter={labFilter}
                   onFilterChange={setLabFilter}
                   filterOptions={filterOptions}
+                  patientId={patient.id}
+                  patientName={patient.full_name}
                 />
               </TabsContent>
             </Tabs>
@@ -504,7 +506,9 @@ export function MainDimensionOverview({
         </div>
         <ClinicalSynthesis
           patientId={patient.id}
+          patientName={patient.full_name}
           categoryKey={categoryKey}
+          categoryLabel={main.label}
           initialSummary={storedCategory?.summary || ""}
           initialRecommendations={(storedCategory as any)?.recommendations || ""}
           storedStatus={storedCategory?.status}
@@ -620,7 +624,7 @@ export function SubDimensionView({
                 {renderRiskFactors()}
               </TabsContent>
               <TabsContent value="lab_results" className="mt-4">
-                <LabResultsBlock biomarkers={biomarkers} />
+                <LabResultsBlock biomarkers={biomarkers} patientId={patient.id} patientName={patient.full_name} />
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -652,7 +656,9 @@ export function SubDimensionView({
         </div>
         <ClinicalSynthesis
           patientId={patient.id}
+          patientName={patient.full_name}
           categoryKey={categoryKey}
+          categoryLabel={`${parent.label} — ${sub.label}`}
           initialSummary={storedCategory?.summary || ""}
           initialRecommendations={(storedCategory as any)?.recommendations || ""}
           storedStatus={storedCategory?.status}
