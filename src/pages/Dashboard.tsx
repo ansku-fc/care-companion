@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  CalendarDays, AlertTriangle, Users, Pill, ArrowRight, Stethoscope,
+  CalendarDays, AlertTriangle, ArrowRight, Stethoscope, Plus,
   UserRound, HeartPulse, FileText, ClipboardList, CheckCircle2, Clock, Activity,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/hooks/useTasks";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import {
   isCompletedToday, dueWithinDays, isOverdue, isDueToday,
@@ -63,6 +64,7 @@ const Dashboard = () => {
   const actionRef = useRef<HTMLDivElement>(null);
   const [patients, setPatients] = useState<PatientLite[]>([]);
   const { tasks, patientName } = useTasks();
+  const { openNewTask } = useTaskActions();
   const [detail, setDetail] = useState<Task | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -91,6 +93,29 @@ const Dashboard = () => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const openTask = (t: Task) => { setDetail(t); setOpen(true); };
+
+  const createTaskForAppt = (appt: typeof todaySchedule[number]) => {
+    const p = findPatient(appt.name);
+    openNewTask({
+      title: "Post-visit follow-up",
+      patient_id: p?.id ?? null,
+      category: "clinical",
+      priority: "medium",
+      created_from: `${appt.time} ${appt.type}`,
+    });
+  };
+
+  const createTaskFromAction = (t: Task) => {
+    openNewTask({
+      title: t.title,
+      description: t.description ?? undefined,
+      patient_id: t.patient_id,
+      category: t.category,
+      priority: t.priority,
+      assignee_name: t.assignee_name ?? undefined,
+      created_from: `Action Centre · ${t.title}`,
+    });
+  };
 
   // Live task buckets
   const urgentTasks = tasks.filter(
@@ -124,24 +149,31 @@ const Dashboard = () => {
       : tone === "warning" ? "bg-warning/5 hover:bg-warning/10 border-warning"
       : "bg-muted/40 hover:bg-muted border-muted-foreground/30";
     return (
-      <button
-        onClick={() => openTask(task)}
-        className={cn("w-full text-left flex items-start gap-2 p-2.5 rounded-md border-l-4 transition-colors", bg)}
-      >
-        <ActorIcon actor={role} />
-        <div className="flex-1 min-w-0">
-          <p className={cn("text-xs font-medium leading-tight", tone === "muted" && "text-muted-foreground line-through decoration-muted-foreground/40")}>
-            {task.title}
-          </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-            {pname && <span className="text-foreground/80 font-medium">{pname}</span>}
-            {pname && task.due_date && <span> · </span>}
-            {task.due_date && <span>Due {format(new Date(task.due_date), "dd MMM")}</span>}
-            {task.assignee_name && <span> · {task.assignee_name}</span>}
-          </p>
-        </div>
-        <span className={cn("h-2 w-2 rounded-full mt-1.5", meta.dot)} />
-      </button>
+      <div className={cn("group relative w-full flex items-start gap-2 p-2.5 rounded-md border-l-4 transition-colors", bg)}>
+        <button onClick={() => openTask(task)} className="flex-1 text-left flex items-start gap-2 min-w-0">
+          <ActorIcon actor={role} />
+          <div className="flex-1 min-w-0">
+            <p className={cn("text-xs font-medium leading-tight", tone === "muted" && "text-muted-foreground line-through decoration-muted-foreground/40")}>
+              {task.title}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+              {pname && <span className="text-foreground/80 font-medium">{pname}</span>}
+              {pname && task.due_date && <span> · </span>}
+              {task.due_date && <span>Due {format(new Date(task.due_date), "dd MMM")}</span>}
+              {task.assignee_name && <span> · {task.assignee_name}</span>}
+            </p>
+          </div>
+          <span className={cn("h-2 w-2 rounded-full mt-1.5", meta.dot)} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); createTaskFromAction(task); }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline shrink-0 px-1.5 py-1 rounded"
+          aria-label="Assign as new task"
+        >
+          Assign <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
     );
   };
 
@@ -150,25 +182,6 @@ const Dashboard = () => {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Good morning, Dr. Laine.</h1>
         <p className="text-muted-foreground">{dateLabel}</p>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <button key={s.title} onClick={s.onClick} className="text-left transition hover:-translate-y-0.5">
-            <Card className="hover:shadow-card-hover transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{s.title}</p>
-                    <p className="text-3xl font-bold mt-1">{s.value}</p>
-                  </div>
-                  <s.icon className={cn("h-9 w-9 opacity-80", s.tone)} />
-                </div>
-              </CardContent>
-            </Card>
-          </button>
-        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -182,7 +195,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="space-y-2">
               {todaySchedule.map((appt) => (
-                <div key={`${appt.time}-${appt.name}`} className="flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
+                <div key={`${appt.time}-${appt.name}`} className="group flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
                   <span className="text-sm font-mono text-muted-foreground w-14 tabular-nums">{appt.time}</span>
                   <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(appt.status))} />
                   <div className="flex-1 min-w-0">
@@ -197,6 +210,15 @@ const Dashboard = () => {
                     appt.status === "completed" && "text-muted-foreground",
                     appt.status === "upcoming" && "text-foreground/70",
                   )}>{statusLabelText(appt.status)}</span>
+                  <button
+                    type="button"
+                    onClick={() => createTaskForAppt(appt)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    aria-label="Create follow-up task"
+                    title="Create follow-up task"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               ))}
               <div className="pt-2">
