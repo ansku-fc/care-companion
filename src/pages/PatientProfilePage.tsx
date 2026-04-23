@@ -313,8 +313,8 @@ const PatientProfilePage = () => {
             // Dimension or sub-dimension
             const isMain = HEALTH_TAXONOMY.some((m) => m.key === activeSection);
             if (isMain) {
-              label = "Back to Overview";
-              onBack = () => setActiveSection("overview");
+              label = "Back to Health Data";
+              onBack = () => setActiveSection("lab_results");
             } else {
               const parent = HEALTH_TAXONOMY.find((m) =>
                 m.subDimensions.some((s) => s.key === activeSection),
@@ -323,8 +323,8 @@ const PatientProfilePage = () => {
                 label = `Back to ${parent.label}`;
                 onBack = () => setActiveSection(parent.key);
               } else {
-                label = "Back to Overview";
-                onBack = () => setActiveSection("overview");
+                label = "Back to Health Data";
+                onBack = () => setActiveSection("lab_results");
               }
             }
           }
