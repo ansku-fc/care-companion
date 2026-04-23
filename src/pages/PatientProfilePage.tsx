@@ -33,6 +33,7 @@ import { PatientMedicationsView } from "@/components/patients/PatientMedications
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
+import { PatientCareTeamView } from "@/components/patients/PatientCareTeamView";
 import { HealthDataView } from "@/components/patients/HealthDataView";
 import {
   CardioLabBiomarkerPanel,
@@ -308,6 +309,16 @@ const PatientProfilePage = () => {
               <Calendar className="h-4 w-4" />
               Visits
             </button>
+
+            <button
+              onClick={() => setActiveSection("care_team")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "care_team" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Care Team
+            </button>
           </div>
         </ScrollArea>
       </div>
@@ -323,7 +334,7 @@ const PatientProfilePage = () => {
             label = "Back to Patients";
             onBack = () => navigate("/patients");
           } else if (
-            ["details", "medications", "visits", "health_overview", "lab_results"].includes(activeSection)
+            ["details", "medications", "visits", "care_team", "health_overview", "lab_results"].includes(activeSection)
           ) {
             label = "Back to Overview";
             onBack = () => setActiveSection("overview");
@@ -372,6 +383,8 @@ const PatientProfilePage = () => {
           <PatientMedicationsView patientName={patient.full_name} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
+        ) : activeSection === "care_team" ? (
+          <PatientCareTeamView patientId={patient.id} patientName={patient.full_name} />
         ) : activeSection === "health_overview" ? (
           <HealthOverviewView
             patient={patient}
