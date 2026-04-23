@@ -727,6 +727,8 @@ export function PatientMedicationsView({ patientName, patientId }: Props) {
                       onDiscontinue={() => { setDiscontinueTarget(m); setDiscontinueStep(1); }}
                       onTogglePRN={() => handleTogglePRN(m)}
                       onAddNote={() => { setNoteTarget(m); setNoteText(""); }}
+                      patientId={patientId}
+                      patientName={patientName}
                     />
                   ))}
                 </div>
@@ -743,6 +745,8 @@ export function PatientMedicationsView({ patientName, patientId }: Props) {
                 onDiscontinue={() => { setDiscontinueTarget(m); setDiscontinueStep(1); }}
                 onTogglePRN={() => handleTogglePRN(m)}
                 onAddNote={() => { setNoteTarget(m); setNoteText(""); }}
+                patientId={patientId}
+                patientName={patientName}
               />
             ))}
           </div>
@@ -1240,16 +1244,37 @@ function MedicationRow({
             </div>
           </div>
           {showRenewBtn && (
-            <Button
-              size="sm"
-              variant={renewOverdue ? "destructive" : "default"}
-              onClick={handleRenew}
-              className="h-7 px-2 mt-2 text-[11px] gap-1"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Renew prescription
-              <span className="text-[10px] opacity-80 ml-1">· {renewReason}</span>
-            </Button>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <Button
+                size="sm"
+                variant={renewOverdue ? "destructive" : "default"}
+                onClick={handleRenew}
+                className="h-7 px-2 text-[11px] gap-1"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Renew prescription
+                <span className="text-[10px] opacity-80 ml-1">· {renewReason}</span>
+              </Button>
+              {lowSupply && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-[11px] gap-1"
+                  onClick={() =>
+                    openNewTask({
+                      title: `Renew ${med.name}${patientName ? ` — ${patientName}` : ""}`,
+                      patient_id: patientId ?? null,
+                      category: "care_coordination",
+                      priority: remainingPct < 10 ? "high" : "medium",
+                      assignee_name: "Nurse Mäkinen",
+                      created_from: `${med.name} low supply (${Math.round(remainingPct)}%)`,
+                    })
+                  }
+                >
+                  <ListChecks className="h-3 w-3" /> Create renewal task
+                </Button>
+              )}
+            </div>
           )}
           {renewed && (
             <Badge variant="outline" className="mt-2 text-[10px] gap-1 border-primary/50 text-primary">
