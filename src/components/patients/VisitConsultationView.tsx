@@ -453,6 +453,48 @@ export function VisitConsultationView({ patient, appointment, onBack, onSaved }:
           )}
         </div>
       </div>
+
+      {followUpPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle className="text-base">Create follow-up task?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Visit saved. Would you like to create a follow-up task for {patient.full_name}?
+                Default due date is 2 weeks from today.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => { setFollowUpPrompt(false); onSaved(); }}
+                >
+                  Skip
+                </Button>
+                <Button
+                  onClick={() => {
+                    openNewTask({
+                      title: `Follow up — ${patient.full_name} — ${visitReasonLabel || "Visit"}`,
+                      patient_id: patient.id,
+                      category: "care_coordination",
+                      priority: "medium",
+                      due_date: followUpDueDate,
+                      assignee_name: "Dr. Laine",
+                      created_from: `Post-visit follow-up (${visitReasonLabel || "Visit"})`,
+                    });
+                    setFollowUpPrompt(false);
+                    onSaved();
+                  }}
+                  className="gap-2"
+                >
+                  <ListChecks className="h-4 w-4" /> Create follow-up task
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
