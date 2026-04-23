@@ -325,15 +325,17 @@ export function AddPatientDialog() {
 
       // 4. Create allergies if any selected
       if (form.allergies.length > 0) {
+        const { findAllergen } = await import("@/lib/allergens");
         const allergyRows = form.allergies.map((allergen) => ({
           patient_id: patient.id,
           created_by: user.id,
           allergen,
+          icd_code: findAllergen(allergen)?.icd10 ?? null,
           severity: "unknown",
         }));
         const { error: allergyErr } = await supabase
-          .from("patient_allergies")
-          .insert(allergyRows);
+          .from("patient_allergies" as any)
+          .insert(allergyRows as any);
         if (allergyErr) throw allergyErr;
       }
 
