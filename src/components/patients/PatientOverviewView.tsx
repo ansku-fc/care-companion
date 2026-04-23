@@ -859,7 +859,7 @@ export function PatientOverviewView({
                     <Popover key={item.label}>
                       <div>
                         <dt className="text-[11px] text-muted-foreground">{item.label}</dt>
-                        <dd className="text-[12px] font-medium text-foreground flex items-baseline gap-1.5">
+                        <dd className="text-[13px] font-medium text-foreground flex items-baseline gap-1.5">
                           <PopoverTrigger asChild>
                             <button
                               type="button"
