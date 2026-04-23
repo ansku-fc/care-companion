@@ -971,51 +971,51 @@ export function PatientOverviewView({
       })()}
 
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
-      <div className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
-          Health Dimensions
-        </h3>
-        <Card className="shadow-card">
-          <CardContent className="py-4">
-            <ul className="space-y-1">
-              {[...HEALTH_TAXONOMY]
-                .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
-                .sort((a, b) => b.score - a.score)
-                .map(({ dim, score }) => {
-                  const Icon = dim.icon;
-                  const widthPct = Math.max(4, (score / 10) * 100);
-                  const barColor = scoreBorderColor(score);
-                  return (
-                    <li key={dim.key}>
-                      <button
-                        onClick={() => onSelectSection(dim.key)}
-                        className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 w-64 shrink-0">
-                          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
-                            {dim.label}
-                          </span>
-                        </div>
-                        <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${widthPct}%`, backgroundColor: barColor }}
-                          />
-                        </div>
-                        <span
-                          className={cn("text-sm font-semibold tabular-nums w-10 text-right", scoreColorClass(score))}
-                        >
-                          {score.toFixed(1)}
+      <Card className="shadow-card">
+        <CardContent className="py-2 px-3">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Health Dimensions
+            </h3>
+          </div>
+          <ul className="space-y-0">
+            {[...HEALTH_TAXONOMY]
+              .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
+              .sort((a, b) => b.score - a.score)
+              .map(({ dim, score }) => {
+                const Icon = dim.icon;
+                const widthPct = Math.max(4, (score / 10) * 100);
+                const barColor = scoreBorderColor(score);
+                return (
+                  <li key={dim.key}>
+                    <button
+                      onClick={() => onSelectSection(dim.key)}
+                      className="w-full flex items-center gap-3 px-1 py-0.5 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 w-56 shrink-0">
+                        <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
+                          {dim.label}
                         </span>
-                      </button>
-                    </li>
-                  );
-                })}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+                      </div>
+                      <div className="flex-1 h-2 rounded-full bg-muted/60 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${widthPct}%`, backgroundColor: barColor }}
+                        />
+                      </div>
+                      <span
+                        className={cn("text-[12px] font-semibold tabular-nums w-8 text-right", scoreColorClass(score))}
+                      >
+                        {score.toFixed(1)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }
