@@ -44,6 +44,7 @@ import {
 } from "@/lib/patientClinicalData";
 import {
   CardioLabBiomarkerPanel,
+  CARDIO_DUMMY_SERIES,
   getAnnotations,
   getAnnotationsForBiomarker,
   markIncluded,
@@ -4139,7 +4140,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
-  const [healthDataTab, setHealthDataTab] = useState<HealthDataTab>("lab_results");
+  // (legacy tab state removed; lab results render directly now)
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
@@ -4270,71 +4271,71 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
     ...customRefs[selectedMarker.key],
   } : null;
 
+  // Use canonical Cardio panel chart whenever the biomarker has shared series data
+  const useSharedPanel = !!(selectedMarker && CARDIO_DUMMY_SERIES[selectedMarker.key]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FlaskConical className="h-5 w-5 text-primary" />
-          Health Data
+          Laboratory Results
         </h2>
-        {healthDataTab === "lab_results" && (
-          <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
-        )}
+        <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
       </div>
 
-      <HealthFileUploads
-        patientId={patientId}
-        activeTab={healthDataTab}
-        onTabChange={setHealthDataTab}
-        labResultsCount={sorted.length}
-      >
-      {/* Lab results content - rendered as children when lab_results tab is active */}
-      <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "60vh" }}>
+      <div className="flex gap-4" style={{ minHeight: 400, maxHeight: "70vh" }}>
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
-          <Card>
+          <Card className="rounded-[20px]">
             <CardContent className="py-8 text-center text-muted-foreground">
               No lab results yet. Click "Add Lab Results" to add the first entry.
             </CardContent>
           </Card>
         ) : (
-          <Card className="flex-1 min-h-0 flex flex-col">
+          <Card className="flex-1 min-h-0 flex flex-col rounded-[20px] shadow-card overflow-hidden">
             <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
               <div className="flex min-h-0 flex-1">
                 {/* Fixed left columns: Marker + Unit */}
-                <div ref={leftScrollRef} onScroll={() => syncScroll("left")} className="shrink-0 border-r overflow-y-auto">
+                <div ref={leftScrollRef} onScroll={() => syncScroll("left")} className="shrink-0 border-r overflow-y-auto bg-card">
                   <table className="text-sm border-collapse">
                     <thead className="sticky top-0 z-10 bg-card">
                       <tr className="border-b">
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[180px]">Marker</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[70px]">Unit</th>
+                        <th className="h-11 px-4 text-left align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[200px]">Marker</th>
+                        <th className="h-11 px-4 text-left align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[80px]">Unit</th>
                       </tr>
                     </thead>
                     <tbody>
                       {categories.map((cat) => (
                         <React.Fragment key={cat.title}>
-                          <tr className="border-b">
-                            <td colSpan={2} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2 px-4">
+                          <tr>
+                            <td colSpan={2} className="font-semibold text-[10px] uppercase tracking-[0.08em] text-muted-foreground py-2.5 px-4 bg-muted/30">
                               {cat.title}
                             </td>
                           </tr>
-                          {cat.rows.map((row) => (
-                            <tr
-                              key={row.key}
-                              className={`border-b cursor-pointer hover:bg-muted/30 transition-colors ${selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic") ? "bg-primary/5" : ""}`}
-                              onClick={() => handleRowClick(row.key, row.label, row.unit)}
-                            >
-                              <td className="p-4 align-middle font-medium text-sm">{row.label}</td>
-                              <td className="p-4 align-middle text-xs text-muted-foreground">{row.unit}</td>
-                            </tr>
-                          ))}
+                          {cat.rows.map((row) => {
+                            const isSel = selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
+                            return (
+                              <tr
+                                key={row.key}
+                                className={cn(
+                                  "border-b cursor-pointer transition-colors",
+                                  isSel ? "bg-primary/10" : "hover:bg-primary/[0.04]",
+                                )}
+                                onClick={() => handleRowClick(row.key, row.label, row.unit)}
+                              >
+                                <td className="px-4 py-3 align-middle font-medium text-sm text-foreground">{row.label}</td>
+                                <td className="px-4 py-3 align-middle text-xs text-muted-foreground">{row.unit}</td>
+                              </tr>
+                            );
+                          })}
                         </React.Fragment>
                       ))}
                     </tbody>
                   </table>
                 </div>
                 {/* Scrollable right columns: date values */}
-                <div ref={rightScrollRef} onScroll={() => syncScroll("right")} className="overflow-auto flex-1 min-w-0">
+                <div ref={rightScrollRef} onScroll={() => syncScroll("right")} className="overflow-auto flex-1 min-w-0 bg-card">
                   <table className="text-sm border-collapse w-max">
                     <thead className="sticky top-0 z-10 bg-card">
                       <tr className="border-b">
@@ -4342,7 +4343,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                           const d = new Date(lab.result_date);
                           const label = `${d.getFullYear()} / ${String(d.getMonth() + 1).padStart(2, "0")}`;
                           return (
-                            <th key={lab.id} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] whitespace-nowrap">{label}</th>
+                            <th key={lab.id} className="h-11 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[100px] whitespace-nowrap">{label}</th>
                           );
                         })}
                       </tr>
@@ -4350,29 +4351,41 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                     <tbody>
                       {categories.map((cat) => (
                         <React.Fragment key={cat.title}>
-                          <tr className="border-b">
-                            <td colSpan={sorted.length} className="bg-muted/50 font-medium text-xs uppercase tracking-wide text-muted-foreground py-2 px-4">
+                          <tr>
+                            <td colSpan={sorted.length} className="bg-muted/30 py-2.5 px-4">
                               &nbsp;
                             </td>
                           </tr>
-                          {cat.rows.map((row) => (
-                            <tr
-                              key={row.key}
-                              className={`border-b cursor-pointer hover:bg-muted/30 transition-colors ${selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic") ? "bg-primary/5" : ""}`}
-                              onClick={() => handleRowClick(row.key, row.label, row.unit)}
-                            >
-                              {sorted.map((lab) => {
-                                const oor = isOutOfRange(row.key, lab);
-                                return (
-                                  <td key={lab.id} className={`p-4 align-middle text-center text-sm whitespace-nowrap ${oor === "high" ? "text-destructive font-semibold" : oor === "low" ? "text-amber-600 font-semibold" : ""}`}>
-                                    {getCellValue(lab, row.key)}
-                                    {oor === "high" && " ▲"}
-                                    {oor === "low" && " ▼"}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
+                          {cat.rows.map((row) => {
+                            const isSel = selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
+                            return (
+                              <tr
+                                key={row.key}
+                                className={cn(
+                                  "border-b cursor-pointer transition-colors",
+                                  isSel ? "bg-primary/10" : "hover:bg-primary/[0.04]",
+                                )}
+                                onClick={() => handleRowClick(row.key, row.label, row.unit)}
+                              >
+                                {sorted.map((lab) => {
+                                  const oor = isOutOfRange(row.key, lab);
+                                  return (
+                                    <td
+                                      key={lab.id}
+                                      className={cn(
+                                        "px-4 py-3 align-middle text-center text-sm whitespace-nowrap",
+                                        oor ? "text-[hsl(0_72%_45%)] font-semibold" : "text-foreground",
+                                      )}
+                                    >
+                                      {getCellValue(lab, row.key)}
+                                      {oor === "high" && " ▲"}
+                                      {oor === "low" && " ▼"}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
                         </React.Fragment>
                       ))}
                     </tbody>
@@ -4384,12 +4397,12 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
         )}
         </div>
 
-        {/* Chart Panel */}
+        {/* Detail panel — uses canonical Cardio chart for synced biomarkers */}
         {selectedMarker && (
-          <div className="w-[350px] shrink-0 border rounded-lg bg-card flex flex-col min-h-0 overflow-y-auto">
+          <div className="w-[420px] shrink-0 rounded-[20px] border bg-card shadow-card flex flex-col min-h-0 overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b shrink-0">
               <div>
-                <h3 className="font-semibold text-sm">{selectedMarker.label}</h3>
+                <h3 className="font-semibold text-sm text-foreground">{selectedMarker.label}</h3>
                 {selectedMarker.unit && (
                   <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
                 )}
@@ -4399,7 +4412,16 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
               </Button>
             </div>
             <div className="p-4 flex-1">
-            {chartData.length < 1 ? (
+            {useSharedPanel ? (
+              <CardioLabBiomarkerPanel
+                biomarkerKey={selectedMarker.key}
+                label={selectedMarker.label}
+                unit={selectedMarker.unit}
+                refLow={(REFERENCE_VALUES[selectedMarker.key] || {}).low}
+                refHigh={(REFERENCE_VALUES[selectedMarker.key] || {}).high}
+                patientId={patientId}
+              />
+            ) : chartData.length < 1 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
             ) : (
               <DraggableReferenceChart
@@ -4415,7 +4437,7 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                 }}
               />
             )}
-            {selectedMarker && (
+            {!useSharedPanel && selectedMarker && (
               <div className="mt-4 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -4456,18 +4478,20 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                 </div>
               </div>
             )}
-            <div className="mt-4">
-              <Label className="text-xs">Doctor Notes</Label>
-              <Textarea
-                placeholder="Add notes about this marker..."
-                className="mt-1 min-h-[80px] text-xs resize-none"
-                value={markerNotes[selectedMarker?.key || ""] || ""}
-                onChange={(e) => {
-                  if (!selectedMarker) return;
-                  setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
-                }}
-              />
-            </div>
+            {!useSharedPanel && (
+              <div className="mt-4">
+                <Label className="text-xs">Doctor Notes</Label>
+                <Textarea
+                  placeholder="Add notes about this marker..."
+                  className="mt-1 min-h-[80px] text-xs resize-none"
+                  value={markerNotes[selectedMarker?.key || ""] || ""}
+                  onChange={(e) => {
+                    if (!selectedMarker) return;
+                    setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
+                  }}
+                />
+              </div>
+            )}
             {selectedMarker && MARKER_DIMENSIONS[selectedMarker.key] && (
               <div className="mt-4">
                 <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
@@ -4490,39 +4514,10 @@ function LabResultsView({ patientId, labResults, onLabResultsAdded, onNavigateDi
                 </div>
               </div>
             )}
-            {/* Lab Values List */}
-            {selectedMarker && chartData.length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Lab Values</p>
-                <div className="space-y-1.5">
-                  {sorted.map((lab) => {
-                    const val = selectedMarker.key === "blood_pressure_systolic"
-                      ? (lab.blood_pressure_systolic != null ? `${lab.blood_pressure_systolic}/${lab.blood_pressure_diastolic}` : null)
-                      : (() => { const v = (lab as any)[selectedMarker.key]; return v === null || v === undefined ? null : typeof v === "boolean" ? (v ? "1" : "0") : String(v); })();
-                    if (val === null) return null;
-                    const d = new Date(lab.result_date);
-                    const exactDate = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-                    return (
-                      <div key={lab.id} className="flex items-center justify-between text-xs py-1.5 px-2 rounded bg-muted/30">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{val}</span>
-                          <span className="text-muted-foreground">{selectedMarker.unit}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <span>{exactDate}</span>
-                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 capitalize">{lab.source || "manual"}</Badge>
-                        </div>
-                      </div>
-                    );
-                  }).filter(Boolean)}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
       </div>
-      </HealthFileUploads>
     </div>
   );
 }

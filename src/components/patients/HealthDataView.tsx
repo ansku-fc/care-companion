@@ -1,14 +1,7 @@
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { cn } from "@/lib/utils";
-import {
-  CARTER_DIAGNOSES,
-  DIMENSION_LABEL_TO_KEY,
-  fmtClinicalDate,
-} from "@/lib/patientClinicalData";
 
 // Same dummy varied risk-index values used elsewhere
 const DIMENSION_RISK_SCORES: Record<string, number> = {
@@ -43,15 +36,15 @@ function riskTone(score: number) {
       ring: "border-[hsl(189_94%_43%/0.4)] bg-[hsl(189_94%_43%/0.06)]",
       label: "Low",
     };
-  if (score <= 6)
+  if (score < 7)
     return {
       text: "text-[hsl(28_63%_44%)]",
       ring: "border-[hsl(28_63%_44%/0.4)] bg-[hsl(28_63%_44%/0.06)]",
       label: "Medium",
     };
   return {
-    text: "text-[hsl(0_57%_39%)]",
-    ring: "border-[hsl(0_57%_39%/0.4)] bg-[hsl(0_57%_39%/0.08)]",
+    text: "text-[hsl(0_72%_45%)]",
+    ring: "border-[hsl(0_72%_45%/0.5)] bg-[hsl(0_72%_45%/0.08)]",
     label: "High",
   };
 }
@@ -61,29 +54,41 @@ interface Props {
 }
 
 export function HealthDataView({ onSelectDimension }: Props) {
-  const elevatedCount = HEALTH_TAXONOMY.filter(
-    (m) => (DIMENSION_RISK_SCORES[m.key] ?? 0) >= 4,
-  ).length;
-
-  const activeDx = CARTER_DIAGNOSES.filter((d) => d.status === "active");
-  const pastDx = CARTER_DIAGNOSES.filter((d) => d.status === "resolved");
-  const [pastOpen, setPastOpen] = useState(false);
+  const highDims = HEALTH_TAXONOMY.filter(
+    (m) => (DIMENSION_RISK_SCORES[m.key] ?? 0) >= 7,
+  );
 
   return (
-    <div className="space-y-5 p-1 overflow-auto h-full">
+    <div className="space-y-5 p-1">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Health Data</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Health dimensions</p>
       </div>
 
-      {/* Summary line */}
-      {elevatedCount > 0 && (
-        <div className="flex items-center gap-2 text-sm">
-          <AlertTriangle className="h-4 w-4 text-[hsl(28_63%_44%)]" />
-          <span className="text-foreground font-medium">
-            {elevatedCount} dimension{elevatedCount === 1 ? "" : "s"} require attention
+      {/* High-risk summary with clickable dimension names */}
+      {highDims.length > 0 && (
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          <AlertTriangle className="h-4 w-4 text-[hsl(0_72%_45%)]" />
+          <span className="text-foreground">
+            <span className="font-semibold">{highDims.length}</span> dimension
+            {highDims.length === 1 ? "" : "s"}{" "}
+            <span className="font-semibold text-[hsl(0_72%_45%)]">HIGH risk</span>
+            {" — "}
           </span>
+          {highDims.map((d, i) => (
+            <span key={d.key} className="inline-flex items-center">
+              <button
+                onClick={() => onSelectDimension(d.key)}
+                className="text-foreground font-medium underline-offset-2 hover:underline hover:text-[hsl(0_72%_45%)] transition-colors"
+              >
+                {d.label}
+              </button>
+              {i < highDims.length - 1 && (
+                <span className="text-muted-foreground mx-1">,</span>
+              )}
+            </span>
+          ))}
         </div>
       )}
 
@@ -94,14 +99,29 @@ export function HealthDataView({ onSelectDimension }: Props) {
           const score = DIMENSION_RISK_SCORES[dim.key] ?? 1;
           const tone = riskTone(score);
           const updated = DIMENSION_LAST_UPDATED[dim.key];
+          const isHigh = score >= 7;
 
           return (
             <button
               key={dim.key}
               onClick={() => onSelectDimension(dim.key)}
-              className="text-left group"
+              className="text-left group relative"
             >
-              <Card className="shadow-card hover:shadow-md hover:border-primary/40 transition-all">
+              {/* Pulsing dot for high-risk dimensions */}
+              {isHigh && (
+                <span className="absolute -top-1 -right-1 z-10 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(0_72%_45%)] opacity-60" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[hsl(0_72%_45%)]" />
+                </span>
+              )}
+              <Card
+                className={cn(
+                  "shadow-card transition-all",
+                  isHigh
+                    ? "hover:border-[hsl(0_72%_45%/0.6)] hover:shadow-md border-[hsl(0_72%_45%/0.25)]"
+                    : "hover:shadow-md hover:border-primary/40",
+                )}
+              >
                 <CardContent className="p-4 flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
                     <Icon className="h-5 w-5 text-foreground" />
@@ -133,92 +153,6 @@ export function HealthDataView({ onSelectDimension }: Props) {
           );
         })}
       </div>
-
-      {/* Diagnoses */}
-      <section className="space-y-2 pt-2">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Diagnoses
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            {activeDx.length} active · {pastDx.length} past
-          </p>
-        </div>
-
-        <Card className="shadow-card">
-          <CardContent className="p-0 divide-y">
-            {activeDx.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => onSelectDimension(DIMENSION_LABEL_TO_KEY[d.dimension])}
-                className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{d.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-[10px]">{d.icd10}</Badge>
-                    <span className="text-[11px] text-muted-foreground">{d.dimension}</span>
-                  </div>
-                </div>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  Diagnosed {fmtClinicalDate(d.diagnosedDate)}
-                </span>
-              </button>
-            ))}
-            {activeDx.length === 0 && (
-              <p className="px-4 py-6 text-sm text-muted-foreground text-center">
-                No active diagnoses recorded.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Past Diagnoses (collapsible) */}
-        <Card className="shadow-card">
-          <button
-            onClick={() => setPastOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
-          >
-            <span className="text-sm font-medium text-foreground">
-              Past Diagnoses ({pastDx.length})
-            </span>
-            {pastOpen ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-          {pastOpen && (
-            <CardContent className="p-0 divide-y border-t">
-              {pastDx.length === 0 ? (
-                <p className="px-4 py-4 text-sm text-muted-foreground">
-                  No resolved diagnoses on record.
-                </p>
-              ) : (
-                pastDx.map((d) => (
-                  <button
-                    key={d.id}
-                    onClick={() => onSelectDimension(DIMENSION_LABEL_TO_KEY[d.dimension])}
-                    className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{d.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-[10px]">{d.icd10}</Badge>
-                        <span className="text-[11px] text-muted-foreground">{d.dimension}</span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {fmtClinicalDate(d.diagnosedDate)}
-                      {d.resolvedDate ? ` → ${fmtClinicalDate(d.resolvedDate)}` : ""}
-                    </span>
-                  </button>
-                ))
-              )}
-            </CardContent>
-          )}
-        </Card>
-      </section>
     </div>
   );
 }
