@@ -3775,6 +3775,8 @@ function CardiovascularDimensionView({
                         accentColorVar={b.accentColorVar}
                         selected={selectedMarker?.key === b.key}
                         onSelect={() => selectMarker(b)}
+                        patientId={patient?.id}
+                        patientName={patient?.full_name}
                       />
                     ))}
                   </div>
