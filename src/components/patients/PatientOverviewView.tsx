@@ -507,7 +507,7 @@ export function PatientOverviewView({
       </div>
 
       {/* ROW 2 — Allergies | Considerations | Biometrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Allergies */}
         <Card className="shadow-card">
           <CardContent className="py-3 px-3 space-y-2">
