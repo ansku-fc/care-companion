@@ -1976,6 +1976,36 @@ function HealthDimensionView({
       </div>
     );
 
+    // Shared "Current Illnesses" row from CARTER_DIAGNOSES
+    const renderCurrentIllnessesRow = (label: ClinicalDimensionKey, rowKey: string) => {
+      const items = getDiagnosesForDimension(label);
+      return (
+        <ExpandableRow
+          label="Current Illnesses"
+          value={`${items.length} active condition${items.length === 1 ? "" : "s"}`}
+          recorded={onboardingDate}
+          expanded={expandedRows.has(rowKey)}
+          onToggle={() => toggleRow(rowKey)}
+        >
+          {items.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No active conditions for this dimension.</p>
+          ) : (
+            <ul className="space-y-1.5 text-sm">
+              {items.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline" className="text-[10px]">{c.icd10}</Badge>
+                    <span>Diagnosed {fmtClinicalDate(c.diagnosedDate)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ExpandableRow>
+      );
+    };
+
     // Common risk history computation
     const computeRiskHistory = (scoreFn: (lab: typeof labResults[0]) => number) => {
       const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
