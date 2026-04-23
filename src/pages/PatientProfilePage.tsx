@@ -66,6 +66,9 @@ import {
   verifyMarker,
   subscribeLabReview,
   completeLabReviewTask,
+  hasKorhonenNewColumn,
+  KORHONEN_NEW_VALUES,
+  KORHONEN_NEW_DATE,
 } from "@/lib/labReview";
 
 // Legacy flat list for backward compat in dimension views
