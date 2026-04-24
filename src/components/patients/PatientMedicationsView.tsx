@@ -217,6 +217,57 @@ export function PatientMedicationsView({ patientName, patientId }: Props) {
   const [noteTarget, setNoteTarget] = useState<Medication | null>(null);
   const [noteText, setNoteText] = useState("");
 
+  useEffect(() => {
+    let active = true;
+
+    const loadMedications = async () => {
+      if (!patientId) {
+        if (active) setMeds([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("patient_medications")
+        .select("id, medication_name, dose, frequency, indication, start_date, end_date, status")
+        .eq("patient_id", patientId)
+        .order("start_date", { ascending: false, nullsFirst: false });
+
+      if (!active) return;
+
+      if (error) {
+        setMeds(isCarter(patientId, patientName) ? CARTER_SEEDED_MEDS : []);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setMeds(
+          data.map((row) => ({
+            id: row.id,
+            name: row.medication_name,
+            dose: row.dose ?? "—",
+            frequency: row.frequency ?? "—",
+            indication: row.indication ?? "",
+            dimension: inferMedicationDimension(row.medication_name, row.indication),
+            startDate: row.start_date ?? new Date().toISOString().slice(0, 10),
+            endDate: row.end_date ?? undefined,
+            renewalDate: undefined,
+            remainingPills: 0,
+            totalPills: 0,
+            status: row.status === "active" && !row.end_date ? "active" : "past",
+          })),
+        );
+        return;
+      }
+
+      setMeds(isCarter(patientId, patientName) ? CARTER_SEEDED_MEDS : []);
+    };
+
+    loadMedications();
+    return () => {
+      active = false;
+    };
+  }, [patientId, patientName]);
+
   const interactions = useMemo(() => detectInteractions(meds), [meds]);
 
   const filtered = useMemo(() => {
