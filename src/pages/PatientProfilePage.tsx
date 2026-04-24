@@ -97,21 +97,38 @@ const PatientProfilePage = () => {
   const [visitNotes, setVisitNotes] = useState<Tables<"visit_notes">[]>([]);
   const [appointments, setAppointments] = useState<Tables<"appointments">[]>([]);
   const [patientTasks, setPatientTasks] = useState<any[]>([]);
-  const [activeSection, setActiveSection] = useState<SidebarSection>("overview");
+  const [activeSection, setActiveSectionRaw] = useState<SidebarSection>("overview");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [dimensionsSectionOpen, setDimensionsSectionOpen] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
+  // Per-patient navigation scope. Tracks how the doctor moved between sections
+  // inside this profile, so the Back button names the actual previous location.
+  const navHistory = useNavHistory();
+  const scopeKey = `patient:${id ?? "unknown"}`;
+
+  const setActiveSection = React.useCallback(
+    (next: SidebarSection) => {
+      setActiveSectionRaw((cur) => {
+        if (cur !== next) navHistory.pushScope(scopeKey, next);
+        return next;
+      });
+    },
+    [navHistory, scopeKey],
+  );
+
   // Honour deep-links like /patients/:id?tab=lab_results&review=1
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "lab_results") setActiveSection("lab_results");
-    else setActiveSection("overview");
+    const initial = tab === "lab_results" ? "lab_results" : "overview";
+    setActiveSectionRaw(initial);
+    navHistory.resetScope(scopeKey, initial);
     // Note: we keep the ?review=1 param so HealthDataHub/LabResultsView can read it.
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reviewMode = searchParams.get("review") === "1";
+
 
 
   const fetchData = async () => {
