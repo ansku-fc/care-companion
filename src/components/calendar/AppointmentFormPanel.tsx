@@ -98,6 +98,16 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
   const [otherDoctorName, setOtherDoctorName] = useState("");
   const [coordinationCategory, setCoordinationCategory] = useState("case_discussion");
   const [linkedPatientId, setLinkedPatientId] = useState("");
+  const [doctorMeetingTitle, setDoctorMeetingTitle] = useState("");
+  const [doctorMeetingTitleEdited, setDoctorMeetingTitleEdited] = useState(false);
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    referral: "Referral",
+    case_discussion: "Case Discussion",
+    handover: "Handover",
+    specialist_consult: "Specialist Consult",
+    other: "Other",
+  };
 
   // Nurse task
   const [nurseId, setNurseId] = useState("");
