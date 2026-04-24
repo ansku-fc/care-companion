@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           appointment_type: Database["public"]["Enums"]["appointment_type"]
           attachment_url: string | null
+          coordination_category: string | null
           created_at: string
           end_time: string
           id: string
@@ -29,6 +30,7 @@ export type Database = {
           lab_package: string | null
           lab_tests_selected: Json | null
           notes: string | null
+          other_doctor_name: string | null
           patient_id: string
           provider_id: string
           specialist_location: string | null
@@ -40,6 +42,7 @@ export type Database = {
         Insert: {
           appointment_type?: Database["public"]["Enums"]["appointment_type"]
           attachment_url?: string | null
+          coordination_category?: string | null
           created_at?: string
           end_time: string
           id?: string
@@ -51,6 +54,7 @@ export type Database = {
           lab_package?: string | null
           lab_tests_selected?: Json | null
           notes?: string | null
+          other_doctor_name?: string | null
           patient_id: string
           provider_id: string
           specialist_location?: string | null
@@ -62,6 +66,7 @@ export type Database = {
         Update: {
           appointment_type?: Database["public"]["Enums"]["appointment_type"]
           attachment_url?: string | null
+          coordination_category?: string | null
           created_at?: string
           end_time?: string
           id?: string
@@ -73,6 +78,7 @@ export type Database = {
           lab_package?: string | null
           lab_tests_selected?: Json | null
           notes?: string | null
+          other_doctor_name?: string | null
           patient_id?: string
           provider_id?: string
           specialist_location?: string | null
