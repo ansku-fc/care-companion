@@ -4252,6 +4252,10 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   const [annotationText, setAnnotationText] = useState("");
   const [annotationDate, setAnnotationDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [viewMode, setViewMode] = useState<"graphs" | "table">("graphs");
+  const [panelWindow, setPanelWindow] = useState<"6m" | "1y" | "3y" | "all">("all");
+  const [showAddAnnotation, setShowAddAnnotation] = useState(false);
+  const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
+  const [editingAnnotationText, setEditingAnnotationText] = useState("");
 
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
