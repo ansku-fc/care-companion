@@ -1077,6 +1077,90 @@ function ReferralFormPanel({
           <Download className="h-3.5 w-3.5" /> {uploading ? "Uploading…" : "Download as PDF"}
         </Button>
       </div>
+
+      {/* Hidden print-only document — only visible during window.print() */}
+      <div
+        id="referral-print-area"
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-10000px",
+          top: 0,
+          width: "800px",
+          background: "#fff",
+          color: "#111",
+          fontFamily: "-apple-system, system-ui, sans-serif",
+          fontSize: "13px",
+          lineHeight: 1.5,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingBottom: "12px",
+            borderBottom: "1px solid #ddd",
+            marginBottom: "20px",
+          }}
+        >
+          <div style={{ width: "160px", height: "56px", overflow: "hidden" }}>
+            <img
+              src={foundationClinicLogo}
+              alt="Foundation Clinic"
+              style={{
+                height: "110px",
+                width: "auto",
+                objectFit: "cover",
+                objectPosition: "left",
+                marginTop: "-28px",
+                display: "block",
+              }}
+            />
+          </div>
+          <div style={{ textAlign: "right", fontSize: "11px", color: "#666", lineHeight: 1.4 }}>
+            <div>Foundation Health Finland Oy</div>
+            <div>foundation.clinic</div>
+            <div>Ratakatu 29 a 4</div>
+            <div>00120 Helsinki</div>
+          </div>
+        </div>
+        <h1 style={{ fontSize: "18px", margin: "0 0 16px", letterSpacing: "1px" }}>REFERRAL</h1>
+        <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "13px", margin: 0 }}>
+          {referralToText(form).replace(/^REFERRAL\n*/, "")}
+        </pre>
+        {printAttachments.length > 0 && (
+          <>
+            <h2
+              style={{
+                fontSize: "13px",
+                margin: "20px 0 6px",
+                letterSpacing: "0.5px",
+                textTransform: "uppercase",
+                color: "#555",
+              }}
+            >
+              Attachments
+            </h2>
+            <ul style={{ fontSize: "12px", margin: "4px 0 0 18px", padding: 0 }}>
+              {printAttachments.map((a, i) => (
+                <li key={i}>
+                  {a.url ? (
+                    <>
+                      {a.name} —{" "}
+                      <a href={a.url} style={{ color: "#0366d6", wordBreak: "break-all" }}>
+                        {a.url}
+                      </a>
+                    </>
+                  ) : (
+                    a.name
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }
