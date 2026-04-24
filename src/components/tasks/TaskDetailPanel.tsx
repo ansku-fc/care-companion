@@ -891,7 +891,7 @@ function ReferralFormPanel({
   };
 
   return (
-    <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+    <div id="referral-print-area" className="rounded-lg border bg-muted/30 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2 pb-1">
         <div className="overflow-hidden w-32 h-12">
           <img src={foundationClinicLogo} alt="Foundation Clinic" className="h-24 w-auto object-left object-cover -mt-6" />
