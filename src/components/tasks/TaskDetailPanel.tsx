@@ -909,12 +909,48 @@ ${attachmentLines}
         />
       </div>
 
+
+      <div className="space-y-1.5">
+        <Label className="text-[11px] text-muted-foreground">Attach files (optional)</Label>
+        <label className="flex items-center justify-center gap-1.5 rounded-md border border-dashed border-input bg-background px-3 py-2 text-xs cursor-pointer hover:bg-accent transition-colors">
+          <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Choose files</span>
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            onChange={handleFilesSelected}
+            className="hidden"
+          />
+        </label>
+        {files.length > 0 && (
+          <ul className="space-y-1 pt-1">
+            {files.map((f, i) => (
+              <li
+                key={`${f.name}-${i}`}
+                className="flex items-center justify-between gap-2 rounded bg-background border border-input px-2 py-1 text-[11px]"
+              >
+                <span className="truncate">{f.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeFile(i)}
+                  className="text-muted-foreground hover:text-destructive shrink-0"
+                  aria-label={`Remove ${f.name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-2 pt-1">
         <Button variant="outline" className="gap-1.5" onClick={handleEmail}>
           <Mail className="h-3.5 w-3.5" /> Send as email
         </Button>
-        <Button className="gap-1.5" onClick={handleDownloadPdf}>
-          <Download className="h-3.5 w-3.5" /> Download as PDF
+        <Button className="gap-1.5" onClick={handleDownloadPdf} disabled={uploading}>
+          <Download className="h-3.5 w-3.5" /> {uploading ? "Uploading…" : "Download as PDF"}
         </Button>
       </div>
     </div>
