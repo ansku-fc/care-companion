@@ -307,6 +307,25 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       deep_sleep_percent: nextForm.sleep_deep_percent,
       insomnia: nextForm.insomnia,
 
+      // Step 8 — Mental Health (dedicated columns where they exist)
+      social_support_perceived: nextForm.social_support_perceived,
+      stress_perceived: nextForm.stress_perceived,
+      gad2_score:
+        nextForm.gad2_enabled && nextForm.gad2_q1 !== null && nextForm.gad2_q2 !== null
+          ? nextForm.gad2_q1 + nextForm.gad2_q2
+          : null,
+      phq2_score:
+        nextForm.phq2_enabled && nextForm.phq2_q1 !== null && nextForm.phq2_q2 !== null
+          ? nextForm.phq2_q1 + nextForm.phq2_q2
+          : null,
+
+      // Step 9 — Cancer (dedicated columns where they exist)
+      cancer_screening_breast: nextForm.screen_breast,
+      cancer_screening_cervical: nextForm.screen_cervix,
+      cancer_screening_colorectal: nextForm.screen_colorectum,
+      prev_precancerous: nextForm.precancer_skin || nextForm.precancer_cervix || nextForm.precancer_colorectum,
+      sun_exposure: nextForm.sun_exposure,
+
       current_step: nextForm.current_step,
       draft: !options.isComplete,
       extra_data: {
@@ -346,6 +365,40 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         sleep_apnea: nextForm.sleep_apnea,
         sleep_apnea_type: nextForm.sleep_apnea_type,
         sleep_apnea_severity: nextForm.sleep_apnea_severity,
+
+        // Mental Health extras
+        recovery_perceived: nextForm.recovery_perceived,
+        workload_perceived: nextForm.workload_perceived,
+        gad2_enabled: nextForm.gad2_enabled,
+        gad2_q1: nextForm.gad2_q1,
+        gad2_q2: nextForm.gad2_q2,
+        phq2_enabled: nextForm.phq2_enabled,
+        phq2_q1: nextForm.phq2_q1,
+        phq2_q2: nextForm.phq2_q2,
+
+        // Cancer extras (year per screening + non-column toggles)
+        screen_breast_year: nextForm.screen_breast_year,
+        screen_cervix_year: nextForm.screen_cervix_year,
+        screen_colorectum_year: nextForm.screen_colorectum_year,
+        screen_prostate: nextForm.screen_prostate,
+        screen_prostate_year: nextForm.screen_prostate_year,
+        screen_skin: nextForm.screen_skin,
+        screen_skin_year: nextForm.screen_skin_year,
+        screen_lung: nextForm.screen_lung,
+        screen_lung_year: nextForm.screen_lung_year,
+        precancer_skin: nextForm.precancer_skin,
+        precancer_skin_year: nextForm.precancer_skin_year,
+        precancer_cervix: nextForm.precancer_cervix,
+        precancer_cervix_year: nextForm.precancer_cervix_year,
+        precancer_colorectum: nextForm.precancer_colorectum,
+        precancer_colorectum_year: nextForm.precancer_colorectum_year,
+        sun_protection_method: nextForm.sun_protection_method,
+        severe_sunburns_history: nextForm.severe_sunburns_history,
+
+        // Status
+        exam_findings: nextForm.exam_findings,
+        moles_enabled: nextForm.moles_enabled,
+        moles: nextForm.moles,
 
         completed_steps: nextForm.completed_steps,
         skipped_steps: nextForm.skipped_steps,
@@ -532,14 +585,14 @@ function StepRenderer({ step }: { step: number }) {
       return <StepNutrition />;
     case 7:
       return <StepSleep />;
+    case 8:
+      return <StepMentalHealth />;
+    case 9:
+      return <StepCancer />;
+    case 10:
+      return <StepStatus />;
     default:
-      return (
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
-          <p className="text-sm text-muted-foreground">
-            This step ({STEP_LABELS[step - 1]}) is being built in the next round.
-          </p>
-        </div>
-      );
+      return null;
   }
 }
 
