@@ -140,7 +140,16 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     setNotes(editingAppointment.notes || "");
     setLabPackage(editingAppointment.lab_package || "custom");
     setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
+    if (editingAppointment.start_time) {
+      setDateValue(format(new Date(editingAppointment.start_time), "yyyy-MM-dd"));
+    }
   }, [editingAppointment]);
+
+  // Sync dateValue when selectedDate changes (e.g. user picks a new day before opening form)
+  useEffect(() => {
+    if (editingAppointment) return;
+    if (selectedDate) setDateValue(format(selectedDate, "yyyy-MM-dd"));
+  }, [selectedDate, editingAppointment]);
 
   // Apply prefill (e.g. from a communication task → "Schedule")
   useEffect(() => {
