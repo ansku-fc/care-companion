@@ -136,6 +136,18 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
   }, [editingAppointment]);
 
+  // Apply prefill (e.g. from a communication task → "Schedule")
+  useEffect(() => {
+    if (!prefill) return;
+    if (prefill.kind === "doctor_meeting") {
+      setKind("doctor_meeting");
+      setOtherDoctorName(prefill.otherDoctorName || "");
+      setLinkedPatientId(prefill.linkedPatientId || "");
+      if (prefill.coordinationCategory) setCoordinationCategory(prefill.coordinationCategory);
+      setNotes(prefill.notes || "");
+    }
+  }, [prefill]);
+
   const handleSubmit = async () => {
     if (!user || !kind) return;
 
