@@ -677,3 +677,175 @@ function ContextualPreview({
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Inline referral form — pre-filled template for sending specialist referrals.
+// Provides "Send as email" (mailto:) and "Download as PDF" (print-to-PDF) actions.
+// ---------------------------------------------------------------------------
+
+function ReferralFormPanel({
+  form,
+  onChange,
+  patientName,
+}: {
+  form: ReferralForm;
+  onChange: (f: ReferralForm) => void;
+  patientName: string | null;
+}) {
+  const update = <K extends keyof ReferralForm>(key: K, value: ReferralForm[K]) => {
+    onChange({ ...form, [key]: value });
+  };
+
+  const handleEmail = () => {
+    const subject = `Referral – ${form.patient || patientName || "Patient"} – ${form.to || "Specialist"}`;
+    const body = referralToText(form);
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleDownloadPdf = () => {
+    const text = referralToText(form);
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Referral – ${form.patient || "Patient"}</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; padding: 40px; color: #111; line-height: 1.5; }
+  h1 { font-size: 18px; margin: 0 0 16px; letter-spacing: 1px; }
+  pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; }
+</style></head><body>
+<h1>REFERRAL</h1>
+<pre>${text.replace(/^REFERRAL\n*/, "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!))}</pre>
+<script>window.onload = () => { window.print(); setTimeout(() => window.close(), 300); };</script>
+</body></html>`;
+    const win = window.open("", "_blank", "width=800,height=900");
+    if (!win) {
+      toast.error("Pop-up blocked — allow pop-ups to download the referral PDF.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  };
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+      <div className="flex items-center gap-1.5 pb-1">
+        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Referral document
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">To</Label>
+          <Input
+            value={form.to}
+            onChange={(e) => update("to", e.target.value)}
+            placeholder="Cardiology, HYKS"
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">From</Label>
+          <Input
+            value={form.from}
+            onChange={(e) => update("from", e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Patient</Label>
+          <Input
+            value={form.patient}
+            onChange={(e) => update("patient", e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Date of birth</Label>
+          <Input
+            value={form.dob}
+            onChange={(e) => update("dob", e.target.value)}
+            placeholder="DD/MM/YYYY"
+            className="h-8 text-xs"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Referral reason</Label>
+        <Input
+          value={form.reason}
+          onChange={(e) => update("reason", e.target.value)}
+          className="h-8 text-xs"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Clinical background</Label>
+        <Textarea
+          value={form.background}
+          onChange={(e) => update("background", e.target.value)}
+          rows={3}
+          placeholder="Brief summary of relevant history…"
+          className="text-xs"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Current medications</Label>
+        <Textarea
+          value={form.medications}
+          onChange={(e) => update("medications", e.target.value)}
+          rows={2}
+          placeholder="List active medications and doses…"
+          className="text-xs"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Urgency</Label>
+          <Select value={form.urgency} onValueChange={(v) => update("urgency", v)}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {URGENCY_OPTIONS.map((o) => (
+                <SelectItem key={o} value={o}>{o}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Requested action</Label>
+          <Select value={form.requestedAction} onValueChange={(v) => update("requestedAction", v)}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {REQUESTED_ACTION_OPTIONS.map((o) => (
+                <SelectItem key={o} value={o}>{o}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Additional notes</Label>
+        <Textarea
+          value={form.additionalNotes}
+          onChange={(e) => update("additionalNotes", e.target.value)}
+          rows={2}
+          className="text-xs"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <Button variant="outline" className="gap-1.5" onClick={handleEmail}>
+          <Mail className="h-3.5 w-3.5" /> Send as email
+        </Button>
+        <Button className="gap-1.5" onClick={handleDownloadPdf}>
+          <Download className="h-3.5 w-3.5" /> Download as PDF
+        </Button>
+      </div>
+    </div>
+  );
+}
