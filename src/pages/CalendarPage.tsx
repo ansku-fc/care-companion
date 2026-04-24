@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical,
   Stethoscope, Clock, Play, Pencil, X, ChevronLeft, ChevronRight,
