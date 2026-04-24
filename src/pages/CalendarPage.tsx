@@ -110,10 +110,30 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const CalendarPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [prefill, setPrefill] = useState<any>(null);
+
+  // Open form panel pre-filled from navigation state (e.g. task → schedule)
+  useEffect(() => {
+    const incoming = (location.state as any)?.prefill;
+    if (incoming) {
+      setPrefill(incoming);
+      setFormOpen(true);
+      if (incoming.date) {
+        const d = new Date(incoming.date);
+        if (!isNaN(d.getTime())) {
+          setSelectedDate(d);
+          setCurrentMonth(d);
+        }
+      }
+      // Clear state so refresh / back doesn't re-trigger
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<any>(null);
   const [importNoteAppt, setImportNoteAppt] = useState<any>(null);
@@ -492,7 +512,8 @@ const CalendarPage = () => {
           <AppointmentFormPanel
             selectedDate={selectedDate}
             editingAppointment={editingAppointment}
-            onClose={() => { setFormOpen(false); setEditingAppointment(null); }}
+            prefill={prefill}
+            onClose={() => { setFormOpen(false); setEditingAppointment(null); setPrefill(null); }}
           />
         )}
       </div>
