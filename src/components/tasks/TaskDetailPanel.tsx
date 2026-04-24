@@ -334,6 +334,27 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                 {clinicalAutoCompleteHint(kind!)}
               </p>
             </>
+          ) : isReferral ? (
+            <>
+              <Separator />
+              <Button
+                variant="outline"
+                className="w-full gap-1.5"
+                onClick={() => setReferralOpen((v) => !v)}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                {referralOpen ? "Cancel" : "Create referral"}
+                {!referralOpen && <ArrowRight className="h-3.5 w-3.5" />}
+              </Button>
+              {referralOpen && referralForm && (
+                <ReferralFormPanel
+                  form={referralForm}
+                  onChange={setReferralForm}
+                  patientName={patientName}
+                  patientId={task.patient_id ?? null}
+                />
+              )}
+            </>
           ) : (
             <>
               <Separator />
@@ -375,35 +396,23 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
               {isComm && (
                 <>
                   <div className="grid grid-cols-2 gap-2">
-                    {isReferral ? (
-                      <Button
-                        variant="outline"
-                        className="gap-1.5"
-                        onClick={() => setReferralOpen((v) => !v)}
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        {referralOpen ? "Cancel" : "Create referral"}
-                        {!referralOpen && <ArrowRight className="h-3.5 w-3.5" />}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="gap-1.5"
-                        onClick={() => {
-                          const scheduledId = (task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id;
-                          onOpenChange(false);
-                          if (scheduledId) {
-                            navigate("/calendar");
-                          } else {
-                            navigate("/calendar", { state: { prefill: buildCommPrefill(task) } });
-                          }
-                        }}
-                      >
-                        <Calendar className="h-3.5 w-3.5" />
-                        {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id ? "View in Calendar" : "Schedule"}
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => {
+                        const scheduledId = (task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id;
+                        onOpenChange(false);
+                        if (scheduledId) {
+                          navigate("/calendar");
+                        } else {
+                          navigate("/calendar", { state: { prefill: buildCommPrefill(task) } });
+                        }
+                      }}
+                    >
+                      <Calendar className="h-3.5 w-3.5" />
+                      {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id ? "View in Calendar" : "Schedule"}
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
                     <Button
                       className="gap-1.5"
                       onClick={() => setLogOpen((v) => !v)}
@@ -413,26 +422,17 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                     </Button>
                   </div>
 
-                  {isReferral && referralOpen && referralForm && (
-                    <ReferralFormPanel
-                      form={referralForm}
-                      onChange={setReferralForm}
-                      patientName={patientName}
-                      patientId={task.patient_id ?? null}
-                    />
-                  )}
-
                   {logOpen && (
                     <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
                       <div className="space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground">
-                          {isReferral ? "Referral summary / outcome" : "Call summary / outcome"}
+                          Call summary / outcome
                         </p>
                         <Textarea
                           value={outcomeText}
                           onChange={(e) => setOutcomeText(e.target.value)}
                           rows={4}
-                          placeholder={isReferral ? "Specialist contacted, appointment booked, response received…" : "What was discussed, decided, or referred…"}
+                          placeholder="What was discussed, decided, or referred…"
                         />
                       </div>
                       <div className="space-y-1.5">
