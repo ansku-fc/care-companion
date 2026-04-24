@@ -833,19 +833,25 @@ function ReferralFormPanel({
   pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; }
   ul { font-size: 12px; margin: 4px 0 0 18px; padding: 0; }
   a { color: #0366d6; word-break: break-all; }
+  @media print {
+    body > * { display: none !important; }
+    #referral-print-area { display: block !important; }
+  }
 </style></head><body>
-<div class="header">
-  <div class="logo-crop"><img src="${logoUrl}" alt="Foundation Clinic" /></div>
-  <div class="meta">
-    <div>Foundation Health Finland Oy</div>
-    <div>foundation.clinic</div>
-    <div>Ratakatu 29 a 4</div>
-    <div>00120 Helsinki</div>
+<div id="referral-print-area">
+  <div class="header">
+    <div class="logo-crop"><img src="${logoUrl}" alt="Foundation Clinic" /></div>
+    <div class="meta">
+      <div>Foundation Health Finland Oy</div>
+      <div>foundation.clinic</div>
+      <div>Ratakatu 29 a 4</div>
+      <div>00120 Helsinki</div>
+    </div>
   </div>
+  <h1>REFERRAL</h1>
+  <pre>${safeText}</pre>
+  ${attachmentLines}
 </div>
-<h1>REFERRAL</h1>
-<pre>${safeText}</pre>
-${attachmentLines}
 <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 300); };</script>
 </body></html>`;
   };
