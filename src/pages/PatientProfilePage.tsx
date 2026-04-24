@@ -4725,42 +4725,16 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               />
             )}
             {selectedMarker && (
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Low</Label>
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="—"
-                      className="h-8 text-xs"
-                      value={ref?.low ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value === "" ? undefined : Number(e.target.value);
-                        setCustomRefs((prev) => ({
-                          ...prev,
-                          [selectedMarker.key]: { ...prev[selectedMarker.key], low: val },
-                        }));
-                      }}
-                    />
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-md border bg-muted/30 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Low</p>
+                    <p className="font-medium text-foreground tabular-nums">{ref?.low ?? "—"}</p>
                   </div>
-                  <div>
-                    <Label className="text-xs">High</Label>
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="—"
-                      className="h-8 text-xs"
-                      value={ref?.high ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value === "" ? undefined : Number(e.target.value);
-                        setCustomRefs((prev) => ({
-                          ...prev,
-                          [selectedMarker.key]: { ...prev[selectedMarker.key], high: val },
-                        }));
-                      }}
-                    />
+                  <div className="rounded-md border bg-muted/30 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">High</p>
+                    <p className="font-medium text-foreground tabular-nums">{ref?.high ?? "—"}</p>
                   </div>
                 </div>
               </div>
@@ -4777,6 +4751,72 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                     setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
                   }}
                 />
+              </div>
+            )}
+            {selectedMarker && (
+              <div className="mt-4 space-y-2">
+                <Label className="text-xs">Annotations</Label>
+                <Textarea
+                  placeholder="Add a clinical annotation for this marker and date..."
+                  className="mt-1 min-h-[60px] text-xs resize-none"
+                  value={annotationText}
+                  onChange={(e) => setAnnotationText(e.target.value)}
+                />
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Date</Label>
+                    <Input
+                      type="date"
+                      className="h-8 text-xs"
+                      value={annotationDate}
+                      onChange={(e) => setAnnotationDate(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={saveAnnotation}
+                    disabled={!annotationText.trim()}
+                  >
+                    Save annotation
+                  </Button>
+                </div>
+                {annotations.length > 0 && (
+                  <ul className="mt-2 space-y-1.5">
+                    {annotations.map((a) => (
+                      <li
+                        key={a.id}
+                        className="flex items-start gap-2 rounded-md border bg-muted/20 px-2.5 py-1.5 text-xs"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            {a.annotation_date} · {a.author_name}
+                          </p>
+                          <p className="text-foreground whitespace-pre-wrap">{a.text}</p>
+                        </div>
+                        <button
+                          onClick={() => deleteAnnotation(a.id)}
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                          aria-label="Delete annotation"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            {selectedMarker && (
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs w-full"
+                  onClick={createTaskFromMarker}
+                >
+                  + Create task
+                </Button>
               </div>
             )}
             {selectedMarker && MARKER_DIMENSIONS[selectedMarker.key] && (
