@@ -483,7 +483,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                     <Input value={otherDoctorName} onChange={(e) => setOtherDoctorName(e.target.value)} placeholder="e.g. Dr. Patel (Cardiology)" />
                   </Field>
 
-                  <Field label="Care coordination category *">
+                  <Field label="Category *">
                     <Select value={coordinationCategory} onValueChange={setCoordinationCategory}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -505,6 +505,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                         ))}
                       </SelectContent>
                     </Select>
+                  </Field>
+
+                  <Field label="Appointment name">
+                    <Input
+                      value={doctorMeetingTitle}
+                      onChange={(e) => {
+                        setDoctorMeetingTitle(e.target.value);
+                        setDoctorMeetingTitleEdited(true);
+                      }}
+                      placeholder="Auto-generated"
+                    />
                   </Field>
 
                   <TimeRow startTime={startTime} endTime={endTime} setStartTime={setStartTime} setEndTime={setEndTime} />
