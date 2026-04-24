@@ -17,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
-import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase, Paperclip } from "lucide-react";
+import { format, parse } from "date-fns";
+import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase, Paperclip, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type ApptKind = "patient_visit" | "doctor_meeting" | "nurse_task" | "working_time";
 
