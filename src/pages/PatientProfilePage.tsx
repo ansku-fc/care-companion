@@ -22,7 +22,7 @@ import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension }
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
-import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
+import { MarkerDetailChart } from "@/components/patients/MarkerDetailChart";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
