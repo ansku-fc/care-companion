@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronDown, ChevronRight, Plus, Search, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   CARTER_DIAGNOSES,
   DIMENSION_LABEL_TO_KEY,
   fmtClinicalDate,
+  isCarter,
   type ClinicalDimensionKey,
   type Diagnosis,
 } from "@/lib/patientClinicalData";
