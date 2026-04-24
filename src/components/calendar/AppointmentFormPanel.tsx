@@ -161,22 +161,40 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     fetchData();
   }, []);
 
-  // Pre-fill when editing (mostly patient_visit shape)
+  // Pre-fill when editing — choose kind based on appointment_type
   useEffect(() => {
     if (!editingAppointment) return;
-    setKind("patient_visit");
+    const apptType = editingAppointment.appointment_type;
+    let editKind: ApptKind = "patient_visit";
+    if (apptType === "doctor_meeting") editKind = "doctor_meeting";
+    else if (apptType === "nurse_task" || editingAppointment.is_nurse_visit) editKind = "nurse_task";
+    else if (apptType === "working_time") editKind = "working_time";
+    setKind(editKind);
+
     setTitle(editingAppointment.title || "");
-    setPatientId(editingAppointment.patient_id || "");
-    setVisitModality(editingAppointment.is_home_visit ? "home_visit" : editingAppointment.visit_modality || "in_person");
-    setVisitCategory(editingAppointment.appointment_type || "consultation");
-    setIsLabs(editingAppointment.is_labs || false);
     setStartTime(editingAppointment.start_time ? format(new Date(editingAppointment.start_time), "HH:mm") : "09:00");
     setEndTime(editingAppointment.end_time ? format(new Date(editingAppointment.end_time), "HH:mm") : "10:00");
     setNotes(editingAppointment.notes || "");
-    setLabPackage(editingAppointment.lab_package || "custom");
-    setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
     if (editingAppointment.start_time) {
       setDateValue(format(new Date(editingAppointment.start_time), "yyyy-MM-dd"));
+    }
+
+    if (editKind === "patient_visit") {
+      setPatientId(editingAppointment.patient_id || "");
+      setVisitModality(editingAppointment.is_home_visit ? "home_visit" : editingAppointment.visit_modality || "in_person");
+      setVisitCategory(editingAppointment.appointment_type || "consultation");
+      setIsLabs(editingAppointment.is_labs || false);
+      setLabPackage(editingAppointment.lab_package || "custom");
+      setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
+    } else if (editKind === "doctor_meeting") {
+      setOtherDoctorName(editingAppointment.other_doctor_name || editingAppointment.specialist_name || "");
+      setLinkedPatientId(editingAppointment.patient_id || "");
+      if (editingAppointment.coordination_category) setCoordinationCategory(editingAppointment.coordination_category);
+      setDoctorMeetingTitle(editingAppointment.title || "");
+      setDoctorMeetingTitleEdited(true);
+    } else if (editKind === "nurse_task") {
+      setPatientId(editingAppointment.patient_id || "");
+      setTaskDescription(editingAppointment.notes || "");
     }
   }, [editingAppointment]);
 
@@ -633,7 +651,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
           <div className="shrink-0 border-t pt-4 px-4 pb-4 bg-background flex gap-3">
             <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
             <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
-              {loading ? "Saving…" : editingAppointment ? "Update" : "Create"}
+              {loading ? "Saving…" : editingAppointment ? "Save changes" : "Create"}
             </Button>
           </div>
         )}

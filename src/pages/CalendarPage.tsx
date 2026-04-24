@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical,
   Stethoscope, Clock, Play, Pencil, X, ChevronLeft, ChevronRight,
-  User, FileText, ExternalLink, StickyNote, Import, Briefcase, CheckSquare,
+  User, FileText, ExternalLink, StickyNote, Import, Briefcase, CheckSquare, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -468,6 +468,38 @@ const CalendarPage = () => {
                               </Button>
                             </>
                           )}
+                          {/* Edit / Delete (always shown) */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => {
+                              if (a.isDummy) {
+                                toast({ title: "Demo appointments can't be edited — add a real appointment to try this." });
+                                return;
+                              }
+                              setEditingAppointment(a);
+                              setFormOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              if (a.isDummy) {
+                                toast({ title: "Demo appointments can't be edited — add a real appointment to try this." });
+                                return;
+                              }
+                              setCancelId(a.id);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     );
