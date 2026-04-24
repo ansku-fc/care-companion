@@ -238,6 +238,72 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
 
               <Separator />
 
+              {isComm && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => { onOpenChange(false); navigate("/calendar"); }}
+                    >
+                      <Calendar className="h-3.5 w-3.5" /> Open Calendar
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      className="gap-1.5"
+                      onClick={() => setLogOpen((v) => !v)}
+                    >
+                      <PhoneCall className="h-3.5 w-3.5" />
+                      {logOpen ? "Cancel" : "Log outcome"}
+                    </Button>
+                  </div>
+
+                  {logOpen && (
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Call summary / outcome
+                        </p>
+                        <Textarea
+                          value={outcomeText}
+                          onChange={(e) => setOutcomeText(e.target.value)}
+                          rows={4}
+                          placeholder="What was discussed, decided, or referred…"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">Outcome tag</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {OUTCOME_TAGS.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => setOutcomeTag(tag)}
+                              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                                outcomeTag === tag
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-foreground border-input hover:bg-accent"
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full"
+                        onClick={saveOutcome}
+                        disabled={savingOutcome || !outcomeText.trim() || !outcomeTag}
+                      >
+                        Save to patient record
+                      </Button>
+                    </div>
+                  )}
+
+                  <Separator />
+                </>
+              )}
+
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openEditTask(task)}>
                   <Pencil className="h-3.5 w-3.5" /> Edit
