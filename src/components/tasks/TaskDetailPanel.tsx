@@ -1071,7 +1071,6 @@ function ReferralFormPanel({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
               marginLeft: 0,
               paddingLeft: 0,
             }}
@@ -1079,11 +1078,8 @@ function ReferralFormPanel({
             <img
               src={foundationClinicLogo}
               alt="Foundation Clinic"
-              style={{ height: "36px", width: "auto", display: "block" }}
+              style={{ height: "60px", width: "auto", display: "block" }}
             />
-            <span style={{ fontSize: "13px", fontWeight: 500, lineHeight: 1.2 }}>
-              Foundation Clinic
-            </span>
           </div>
           <div style={{ textAlign: "right", fontSize: "11px", color: "#666", lineHeight: 1.4 }}>
             <div>Foundation Health Finland Oy</div>
