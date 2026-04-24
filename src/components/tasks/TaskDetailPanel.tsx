@@ -808,6 +808,14 @@ ${attachmentLines}
 
   return (
     <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+      <div className="flex items-center justify-between gap-2 pb-1">
+        <img src={foundationClinicLogo} alt="Foundation Clinic" className="h-10 object-contain" />
+        <div className="text-right text-[10px] text-muted-foreground leading-tight">
+          <div>Foundation Health Finland Oy</div>
+          <div>foundation-clinic.fi</div>
+        </div>
+      </div>
+      <Separator />
       <div className="flex items-center gap-1.5 pb-1">
         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
