@@ -4725,21 +4725,6 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                 onCreateTask={createTaskFromMarker}
               />
             )}
-            {selectedMarker && (
-              <div className="mt-4">
-                <Label className="text-xs">Doctor Notes</Label>
-                <Textarea
-                  placeholder="Add notes about this marker..."
-                  className="mt-1 min-h-[44px] text-xs resize-none"
-                  rows={2}
-                  value={markerNotes[selectedMarker?.key || ""] || ""}
-                  onChange={(e) => {
-                    if (!selectedMarker) return;
-                    setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
-                  }}
-                />
-              </div>
-            )}
             {selectedMarker && MARKER_DIMENSIONS[selectedMarker.key] && (
               <div className="mt-4">
                 <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
