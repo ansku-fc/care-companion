@@ -233,7 +233,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     } else if (kind === "doctor_meeting") {
       payload = {
         ...payload,
-        title: title || `Call – ${otherDoctorName}`,
+        title: doctorMeetingTitle || title || `Call – ${otherDoctorName}`,
         patient_id: linkedPatientId || patientId || null,
         appointment_type: "doctor_meeting" as any,
         visit_modality: "remote",
