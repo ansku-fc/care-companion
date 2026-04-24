@@ -274,7 +274,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="space-y-2">
               {todaySchedule.map((appt) => (
-                <div key={`${appt.time}-${appt.name}`} className="group flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
+                <div key={appt.id} className="group flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
                   <span className="text-sm font-mono text-muted-foreground w-14 tabular-nums">{appt.time}</span>
                   <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(appt.status))} />
                   <div className="flex-1 min-w-0">
