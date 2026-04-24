@@ -1075,10 +1075,10 @@ function ReferralFormPanel({
               paddingLeft: 0,
             }}
           >
-            <img
+<img
               src={foundationClinicLogo}
               alt="Foundation Clinic"
-              style={{ height: "60px", width: "auto", display: "block" }}
+              style={{ height: "80px", width: "220px", objectFit: "cover", objectPosition: "left center", display: "block" }}
             />
           </div>
           <div style={{ textAlign: "right", fontSize: "11px", color: "#666", lineHeight: 1.4 }}>
