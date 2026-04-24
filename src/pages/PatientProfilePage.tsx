@@ -22,7 +22,7 @@ import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension }
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
-import { DraggableReferenceChart } from "@/components/patients/DraggableReferenceChart";
+import { MarkerDetailChart } from "@/components/patients/MarkerDetailChart";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
@@ -4711,33 +4711,15 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
             {chartData.length < 1 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
             ) : (
-              <DraggableReferenceChart
+              <MarkerDetailChart
                 chartData={chartData}
                 refValues={ref}
-                onRefChange={(newRef) => {
-                  const key = selectedMarker?.key;
-                  if (!key) return;
-                  setCustomRefs((prev) => ({
-                    ...prev,
-                    [key]: { ...(REFERENCE_VALUES[key] || {}), ...prev[key], ...newRef },
-                  }));
-                }}
+                annotations={annotations.map((a) => ({
+                  id: a.id,
+                  date: a.annotation_date,
+                  text: a.text,
+                }))}
               />
-            )}
-            {selectedMarker && (
-              <div className="mt-4 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="rounded-md border bg-muted/30 px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Low</p>
-                    <p className="font-medium text-foreground tabular-nums">{ref?.low ?? "—"}</p>
-                  </div>
-                  <div className="rounded-md border bg-muted/30 px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">High</p>
-                    <p className="font-medium text-foreground tabular-nums">{ref?.high ?? "—"}</p>
-                  </div>
-                </div>
-              </div>
             )}
             {selectedMarker && (
               <div className="mt-4">
