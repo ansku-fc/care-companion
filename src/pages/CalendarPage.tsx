@@ -415,6 +415,16 @@ const CalendarPage = () => {
                                 Import Note
                               </Button>
                             </>
+                          ) : a.appointment_type === "doctor_meeting" ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => setDetailAppt(a)}
+                            >
+                              <FileText className="h-3 w-3" />
+                              Details
+                            </Button>
                           ) : (
                             <>
                               <Button
