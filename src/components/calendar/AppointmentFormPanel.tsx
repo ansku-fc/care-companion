@@ -517,6 +517,10 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
                   <TimeRow startTime={startTime} endTime={endTime} setStartTime={setStartTime} setEndTime={setEndTime} />
 
+                  <Field label="Attach file (optional)">
+                    <AttachFileControl attachedFile={attachedFile} setAttachedFile={setAttachedFile} />
+                  </Field>
+
                   <Field label="Notes / agenda">
                     <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
                   </Field>
