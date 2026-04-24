@@ -27,6 +27,10 @@ import { StepLifestyle } from "./StepLifestyle";
 import { StepActivity } from "./StepActivity";
 import { StepNutrition } from "./StepNutrition";
 import { StepSleep } from "./StepSleep";
+import { StepMentalHealth } from "./StepMentalHealth";
+import { StepCancer } from "./StepCancer";
+import { StepStatus } from "./StepStatus";
+import { blankExamFindings } from "./OnboardingFormContext";
 
 type Props = {
   patientId: string;
@@ -142,6 +146,46 @@ export function PatientOnboardingDialog(props: Props) {
           sleep_apnea: Boolean(extra.sleep_apnea),
           sleep_apnea_type: (extra.sleep_apnea_type as string) ?? "",
           sleep_apnea_severity: (extra.sleep_apnea_severity as string) ?? "",
+
+          // Step 8 — Mental Health
+          social_support_perceived: (data as any).social_support_perceived ?? null,
+          recovery_perceived: (extra.recovery_perceived as number) ?? null,
+          workload_perceived: (extra.workload_perceived as number) ?? null,
+          stress_perceived: (data as any).stress_perceived ?? null,
+          gad2_enabled: Boolean(extra.gad2_enabled),
+          gad2_q1: (extra.gad2_q1 as number) ?? null,
+          gad2_q2: (extra.gad2_q2 as number) ?? null,
+          phq2_enabled: Boolean(extra.phq2_enabled),
+          phq2_q1: (extra.phq2_q1 as number) ?? null,
+          phq2_q2: (extra.phq2_q2 as number) ?? null,
+
+          // Step 9 — Cancer
+          screen_breast: Boolean((data as any).cancer_screening_breast),
+          screen_breast_year: (extra.screen_breast_year as number) ?? null,
+          screen_cervix: Boolean((data as any).cancer_screening_cervical),
+          screen_cervix_year: (extra.screen_cervix_year as number) ?? null,
+          screen_colorectum: Boolean((data as any).cancer_screening_colorectal),
+          screen_colorectum_year: (extra.screen_colorectum_year as number) ?? null,
+          screen_prostate: Boolean(extra.screen_prostate),
+          screen_prostate_year: (extra.screen_prostate_year as number) ?? null,
+          screen_skin: Boolean(extra.screen_skin),
+          screen_skin_year: (extra.screen_skin_year as number) ?? null,
+          screen_lung: Boolean(extra.screen_lung),
+          screen_lung_year: (extra.screen_lung_year as number) ?? null,
+          precancer_skin: Boolean((data as any).prev_precancerous),
+          precancer_skin_year: (extra.precancer_skin_year as number) ?? null,
+          precancer_cervix: Boolean(extra.precancer_cervix),
+          precancer_cervix_year: (extra.precancer_cervix_year as number) ?? null,
+          precancer_colorectum: Boolean(extra.precancer_colorectum),
+          precancer_colorectum_year: (extra.precancer_colorectum_year as number) ?? null,
+          sun_exposure: Boolean((data as any).sun_exposure),
+          sun_protection_method: (extra.sun_protection_method as string) ?? "",
+          severe_sunburns_history: Boolean(extra.severe_sunburns_history),
+
+          // Step 10 — Status
+          exam_findings: (extra.exam_findings as any) ?? blankExamFindings(),
+          moles_enabled: Boolean(extra.moles_enabled),
+          moles: (extra.moles as any[]) ?? [],
 
           current_step: ((data as any).current_step as number) ?? 1,
           completed_steps: (extra.completed_steps as number[]) ?? [],
@@ -263,6 +307,25 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       deep_sleep_percent: nextForm.sleep_deep_percent,
       insomnia: nextForm.insomnia,
 
+      // Step 8 — Mental Health (dedicated columns where they exist)
+      social_support_perceived: nextForm.social_support_perceived,
+      stress_perceived: nextForm.stress_perceived,
+      gad2_score:
+        nextForm.gad2_enabled && nextForm.gad2_q1 !== null && nextForm.gad2_q2 !== null
+          ? nextForm.gad2_q1 + nextForm.gad2_q2
+          : null,
+      phq2_score:
+        nextForm.phq2_enabled && nextForm.phq2_q1 !== null && nextForm.phq2_q2 !== null
+          ? nextForm.phq2_q1 + nextForm.phq2_q2
+          : null,
+
+      // Step 9 — Cancer (dedicated columns where they exist)
+      cancer_screening_breast: nextForm.screen_breast,
+      cancer_screening_cervical: nextForm.screen_cervix,
+      cancer_screening_colorectal: nextForm.screen_colorectum,
+      prev_precancerous: nextForm.precancer_skin || nextForm.precancer_cervix || nextForm.precancer_colorectum,
+      sun_exposure: nextForm.sun_exposure,
+
       current_step: nextForm.current_step,
       draft: !options.isComplete,
       extra_data: {
@@ -303,6 +366,40 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         sleep_apnea_type: nextForm.sleep_apnea_type,
         sleep_apnea_severity: nextForm.sleep_apnea_severity,
 
+        // Mental Health extras
+        recovery_perceived: nextForm.recovery_perceived,
+        workload_perceived: nextForm.workload_perceived,
+        gad2_enabled: nextForm.gad2_enabled,
+        gad2_q1: nextForm.gad2_q1,
+        gad2_q2: nextForm.gad2_q2,
+        phq2_enabled: nextForm.phq2_enabled,
+        phq2_q1: nextForm.phq2_q1,
+        phq2_q2: nextForm.phq2_q2,
+
+        // Cancer extras (year per screening + non-column toggles)
+        screen_breast_year: nextForm.screen_breast_year,
+        screen_cervix_year: nextForm.screen_cervix_year,
+        screen_colorectum_year: nextForm.screen_colorectum_year,
+        screen_prostate: nextForm.screen_prostate,
+        screen_prostate_year: nextForm.screen_prostate_year,
+        screen_skin: nextForm.screen_skin,
+        screen_skin_year: nextForm.screen_skin_year,
+        screen_lung: nextForm.screen_lung,
+        screen_lung_year: nextForm.screen_lung_year,
+        precancer_skin: nextForm.precancer_skin,
+        precancer_skin_year: nextForm.precancer_skin_year,
+        precancer_cervix: nextForm.precancer_cervix,
+        precancer_cervix_year: nextForm.precancer_cervix_year,
+        precancer_colorectum: nextForm.precancer_colorectum,
+        precancer_colorectum_year: nextForm.precancer_colorectum_year,
+        sun_protection_method: nextForm.sun_protection_method,
+        severe_sunburns_history: nextForm.severe_sunburns_history,
+
+        // Status
+        exam_findings: nextForm.exam_findings,
+        moles_enabled: nextForm.moles_enabled,
+        moles: nextForm.moles,
+
         completed_steps: nextForm.completed_steps,
         skipped_steps: nextForm.skipped_steps,
       },
@@ -334,6 +431,24 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       .from("patients")
       .update({ onboarding_status: newStatus } as any)
       .eq("id", patientId);
+
+    // On completion, auto-create a review task (skip silently if it fails)
+    if (options.isComplete) {
+      const due = new Date();
+      due.setDate(due.getDate() + 3);
+      await supabase.from("tasks").insert({
+        title: `Review onboarding data — ${patientName}`,
+        description: "Auto-generated after the patient completed onboarding.",
+        patient_id: patientId,
+        created_by: user.id,
+        assigned_to: user.id,
+        category: "clinical_review",
+        priority: "medium",
+        status: "todo",
+        due_date: due.toISOString().slice(0, 10),
+        created_from: "onboarding",
+      } as any);
+    }
   };
 
   const handleSaveDraft = async () => {
@@ -488,14 +603,14 @@ function StepRenderer({ step }: { step: number }) {
       return <StepNutrition />;
     case 7:
       return <StepSleep />;
+    case 8:
+      return <StepMentalHealth />;
+    case 9:
+      return <StepCancer />;
+    case 10:
+      return <StepStatus />;
     default:
-      return (
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
-          <p className="text-sm text-muted-foreground">
-            This step ({STEP_LABELS[step - 1]}) is being built in the next round.
-          </p>
-        </div>
-      );
+      return null;
   }
 }
 

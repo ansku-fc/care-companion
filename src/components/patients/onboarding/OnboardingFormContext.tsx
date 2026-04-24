@@ -21,6 +21,39 @@ export type FamilyHistoryRow = {
   deceased: boolean;
 };
 
+export type ExamFindingKey =
+  | "heart"
+  | "peripheral_circulation"
+  | "lungs"
+  | "lymph_nodes"
+  | "thyroid"
+  | "skin_general"
+  | "abdomen"
+  | "eyes"
+  | "ears"
+  | "musculoskeletal";
+
+export type ExamFinding = { present: boolean; notes: string };
+
+export type ExamFindings = Record<ExamFindingKey, ExamFinding> & {
+  peripheral_adp: ExamFinding;
+  peripheral_atp: ExamFinding;
+  peripheral_afem: ExamFinding;
+};
+
+export type MoleEntry = {
+  id: string;
+  label: string;
+  side: "front" | "back";
+  location: string;
+  asymmetry: string;
+  borders: string;
+  color: string;
+  size: string;
+  change: string;
+  symptoms: string;
+};
+
 export type OnboardingForm = {
   /* Step 1 — Basic Info */
   age: number | null;
@@ -94,6 +127,46 @@ export type OnboardingForm = {
   sleep_apnea_type: string;
   sleep_apnea_severity: string;
 
+  /* Step 8 — Mental Health */
+  social_support_perceived: number | null;
+  recovery_perceived: number | null;
+  workload_perceived: number | null;
+  stress_perceived: number | null;
+  gad2_enabled: boolean;
+  gad2_q1: number | null;
+  gad2_q2: number | null;
+  phq2_enabled: boolean;
+  phq2_q1: number | null;
+  phq2_q2: number | null;
+
+  /* Step 9 — Cancer */
+  screen_breast: boolean;
+  screen_breast_year: number | null;
+  screen_cervix: boolean;
+  screen_cervix_year: number | null;
+  screen_colorectum: boolean;
+  screen_colorectum_year: number | null;
+  screen_prostate: boolean;
+  screen_prostate_year: number | null;
+  screen_skin: boolean;
+  screen_skin_year: number | null;
+  screen_lung: boolean;
+  screen_lung_year: number | null;
+  precancer_skin: boolean;
+  precancer_skin_year: number | null;
+  precancer_cervix: boolean;
+  precancer_cervix_year: number | null;
+  precancer_colorectum: boolean;
+  precancer_colorectum_year: number | null;
+  sun_exposure: boolean;
+  sun_protection_method: string;
+  severe_sunburns_history: boolean;
+
+  /* Step 10 — Status */
+  exam_findings: ExamFindings;
+  moles_enabled: boolean;
+  moles: MoleEntry[];
+
   /* Step tracking */
   current_step: number;
   /** Steps the doctor explicitly marked complete (Save) vs skipped. */
@@ -119,6 +192,41 @@ const blankFamily = (): FamilyHistoryRow => ({
   age_at_diagnosis: null,
   deceased: false,
 });
+
+const emptyFinding = (): ExamFinding => ({ present: false, notes: "" });
+
+export function blankExamFindings(): ExamFindings {
+  return {
+    heart: emptyFinding(),
+    peripheral_circulation: emptyFinding(),
+    lungs: emptyFinding(),
+    lymph_nodes: emptyFinding(),
+    thyroid: emptyFinding(),
+    skin_general: emptyFinding(),
+    abdomen: emptyFinding(),
+    eyes: emptyFinding(),
+    ears: emptyFinding(),
+    musculoskeletal: emptyFinding(),
+    peripheral_adp: emptyFinding(),
+    peripheral_atp: emptyFinding(),
+    peripheral_afem: emptyFinding(),
+  };
+}
+
+export function blankMole(label = "Mole 1"): MoleEntry {
+  return {
+    id: crypto.randomUUID(),
+    label,
+    side: "front",
+    location: "",
+    asymmetry: "",
+    borders: "",
+    color: "",
+    size: "",
+    change: "",
+    symptoms: "",
+  };
+}
 
 export const blankOnboardingForm: OnboardingForm = {
   age: null,
@@ -185,6 +293,43 @@ export const blankOnboardingForm: OnboardingForm = {
   sleep_apnea: false,
   sleep_apnea_type: "",
   sleep_apnea_severity: "",
+
+  social_support_perceived: null,
+  recovery_perceived: null,
+  workload_perceived: null,
+  stress_perceived: null,
+  gad2_enabled: false,
+  gad2_q1: null,
+  gad2_q2: null,
+  phq2_enabled: false,
+  phq2_q1: null,
+  phq2_q2: null,
+
+  screen_breast: false,
+  screen_breast_year: null,
+  screen_cervix: false,
+  screen_cervix_year: null,
+  screen_colorectum: false,
+  screen_colorectum_year: null,
+  screen_prostate: false,
+  screen_prostate_year: null,
+  screen_skin: false,
+  screen_skin_year: null,
+  screen_lung: false,
+  screen_lung_year: null,
+  precancer_skin: false,
+  precancer_skin_year: null,
+  precancer_cervix: false,
+  precancer_cervix_year: null,
+  precancer_colorectum: false,
+  precancer_colorectum_year: null,
+  sun_exposure: false,
+  sun_protection_method: "",
+  severe_sunburns_history: false,
+
+  exam_findings: blankExamFindings(),
+  moles_enabled: false,
+  moles: [],
 
   current_step: 1,
   completed_steps: [],
