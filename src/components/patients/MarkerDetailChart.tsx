@@ -41,6 +41,10 @@ interface MarkerDetailChartProps {
   unit?: string;
   chartData: ChartPoint[];
   refValues: { low?: number; high?: number } | null;
+  /** Optional secondary series (e.g. diastolic BP) rendered as a lighter line on the same chart. */
+  secondarySeries?: ChartPoint[];
+  secondaryLabel?: string;
+  secondaryRefValues?: { low?: number; high?: number } | null;
   annotations?: MarkerAnnotation[];
   /** When true, hides the annotation/task icon buttons and inline annotation panel. */
   displayOnly?: boolean;
@@ -60,6 +64,9 @@ export function MarkerDetailChart({
   unit,
   chartData,
   refValues,
+  secondarySeries,
+  secondaryLabel = "Secondary",
+  secondaryRefValues,
   annotations = [],
   displayOnly = false,
   annotationText = "",
@@ -73,14 +80,19 @@ export function MarkerDetailChart({
   const [window, setWindow] = useState<Window>("3y");
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
 
-  const data = useMemo(
-    () =>
-      filterByWindow(
-        [...chartData].sort((a, b) => a.date.localeCompare(b.date)),
-        window,
-      ),
-    [chartData, window],
-  );
+  const data = useMemo(() => {
+    const primary = [...chartData].sort((a, b) => a.date.localeCompare(b.date));
+    const secMap = new Map<string, number>();
+    if (secondarySeries) {
+      for (const p of secondarySeries) secMap.set(p.date, p.value);
+    }
+    const merged = primary.map((p) => ({
+      date: p.date,
+      value: p.value,
+      value2: secMap.get(p.date),
+    }));
+    return filterByWindow(merged, window);
+  }, [chartData, secondarySeries, window]);
 
   const refLow = refValues?.low;
   const refHigh = refValues?.high;
@@ -218,14 +230,41 @@ export function MarkerDetailChart({
                   />
                 )}
 
+                {secondaryRefValues?.high !== undefined && (
+                  <ReferenceLine
+                    y={secondaryRefValues.high}
+                    stroke="hsl(142 50% 55%)"
+                    strokeDasharray="4 3"
+                    label={{
+                      value: `High ${secondaryRefValues.high}`,
+                      position: "right",
+                      fontSize: 9,
+                      fill: "hsl(var(--muted-foreground))",
+                    }}
+                  />
+                )}
+
                 <Line
                   type="monotone"
                   dataKey="value"
+                  name={label}
                   stroke={PRIMARY_LINE}
                   strokeWidth={2}
                   dot={renderDot as any}
                   activeDot={{ r: 5 }}
                 />
+                {secondarySeries && (
+                  <Line
+                    type="monotone"
+                    dataKey="value2"
+                    name={secondaryLabel}
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "hsl(var(--muted-foreground))", stroke: "hsl(var(--background))", strokeWidth: 1 }}
+                    activeDot={{ r: 4 }}
+                    connectNulls
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>

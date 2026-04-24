@@ -4653,6 +4653,19 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                           return { date: lab.result_date, value: Number(v) };
                         })
                         .filter(Boolean) as { date: string; value: number }[];
+                      const isBp = row.key === "_bp";
+                      const diastolicSeries = isBp
+                        ? (sorted
+                            .map((lab) => {
+                              const v = lab.blood_pressure_diastolic;
+                              if (v === null || v === undefined) return null;
+                              return { date: lab.result_date, value: Number(v) };
+                            })
+                            .filter(Boolean) as { date: string; value: number }[])
+                        : undefined;
+                      const diastolicRef = isBp
+                        ? { ...REFERENCE_VALUES["blood_pressure_diastolic"], ...customRefs["blood_pressure_diastolic"] }
+                        : undefined;
                       const isSel = selectedMarker?.key === dataKey;
                       return (
                         <button
@@ -4664,10 +4677,13 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                           )}
                         >
                           <MarkerDetailChart
-                            label={row.label}
+                            label={isBp ? "Systolic" : row.label}
                             unit={row.unit}
                             chartData={series}
                             refValues={refForRow}
+                            secondarySeries={diastolicSeries}
+                            secondaryLabel={isBp ? "Diastolic" : undefined}
+                            secondaryRefValues={diastolicRef}
                             displayOnly
                           />
                         </button>
@@ -4793,15 +4809,36 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
 
         {/* Detail panel — unified chart with inline annotations & task icon */}
         {selectedMarker && (() => {
-          // Determine latest value & out-of-range status
-          const inRangeFor = (v: number) => {
-            if (!ref) return true;
-            if (ref.high != null && v > ref.high) return false;
-            if (ref.low != null && v < ref.low) return false;
+          const isBp = selectedMarker.key === "blood_pressure_systolic";
+
+          // Diastolic series + ref for BP marker
+          const diastolicChartData = isBp
+            ? (sorted
+                .map((lab) => {
+                  const v = lab.blood_pressure_diastolic;
+                  if (v === null || v === undefined) return null;
+                  return { date: lab.result_date, value: Number(v) };
+                })
+                .filter(Boolean) as { date: string; value: number }[])
+            : [];
+          const diastolicRef = isBp
+            ? { ...REFERENCE_VALUES["blood_pressure_diastolic"], ...customRefs["blood_pressure_diastolic"] }
+            : null;
+
+          // In-range helpers (per-ref)
+          const inRangeWith = (refObj: { low?: number; high?: number } | null | undefined, v: number) => {
+            if (!refObj) return true;
+            if (refObj.high != null && v > refObj.high) return false;
+            if (refObj.low != null && v < refObj.low) return false;
             return true;
           };
+          const inRangeFor = (v: number) => inRangeWith(ref, v);
+
           const latestPoint = chartData.length > 0 ? chartData[chartData.length - 1] : null;
-          const latestInRange = latestPoint ? inRangeFor(latestPoint.value) : true;
+          const latestDiaPoint = diastolicChartData.length > 0 ? diastolicChartData[diastolicChartData.length - 1] : null;
+          const latestInRange = latestPoint
+            ? inRangeFor(latestPoint.value) && (!isBp || !latestDiaPoint || inRangeWith(diastolicRef, latestDiaPoint.value))
+            : true;
 
           // Time-window filter for data points
           const now = new Date();
@@ -4809,8 +4846,13 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
           if (panelWindow === "6m") cutoff.setMonth(cutoff.getMonth() - 6);
           else if (panelWindow === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
           else if (panelWindow === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+          const inWindow = (date: string) => panelWindow === "all" || new Date(date) >= cutoff;
           const filteredPoints = chartData
-            .filter((p) => panelWindow === "all" || new Date(p.date) >= cutoff)
+            .filter((p) => inWindow(p.date))
+            .slice()
+            .sort((a, b) => b.date.localeCompare(a.date));
+          const filteredDiaPoints = diastolicChartData
+            .filter((p) => inWindow(p.date))
             .slice()
             .sort((a, b) => b.date.localeCompare(a.date));
 
@@ -4828,6 +4870,11 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               {label}
             </button>
           );
+
+          // Panel shows OPPOSITE perspective from the main view:
+          // - Graph view ⇒ show data table
+          // - Table view ⇒ show graph
+          const showGraph = viewMode === "table";
 
           return (
             <div className="w-[420px] shrink-0 rounded-[20px] border bg-card shadow-card flex flex-col min-h-0 overflow-y-auto">
@@ -4856,20 +4903,49 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               </div>
 
               <div className="p-4 flex-1 space-y-5">
-                {/* Data points */}
+                {/* Data points OR Graph (opposite of main view) */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Data points
+                      {showGraph ? "Trend" : "Data points"}
                     </p>
-                    <div className="inline-flex rounded-md border bg-muted/50 p-0.5">
-                      {winBtn("6m", "6m")}
-                      {winBtn("1y", "1y")}
-                      {winBtn("3y", "3y")}
-                      {winBtn("all", "All")}
-                    </div>
+                    {!showGraph && (
+                      <div className="inline-flex rounded-md border bg-muted/50 p-0.5">
+                        {winBtn("6m", "6m")}
+                        {winBtn("1y", "1y")}
+                        {winBtn("3y", "3y")}
+                        {winBtn("all", "All")}
+                      </div>
+                    )}
                   </div>
-                  {filteredPoints.length === 0 ? (
+                  {showGraph ? (
+                    chartData.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">No data points available.</p>
+                    ) : (
+                      <MarkerDetailChart
+                        label={isBp ? "Systolic" : selectedMarker.label}
+                        unit={selectedMarker.unit}
+                        chartData={chartData}
+                        refValues={ref}
+                        secondarySeries={isBp ? diastolicChartData : undefined}
+                        secondaryLabel={isBp ? "Diastolic" : undefined}
+                        secondaryRefValues={isBp ? diastolicRef : undefined}
+                        annotations={annotations.map((a) => ({
+                          id: a.id,
+                          date: a.annotation_date,
+                          text: a.text,
+                          author: a.author_name,
+                        }))}
+                        annotationText={annotationText}
+                        annotationDate={annotationDate}
+                        onAnnotationTextChange={setAnnotationText}
+                        onAnnotationDateChange={setAnnotationDate}
+                        onSaveAnnotation={saveAnnotation}
+                        onDeleteAnnotation={deleteAnnotation}
+                        onCreateTask={createTaskFromMarker}
+                      />
+                    )
+                  ) : filteredPoints.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">No data points in this range.</p>
                   ) : (
                     <div className="rounded-md border overflow-hidden">
@@ -4882,31 +4958,76 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredPoints.map((p, idx) => {
-                            const inR = inRangeFor(p.value);
-                            return (
-                              <tr key={`${p.date}-${idx}`} className="border-t">
-                                <td className="px-3 py-1.5 text-xs text-foreground">
-                                  {new Date(p.date).toLocaleDateString()}
-                                </td>
-                                <td className={cn(
-                                  "px-3 py-1.5 text-xs",
-                                  inR ? "text-foreground" : "font-bold text-rose-600",
-                                )}>
-                                  {p.value}
-                                </td>
-                                <td className="px-3 py-1.5 text-xs">
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <span className={cn(
-                                      "inline-block w-2 h-2 rounded-full",
-                                      inR ? "bg-emerald-500" : "bg-rose-500",
-                                    )} />
-                                    {inR ? "Yes" : "No"}
-                                  </span>
+                          {isBp ? (
+                            <>
+                              <tr className="bg-muted/20">
+                                <td colSpan={3} className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Systolic
                                 </td>
                               </tr>
-                            );
-                          })}
+                              {filteredPoints.map((p, idx) => {
+                                const inR = inRangeWith(ref, p.value);
+                                return (
+                                  <tr key={`s-${p.date}-${idx}`} className="border-t">
+                                    <td className="px-3 py-1.5 text-xs text-foreground">{new Date(p.date).toLocaleDateString()}</td>
+                                    <td className={cn("px-3 py-1.5 text-xs", inR ? "text-foreground" : "font-bold text-rose-600")}>{p.value}</td>
+                                    <td className="px-3 py-1.5 text-xs">
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <span className={cn("inline-block w-2 h-2 rounded-full", inR ? "bg-emerald-500" : "bg-rose-500")} />
+                                        {inR ? "Yes" : "No"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              <tr className="bg-muted/20 border-t">
+                                <td colSpan={3} className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Diastolic
+                                </td>
+                              </tr>
+                              {filteredDiaPoints.map((p, idx) => {
+                                const inR = inRangeWith(diastolicRef, p.value);
+                                return (
+                                  <tr key={`d-${p.date}-${idx}`} className="border-t">
+                                    <td className="px-3 py-1.5 text-xs text-foreground">{new Date(p.date).toLocaleDateString()}</td>
+                                    <td className={cn("px-3 py-1.5 text-xs", inR ? "text-foreground" : "font-bold text-rose-600")}>{p.value}</td>
+                                    <td className="px-3 py-1.5 text-xs">
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <span className={cn("inline-block w-2 h-2 rounded-full", inR ? "bg-emerald-500" : "bg-rose-500")} />
+                                        {inR ? "Yes" : "No"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </>
+                          ) : (
+                            filteredPoints.map((p, idx) => {
+                              const inR = inRangeFor(p.value);
+                              return (
+                                <tr key={`${p.date}-${idx}`} className="border-t">
+                                  <td className="px-3 py-1.5 text-xs text-foreground">
+                                    {new Date(p.date).toLocaleDateString()}
+                                  </td>
+                                  <td className={cn(
+                                    "px-3 py-1.5 text-xs",
+                                    inR ? "text-foreground" : "font-bold text-rose-600",
+                                  )}>
+                                    {p.value}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-xs">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <span className={cn(
+                                        "inline-block w-2 h-2 rounded-full",
+                                        inR ? "bg-emerald-500" : "bg-rose-500",
+                                      )} />
+                                      {inR ? "Yes" : "No"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
                         </tbody>
                       </table>
                     </div>
