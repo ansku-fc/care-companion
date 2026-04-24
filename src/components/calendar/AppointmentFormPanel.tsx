@@ -191,7 +191,6 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     let payload: any = {
       start_time: `${dateStr}T${startTime}:00`,
       end_time: `${dateStr}T${endTime}:00`,
-      provider_id: user.id,
       notes: notes || null,
     };
 
