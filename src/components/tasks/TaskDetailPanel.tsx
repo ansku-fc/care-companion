@@ -128,20 +128,20 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
             onNavigate={(path) => { onOpenChange(false); navigate(path); }}
           />
 
-          {kind === "labs" ? (
+          {isClinical ? (
             <>
               <Separator />
               <Button
                 className="w-full gap-1.5"
                 onClick={() => {
                   onOpenChange(false);
-                  navigate(`/patients/${task.patient_id}?tab=lab_results&review=1`);
+                  navigate(clinicalActionPath(kind!, task));
                 }}
               >
-                Go to full lab view <ArrowRight className="h-3.5 w-3.5" />
+                {clinicalActionLabel(kind!)} <ArrowRight className="h-3.5 w-3.5" />
               </Button>
               <p className="text-[11px] text-muted-foreground text-center italic">
-                This task completes automatically once all new results are verified.
+                {clinicalAutoCompleteHint(kind!)}
               </p>
             </>
           ) : (
