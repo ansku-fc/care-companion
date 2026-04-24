@@ -27,7 +27,8 @@ const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone
 const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
 function isReferralTask(task: Task): boolean {
   const isReferralCat = task.category === "referral";
-  return isReferralCat || REFERRAL_KEYWORDS.test(task.title ?? "");
+  const hay = `${task.title ?? ""} ${task.created_from ?? ""}`;
+  return isReferralCat || REFERRAL_KEYWORDS.test(hay) || /referral/i.test(hay);
 }
 function isCommunicationTask(task: Task): boolean {
   const isCareCoord = task.category === "care_coordination" || task.category === "client_communication";
