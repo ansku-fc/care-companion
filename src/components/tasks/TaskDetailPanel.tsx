@@ -40,11 +40,21 @@ interface Props {
 export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props) {
   const navigate = useNavigate();
   const { openEditTask, notifyChanged } = useTaskActions();
+  const { user } = useAuth();
   const [notes, setNotes] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
+  // Inline "Log outcome" form state for communication tasks
+  const [logOpen, setLogOpen] = useState(false);
+  const [outcomeText, setOutcomeText] = useState("");
+  const [outcomeTag, setOutcomeTag] = useState<OutcomeTag | "">("");
+  const [savingOutcome, setSavingOutcome] = useState(false);
+
   useEffect(() => {
     setNotes(task?.description ?? "");
+    setLogOpen(false);
+    setOutcomeText("");
+    setOutcomeTag("");
   }, [task]);
 
   if (!task) return null;
@@ -52,6 +62,7 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   const role = assigneeRole(task.assignee_name);
   const kind = detectKind(task);
   const isClinical = kind !== null;
+  const isComm = !isClinical && isCommunicationTask(task);
 
   const updateStatus = async (status: TaskStatus) => {
     const { error } = await supabase.from("tasks").update({ status }).eq("id", task.id);
