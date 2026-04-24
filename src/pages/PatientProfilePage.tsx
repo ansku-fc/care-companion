@@ -4607,6 +4607,65 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               No lab results yet. Click "Add Lab Results" to add the first entry.
             </CardContent>
           </Card>
+        ) : viewMode === "graphs" ? (
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
+            {categories.map((cat) => {
+              const rowsWithData = cat.rows.filter((row) => {
+                if (row.key === "_bp") {
+                  return sorted.some((lab) => lab.blood_pressure_systolic != null);
+                }
+                return sorted.some((lab) => {
+                  const v = (lab as any)[row.key];
+                  return v !== null && v !== undefined && typeof v !== "boolean";
+                });
+              });
+              if (rowsWithData.length === 0) return null;
+              return (
+                <div key={cat.title} className="space-y-3">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    {cat.title}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {rowsWithData.map((row) => {
+                      const dataKey = row.key === "_bp" ? "blood_pressure_systolic" : row.key;
+                      const refForRow = {
+                        ...REFERENCE_VALUES[dataKey],
+                        ...customRefs[dataKey],
+                      };
+                      const series = sorted
+                        .map((lab) => {
+                          const v = row.key === "_bp"
+                            ? lab.blood_pressure_systolic
+                            : (lab as any)[row.key];
+                          if (v === null || v === undefined || typeof v === "boolean") return null;
+                          return { date: lab.result_date, value: Number(v) };
+                        })
+                        .filter(Boolean) as { date: string; value: number }[];
+                      const isSel = selectedMarker?.key === dataKey;
+                      return (
+                        <button
+                          key={row.key}
+                          onClick={() => handleRowClick(row.key, row.label, row.unit)}
+                          className={cn(
+                            "text-left rounded-[14px] border bg-card p-3 transition-colors hover:border-primary/50",
+                            isSel && "border-primary shadow-sm",
+                          )}
+                        >
+                          <MarkerDetailChart
+                            label={row.label}
+                            unit={row.unit}
+                            chartData={series}
+                            refValues={refForRow}
+                            displayOnly
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <Card className="flex-1 min-h-0 flex flex-col rounded-[20px] shadow-card overflow-hidden">
             <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
