@@ -21,7 +21,7 @@ import {
 } from "@/lib/tasks";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useAuth } from "@/hooks/useAuth";
-import foundationClinicLogo from "@/assets/foundation-clinic-logo-white.jpg";
+import foundationClinicLogo from "@/assets/foundation-clinic-logo.png";
 
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
 const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
@@ -1078,7 +1078,7 @@ function ReferralFormPanel({
 <img
               src={foundationClinicLogo}
               alt="Foundation Clinic"
-              style={{ height: "80px", width: "220px", objectFit: "cover", objectPosition: "left center", display: "block" }}
+              style={{ height: "60px", width: "auto", display: "block" }}
             />
           </div>
           <div style={{ textAlign: "right", fontSize: "11px", color: "#666", lineHeight: 1.4 }}>
