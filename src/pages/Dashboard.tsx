@@ -18,7 +18,7 @@ import {
 } from "@/lib/tasks";
 import { format, isSameDay, parseISO } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
-import { buildDummyAppointments } from "@/lib/dummyAppointments";
+import { buildDummyAppointments, typeStyle } from "@/lib/dummyAppointments";
 
 type PatientLite = { id: string; full_name: string };
 
@@ -29,6 +29,7 @@ type ScheduleItem = {
   end: Date;
   name: string;
   type: string;
+  appointmentType: string;
   status: "completed" | "in_progress" | "upcoming";
 };
 
