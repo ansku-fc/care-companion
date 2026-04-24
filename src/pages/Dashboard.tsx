@@ -273,6 +273,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {todaySchedule.length === 0 && (
+                <p className="text-sm text-muted-foreground italic px-1 py-2">No appointments scheduled for today.</p>
+              )}
               {todaySchedule.map((appt) => (
                 <div key={appt.id} className="group flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
                   <span className="text-sm font-mono text-muted-foreground w-14 tabular-nums">{appt.time}</span>
