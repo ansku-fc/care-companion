@@ -223,16 +223,32 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
     setLoading(true);
     let error;
+    let insertedId: string | null = null;
     if (editingAppointment) {
       ({ error } = await supabase.from("appointments").update(payload).eq("id", editingAppointment.id));
     } else {
-      ({ error } = await supabase.from("appointments").insert(payload));
+      const { data, error: insErr } = await supabase
+        .from("appointments")
+        .insert(payload)
+        .select("id")
+        .single();
+      error = insErr;
+      insertedId = data?.id ?? null;
     }
     setLoading(false);
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
+    }
+
+    // If created from a task prefill, link the new appointment back to the task
+    if (insertedId && prefill?.sourceTaskId) {
+      await supabase
+        .from("tasks")
+        .update({ scheduled_appointment_id: insertedId } as any)
+        .eq("id", prefill.sourceTaskId);
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     }
 
     if (kind === "patient_visit" && sendInvite) {
