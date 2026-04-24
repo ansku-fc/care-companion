@@ -626,3 +626,35 @@ function TimeRow({
     </div>
   );
 }
+
+function DatePopover({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dateObj = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal", !dateObj && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {dateObj ? format(dateObj, "EEEE, MMMM d, yyyy") : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={dateObj}
+          onSelect={(d) => {
+            if (d) {
+              onChange(format(d, "yyyy-MM-dd"));
+              setOpen(false);
+            }
+          }}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
