@@ -325,10 +325,8 @@ const CalendarPage = () => {
           </CardHeader>
           <CardContent>
             <ScrollArea className="max-h-[calc(100vh-280px)]">
-              {dayAppointments.length === 0 && dayTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">No appointments or tasks scheduled.</p>
-              ) : dayAppointments.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic px-1">No appointments.</p>
+              {dayAppointments.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No appointments scheduled.</p>
               ) : (
                 <div className="space-y-3">
                   {dayAppointments.map((a: any) => {
