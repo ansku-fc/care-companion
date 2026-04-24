@@ -230,14 +230,41 @@ export function MarkerDetailChart({
                   />
                 )}
 
+                {secondaryRefValues?.high !== undefined && (
+                  <ReferenceLine
+                    y={secondaryRefValues.high}
+                    stroke="hsl(142 50% 55%)"
+                    strokeDasharray="4 3"
+                    label={{
+                      value: `High ${secondaryRefValues.high}`,
+                      position: "right",
+                      fontSize: 9,
+                      fill: "hsl(var(--muted-foreground))",
+                    }}
+                  />
+                )}
+
                 <Line
                   type="monotone"
                   dataKey="value"
+                  name={label}
                   stroke={PRIMARY_LINE}
                   strokeWidth={2}
                   dot={renderDot as any}
                   activeDot={{ r: 5 }}
                 />
+                {secondarySeries && (
+                  <Line
+                    type="monotone"
+                    dataKey="value2"
+                    name={secondaryLabel}
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "hsl(var(--muted-foreground))", stroke: "hsl(var(--background))", strokeWidth: 1 }}
+                    activeDot={{ r: 4 }}
+                    connectNulls
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
