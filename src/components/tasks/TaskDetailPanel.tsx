@@ -712,7 +712,7 @@ function ReferralFormPanel({
         .from("patient_medications")
         .select("medication_name, dose, frequency")
         .eq("patient_id", patientId)
-        .eq("status", "active");
+        .or("status.eq.active,status.is.null");
       if (error || !data || data.length === 0) return;
       const formatted = data
         .map((m) => {
@@ -924,7 +924,7 @@ ${attachmentLines}
           value={form.medications}
           onChange={(e) => update("medications", e.target.value)}
           rows={2}
-          placeholder="No active medications."
+          placeholder="No active medications recorded."
           className="text-xs"
         />
       </div>
