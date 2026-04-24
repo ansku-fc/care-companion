@@ -4645,16 +4645,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               </Button>
             </div>
             <div className="p-4 flex-1">
-            {useSharedPanel ? (
-              <CardioLabBiomarkerPanel
-                biomarkerKey={selectedMarker.key}
-                label={selectedMarker.label}
-                unit={selectedMarker.unit}
-                refLow={(REFERENCE_VALUES[selectedMarker.key] || {}).low}
-                refHigh={(REFERENCE_VALUES[selectedMarker.key] || {}).high}
-                patientId={patientId}
-              />
-            ) : chartData.length < 1 ? (
+            {chartData.length < 1 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
             ) : (
               <DraggableReferenceChart
@@ -4670,7 +4661,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                 }}
               />
             )}
-            {!useSharedPanel && selectedMarker && (
+            {selectedMarker && (
               <div className="mt-4 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
                 <div className="grid grid-cols-2 gap-2">
