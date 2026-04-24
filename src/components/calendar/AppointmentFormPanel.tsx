@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase } from "lucide-react";
+import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ApptKind = "patient_visit" | "doctor_meeting" | "nurse_task" | "working_time";
@@ -100,6 +100,9 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
   // Internal
   const [internalCategory, setInternalCategory] = useState("admin");
+
+  // Attachment
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
