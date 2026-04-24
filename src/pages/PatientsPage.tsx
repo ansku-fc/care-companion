@@ -162,6 +162,24 @@ const PatientsPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const status = (patient as any).onboarding_status as string | undefined;
+                      if (status === "pending") {
+                        return (
+                          <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground border-transparent">
+                            Onboarding pending
+                          </Badge>
+                        );
+                      }
+                      if (status === "in_progress") {
+                        return (
+                          <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground border-transparent">
+                            Onboarding in progress
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
                     {patient.tier && <Badge variant="outline" className="text-xs">{tierLabel(patient.tier)}</Badge>}
                   </div>
                 </CardContent>

@@ -768,16 +768,29 @@ export type Database = {
           age: number | null
           alcohol_units_per_week: number | null
           bmi: number | null
+          bp1_diastolic: number | null
+          bp1_systolic: number | null
+          bp2_diastolic: number | null
+          bp2_systolic: number | null
           cancer_screening_breast: boolean | null
           cancer_screening_cervical: boolean | null
           cancer_screening_colorectal: boolean | null
+          cardio_easy_hours_per_week: number | null
+          cardio_moderate_hours_per_week: number | null
+          cardio_vigorous_hours_per_week: number | null
           created_at: string
           created_by: string
+          current_step: number
           deep_sleep_percent: number | null
+          draft: boolean
+          ecg_notes: string | null
+          education_level: string | null
           exercise_met_hours: number | null
+          extra_data: Json
           fiber_g_per_day: number | null
           fish_g_per_day: number | null
           fruits_vegetables_g_per_day: number | null
+          gad2_score: number | null
           gad7_score: number | null
           genetic_cancer: boolean | null
           genetic_cardiovascular: boolean | null
@@ -807,9 +820,11 @@ export type Database = {
           infections_per_year: number | null
           insomnia: boolean | null
           job_strain_perceived: number | null
+          occupation: string | null
           other_substances: boolean | null
           other_substances_notes: string | null
           patient_id: string
+          phq2_score: number | null
           prev_brain_damage: boolean | null
           prev_brain_damage_notes: string | null
           prev_cancer: boolean | null
@@ -819,12 +834,15 @@ export type Database = {
           prev_precancerous: boolean | null
           prev_precancerous_notes: string | null
           red_meat_g_per_day: number | null
+          sedentary_hours_per_day: number | null
+          shift_work: boolean | null
           skin_condition: number | null
           sleep_hours_per_night: number | null
           sleep_quality: number | null
           smoking: string | null
           social_support_perceived: number | null
           sodium_g_per_day: number | null
+          strength_hours_per_week: number | null
           stress_perceived: number | null
           substance_use_perceived: number | null
           sugar_g_per_day: number | null
@@ -854,16 +872,29 @@ export type Database = {
           age?: number | null
           alcohol_units_per_week?: number | null
           bmi?: number | null
+          bp1_diastolic?: number | null
+          bp1_systolic?: number | null
+          bp2_diastolic?: number | null
+          bp2_systolic?: number | null
           cancer_screening_breast?: boolean | null
           cancer_screening_cervical?: boolean | null
           cancer_screening_colorectal?: boolean | null
+          cardio_easy_hours_per_week?: number | null
+          cardio_moderate_hours_per_week?: number | null
+          cardio_vigorous_hours_per_week?: number | null
           created_at?: string
           created_by: string
+          current_step?: number
           deep_sleep_percent?: number | null
+          draft?: boolean
+          ecg_notes?: string | null
+          education_level?: string | null
           exercise_met_hours?: number | null
+          extra_data?: Json
           fiber_g_per_day?: number | null
           fish_g_per_day?: number | null
           fruits_vegetables_g_per_day?: number | null
+          gad2_score?: number | null
           gad7_score?: number | null
           genetic_cancer?: boolean | null
           genetic_cardiovascular?: boolean | null
@@ -893,9 +924,11 @@ export type Database = {
           infections_per_year?: number | null
           insomnia?: boolean | null
           job_strain_perceived?: number | null
+          occupation?: string | null
           other_substances?: boolean | null
           other_substances_notes?: string | null
           patient_id: string
+          phq2_score?: number | null
           prev_brain_damage?: boolean | null
           prev_brain_damage_notes?: string | null
           prev_cancer?: boolean | null
@@ -905,12 +938,15 @@ export type Database = {
           prev_precancerous?: boolean | null
           prev_precancerous_notes?: string | null
           red_meat_g_per_day?: number | null
+          sedentary_hours_per_day?: number | null
+          shift_work?: boolean | null
           skin_condition?: number | null
           sleep_hours_per_night?: number | null
           sleep_quality?: number | null
           smoking?: string | null
           social_support_perceived?: number | null
           sodium_g_per_day?: number | null
+          strength_hours_per_week?: number | null
           stress_perceived?: number | null
           substance_use_perceived?: number | null
           sugar_g_per_day?: number | null
@@ -940,16 +976,29 @@ export type Database = {
           age?: number | null
           alcohol_units_per_week?: number | null
           bmi?: number | null
+          bp1_diastolic?: number | null
+          bp1_systolic?: number | null
+          bp2_diastolic?: number | null
+          bp2_systolic?: number | null
           cancer_screening_breast?: boolean | null
           cancer_screening_cervical?: boolean | null
           cancer_screening_colorectal?: boolean | null
+          cardio_easy_hours_per_week?: number | null
+          cardio_moderate_hours_per_week?: number | null
+          cardio_vigorous_hours_per_week?: number | null
           created_at?: string
           created_by?: string
+          current_step?: number
           deep_sleep_percent?: number | null
+          draft?: boolean
+          ecg_notes?: string | null
+          education_level?: string | null
           exercise_met_hours?: number | null
+          extra_data?: Json
           fiber_g_per_day?: number | null
           fish_g_per_day?: number | null
           fruits_vegetables_g_per_day?: number | null
+          gad2_score?: number | null
           gad7_score?: number | null
           genetic_cancer?: boolean | null
           genetic_cardiovascular?: boolean | null
@@ -979,9 +1028,11 @@ export type Database = {
           infections_per_year?: number | null
           insomnia?: boolean | null
           job_strain_perceived?: number | null
+          occupation?: string | null
           other_substances?: boolean | null
           other_substances_notes?: string | null
           patient_id?: string
+          phq2_score?: number | null
           prev_brain_damage?: boolean | null
           prev_brain_damage_notes?: string | null
           prev_cancer?: boolean | null
@@ -991,12 +1042,15 @@ export type Database = {
           prev_precancerous?: boolean | null
           prev_precancerous_notes?: string | null
           red_meat_g_per_day?: number | null
+          sedentary_hours_per_day?: number | null
+          shift_work?: boolean | null
           skin_condition?: number | null
           sleep_hours_per_night?: number | null
           sleep_quality?: number | null
           smoking?: string | null
           social_support_perceived?: number | null
           sodium_g_per_day?: number | null
+          strength_hours_per_week?: number | null
           stress_perceived?: number | null
           substance_use_perceived?: number | null
           sugar_g_per_day?: number | null
@@ -1080,6 +1134,7 @@ export type Database = {
       patients: {
         Row: {
           address: string | null
+          assigned_doctor_id: string | null
           billing_email: string | null
           city: string | null
           country: string | null
@@ -1097,15 +1152,19 @@ export type Database = {
           insurance_number: string | null
           insurance_provider: string | null
           notes: string | null
+          onboarding_status: string
           payer_name: string | null
           payer_same_as_patient: boolean
+          personal_id: string | null
           phone: string | null
           post_code: string | null
+          primary_language: string | null
           tier: Database["public"]["Enums"]["patient_tier"] | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          assigned_doctor_id?: string | null
           billing_email?: string | null
           city?: string | null
           country?: string | null
@@ -1123,15 +1182,19 @@ export type Database = {
           insurance_number?: string | null
           insurance_provider?: string | null
           notes?: string | null
+          onboarding_status?: string
           payer_name?: string | null
           payer_same_as_patient?: boolean
+          personal_id?: string | null
           phone?: string | null
           post_code?: string | null
+          primary_language?: string | null
           tier?: Database["public"]["Enums"]["patient_tier"] | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          assigned_doctor_id?: string | null
           billing_email?: string | null
           city?: string | null
           country?: string | null
@@ -1149,10 +1212,13 @@ export type Database = {
           insurance_number?: string | null
           insurance_provider?: string | null
           notes?: string | null
+          onboarding_status?: string
           payer_name?: string | null
           payer_same_as_patient?: boolean
+          personal_id?: string | null
           phone?: string | null
           post_code?: string | null
+          primary_language?: string | null
           tier?: Database["public"]["Enums"]["patient_tier"] | null
           updated_at?: string
         }
