@@ -9,6 +9,8 @@ type Tab = "dimensions" | "labs" | "diagnoses";
 interface Props {
   patientId: string;
   labResults: Tables<"patient_lab_results">[];
+  onboarding: Tables<"patient_onboarding"> | null;
+  healthCategories: Tables<"patient_health_categories">[];
   onLabResultsAdded: () => void;
   onSelectDimension: (key: string) => void;
   markerNotes: Record<string, string>;
@@ -26,6 +28,10 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 export function HealthDataHub({
+  patientId,
+  labResults,
+  onboarding,
+  healthCategories,
   onSelectDimension,
   labResultsSlot,
   initialTab = "dimensions",
@@ -67,7 +73,13 @@ export function HealthDataHub({
       <div className="flex-1 min-h-0 overflow-auto">
         {tab === "dimensions" && (
           <div className="[&>div>div:first-child]:hidden">
-            <HealthDataView onSelectDimension={onSelectDimension} />
+            <HealthDataView
+              patientId={patientId}
+              onboarding={onboarding}
+              labResults={labResults}
+              healthCategories={healthCategories}
+              onSelectDimension={onSelectDimension}
+            />
           </div>
         )}
         {tab === "labs" && labResultsSlot}

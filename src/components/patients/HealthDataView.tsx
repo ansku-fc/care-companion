@@ -1,20 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
+import { dimensionScore } from "@/lib/dimensionScores";
 import { cn } from "@/lib/utils";
-
-// Same dummy varied risk-index values used elsewhere
-const DIMENSION_RISK_SCORES: Record<string, number> = {
-  brain_mental: 3.2,
-  metabolic: 6.7,
-  cardiovascular: 8.4,
-  exercise_functional: 2.1,
-  digestion: 5.5,
-  respiratory_immune: 4.8,
-  cancer_risk: 7.3,
-  skin_oral_mucosal: 1.9,
-  reproductive_sexual: 3.6,
-};
+import type { Tables } from "@/integrations/supabase/types";
 
 // Dummy "last updated" dates per dimension for now
 const DIMENSION_LAST_UPDATED: Record<string, string> = {
@@ -50,13 +39,23 @@ function riskTone(score: number) {
 }
 
 interface Props {
+  patientId: string;
+  onboarding: Tables<"patient_onboarding"> | null;
+  labResults: Tables<"patient_lab_results">[];
+  healthCategories: Tables<"patient_health_categories">[];
   onSelectDimension: (key: string) => void;
 }
 
-export function HealthDataView({ onSelectDimension }: Props) {
-  const highDims = HEALTH_TAXONOMY.filter(
-    (m) => (DIMENSION_RISK_SCORES[m.key] ?? 0) >= 7,
-  );
+export function HealthDataView({
+  patientId,
+  onboarding,
+  labResults,
+  healthCategories,
+  onSelectDimension,
+}: Props) {
+  const ctx = { patientId, onboarding, labResults, healthCategories };
+  const scoreFor = (key: string) => dimensionScore(key, ctx);
+  const highDims = HEALTH_TAXONOMY.filter((m) => scoreFor(m.key) >= 7);
 
   return (
     <div className="space-y-5 p-1">
@@ -96,7 +95,7 @@ export function HealthDataView({ onSelectDimension }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {HEALTH_TAXONOMY.map((dim) => {
           const Icon = dim.icon;
-          const score = DIMENSION_RISK_SCORES[dim.key] ?? 1;
+          const score = scoreFor(dim.key);
           const tone = riskTone(score);
           const updated = DIMENSION_LAST_UPDATED[dim.key];
           const isHigh = score >= 7;
