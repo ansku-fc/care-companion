@@ -155,7 +155,7 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
       patient_id: task.patient_id,
       provider_id: user?.id ?? "00000000-0000-0000-0000-000000000001",
       visit_date: new Date().toISOString().slice(0, 10),
-      chief_complaint: "Care coordination note",
+      chief_complaint: isReferral ? "Referral note" : "Care coordination note",
       notes: noteBody,
     });
     if (visitErr) {
