@@ -333,7 +333,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
   };
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-3rem)] xl:sticky xl:top-6 overflow-hidden">
+    <Card className="flex flex-col h-full min-h-0 overflow-hidden">
       <CardHeader className="pb-3 flex-row items-center justify-between space-y-0 shrink-0">
         <div className="flex items-center gap-2">
           {kind && (
@@ -350,12 +350,12 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         </Button>
       </CardHeader>
 
-      <CardContent className="flex-1 min-h-0 flex flex-col p-0">
-        <p className="text-xs text-muted-foreground px-6 pb-3 shrink-0">
+      <CardContent className="flex-1 min-h-0 flex flex-col p-0 overflow-hidden">
+        <p className="text-xs text-muted-foreground px-4 pb-3 shrink-0">
           {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
         </p>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 space-y-4">
           {!kind ? (
             <div className="space-y-2">
               {KIND_TILES.map((tile) => (
@@ -631,7 +631,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         </div>
 
         {kind && (
-          <div className="shrink-0 border-t bg-background px-6 py-3 flex gap-2">
+          <div className="shrink-0 border-t pt-4 px-4 pb-4 bg-background flex gap-3">
             <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
             <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
               {loading ? "Saving…" : editingAppointment ? "Update" : "Create"}

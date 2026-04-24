@@ -308,12 +308,14 @@ const CalendarPage = () => {
 
         {/* Right column: form panel OR day detail (never both) */}
         {formOpen ? (
-          <AppointmentFormPanel
-            selectedDate={selectedDate}
-            editingAppointment={editingAppointment}
-            prefill={prefill}
-            onClose={() => { setFormOpen(false); setEditingAppointment(null); setPrefill(null); }}
-          />
+          <div className="flex flex-col h-[calc(100vh-180px)] min-h-0 xl:sticky xl:top-6">
+            <AppointmentFormPanel
+              selectedDate={selectedDate}
+              editingAppointment={editingAppointment}
+              prefill={prefill}
+              onClose={() => { setFormOpen(false); setEditingAppointment(null); setPrefill(null); }}
+            />
+          </div>
         ) : (
         /* Day Detail Sidebar */
         <Card className="h-fit xl:sticky xl:top-6">
