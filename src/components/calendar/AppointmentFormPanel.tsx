@@ -696,3 +696,47 @@ function DatePopover({ value, onChange }: { value: string; onChange: (v: string)
     </Popover>
   );
 }
+
+function AttachFileControl({
+  attachedFile,
+  setAttachedFile,
+}: {
+  attachedFile: File | null;
+  setAttachedFile: (f: File | null) => void;
+}) {
+  if (attachedFile) {
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+        <span className="flex items-center gap-2 truncate">
+          <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate">{attachedFile.name}</span>
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0"
+          onClick={() => setAttachedFile(null)}
+          aria-label="Remove file"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <label className="flex items-center justify-center gap-2 w-full rounded-md border border-dashed border-input bg-background px-3 py-3 text-sm cursor-pointer hover:bg-accent/40 transition-colors">
+      <Paperclip className="h-4 w-4 text-muted-foreground" />
+      <span>Choose file</span>
+      <input
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,image/*"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) setAttachedFile(f);
+        }}
+      />
+    </label>
+  );
+}
