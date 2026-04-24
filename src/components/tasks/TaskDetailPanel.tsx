@@ -349,6 +349,48 @@ function ContextualPreview({
     );
   }
 
+  if (kind === "supply") {
+    return (
+      <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+          <Pill className="h-3.5 w-3.5" /> Low supply
+        </div>
+        <p className="text-xs font-semibold">Current stock below 25%</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Supply needs to be renewed. Task auto-completes once stock is restored above 25%.
+        </p>
+      </div>
+    );
+  }
+
+  if (kind === "risk_review") {
+    return (
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <AlertTriangle className="h-3.5 w-3.5" /> Risk factor review
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          One or more elevated risk factors require clinical review. Save the Doctor's Summary
+          in the dimension view to resolve.
+        </p>
+      </div>
+    );
+  }
+
+  if (kind === "follow_up") {
+    return (
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <Stethoscope className="h-3.5 w-3.5" /> Post-visit follow-up
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Follow-up actions from the most recent visit. Mark as done from the patient record
+          when complete.
+        </p>
+      </div>
+    );
+  }
+
   return null;
 }
 
