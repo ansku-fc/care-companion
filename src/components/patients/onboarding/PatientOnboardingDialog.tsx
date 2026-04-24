@@ -431,6 +431,24 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       .from("patients")
       .update({ onboarding_status: newStatus } as any)
       .eq("id", patientId);
+
+    // On completion, auto-create a review task (skip silently if it fails)
+    if (options.isComplete) {
+      const due = new Date();
+      due.setDate(due.getDate() + 3);
+      await supabase.from("tasks").insert({
+        title: `Review onboarding data — ${patientName}`,
+        description: "Auto-generated after the patient completed onboarding.",
+        patient_id: patientId,
+        created_by: user.id,
+        assigned_to: user.id,
+        category: "clinical_review",
+        priority: "medium",
+        status: "todo",
+        due_date: due.toISOString().slice(0, 10),
+        created_from: "onboarding",
+      } as any);
+    }
   };
 
   const handleSaveDraft = async () => {
