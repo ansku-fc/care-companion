@@ -349,7 +349,9 @@ const CalendarPage = () => {
 
                         {/* Title */}
                         <p className="text-sm font-semibold">
-                          {a.isWorkingTime ? a.title : (a.patient_name ?? a.title)}
+                          {a.isWorkingTime || a.appointment_type === "doctor_meeting"
+                            ? a.title
+                            : (a.patient_name ?? a.title)}
                         </p>
 
                         {/* Modality badges */}
