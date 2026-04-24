@@ -16,6 +16,8 @@ import {
   blankOnboardingForm,
   calcBmi,
   calcWaistHipRatio,
+  calcMetHours,
+  calcFiberFromFruitVeg,
   type OnboardingForm,
 } from "./OnboardingFormContext";
 import { StepBasicInfo } from "./StepBasicInfo";
@@ -92,6 +94,55 @@ export function PatientOnboardingDialog(props: Props) {
           current_illnesses: (extra.current_illnesses as any[]) ?? [],
           previous_illnesses: (extra.previous_illnesses as any[]) ?? [],
           family_history: (extra.family_history as any[]) ?? [],
+
+          // Step 4 — Lifestyle (mostly extra_data; alcohol_units_per_week is a column)
+          smoking_current: Boolean(extra.smoking_current),
+          smoking_cigs_per_day: (extra.smoking_cigs_per_day as number) ?? null,
+          smoking_years: (extra.smoking_years as number) ?? null,
+          smoking_previous: Boolean(extra.smoking_previous),
+          smoking_previous_years: (extra.smoking_previous_years as number) ?? null,
+          alcohol_current: Boolean(extra.alcohol_current),
+          alcohol_units_per_week: (data as any).alcohol_units_per_week ?? null,
+          caffeine_current: Boolean(extra.caffeine_current),
+          caffeine_cups_per_day: (extra.caffeine_cups_per_day as number) ?? null,
+          caffeine_last_cup_time: (extra.caffeine_last_cup_time as string) ?? "",
+          nicotine_pouches_current: Boolean(extra.nicotine_pouches_current),
+          nicotine_pouches_per_day: (extra.nicotine_pouches_per_day as number) ?? null,
+          nicotine_pouches_strength: (extra.nicotine_pouches_strength as string) ?? "",
+          drugs_current: Boolean(extra.drugs_current),
+          drugs_notes: (extra.drugs_notes as string) ?? "",
+
+          // Step 5 — Physical Activity (all dedicated columns)
+          cardio_easy_hours_per_week: (data as any).cardio_easy_hours_per_week ?? null,
+          cardio_moderate_hours_per_week: (data as any).cardio_moderate_hours_per_week ?? null,
+          cardio_vigorous_hours_per_week: (data as any).cardio_vigorous_hours_per_week ?? null,
+          strength_hours_per_week: (data as any).strength_hours_per_week ?? null,
+          sedentary_hours_per_day: (data as any).sedentary_hours_per_day ?? null,
+
+          // Step 6 — Nutrition
+          diet_type: (extra.diet_type as string) ?? "",
+          water_litres_per_day: (extra.water_litres_per_day as number) ?? null,
+          fruits_vegetables_g_per_day: (data as any).fruits_vegetables_g_per_day ?? null,
+          fish_g_per_day: (data as any).fish_g_per_day ?? null,
+          red_meat_g_per_day: (data as any).red_meat_g_per_day ?? null,
+          sugar_g_per_day: (data as any).sugar_g_per_day ?? null,
+          sodium_g_per_day: (data as any).sodium_g_per_day ?? null,
+
+          // Step 7 — Sleep
+          sleep_quality: (data as any).sleep_quality ?? null,
+          sleep_bedtime: (extra.sleep_bedtime as string) ?? "",
+          sleep_waking_time: (extra.sleep_waking_time as string) ?? "",
+          sleep_latency_mins: (extra.sleep_latency_mins as number) ?? null,
+          sleep_total_hours: (data as any).sleep_hours_per_night ?? null,
+          sleep_deep_percent: (data as any).deep_sleep_percent ?? null,
+          sleep_efficiency_percent: (extra.sleep_efficiency_percent as number) ?? null,
+          daytime_fatigue: (extra.daytime_fatigue as number) ?? null,
+          insomnia: Boolean((data as any).insomnia),
+          restless_legs: Boolean(extra.restless_legs),
+          sleep_apnea: Boolean(extra.sleep_apnea),
+          sleep_apnea_type: (extra.sleep_apnea_type as string) ?? "",
+          sleep_apnea_severity: (extra.sleep_apnea_severity as string) ?? "",
+
           current_step: ((data as any).current_step as number) ?? 1,
           completed_steps: (extra.completed_steps as number[]) ?? [],
           skipped_steps: (extra.skipped_steps as number[]) ?? [],
