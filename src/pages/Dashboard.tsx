@@ -111,7 +111,7 @@ const Dashboard = () => {
   };
   const openTask = (t: Task) => { setDetail(t); setOpen(true); };
 
-  const createTaskForAppt = (appt: typeof todaySchedule[number]) => {
+  const createTaskForAppt = (appt: ScheduleItem) => {
     const p = findPatient(appt.name);
     openNewTask({
       title: "Post-visit follow-up",
