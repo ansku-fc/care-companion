@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays, AlertTriangle, ArrowRight, Stethoscope, Plus,
   UserRound, HeartPulse, FileText, ClipboardList, CheckCircle2, Clock, Activity,
@@ -16,7 +16,9 @@ import {
   isCompletedToday, dueWithinDays, isOverdue, isDueToday,
   priorityMeta, type Task,
 } from "@/lib/tasks";
-import { format } from "date-fns";
+import { format, isSameDay, parseISO } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { buildDummyAppointments } from "@/lib/dummyAppointments";
 
 type PatientLite = { id: string; full_name: string };
 
