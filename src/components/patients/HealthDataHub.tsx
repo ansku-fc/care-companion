@@ -8,6 +8,7 @@ type Tab = "dimensions" | "labs" | "diagnoses";
 
 interface Props {
   patientId: string;
+  patientName?: string;
   labResults: Tables<"patient_lab_results">[];
   onboarding: Tables<"patient_onboarding"> | null;
   healthCategories: Tables<"patient_health_categories">[];
@@ -15,8 +16,6 @@ interface Props {
   onSelectDimension: (key: string) => void;
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  // The lab table currently lives inside PatientProfilePage (LabResultsView).
-  // We render it via the existing route key by exposing a switcher node.
   labResultsSlot: React.ReactNode;
   initialTab?: Tab;
 }
@@ -29,6 +28,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 export function HealthDataHub({
   patientId,
+  patientName,
   labResults,
   onboarding,
   healthCategories,
@@ -40,7 +40,6 @@ export function HealthDataHub({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Page title + pill tabs */}
       <div className="px-1 pt-1 pb-3 space-y-3 shrink-0">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Health Data</h1>
@@ -69,7 +68,6 @@ export function HealthDataHub({
         </div>
       </div>
 
-      {/* Tab body */}
       <div className="flex-1 min-h-0 overflow-auto">
         {tab === "dimensions" && (
           <div className="[&>div>div:first-child]:hidden">
@@ -83,7 +81,13 @@ export function HealthDataHub({
           </div>
         )}
         {tab === "labs" && labResultsSlot}
-        {tab === "diagnoses" && <DiagnosesView onSelectDimension={onSelectDimension} />}
+        {tab === "diagnoses" && (
+          <DiagnosesView
+            patientId={patientId}
+            patientName={patientName}
+            onSelectDimension={onSelectDimension}
+          />
+        )}
       </div>
     </div>
   );

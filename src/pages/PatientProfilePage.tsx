@@ -180,6 +180,14 @@ const PatientProfilePage = () => {
     ? Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / 31557600000)
     : onboarding?.age;
 
+  const hasClinicalDashboardData =
+    Boolean(onboarding) ||
+    labResults.length > 0 ||
+    healthCategories.length > 0 ||
+    visitNotes.length > 0 ||
+    appointments.length > 0 ||
+    patientTasks.length > 0;
+
   return (
     <div className="flex gap-6 h-[calc(100vh-8rem)]">
       {/* Sidebar */}
@@ -467,9 +475,7 @@ const PatientProfilePage = () => {
         })()}
 
         {activeSection === "overview" ? (
-          (patient as any).onboarding_status === "pending" || (patient as any).onboarding_status === "in_progress" ? (
-            <OnboardingEmptyState patientName={patient.full_name} patientId={patient.id} />
-          ) : (
+          hasClinicalDashboardData ? (
             <PatientOverviewView
               patient={patient}
               onboarding={onboarding}
@@ -481,6 +487,8 @@ const PatientProfilePage = () => {
               onTasksChanged={fetchData}
               onDataChanged={fetchData}
             />
+          ) : (
+            <OnboardingEmptyState patientName={patient.full_name} patientId={patient.id} />
           )
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
