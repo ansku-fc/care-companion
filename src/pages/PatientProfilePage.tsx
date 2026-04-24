@@ -4567,8 +4567,16 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                          {sorted.map((lab) => {
                           const d = new Date(lab.result_date);
                           const label = `${d.getFullYear()} / ${String(d.getMonth() + 1).padStart(2, "0")}`;
+                          const isNewCol = reviewMode && newestLab?.id === lab.id;
                           return (
-                            <th key={lab.id} className="h-11 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[100px] whitespace-nowrap">{label}</th>
+                            <th key={lab.id} className="h-11 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[100px] whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span>{label}</span>
+                                {isNewCol && (
+                                  <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-primary">NEW</span>
+                                )}
+                              </div>
+                            </th>
                           );
                         })}
                       </tr>
