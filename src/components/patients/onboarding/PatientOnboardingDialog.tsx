@@ -210,6 +210,13 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     }
     const bmi = calcBmi(nextForm.height_cm, nextForm.weight_kg);
     const whr = calcWaistHipRatio(nextForm.waist_circumference_cm, nextForm.hip_circumference_cm);
+    const met = calcMetHours(
+      nextForm.cardio_easy_hours_per_week,
+      nextForm.cardio_moderate_hours_per_week,
+      nextForm.cardio_vigorous_hours_per_week,
+      nextForm.strength_hours_per_week,
+    );
+    const fiber = calcFiberFromFruitVeg(nextForm.fruits_vegetables_g_per_day);
 
     // Split form: dedicated columns vs extra_data JSONB
     const payload: Record<string, unknown> = {
@@ -230,6 +237,32 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       bp2_systolic: nextForm.bp2_systolic,
       bp2_diastolic: nextForm.bp2_diastolic,
       ecg_notes: nextForm.ecg_notes || null,
+
+      // Step 4 — Lifestyle
+      alcohol_units_per_week: nextForm.alcohol_units_per_week,
+
+      // Step 5 — Physical Activity
+      cardio_easy_hours_per_week: nextForm.cardio_easy_hours_per_week,
+      cardio_moderate_hours_per_week: nextForm.cardio_moderate_hours_per_week,
+      cardio_vigorous_hours_per_week: nextForm.cardio_vigorous_hours_per_week,
+      strength_hours_per_week: nextForm.strength_hours_per_week,
+      sedentary_hours_per_day: nextForm.sedentary_hours_per_day,
+      exercise_met_hours: met,
+
+      // Step 6 — Nutrition
+      fruits_vegetables_g_per_day: nextForm.fruits_vegetables_g_per_day,
+      fish_g_per_day: nextForm.fish_g_per_day,
+      red_meat_g_per_day: nextForm.red_meat_g_per_day,
+      sugar_g_per_day: nextForm.sugar_g_per_day,
+      sodium_g_per_day: nextForm.sodium_g_per_day,
+      fiber_g_per_day: fiber,
+
+      // Step 7 — Sleep
+      sleep_quality: nextForm.sleep_quality,
+      sleep_hours_per_night: nextForm.sleep_total_hours,
+      deep_sleep_percent: nextForm.sleep_deep_percent,
+      insomnia: nextForm.insomnia,
+
       current_step: nextForm.current_step,
       draft: !options.isComplete,
       extra_data: {
@@ -238,6 +271,38 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         current_illnesses: nextForm.current_illnesses,
         previous_illnesses: nextForm.previous_illnesses,
         family_history: nextForm.family_history,
+
+        // Lifestyle (no dedicated columns)
+        smoking_current: nextForm.smoking_current,
+        smoking_cigs_per_day: nextForm.smoking_cigs_per_day,
+        smoking_years: nextForm.smoking_years,
+        smoking_previous: nextForm.smoking_previous,
+        smoking_previous_years: nextForm.smoking_previous_years,
+        alcohol_current: nextForm.alcohol_current,
+        caffeine_current: nextForm.caffeine_current,
+        caffeine_cups_per_day: nextForm.caffeine_cups_per_day,
+        caffeine_last_cup_time: nextForm.caffeine_last_cup_time,
+        nicotine_pouches_current: nextForm.nicotine_pouches_current,
+        nicotine_pouches_per_day: nextForm.nicotine_pouches_per_day,
+        nicotine_pouches_strength: nextForm.nicotine_pouches_strength,
+        drugs_current: nextForm.drugs_current,
+        drugs_notes: nextForm.drugs_notes,
+
+        // Nutrition extras
+        diet_type: nextForm.diet_type,
+        water_litres_per_day: nextForm.water_litres_per_day,
+
+        // Sleep extras
+        sleep_bedtime: nextForm.sleep_bedtime,
+        sleep_waking_time: nextForm.sleep_waking_time,
+        sleep_latency_mins: nextForm.sleep_latency_mins,
+        sleep_efficiency_percent: nextForm.sleep_efficiency_percent,
+        daytime_fatigue: nextForm.daytime_fatigue,
+        restless_legs: nextForm.restless_legs,
+        sleep_apnea: nextForm.sleep_apnea,
+        sleep_apnea_type: nextForm.sleep_apnea_type,
+        sleep_apnea_severity: nextForm.sleep_apnea_severity,
+
         completed_steps: nextForm.completed_steps,
         skipped_steps: nextForm.skipped_steps,
       },
