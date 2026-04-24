@@ -139,24 +139,28 @@ export function MarkerDetailChart({
               </button>
             ))}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            title="Add annotation"
-            onClick={() => setAnnotationsOpen((o) => !o)}
-          >
-            <MessageSquarePlus className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            title="Create task from this marker"
-            onClick={onCreateTask}
-          >
-            <ListChecks className="h-3.5 w-3.5" />
-          </Button>
+          {!displayOnly && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                title="Add annotation"
+                onClick={() => setAnnotationsOpen((o) => !o)}
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                title="Create task from this marker"
+                onClick={onCreateTask}
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
