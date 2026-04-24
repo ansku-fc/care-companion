@@ -74,6 +74,29 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
   const [kind, setKind] = useState<ApptKind | null>(null);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [showScrollFade, setShowScrollFade] = useState(false);
+
+  const updateScrollFade = () => {
+    const el = scrollRef.current;
+    if (!el) {
+      setShowScrollFade(false);
+      return;
+    }
+    const hasOverflow = el.scrollHeight - el.clientHeight > 4;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+    setShowScrollFade(hasOverflow && !atBottom);
+  };
+  const handleScroll = updateScrollFade;
+  useLayoutEffect(() => {
+    updateScrollFade();
+  });
+  useEffect(() => {
+    const onResize = () => updateScrollFade();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // Shared
   const [title, setTitle] = useState("");
   const [dateValue, setDateValue] = useState<string>(
