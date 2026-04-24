@@ -924,7 +924,7 @@ ${attachmentLines}
           value={form.medications}
           onChange={(e) => update("medications", e.target.value)}
           rows={2}
-          placeholder="List active medications and doses…"
+          placeholder="No active medications."
           className="text-xs"
         />
       </div>
