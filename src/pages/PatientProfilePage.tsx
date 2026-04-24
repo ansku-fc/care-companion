@@ -4809,15 +4809,36 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
 
         {/* Detail panel — unified chart with inline annotations & task icon */}
         {selectedMarker && (() => {
-          // Determine latest value & out-of-range status
-          const inRangeFor = (v: number) => {
-            if (!ref) return true;
-            if (ref.high != null && v > ref.high) return false;
-            if (ref.low != null && v < ref.low) return false;
+          const isBp = selectedMarker.key === "blood_pressure_systolic";
+
+          // Diastolic series + ref for BP marker
+          const diastolicChartData = isBp
+            ? (sorted
+                .map((lab) => {
+                  const v = lab.blood_pressure_diastolic;
+                  if (v === null || v === undefined) return null;
+                  return { date: lab.result_date, value: Number(v) };
+                })
+                .filter(Boolean) as { date: string; value: number }[])
+            : [];
+          const diastolicRef = isBp
+            ? { ...REFERENCE_VALUES["blood_pressure_diastolic"], ...customRefs["blood_pressure_diastolic"] }
+            : null;
+
+          // In-range helpers (per-ref)
+          const inRangeWith = (refObj: { low?: number; high?: number } | null | undefined, v: number) => {
+            if (!refObj) return true;
+            if (refObj.high != null && v > refObj.high) return false;
+            if (refObj.low != null && v < refObj.low) return false;
             return true;
           };
+          const inRangeFor = (v: number) => inRangeWith(ref, v);
+
           const latestPoint = chartData.length > 0 ? chartData[chartData.length - 1] : null;
-          const latestInRange = latestPoint ? inRangeFor(latestPoint.value) : true;
+          const latestDiaPoint = diastolicChartData.length > 0 ? diastolicChartData[diastolicChartData.length - 1] : null;
+          const latestInRange = latestPoint
+            ? inRangeFor(latestPoint.value) && (!isBp || !latestDiaPoint || inRangeWith(diastolicRef, latestDiaPoint.value))
+            : true;
 
           // Time-window filter for data points
           const now = new Date();
@@ -4825,8 +4846,13 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
           if (panelWindow === "6m") cutoff.setMonth(cutoff.getMonth() - 6);
           else if (panelWindow === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
           else if (panelWindow === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+          const inWindow = (date: string) => panelWindow === "all" || new Date(date) >= cutoff;
           const filteredPoints = chartData
-            .filter((p) => panelWindow === "all" || new Date(p.date) >= cutoff)
+            .filter((p) => inWindow(p.date))
+            .slice()
+            .sort((a, b) => b.date.localeCompare(a.date));
+          const filteredDiaPoints = diastolicChartData
+            .filter((p) => inWindow(p.date))
             .slice()
             .sort((a, b) => b.date.localeCompare(a.date));
 
@@ -4844,6 +4870,11 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               {label}
             </button>
           );
+
+          // Panel shows OPPOSITE perspective from the main view:
+          // - Graph view ⇒ show data table
+          // - Table view ⇒ show graph
+          const showGraph = viewMode === "table";
 
           return (
             <div className="w-[420px] shrink-0 rounded-[20px] border bg-card shadow-card flex flex-col min-h-0 overflow-y-auto">
