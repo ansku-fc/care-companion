@@ -247,7 +247,7 @@ const CalendarPage = () => {
       <div className="flex flex-wrap gap-2">
         {Object.entries(TYPE_STYLES).map(([key, s]) => (
           <div key={key} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-            <div className={`h-2 w-2 rounded-full ${s.text === "text-primary" ? "bg-primary" : s.text === "text-destructive" ? "bg-destructive" : s.text === "text-success" ? "bg-green-500" : s.text === "text-warning" ? "bg-yellow-500" : "bg-muted-foreground"}`} />
+            <div className={`h-2 w-2 rounded-full ${LEGEND_DOT_COLORS[key] || "bg-muted-foreground"}`} />
             {s.label}
           </div>
         ))}
