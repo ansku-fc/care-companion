@@ -272,7 +272,7 @@ export function MarkerDetailChart({
                 type="date"
                 className="h-8 text-xs"
                 value={annotationDate}
-                onChange={(e) => onAnnotationDateChange(e.target.value)}
+                onChange={(e) => onAnnotationDateChange?.(e.target.value)}
               />
             </div>
           </div>
