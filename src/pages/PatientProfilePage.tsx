@@ -4442,6 +4442,65 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     return null;
   };
 
+  // ---- Annotations for the selected marker ----
+  const loadAnnotations = React.useCallback(async () => {
+    if (!selectedMarker) { setAnnotations([]); return; }
+    const { data } = await supabase
+      .from("marker_annotations")
+      .select("id, annotation_date, text, author_name")
+      .eq("patient_id", patientId)
+      .eq("marker_key", selectedMarker.key)
+      .order("annotation_date", { ascending: false });
+    setAnnotations((data ?? []) as Annotation[]);
+  }, [patientId, selectedMarker]);
+
+  React.useEffect(() => { loadAnnotations(); }, [loadAnnotations]);
+
+  const saveAnnotation = async () => {
+    if (!selectedMarker || !annotationText.trim() || !user) return;
+    const { error } = await supabase.from("marker_annotations").insert({
+      patient_id: patientId,
+      marker_key: selectedMarker.key,
+      annotation_date: annotationDate,
+      text: annotationText.trim(),
+      author_name: "Dr. Laine",
+      created_by: user.id,
+    });
+    if (error) { toast.error("Could not save annotation"); return; }
+    setAnnotationText("");
+    setAnnotationDate(new Date().toISOString().slice(0, 10));
+    loadAnnotations();
+    toast.success("Annotation saved");
+  };
+
+  const deleteAnnotation = async (id: string) => {
+    const { error } = await supabase.from("marker_annotations").delete().eq("id", id);
+    if (error) { toast.error("Could not delete annotation"); return; }
+    loadAnnotations();
+  };
+
+  const createTaskFromMarker = () => {
+    if (!selectedMarker) return;
+    const due = new Date();
+    due.setDate(due.getDate() + 3);
+    let oor: "high" | "low" | null = null;
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const lab = sorted[i];
+      const val = (lab as any)[selectedMarker.key];
+      if (val !== null && val !== undefined) {
+        oor = isOutOfRange(selectedMarker.key, lab);
+        break;
+      }
+    }
+    openNewTask({
+      title: `Review ${selectedMarker.label} – ${patientName ?? "Patient"}`,
+      category: "clinical_review",
+      patient_id: patientId,
+      priority: oor ? "high" : "medium",
+      due_date: due.toISOString().slice(0, 10),
+    });
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between shrink-0">
