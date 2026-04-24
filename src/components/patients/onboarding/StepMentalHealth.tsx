@@ -142,7 +142,7 @@ function Questionnaire({
             </span>
           )}
           {sum !== null && sum >= 3 && (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-500/15 dark:text-amber-300">
+            <span className="inline-flex items-center rounded-full border border-warning/30 bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
               {warningLabel}
             </span>
           )}
