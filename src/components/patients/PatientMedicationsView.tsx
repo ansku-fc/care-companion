@@ -133,6 +133,17 @@ function daysUntil(iso?: string): number | null {
   return Math.ceil(diff / 86_400_000);
 }
 
+function inferMedicationDimension(name: string, indication?: string | null): string {
+  const value = `${name} ${indication ?? ""}`.toLowerCase();
+  if (/(hypertension|cardio|cholesterol|atrial|vascular|heart|statin)/.test(value)) return "Cardiovascular Health";
+  if (/(diabetes|glucose|metabolic|thyroid|obesity)/.test(value)) return "Metabolic Health";
+  if (/(sleep|mood|mental|brain|anxiety|depress)/.test(value)) return "Brain & Mental Health";
+  if (/(reflux|gastro|bowel|digestion|liver)/.test(value)) return "Digestion";
+  if (/(asthma|copd|respiratory|immune|allergy)/.test(value)) return "Respiratory & Immune Health";
+  if (/(joint|pain|mobility|musculoskeletal|exercise|functional)/.test(value)) return "Exercise & Functional Health";
+  return "Other";
+}
+
 // ---------- Alert action log ----------
 type AlertAction =
   | { type: "acknowledge"; key: string; signature: string; severity: Interaction["severity"]; by: string; at: string }
