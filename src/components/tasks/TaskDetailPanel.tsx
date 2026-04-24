@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Pencil, Trash2, User, Stethoscope, HeartPulse, ArrowRight, FlaskConical, Pill, AlertTriangle } from "lucide-react";
+import { Calendar, Pencil, Trash2, User, Stethoscope, HeartPulse, ArrowRight, FlaskConical, Pill, AlertTriangle, PhoneCall } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,6 +18,17 @@ import {
   type Task, type TaskStatus,
 } from "@/lib/tasks";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
+import { useAuth } from "@/hooks/useAuth";
+
+const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
+function isCommunicationTask(task: Task): boolean {
+  const isCareCoord = task.category === "care_coordination" || task.category === "client_communication";
+  const matchesKeyword = COMM_KEYWORDS.test(task.title ?? "");
+  return isCareCoord || matchesKeyword;
+}
+
+const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No action needed"] as const;
+type OutcomeTag = typeof OUTCOME_TAGS[number];
 
 interface Props {
   task: Task | null;
