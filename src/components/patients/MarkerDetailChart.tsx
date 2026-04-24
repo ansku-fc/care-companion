@@ -42,13 +42,15 @@ interface MarkerDetailChartProps {
   chartData: ChartPoint[];
   refValues: { low?: number; high?: number } | null;
   annotations?: MarkerAnnotation[];
-  annotationText: string;
-  annotationDate: string;
-  onAnnotationTextChange: (v: string) => void;
-  onAnnotationDateChange: (v: string) => void;
-  onSaveAnnotation: () => void;
-  onDeleteAnnotation: (id: string) => void;
-  onCreateTask: () => void;
+  /** When true, hides the annotation/task icon buttons and inline annotation panel. */
+  displayOnly?: boolean;
+  annotationText?: string;
+  annotationDate?: string;
+  onAnnotationTextChange?: (v: string) => void;
+  onAnnotationDateChange?: (v: string) => void;
+  onSaveAnnotation?: () => void;
+  onDeleteAnnotation?: (id: string) => void;
+  onCreateTask?: () => void;
 }
 
 const PRIMARY_LINE = "hsl(var(--foreground))";
@@ -59,8 +61,9 @@ export function MarkerDetailChart({
   chartData,
   refValues,
   annotations = [],
-  annotationText,
-  annotationDate,
+  displayOnly = false,
+  annotationText = "",
+  annotationDate = "",
   onAnnotationTextChange,
   onAnnotationDateChange,
   onSaveAnnotation,
@@ -136,24 +139,28 @@ export function MarkerDetailChart({
               </button>
             ))}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            title="Add annotation"
-            onClick={() => setAnnotationsOpen((o) => !o)}
-          >
-            <MessageSquarePlus className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            title="Create task from this marker"
-            onClick={onCreateTask}
-          >
-            <ListChecks className="h-3.5 w-3.5" />
-          </Button>
+          {!displayOnly && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                title="Add annotation"
+                onClick={() => setAnnotationsOpen((o) => !o)}
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                title="Create task from this marker"
+                onClick={onCreateTask}
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -245,7 +252,7 @@ export function MarkerDetailChart({
       )}
 
       {/* Inline annotations panel */}
-      {annotationsOpen && (
+      {!displayOnly && annotationsOpen && (
         <div className="rounded-md border bg-muted/20 p-2.5 space-y-2">
           <div className="flex items-end gap-2">
             <div className="flex-1">
@@ -256,7 +263,7 @@ export function MarkerDetailChart({
                 placeholder="Add a clinical annotation..."
                 className="mt-1 min-h-[48px] text-xs resize-none"
                 value={annotationText}
-                onChange={(e) => onAnnotationTextChange(e.target.value)}
+                onChange={(e) => onAnnotationTextChange?.(e.target.value)}
               />
             </div>
             <div className="w-32">
@@ -265,7 +272,7 @@ export function MarkerDetailChart({
                 type="date"
                 className="h-8 text-xs"
                 value={annotationDate}
-                onChange={(e) => onAnnotationDateChange(e.target.value)}
+                onChange={(e) => onAnnotationDateChange?.(e.target.value)}
               />
             </div>
           </div>
@@ -294,7 +301,7 @@ export function MarkerDetailChart({
                     <span className="text-foreground">{a.text}</span>
                   </div>
                   <button
-                    onClick={() => onDeleteAnnotation(a.id)}
+                    onClick={() => onDeleteAnnotation?.(a.id)}
                     className="text-muted-foreground hover:text-destructive shrink-0"
                     aria-label="Delete annotation"
                   >
