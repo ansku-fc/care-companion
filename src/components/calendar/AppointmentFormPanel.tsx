@@ -160,13 +160,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
       setLinkedPatientId(prefill.linkedPatientId || "");
       if (prefill.coordinationCategory) setCoordinationCategory(prefill.coordinationCategory);
       setNotes(prefill.notes || "");
+      if (prefill.date) {
+        const d = new Date(prefill.date);
+        if (!isNaN(d.getTime())) setDateValue(format(d, "yyyy-MM-dd"));
+      }
     }
   }, [prefill]);
 
   const handleSubmit = async () => {
     if (!user || !kind) return;
 
-    const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+    const dateStr = dateValue || format(new Date(), "yyyy-MM-dd");
 
     // Validation per kind
     if (kind === "patient_visit" && !patientId) {
