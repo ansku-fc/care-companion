@@ -97,6 +97,7 @@ const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> =
   procedure: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Procedure" },
   urgent: { bg: "bg-destructive/10", text: "text-destructive", label: "Urgent" },
   working_time: { bg: "bg-blue-500/10", text: "text-blue-600", label: "Working Time" },
+  doctor_meeting: { bg: "bg-teal-500/10", text: "text-teal-700", label: "Doctor Meeting" },
 };
 
 const MOCK_NOTES = [
