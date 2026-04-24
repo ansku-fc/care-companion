@@ -97,6 +97,7 @@ const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> =
   procedure: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Procedure" },
   urgent: { bg: "bg-destructive/10", text: "text-destructive", label: "Urgent" },
   working_time: { bg: "bg-blue-500/10", text: "text-blue-600", label: "Working Time" },
+  doctor_meeting: { bg: "bg-teal-500/10", text: "text-teal-700", label: "Doctor Meeting" },
 };
 
 const MOCK_NOTES = [
@@ -348,7 +349,9 @@ const CalendarPage = () => {
 
                         {/* Title */}
                         <p className="text-sm font-semibold">
-                          {a.isWorkingTime ? a.title : (a.patient_name ?? a.title)}
+                          {a.isWorkingTime || a.appointment_type === "doctor_meeting"
+                            ? a.title
+                            : (a.patient_name ?? a.title)}
                         </p>
 
                         {/* Modality badges */}
@@ -412,6 +415,16 @@ const CalendarPage = () => {
                                 Import Note
                               </Button>
                             </>
+                          ) : a.appointment_type === "doctor_meeting" ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => setDetailAppt(a)}
+                            >
+                              <FileText className="h-3 w-3" />
+                              Details
+                            </Button>
                           ) : (
                             <>
                               <Button

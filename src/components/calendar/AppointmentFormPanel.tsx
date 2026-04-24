@@ -98,6 +98,16 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
   const [otherDoctorName, setOtherDoctorName] = useState("");
   const [coordinationCategory, setCoordinationCategory] = useState("case_discussion");
   const [linkedPatientId, setLinkedPatientId] = useState("");
+  const [doctorMeetingTitle, setDoctorMeetingTitle] = useState("");
+  const [doctorMeetingTitleEdited, setDoctorMeetingTitleEdited] = useState(false);
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    referral: "Referral",
+    case_discussion: "Case Discussion",
+    handover: "Handover",
+    specialist_consult: "Specialist Consult",
+    other: "Other",
+  };
 
   // Nurse task
   const [nurseId, setNurseId] = useState("");
@@ -169,6 +179,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     }
   }, [prefill]);
 
+  // Auto-generate doctor meeting title from category, patient, doctor name
+  useEffect(() => {
+    if (kind !== "doctor_meeting") return;
+    if (doctorMeetingTitleEdited) return;
+    const categoryLabel = CATEGORY_LABELS[coordinationCategory] ?? "";
+    const patientName = patients.find((p) => p.id === linkedPatientId)?.full_name ?? "";
+    const doctorName = otherDoctorName.trim();
+    const parts = [categoryLabel, patientName, doctorName].filter(Boolean);
+    setDoctorMeetingTitle(parts.join(" – "));
+  }, [kind, coordinationCategory, linkedPatientId, otherDoctorName, patients, doctorMeetingTitleEdited]);
+
   const handleSubmit = async () => {
     if (!user || !kind) return;
 
@@ -212,7 +233,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     } else if (kind === "doctor_meeting") {
       payload = {
         ...payload,
-        title: title || `Call – ${otherDoctorName}`,
+        title: doctorMeetingTitle || title || `Call – ${otherDoctorName}`,
         patient_id: linkedPatientId || patientId || null,
         appointment_type: "doctor_meeting" as any,
         visit_modality: "remote",
@@ -462,7 +483,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                     <Input value={otherDoctorName} onChange={(e) => setOtherDoctorName(e.target.value)} placeholder="e.g. Dr. Patel (Cardiology)" />
                   </Field>
 
-                  <Field label="Care coordination category *">
+                  <Field label="Category *">
                     <Select value={coordinationCategory} onValueChange={setCoordinationCategory}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -484,6 +505,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                         ))}
                       </SelectContent>
                     </Select>
+                  </Field>
+
+                  <Field label="Appointment name">
+                    <Input
+                      value={doctorMeetingTitle}
+                      onChange={(e) => {
+                        setDoctorMeetingTitle(e.target.value);
+                        setDoctorMeetingTitleEdited(true);
+                      }}
+                      placeholder="Auto-generated"
+                    />
                   </Field>
 
                   <TimeRow startTime={startTime} endTime={endTime} setStartTime={setStartTime} setEndTime={setEndTime} />
