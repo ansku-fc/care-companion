@@ -98,6 +98,7 @@ const PatientProfilePage = () => {
   const [activeSection, setActiveSectionRaw] = useState<SidebarSection>("overview");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [dimensionsSectionOpen, setDimensionsSectionOpen] = useState<boolean | null>(null);
+  const [healthDataInitialTab, setHealthDataInitialTab] = useState<"dimensions" | "labs" | "diagnoses">("dimensions");
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
