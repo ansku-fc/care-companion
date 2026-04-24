@@ -503,7 +503,7 @@ const PatientProfilePage = () => {
             onSelectDimension={setActiveSection}
             markerNotes={markerNotes}
             setMarkerNotes={setMarkerNotes}
-            initialTab="labs"
+            initialTab={healthDataInitialTab}
             labResultsSlot={
               <LabResultsView
                 patientId={patient.id}
