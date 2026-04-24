@@ -98,6 +98,7 @@ const PatientProfilePage = () => {
   const [activeSection, setActiveSectionRaw] = useState<SidebarSection>("overview");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [dimensionsSectionOpen, setDimensionsSectionOpen] = useState<boolean | null>(null);
+  const [healthDataInitialTab, setHealthDataInitialTab] = useState<"dimensions" | "labs" | "diagnoses">("dimensions");
   const [loading, setLoading] = useState(true);
   const [markerNotes, setMarkerNotes] = useState<Record<string, string>>({});
 
@@ -230,8 +231,8 @@ const PatientProfilePage = () => {
                   <div className="w-full">
                     <button
                       onClick={() => {
+                        setHealthDataInitialTab("dimensions");
                         setActiveSection("lab_results");
-                        if (!sectionOpen) setDimensionsSectionOpen(true);
                       }}
                       className={`w-full min-h-9 h-9 flex items-center gap-2 px-3 rounded-md text-sm transition-colors ${
                         isOnHealthData
@@ -253,6 +254,7 @@ const PatientProfilePage = () => {
                         tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           setDimensionsSectionOpen(!sectionOpen);
                         }}
                         onKeyDown={(e) => {
@@ -501,7 +503,7 @@ const PatientProfilePage = () => {
             onSelectDimension={setActiveSection}
             markerNotes={markerNotes}
             setMarkerNotes={setMarkerNotes}
-            initialTab="labs"
+            initialTab={healthDataInitialTab}
             labResultsSlot={
               <LabResultsView
                 patientId={patient.id}
