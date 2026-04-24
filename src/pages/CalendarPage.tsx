@@ -218,7 +218,7 @@ const CalendarPage = () => {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+      <div className={cn("grid gap-6", formOpen ? "xl:grid-cols-[1fr_360px_380px]" : "xl:grid-cols-[1fr_380px]")}>
         {/* Month Grid */}
         <Card>
           <CardHeader className="pb-3">
@@ -586,12 +586,7 @@ const CalendarPage = () => {
         </DialogContent>
       </Dialog>
 
-      <AddAppointmentDialog
-        open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingAppointment(null); }}
-        selectedDate={selectedDate}
-        editingAppointment={editingAppointment}
-      />
+      {/* Appointment form panel rendered inside the grid below — no dialog */}
 
       <AlertDialog open={!!cancelId} onOpenChange={(open) => !open && setCancelId(null)}>
         <AlertDialogContent>
