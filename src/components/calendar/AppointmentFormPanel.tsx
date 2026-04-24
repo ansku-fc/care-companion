@@ -226,7 +226,6 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         ...payload,
         title: title || taskDescription || "Nurse task",
         patient_id: patientId,
-        provider_id: nurseId,
         appointment_type: "nurse_task" as any,
         is_nurse_visit: true,
         notes: [taskDescription, notes].filter(Boolean).join("\n\n") || null,
