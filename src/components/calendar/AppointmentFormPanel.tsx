@@ -17,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
-import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase, Paperclip } from "lucide-react";
+import { format, parse } from "date-fns";
+import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase, Paperclip, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type ApptKind = "patient_visit" | "doctor_meeting" | "nurse_task" | "working_time";
 
@@ -351,7 +353,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
             <div className="space-y-4">
               {/* Date (shared, always shown once a kind is picked) */}
               <Field label="Date">
-                <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} />
+                <DatePopover value={dateValue} onChange={setDateValue} />
               </Field>
 
               {/* Patient Visit */}
@@ -622,5 +624,37 @@ function TimeRow({
       <Field label="Start"><Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></Field>
       <Field label="End"><Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></Field>
     </div>
+  );
+}
+
+function DatePopover({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dateObj = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal", !dateObj && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {dateObj ? format(dateObj, "EEEE, MMMM d, yyyy") : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={dateObj}
+          onSelect={(d) => {
+            if (d) {
+              onChange(format(d, "yyyy-MM-dd"));
+              setOpen(false);
+            }
+          }}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
