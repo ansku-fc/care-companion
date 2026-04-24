@@ -27,20 +27,8 @@ import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { priorityMeta, type Task } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 
-import { buildDummyAppointments } from "@/lib/dummyAppointments";
+import { buildDummyAppointments, TYPE_STYLES, typeStyle } from "@/lib/dummyAppointments";
 
-
-const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  onboarding: { bg: "bg-primary/10", text: "text-primary", label: "Onboarding" },
-  acute: { bg: "bg-destructive/10", text: "text-destructive", label: "Acute" },
-  consultation: { bg: "bg-accent/60", text: "text-accent-foreground", label: "Consultation" },
-  follow_up: { bg: "bg-success/10", text: "text-success", label: "Follow-up" },
-  check_up: { bg: "bg-warning/10", text: "text-warning", label: "Check-up" },
-  procedure: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Procedure" },
-  urgent: { bg: "bg-destructive/10", text: "text-destructive", label: "Urgent" },
-  working_time: { bg: "bg-blue-500/10", text: "text-blue-600", label: "Working Time" },
-  doctor_meeting: { bg: "bg-teal-500/10", text: "text-teal-700", label: "Doctor Meeting" },
-};
 
 const LEGEND_DOT_COLORS: Record<string, string> = {
   onboarding: "bg-primary",
