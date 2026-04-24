@@ -4484,6 +4484,14 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     loadAnnotations();
   };
 
+  const updateAnnotation = async (id: string, text: string) => {
+    const { error } = await supabase.from("marker_annotations").update({ text }).eq("id", id);
+    if (error) { toast.error("Could not update annotation"); return; }
+    setEditingAnnotationId(null);
+    setEditingAnnotationText("");
+    loadAnnotations();
+  };
+
   const createTaskFromMarker = () => {
     if (!selectedMarker) return;
     const due = new Date();
