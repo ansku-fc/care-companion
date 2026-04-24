@@ -850,8 +850,8 @@ function ReportsListView({ patient, onboarding, labResults, healthCategories, ap
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
   const radarData = useMemo(
-    () => computeRadarData(onboarding, labResults, healthCategories),
-    [onboarding, labResults, healthCategories],
+    () => computeRadarData(patient.id, onboarding, labResults, healthCategories),
+    [patient.id, onboarding, labResults, healthCategories],
   );
 
   const fetchReports = async () => {
@@ -2483,7 +2483,7 @@ function HealthDimensionView({
 
   // Determine whether this is a main dimension (with subs) or a sub-dimension
   const mainDim = findMainDimension(dimensionKey);
-  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const radarData = computeRadarData(patient.id, onboarding, labResults, healthCategories);
   const parentScore = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
 
   // Build sub-scores: simple heuristic — share parent's score across subs (placeholder).
@@ -2561,8 +2561,8 @@ function GenericDimensionView({
 
   // ─── Score from main dimension (1–10) ───
   const radarData = useMemo(
-    () => computeRadarData(onboarding, labResults, healthCategories),
-    [onboarding, labResults, healthCategories],
+    () => computeRadarData(patient.id, onboarding, labResults, healthCategories),
+    [patient.id, onboarding, labResults, healthCategories],
   );
   const mainDim = findMainDimension(dimensionKey) ?? null;
   const score = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
@@ -2720,7 +2720,7 @@ function SkinMucousDimensionView({
   onDataChanged?: () => void;
   onNavigateDimension?: (section: string) => void;
 }) {
-  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const radarData = computeRadarData(patient.id, onboarding, labResults, healthCategories);
   const skinScore = radarData.find((d) => d.category === "Skin & Mucous")?.score ?? 1;
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
@@ -3469,7 +3469,7 @@ function CardiovascularDimensionView({
   onDataChanged?: () => void;
 }) {
   // Compute cardiovascular risk index
-  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const radarData = computeRadarData(patient.id, onboarding, labResults, healthCategories);
   const cvScore = radarData.find((d) => d.category === "Cardiovascular")?.score ?? 1;
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
