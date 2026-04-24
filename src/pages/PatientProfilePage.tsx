@@ -5057,8 +5057,6 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
             </div>
           );
         })()}
-        </div>
-      )}
       </div>
     </div>
   );
