@@ -4700,7 +4700,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                 </div>
               </div>
             )}
-            {!useSharedPanel && (
+            {selectedMarker && (
               <div className="mt-4">
                 <Label className="text-xs">Doctor Notes</Label>
                 <Textarea
