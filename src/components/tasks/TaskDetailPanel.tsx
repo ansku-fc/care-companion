@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Pencil, Trash2, User, Stethoscope, HeartPulse, ArrowRight, FlaskConical, Pill, AlertTriangle, PhoneCall } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar, Pencil, Trash2, User, Stethoscope, HeartPulse, ArrowRight, FlaskConical, Pill, AlertTriangle, PhoneCall, FileText, Mail, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -76,6 +78,82 @@ const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No 
 const REFERRAL_OUTCOME_TAGS = ["Referral sent", "Awaiting response", "Specialist booked", "No longer needed"] as const;
 type OutcomeTag = string;
 
+const URGENCY_OPTIONS = ["Routine", "Semi-urgent", "Urgent", "Emergency"] as const;
+const REQUESTED_ACTION_OPTIONS = ["Consultation", "Diagnosis", "Treatment", "Second opinion"] as const;
+
+interface ReferralForm {
+  to: string;
+  from: string;
+  patient: string;
+  dob: string;
+  reason: string;
+  background: string;
+  medications: string;
+  urgency: string;
+  requestedAction: string;
+  additionalNotes: string;
+}
+
+function inferReferralReason(title: string): string {
+  const t = title.toLowerCase();
+  const map: Record<string, string> = {
+    cardiology: "Cardiology consultation requested",
+    neurology: "Neurology consultation requested",
+    dermatology: "Dermatology consultation requested",
+    hepatology: "Hepatology consultation requested",
+    orthopaedic: "Orthopaedic consultation requested",
+    orthopedic: "Orthopaedic consultation requested",
+    gastro: "Gastroenterology consultation requested",
+    psych: "Psychiatry consultation requested",
+    endocrin: "Endocrinology consultation requested",
+  };
+  for (const k of Object.keys(map)) {
+    if (t.includes(k)) return map[k];
+  }
+  return "Specialist consultation requested";
+}
+
+function buildReferralForm(task: Task, patientName: string | null): ReferralForm {
+  return {
+    to: "",
+    from: "Dr. Laine, Foundation Clinic",
+    patient: patientName ?? "",
+    dob: "",
+    reason: inferReferralReason(task.title ?? ""),
+    background: "",
+    medications: "",
+    urgency: "Routine",
+    requestedAction: "Consultation",
+    additionalNotes: "",
+  };
+}
+
+function referralToText(f: ReferralForm): string {
+  return [
+    `REFERRAL`,
+    ``,
+    `To: ${f.to}`,
+    `From: ${f.from}`,
+    `Date: ${new Date().toLocaleDateString()}`,
+    ``,
+    `Patient: ${f.patient}`,
+    `Date of birth: ${f.dob}`,
+    ``,
+    `Referral reason: ${f.reason}`,
+    `Urgency: ${f.urgency}`,
+    `Requested action: ${f.requestedAction}`,
+    ``,
+    `Clinical background:`,
+    f.background || "—",
+    ``,
+    `Current medications:`,
+    f.medications || "—",
+    ``,
+    `Additional notes:`,
+    f.additionalNotes || "—",
+  ].join("\n");
+}
+
 interface Props {
   task: Task | null;
   patientName: string | null;
@@ -96,12 +174,18 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   const [outcomeTag, setOutcomeTag] = useState<OutcomeTag | "">("");
   const [savingOutcome, setSavingOutcome] = useState(false);
 
+  // Inline referral form state
+  const [referralOpen, setReferralOpen] = useState(false);
+  const [referralForm, setReferralForm] = useState<ReferralForm | null>(null);
+
   useEffect(() => {
     setNotes(task?.description ?? "");
     setLogOpen(false);
     setOutcomeText("");
     setOutcomeTag("");
-  }, [task]);
+    setReferralOpen(false);
+    setReferralForm(task ? buildReferralForm(task, patientName) : null);
+  }, [task, patientName]);
 
   if (!task) return null;
   const meta = priorityMeta(task.priority);
@@ -289,25 +373,35 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
               {isComm && (
                 <>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => {
-                        const scheduledId = (task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id;
-                        onOpenChange(false);
-                        if (scheduledId) {
-                          navigate("/calendar");
-                        } else {
-                          navigate("/calendar", { state: { prefill: buildCommPrefill(task) } });
-                        }
-                      }}
-                    >
-                      <Calendar className="h-3.5 w-3.5" />
-                      {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id
-                        ? "View in Calendar"
-                        : isReferral ? "Schedule referral" : "Schedule"}
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
+                    {isReferral ? (
+                      <Button
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => setReferralOpen((v) => !v)}
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        {referralOpen ? "Cancel" : "Create referral"}
+                        {!referralOpen && <ArrowRight className="h-3.5 w-3.5" />}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => {
+                          const scheduledId = (task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id;
+                          onOpenChange(false);
+                          if (scheduledId) {
+                            navigate("/calendar");
+                          } else {
+                            navigate("/calendar", { state: { prefill: buildCommPrefill(task) } });
+                          }
+                        }}
+                      >
+                        <Calendar className="h-3.5 w-3.5" />
+                        {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id ? "View in Calendar" : "Schedule"}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button
                       className="gap-1.5"
                       onClick={() => setLogOpen((v) => !v)}
@@ -316,6 +410,14 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                       {logOpen ? "Cancel" : "Log outcome"}
                     </Button>
                   </div>
+
+                  {isReferral && referralOpen && referralForm && (
+                    <ReferralFormPanel
+                      form={referralForm}
+                      onChange={setReferralForm}
+                      patientName={patientName}
+                    />
+                  )}
 
                   {logOpen && (
                     <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
@@ -575,3 +677,175 @@ function ContextualPreview({
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Inline referral form — pre-filled template for sending specialist referrals.
+// Provides "Send as email" (mailto:) and "Download as PDF" (print-to-PDF) actions.
+// ---------------------------------------------------------------------------
+
+function ReferralFormPanel({
+  form,
+  onChange,
+  patientName,
+}: {
+  form: ReferralForm;
+  onChange: (f: ReferralForm) => void;
+  patientName: string | null;
+}) {
+  const update = <K extends keyof ReferralForm>(key: K, value: ReferralForm[K]) => {
+    onChange({ ...form, [key]: value });
+  };
+
+  const handleEmail = () => {
+    const subject = `Referral – ${form.patient || patientName || "Patient"} – ${form.to || "Specialist"}`;
+    const body = referralToText(form);
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleDownloadPdf = () => {
+    const text = referralToText(form);
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Referral – ${form.patient || "Patient"}</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; padding: 40px; color: #111; line-height: 1.5; }
+  h1 { font-size: 18px; margin: 0 0 16px; letter-spacing: 1px; }
+  pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; }
+</style></head><body>
+<h1>REFERRAL</h1>
+<pre>${text.replace(/^REFERRAL\n*/, "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!))}</pre>
+<script>window.onload = () => { window.print(); setTimeout(() => window.close(), 300); };</script>
+</body></html>`;
+    const win = window.open("", "_blank", "width=800,height=900");
+    if (!win) {
+      toast.error("Pop-up blocked — allow pop-ups to download the referral PDF.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  };
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+      <div className="flex items-center gap-1.5 pb-1">
+        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Referral document
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">To</Label>
+          <Input
+            value={form.to}
+            onChange={(e) => update("to", e.target.value)}
+            placeholder="Cardiology, HYKS"
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">From</Label>
+          <Input
+            value={form.from}
+            onChange={(e) => update("from", e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Patient</Label>
+          <Input
+            value={form.patient}
+            onChange={(e) => update("patient", e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Date of birth</Label>
+          <Input
+            value={form.dob}
+            onChange={(e) => update("dob", e.target.value)}
+            placeholder="DD/MM/YYYY"
+            className="h-8 text-xs"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Referral reason</Label>
+        <Input
+          value={form.reason}
+          onChange={(e) => update("reason", e.target.value)}
+          className="h-8 text-xs"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Clinical background</Label>
+        <Textarea
+          value={form.background}
+          onChange={(e) => update("background", e.target.value)}
+          rows={3}
+          placeholder="Brief summary of relevant history…"
+          className="text-xs"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Current medications</Label>
+        <Textarea
+          value={form.medications}
+          onChange={(e) => update("medications", e.target.value)}
+          rows={2}
+          placeholder="List active medications and doses…"
+          className="text-xs"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Urgency</Label>
+          <Select value={form.urgency} onValueChange={(v) => update("urgency", v)}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {URGENCY_OPTIONS.map((o) => (
+                <SelectItem key={o} value={o}>{o}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Requested action</Label>
+          <Select value={form.requestedAction} onValueChange={(v) => update("requestedAction", v)}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {REQUESTED_ACTION_OPTIONS.map((o) => (
+                <SelectItem key={o} value={o}>{o}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Additional notes</Label>
+        <Textarea
+          value={form.additionalNotes}
+          onChange={(e) => update("additionalNotes", e.target.value)}
+          rows={2}
+          className="text-xs"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <Button variant="outline" className="gap-1.5" onClick={handleEmail}>
+          <Mail className="h-3.5 w-3.5" /> Send as email
+        </Button>
+        <Button className="gap-1.5" onClick={handleDownloadPdf}>
+          <Download className="h-3.5 w-3.5" /> Download as PDF
+        </Button>
+      </div>
+    </div>
+  );
+}
