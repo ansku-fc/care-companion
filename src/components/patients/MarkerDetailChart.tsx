@@ -252,7 +252,7 @@ export function MarkerDetailChart({
       )}
 
       {/* Inline annotations panel */}
-      {annotationsOpen && (
+      {!displayOnly && annotationsOpen && (
         <div className="rounded-md border bg-muted/20 p-2.5 space-y-2">
           <div className="flex items-end gap-2">
             <div className="flex-1">
