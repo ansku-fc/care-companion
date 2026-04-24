@@ -546,68 +546,37 @@ function computeRadarData(
   labResults: Tables<"patient_lab_results">[],
   healthCategories: Tables<"patient_health_categories">[],
 ) {
-  const pid = (onboarding as any)?.patient_id ?? (onboarding as any)?.id ?? "";
+  const pid = (onboarding as any)?.patient_id ?? "";
   const r = (i: number) => ((pid.charCodeAt(i % Math.max(pid.length, 1)) || 5) * 37 % 20) / 20;
-
   const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
   const latest = sorted[0];
   const ldl = latest?.ldl_mmol_l ?? null;
   const hba1c = latest?.hba1c_mmol_mol ?? null;
   const alat = latest?.alat_u_l ?? null;
-
   const cat = (key: string) => {
-    const c = healthCategories.find((h) => h.category === key);
+    const c = healthCategories.find(h => h.category === key);
     switch (c?.status) {
-      case "issue":
-        return 7.0 + r(0) * 2.5;
-      case "mild":
-        return 4.0 + r(1) * 2.5;
-      default:
-        return 1.5 + r(2) * 2.0;
+      case 'issue': return 7.0 + r(0) * 2.5;
+      case 'mild':  return 4.0 + r(1) * 2.5;
+      default:      return 1.5 + r(2) * 2.0;
     }
   };
-
-  const cvCat = cat("cardiovascular");
-  const cardiovascular = Math.min(
-    10,
-    ldl ? (ldl > 4.0 ? cvCat + 1.0 : ldl > 3.0 ? cvCat : Math.max(1, cvCat - 1.0)) : cvCat,
-  );
-
-  const metCat = cat("metabolic");
-  const metabolic = Math.min(
-    10,
-    hba1c ? (hba1c > 53 ? metCat + 1.5 : hba1c > 42 ? metCat : Math.max(1, metCat - 1.0)) : metCat,
-  );
-
-  const digCat = cat("digestion");
-  const digestion = Math.min(
-    10,
-    alat ? (alat > 50 ? digCat + 1.0 : alat > 40 ? digCat : Math.max(1, digCat - 0.5)) : digCat,
-  );
-
+  const cvCat = cat('cardiovascular');
+  const cardiovascular = Math.min(10, ldl ? (ldl > 4.0 ? cvCat + 1.0 : ldl > 3.0 ? cvCat : Math.max(1, cvCat - 1.0)) : cvCat);
+  const metCat = cat('metabolic');
+  const metabolic = Math.min(10, hba1c ? (hba1c > 53 ? metCat + 1.5 : hba1c > 42 ? metCat : Math.max(1, metCat - 1.0)) : metCat);
+  const digCat = cat('digestion');
+  const digestion = Math.min(10, alat ? (alat > 50 ? digCat + 1.0 : alat > 40 ? digCat : Math.max(1, digCat - 0.5)) : digCat);
   const bmi = onboarding?.bmi;
-  const exercise_functional = bmi
-    ? bmi > 35
-      ? 7.0 + r(3)
-      : bmi > 30
-        ? 5.5 + r(4)
-        : bmi > 25
-          ? 3.5 + r(5)
-          : 1.5 + r(6)
-    : cat("exercise_functional");
-
+  const exercise_functional = bmi ? (bmi > 35 ? 7.0 + r(3) : bmi > 30 ? 5.5 + r(4) : bmi > 25 ? 3.5 + r(5) : 1.5 + r(6)) : cat('exercise_functional');
   const scores: Record<string, number> = {
-    cardiovascular,
-    metabolic,
-    digestion,
-    exercise_functional,
-    brain_mental_health: cat("brain_mental_health"),
-    respiratory_immune: cat("respiratory_immune"),
-    cancer_risk: cat("cancer_risk"),
-    skin_oral_mucosal: cat("skin_oral_mucosal"),
-    reproductive_sexual: cat("reproductive_sexual"),
+    cardiovascular, metabolic, digestion, exercise_functional,
+    brain_mental_health: cat('brain_mental_health'),
+    respiratory_immune: cat('respiratory_immune'),
+    cancer_risk: cat('cancer_risk'),
+    skin_oral_mucosal: cat('skin_oral_mucosal'),
+    reproductive_sexual: cat('reproductive_sexual'),
   };
-
   return HEALTH_TAXONOMY.map((main) => ({
     category: main.label,
     key: main.key,
