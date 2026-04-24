@@ -92,6 +92,40 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
     notifyChanged();
   };
 
+  const saveOutcome = async () => {
+    if (!outcomeText.trim() || !outcomeTag) {
+      toast.error("Add a summary and select an outcome tag");
+      return;
+    }
+    if (!task.patient_id) {
+      toast.error("Task is not linked to a patient");
+      return;
+    }
+    setSavingOutcome(true);
+    const noteBody = `${outcomeText.trim()}\n\nOutcome: ${outcomeTag}`;
+    const { error: visitErr } = await supabase.from("visit_notes").insert({
+      patient_id: task.patient_id,
+      provider_id: user?.id ?? "00000000-0000-0000-0000-000000000001",
+      visit_date: new Date().toISOString().slice(0, 10),
+      chief_complaint: "Care coordination note",
+      notes: noteBody,
+    });
+    if (visitErr) {
+      setSavingOutcome(false);
+      toast.error("Could not log outcome");
+      return;
+    }
+    const { error: taskErr } = await supabase
+      .from("tasks")
+      .update({ status: "done" })
+      .eq("id", task.id);
+    setSavingOutcome(false);
+    if (taskErr) { toast.error("Logged, but task not marked done"); return; }
+    toast.success("Outcome logged and task completed");
+    onOpenChange(false);
+    notifyChanged();
+  };
+
   const RoleIcon = role === "nurse" ? HeartPulse : role === "doctor" ? Stethoscope : User;
 
   return (
