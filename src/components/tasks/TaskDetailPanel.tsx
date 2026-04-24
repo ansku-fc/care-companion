@@ -702,12 +702,10 @@ function ReferralFormPanel({
     if (!patientId) return;
     if (form.medications && form.medications.trim().length > 0) return;
     (async () => {
-      console.log("Fetching meds for patient:", patientId);
       const { data, error } = await supabase
         .from("patient_medications")
         .select("medication_name, dose, frequency, status")
         .eq("patient_id", patientId);
-      console.log("Meds result:", data, "Error:", error);
       if (error) return;
       if (!data || data.length === 0) {
         onChange({ ...form, medications: "No medications recorded." });
