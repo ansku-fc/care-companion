@@ -311,7 +311,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
           {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
         </p>
 
-        <ScrollArea className="max-h-[calc(100vh-260px)] pr-2">
+        <ScrollArea className="max-h-[calc(100vh-260px)] pr-2 overflow-visible">
           {!kind ? (
             <div className="space-y-2">
               {KIND_TILES.map((tile) => (
@@ -553,7 +553,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                 ) : (
                   <label className="flex items-center justify-center gap-2 w-full rounded-md border border-dashed border-input bg-background px-3 py-3 text-sm cursor-pointer hover:bg-accent/40 transition-colors">
                     <Paperclip className="h-4 w-4 text-muted-foreground" />
-                    <span>📎 Choose file</span>
+                    <span>Choose file</span>
                     <input
                       type="file"
                       className="hidden"
