@@ -231,8 +231,8 @@ const PatientProfilePage = () => {
                   <div className="w-full">
                     <button
                       onClick={() => {
+                        setHealthDataInitialTab("dimensions");
                         setActiveSection("lab_results");
-                        if (!sectionOpen) setDimensionsSectionOpen(true);
                       }}
                       className={`w-full min-h-9 h-9 flex items-center gap-2 px-3 rounded-md text-sm transition-colors ${
                         isOnHealthData
@@ -254,6 +254,7 @@ const PatientProfilePage = () => {
                         tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           setDimensionsSectionOpen(!sectionOpen);
                         }}
                         onKeyDown={(e) => {
