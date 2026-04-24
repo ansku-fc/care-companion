@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AddAppointmentDialog } from "@/components/calendar/AddAppointmentDialog";
+import { AppointmentFormPanel } from "@/components/calendar/AppointmentFormPanel";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isToday, isSameMonth } from "date-fns";
@@ -112,7 +112,7 @@ const CalendarPage = () => {
   const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<any>(null);
@@ -203,7 +203,7 @@ const CalendarPage = () => {
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
           <p className="text-muted-foreground">Doctor's schedule overview</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> New Appointment
         </Button>
       </div>
