@@ -4693,16 +4693,10 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
         )}
         </div>
 
-        {/* Detail panel — uses canonical Cardio chart for synced biomarkers */}
+        {/* Detail panel — unified chart with inline annotations & task icon */}
         {selectedMarker && (
           <div className="w-[420px] shrink-0 rounded-[20px] border bg-card shadow-card flex flex-col min-h-0 overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b shrink-0">
-              <div>
-                <h3 className="font-semibold text-sm text-foreground">{selectedMarker.label}</h3>
-                {selectedMarker.unit && (
-                  <p className="text-xs text-muted-foreground">{selectedMarker.unit}</p>
-                )}
-              </div>
+            <div className="flex items-center justify-end p-2 border-b shrink-0">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
                 <X className="h-4 w-4" />
               </Button>
@@ -4712,13 +4706,23 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
             ) : (
               <MarkerDetailChart
+                label={selectedMarker.label}
+                unit={selectedMarker.unit}
                 chartData={chartData}
                 refValues={ref}
                 annotations={annotations.map((a) => ({
                   id: a.id,
                   date: a.annotation_date,
                   text: a.text,
+                  author: a.author_name,
                 }))}
+                annotationText={annotationText}
+                annotationDate={annotationDate}
+                onAnnotationTextChange={setAnnotationText}
+                onAnnotationDateChange={setAnnotationDate}
+                onSaveAnnotation={saveAnnotation}
+                onDeleteAnnotation={deleteAnnotation}
+                onCreateTask={createTaskFromMarker}
               />
             )}
             {selectedMarker && (
@@ -4726,79 +4730,14 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                 <Label className="text-xs">Doctor Notes</Label>
                 <Textarea
                   placeholder="Add notes about this marker..."
-                  className="mt-1 min-h-[80px] text-xs resize-none"
+                  className="mt-1 min-h-[44px] text-xs resize-none"
+                  rows={2}
                   value={markerNotes[selectedMarker?.key || ""] || ""}
                   onChange={(e) => {
                     if (!selectedMarker) return;
                     setMarkerNotes((prev) => ({ ...prev, [selectedMarker.key]: e.target.value }));
                   }}
                 />
-              </div>
-            )}
-            {selectedMarker && (
-              <div className="mt-4 space-y-2">
-                <Label className="text-xs">Annotations</Label>
-                <Textarea
-                  placeholder="Add a clinical annotation for this marker and date..."
-                  className="mt-1 min-h-[60px] text-xs resize-none"
-                  value={annotationText}
-                  onChange={(e) => setAnnotationText(e.target.value)}
-                />
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Date</Label>
-                    <Input
-                      type="date"
-                      className="h-8 text-xs"
-                      value={annotationDate}
-                      onChange={(e) => setAnnotationDate(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={saveAnnotation}
-                    disabled={!annotationText.trim()}
-                  >
-                    Save annotation
-                  </Button>
-                </div>
-                {annotations.length > 0 && (
-                  <ul className="mt-2 space-y-1.5">
-                    {annotations.map((a) => (
-                      <li
-                        key={a.id}
-                        className="flex items-start gap-2 rounded-md border bg-muted/20 px-2.5 py-1.5 text-xs"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            {a.annotation_date} · {a.author_name}
-                          </p>
-                          <p className="text-foreground whitespace-pre-wrap">{a.text}</p>
-                        </div>
-                        <button
-                          onClick={() => deleteAnnotation(a.id)}
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          aria-label="Delete annotation"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-            {selectedMarker && (
-              <div className="mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs w-full"
-                  onClick={createTaskFromMarker}
-                >
-                  + Create task
-                </Button>
               </div>
             )}
             {selectedMarker && MARKER_DIMENSIONS[selectedMarker.key] && (
