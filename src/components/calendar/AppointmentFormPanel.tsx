@@ -633,7 +633,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
           <div className="shrink-0 border-t pt-4 px-4 pb-4 bg-background flex gap-3">
             <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
             <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
-              {loading ? "Saving…" : editingAppointment ? "Update" : "Create"}
+              {loading ? "Saving…" : editingAppointment ? "Save changes" : "Create"}
             </Button>
           </div>
         )}
