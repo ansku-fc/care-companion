@@ -21,10 +21,15 @@ import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useAuth } from "@/hooks/useAuth";
 
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
+const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
+function isReferralTask(task: Task): boolean {
+  const isReferralCat = task.category === "referral";
+  return isReferralCat || REFERRAL_KEYWORDS.test(task.title ?? "");
+}
 function isCommunicationTask(task: Task): boolean {
   const isCareCoord = task.category === "care_coordination" || task.category === "client_communication";
   const matchesKeyword = COMM_KEYWORDS.test(task.title ?? "");
-  return isCareCoord || matchesKeyword;
+  return isCareCoord || matchesKeyword || isReferralTask(task);
 }
 
 // Build prefill payload for the appointment form panel from a communication task.
