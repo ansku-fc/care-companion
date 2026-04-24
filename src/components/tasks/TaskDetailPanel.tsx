@@ -40,6 +40,7 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   const meta = priorityMeta(task.priority);
   const role = assigneeRole(task.assignee_name);
   const kind = detectKind(task);
+  const isClinical = kind !== null;
 
   const updateStatus = async (status: TaskStatus) => {
     const { error } = await supabase.from("tasks").update({ status }).eq("id", task.id);
@@ -127,20 +128,20 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
             onNavigate={(path) => { onOpenChange(false); navigate(path); }}
           />
 
-          {kind === "labs" ? (
+          {isClinical ? (
             <>
               <Separator />
               <Button
                 className="w-full gap-1.5"
                 onClick={() => {
                   onOpenChange(false);
-                  navigate(`/patients/${task.patient_id}?tab=lab_results&review=1`);
+                  navigate(clinicalActionPath(kind!, task));
                 }}
               >
-                Go to full lab view <ArrowRight className="h-3.5 w-3.5" />
+                {clinicalActionLabel(kind!)} <ArrowRight className="h-3.5 w-3.5" />
               </Button>
               <p className="text-[11px] text-muted-foreground text-center italic">
-                This task completes automatically once all new results are verified.
+                {clinicalAutoCompleteHint(kind!)}
               </p>
             </>
           ) : (
@@ -204,14 +205,51 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
 // inline, with a deep link to the full view.
 // ---------------------------------------------------------------------------
 
-type PreviewKind = "labs" | "interaction" | "renewal" | null;
+type PreviewKind = "labs" | "interaction" | "renewal" | "supply" | "risk_review" | "follow_up" | null;
 
 function detectKind(task: Task): PreviewKind {
   const hay = `${task.title} ${task.created_from ?? ""} ${task.description ?? ""}`.toLowerCase();
   if (/lab result|new lab|review.*lab/.test(hay)) return "labs";
   if (/interaction|warfarin|ibuprofen/.test(hay)) return "interaction";
-  if (/renew|prescription|metformin|refill|supply/.test(hay)) return "renewal";
+  if (/low supply|out of stock|stock low/.test(hay)) return "supply";
+  if (/renew|prescription|refill/.test(hay)) return "renewal";
+  if (/risk factor|doctor.?s summary|dimension review/.test(hay)) return "risk_review";
+  if (/follow.?up|post.?visit/.test(hay)) return "follow_up";
   return null;
+}
+
+function clinicalActionPath(kind: NonNullable<PreviewKind>, task: Task): string {
+  const base = `/patients/${task.patient_id}`;
+  switch (kind) {
+    case "labs":        return `${base}?tab=lab_results&review=1`;
+    case "interaction": return `${base}?tab=medications&focus=interaction`;
+    case "renewal":     return `${base}?tab=medications&focus=renewal`;
+    case "supply":      return `${base}?tab=medications&focus=supply`;
+    case "risk_review": return `${base}?tab=health_data`;
+    case "follow_up":   return `${base}?tab=visits`;
+  }
+}
+
+function clinicalActionLabel(kind: NonNullable<PreviewKind>): string {
+  switch (kind) {
+    case "labs":        return "Go to full lab view";
+    case "interaction": return "Review interaction in Medications";
+    case "renewal":     return "Renew in Medications";
+    case "supply":      return "Update supply in Medications";
+    case "risk_review": return "Review risk factors";
+    case "follow_up":   return "Open patient record";
+  }
+}
+
+function clinicalAutoCompleteHint(kind: NonNullable<PreviewKind>): string {
+  switch (kind) {
+    case "labs":        return "Completes automatically once all new results are verified.";
+    case "interaction": return "Completes when you Resolve, Override, or Defer the alert.";
+    case "renewal":     return "Completes once the prescription is renewed.";
+    case "supply":      return "Completes when supply is renewed above 25%.";
+    case "risk_review": return "Completes when the Doctor's Summary is saved.";
+    case "follow_up":   return "Completes when marked done from the patient record.";
+  }
 }
 
 function ContextualPreview({
@@ -307,6 +345,48 @@ function ContextualPreview({
         >
           Renew prescription <ArrowRight className="h-3 w-3" />
         </button>
+      </div>
+    );
+  }
+
+  if (kind === "supply") {
+    return (
+      <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-warning">
+          <Pill className="h-3.5 w-3.5" /> Low supply
+        </div>
+        <p className="text-xs font-semibold">Current stock below 25%</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Supply needs to be renewed. Task auto-completes once stock is restored above 25%.
+        </p>
+      </div>
+    );
+  }
+
+  if (kind === "risk_review") {
+    return (
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <AlertTriangle className="h-3.5 w-3.5" /> Risk factor review
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          One or more elevated risk factors require clinical review. Save the Doctor's Summary
+          in the dimension view to resolve.
+        </p>
+      </div>
+    );
+  }
+
+  if (kind === "follow_up") {
+    return (
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <Stethoscope className="h-3.5 w-3.5" /> Post-visit follow-up
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Follow-up actions from the most recent visit. Mark as done from the patient record
+          when complete.
+        </p>
       </div>
     );
   }
