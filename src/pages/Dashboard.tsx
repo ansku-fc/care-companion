@@ -143,6 +143,74 @@ const Dashboard = () => {
   );
   const completedToday = tasks.filter((t) => isCompletedToday(t));
 
+  // Today's schedule = real appointments from DB + today's dummy appointments
+  const todayKey = format(today, "yyyy-MM-dd");
+  const { data: realTodayAppts = [] } = useQuery({
+    queryKey: ["today-appointments", todayKey],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*, patients(full_name)")
+        .gte("start_time", `${todayKey}T00:00:00`)
+        .lte("start_time", `${todayKey}T23:59:59`)
+        .order("start_time", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const todaySchedule: ScheduleItem[] = useMemo(() => {
+    const now = new Date();
+    const dummies = buildDummyAppointments(today).filter((a) =>
+      isSameDay(parseISO(a.start_time), today),
+    );
+    type Raw = {
+      id: string;
+      start_time: string;
+      end_time: string;
+      appointment_type?: string | null;
+      title?: string | null;
+      patient_name?: string | null;
+    };
+    const rawReal: Raw[] = (realTodayAppts as any[]).map((a) => ({
+      id: a.id,
+      start_time: a.start_time,
+      end_time: a.end_time,
+      appointment_type: a.appointment_type,
+      title: a.title,
+      patient_name: a.patients?.full_name ?? null,
+    }));
+    const rawDummy: Raw[] = dummies.map((d) => ({
+      id: d.id,
+      start_time: d.start_time,
+      end_time: d.end_time,
+      appointment_type: d.appointment_type,
+      title: d.title,
+      patient_name: d.patient_name ?? null,
+    }));
+    const combined = [...rawReal, ...rawDummy].sort((a, b) =>
+      a.start_time.localeCompare(b.start_time),
+    );
+    return combined.map((a) => {
+      const start = parseISO(a.start_time);
+      const end = parseISO(a.end_time);
+      const status: ScheduleItem["status"] =
+        now >= end ? "completed" : now >= start ? "in_progress" : "upcoming";
+      const typeKey = a.appointment_type ?? "consultation";
+      const subtitle = APPT_TYPE_LABEL[typeKey] ?? typeKey;
+      const name = a.patient_name ?? a.title ?? "Untitled";
+      return {
+        id: a.id,
+        time: format(start, "HH:mm"),
+        start,
+        end,
+        name,
+        type: subtitle,
+        status,
+      };
+    });
+  }, [realTodayAppts, today]);
+
 
   const statusDot = (status: "upcoming" | "in_progress" | "completed") => {
     if (status === "in_progress") return "bg-success animate-pulse";
