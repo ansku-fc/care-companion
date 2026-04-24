@@ -244,9 +244,18 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                     <Button
                       variant="outline"
                       className="gap-1.5"
-                      onClick={() => { onOpenChange(false); navigate("/calendar"); }}
+                      onClick={() => {
+                        const scheduledId = (task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id;
+                        onOpenChange(false);
+                        if (scheduledId) {
+                          navigate("/calendar");
+                        } else {
+                          navigate("/calendar", { state: { prefill: buildCommPrefill(task) } });
+                        }
+                      }}
                     >
-                      <Calendar className="h-3.5 w-3.5" /> Open Calendar
+                      <Calendar className="h-3.5 w-3.5" />
+                      {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id ? "View in Calendar" : "Schedule"}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                     <Button
