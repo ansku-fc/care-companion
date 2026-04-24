@@ -52,16 +52,14 @@ function isKorhonen(patientId: string, patientName?: string | null) {
   return null;
 }
 
-/** Seed the unreviewed set for a patient. Re-runs if name was unknown earlier. */
-export function ensureSeeded(patientId: string, patientName?: string | null) {
+/** Seed the unreviewed set for a patient from an explicit list of markers. */
+export function seedMarkers(patientId: string, markers: NewMarker[]) {
   if (cleared.has(patientId)) return;
-  const seedKey = isKorhonen(patientId, patientName);
-  if (!seedKey) return;
-  // Already seeded for this patient with a known name — don't reset progress.
   if (initialized.has(patientId)) return;
+  if (markers.length === 0) return;
   initialized.add(patientId);
   const set = new Set<string>();
-  for (const m of SEED[seedKey]) {
+  for (const m of markers) {
     set.add(m.key);
     labels.set(m.key, m);
   }
