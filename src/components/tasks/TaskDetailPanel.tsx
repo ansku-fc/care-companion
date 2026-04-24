@@ -763,7 +763,9 @@ function ReferralFormPanel({
   <div class="logo-crop"><img src="${logoUrl}" alt="Foundation Clinic" /></div>
   <div class="meta">
     <div>Foundation Health Finland Oy</div>
-    <div>foundation-clinic.fi</div>
+    <div>foundation.clinic</div>
+    <div>Ratakatu 29 a 4</div>
+    <div>00120 Helsinki</div>
   </div>
 </div>
 <h1>REFERRAL</h1>
@@ -815,7 +817,9 @@ ${attachmentLines}
         </div>
         <div className="text-right text-[10px] text-muted-foreground leading-tight">
           <div>Foundation Health Finland Oy</div>
-          <div>foundation-clinic.fi</div>
+          <div>foundation.clinic</div>
+          <div>Ratakatu 29 a 4</div>
+          <div>00120 Helsinki</div>
         </div>
       </div>
       <Separator />
