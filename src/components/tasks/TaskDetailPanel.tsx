@@ -109,6 +109,8 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   const kind = detectKind(task);
   const isClinical = kind !== null;
   const isComm = !isClinical && isCommunicationTask(task);
+  const isReferral = !isClinical && isReferralTask(task);
+  const activeOutcomeTags = isReferral ? REFERRAL_OUTCOME_TAGS : OUTCOME_TAGS;
 
   const updateStatus = async (status: TaskStatus) => {
     const { error } = await supabase.from("tasks").update({ status }).eq("id", task.id);
