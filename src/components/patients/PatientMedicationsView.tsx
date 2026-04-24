@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
+import { supabase } from "@/integrations/supabase/client";
 import {
   CARTER_MEDICATIONS,
   CARTER_INTERACTIONS,
