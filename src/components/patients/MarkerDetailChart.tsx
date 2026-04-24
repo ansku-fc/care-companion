@@ -41,6 +41,10 @@ interface MarkerDetailChartProps {
   unit?: string;
   chartData: ChartPoint[];
   refValues: { low?: number; high?: number } | null;
+  /** Optional secondary series (e.g. diastolic BP) rendered as a lighter line on the same chart. */
+  secondarySeries?: ChartPoint[];
+  secondaryLabel?: string;
+  secondaryRefValues?: { low?: number; high?: number } | null;
   annotations?: MarkerAnnotation[];
   /** When true, hides the annotation/task icon buttons and inline annotation panel. */
   displayOnly?: boolean;
