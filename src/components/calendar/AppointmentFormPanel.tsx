@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -73,6 +73,29 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
   const [loading, setLoading] = useState(false);
 
   const [kind, setKind] = useState<ApptKind | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [showScrollFade, setShowScrollFade] = useState(false);
+
+  const updateScrollFade = () => {
+    const el = scrollRef.current;
+    if (!el) {
+      setShowScrollFade(false);
+      return;
+    }
+    const hasOverflow = el.scrollHeight - el.clientHeight > 4;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+    setShowScrollFade(hasOverflow && !atBottom);
+  };
+  const handleScroll = updateScrollFade;
+  useLayoutEffect(() => {
+    updateScrollFade();
+  });
+  useEffect(() => {
+    const onResize = () => updateScrollFade();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // Shared
   const [title, setTitle] = useState("");
@@ -351,11 +374,8 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
       </CardHeader>
 
       <CardContent className="flex-1 min-h-0 flex flex-col p-0 overflow-hidden">
-        <p className="text-xs text-muted-foreground px-4 pb-3 shrink-0">
-          {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
-        </p>
-
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 space-y-4">
+        <div className="relative flex-1 min-h-0">
+          <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto px-4 pt-1 space-y-4">
           {!kind ? (
             <div className="space-y-2">
               {KIND_TILES.map((tile) => (
@@ -520,6 +540,10 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
                   <TimeRow startTime={startTime} endTime={endTime} setStartTime={setStartTime} setEndTime={setEndTime} />
 
+                  <Field label="Attach file (optional)">
+                    <AttachFileControl attachedFile={attachedFile} setAttachedFile={setAttachedFile} />
+                  </Field>
+
                   <Field label="Notes / agenda">
                     <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
                   </Field>
@@ -591,42 +615,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                 </>
               )}
 
-              {/* Attach file (shared) */}
-              <Field label="Attach file (optional)">
-                {attachedFile ? (
-                  <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                    <span className="flex items-center gap-2 truncate">
-                      <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate">{attachedFile.name}</span>
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 shrink-0"
-                      onClick={() => setAttachedFile(null)}
-                      aria-label="Remove file"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label className="flex items-center justify-center gap-2 w-full rounded-md border border-dashed border-input bg-background px-3 py-3 text-sm cursor-pointer hover:bg-accent/40 transition-colors">
-                    <Paperclip className="h-4 w-4 text-muted-foreground" />
-                    <span>Choose file</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".pdf,.doc,.docx,image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) setAttachedFile(f);
-                      }}
-                    />
-                  </label>
-                )}
-              </Field>
+              {/* Attach file (shared, except doctor_meeting which has its own placement) */}
+              {kind !== "doctor_meeting" && (
+                <Field label="Attach file (optional)">
+                  <AttachFileControl attachedFile={attachedFile} setAttachedFile={setAttachedFile} />
+                </Field>
+              )}
             </div>
+          )}
+          </div>
+          {showScrollFade && (
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-background to-transparent" />
           )}
         </div>
 
@@ -695,5 +694,49 @@ function DatePopover({ value, onChange }: { value: string; onChange: (v: string)
         />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function AttachFileControl({
+  attachedFile,
+  setAttachedFile,
+}: {
+  attachedFile: File | null;
+  setAttachedFile: (f: File | null) => void;
+}) {
+  if (attachedFile) {
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+        <span className="flex items-center gap-2 truncate">
+          <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate">{attachedFile.name}</span>
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0"
+          onClick={() => setAttachedFile(null)}
+          aria-label="Remove file"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <label className="flex items-center justify-center gap-2 w-full rounded-md border border-dashed border-input bg-background px-3 py-3 text-sm cursor-pointer hover:bg-accent/40 transition-colors">
+      <Paperclip className="h-4 w-4 text-muted-foreground" />
+      <span>Choose file</span>
+      <input
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,image/*"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) setAttachedFile(f);
+        }}
+      />
+    </label>
   );
 }
