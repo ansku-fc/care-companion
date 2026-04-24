@@ -21,7 +21,7 @@ import {
 } from "@/lib/tasks";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useAuth } from "@/hooks/useAuth";
-import foundationClinicLogo from "@/assets/foundation-clinic-logo.png";
+import foundationClinicLogo from "@/assets/foundation-clinic-logo-white.jpg";
 
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
 const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
@@ -750,7 +750,8 @@ function ReferralFormPanel({
 <style>
   body { font-family: -apple-system, system-ui, sans-serif; padding: 40px; color: #111; line-height: 1.5; }
   .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #ddd; margin-bottom: 20px; }
-  .header img { height: 40px; object-fit: contain; }
+  .header .logo-crop { width: 160px; height: 56px; overflow: hidden; }
+  .header .logo-crop img { height: 110px; width: auto; object-fit: cover; object-position: left; margin-top: -28px; display: block; }
   .header .meta { text-align: right; font-size: 11px; color: #666; line-height: 1.4; }
   h1 { font-size: 18px; margin: 0 0 16px; letter-spacing: 1px; }
   h2 { font-size: 13px; margin: 20px 0 6px; letter-spacing: 0.5px; text-transform: uppercase; color: #555; }
@@ -759,7 +760,7 @@ function ReferralFormPanel({
   a { color: #0366d6; word-break: break-all; }
 </style></head><body>
 <div class="header">
-  <img src="${logoUrl}" alt="Foundation Clinic" />
+  <div class="logo-crop"><img src="${logoUrl}" alt="Foundation Clinic" /></div>
   <div class="meta">
     <div>Foundation Health Finland Oy</div>
     <div>foundation-clinic.fi</div>
@@ -809,7 +810,9 @@ ${attachmentLines}
   return (
     <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2 pb-1">
-        <img src={foundationClinicLogo} alt="Foundation Clinic" className="h-10 object-contain" />
+        <div className="overflow-hidden w-32 h-12">
+          <img src={foundationClinicLogo} alt="Foundation Clinic" className="h-24 w-auto object-left object-cover -mt-6" />
+        </div>
         <div className="text-right text-[10px] text-muted-foreground leading-tight">
           <div>Foundation Health Finland Oy</div>
           <div>foundation-clinic.fi</div>
