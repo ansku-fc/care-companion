@@ -27,6 +27,10 @@ import { StepLifestyle } from "./StepLifestyle";
 import { StepActivity } from "./StepActivity";
 import { StepNutrition } from "./StepNutrition";
 import { StepSleep } from "./StepSleep";
+import { StepMentalHealth } from "./StepMentalHealth";
+import { StepCancer } from "./StepCancer";
+import { StepStatus } from "./StepStatus";
+import { blankExamFindings } from "./OnboardingFormContext";
 
 type Props = {
   patientId: string;
@@ -142,6 +146,46 @@ export function PatientOnboardingDialog(props: Props) {
           sleep_apnea: Boolean(extra.sleep_apnea),
           sleep_apnea_type: (extra.sleep_apnea_type as string) ?? "",
           sleep_apnea_severity: (extra.sleep_apnea_severity as string) ?? "",
+
+          // Step 8 — Mental Health
+          social_support_perceived: (data as any).social_support_perceived ?? null,
+          recovery_perceived: (extra.recovery_perceived as number) ?? null,
+          workload_perceived: (extra.workload_perceived as number) ?? null,
+          stress_perceived: (data as any).stress_perceived ?? null,
+          gad2_enabled: Boolean(extra.gad2_enabled),
+          gad2_q1: (extra.gad2_q1 as number) ?? null,
+          gad2_q2: (extra.gad2_q2 as number) ?? null,
+          phq2_enabled: Boolean(extra.phq2_enabled),
+          phq2_q1: (extra.phq2_q1 as number) ?? null,
+          phq2_q2: (extra.phq2_q2 as number) ?? null,
+
+          // Step 9 — Cancer
+          screen_breast: Boolean((data as any).cancer_screening_breast),
+          screen_breast_year: (extra.screen_breast_year as number) ?? null,
+          screen_cervix: Boolean((data as any).cancer_screening_cervical),
+          screen_cervix_year: (extra.screen_cervix_year as number) ?? null,
+          screen_colorectum: Boolean((data as any).cancer_screening_colorectal),
+          screen_colorectum_year: (extra.screen_colorectum_year as number) ?? null,
+          screen_prostate: Boolean(extra.screen_prostate),
+          screen_prostate_year: (extra.screen_prostate_year as number) ?? null,
+          screen_skin: Boolean(extra.screen_skin),
+          screen_skin_year: (extra.screen_skin_year as number) ?? null,
+          screen_lung: Boolean(extra.screen_lung),
+          screen_lung_year: (extra.screen_lung_year as number) ?? null,
+          precancer_skin: Boolean((data as any).prev_precancerous),
+          precancer_skin_year: (extra.precancer_skin_year as number) ?? null,
+          precancer_cervix: Boolean(extra.precancer_cervix),
+          precancer_cervix_year: (extra.precancer_cervix_year as number) ?? null,
+          precancer_colorectum: Boolean(extra.precancer_colorectum),
+          precancer_colorectum_year: (extra.precancer_colorectum_year as number) ?? null,
+          sun_exposure: Boolean((data as any).sun_exposure),
+          sun_protection_method: (extra.sun_protection_method as string) ?? "",
+          severe_sunburns_history: Boolean(extra.severe_sunburns_history),
+
+          // Step 10 — Status
+          exam_findings: (extra.exam_findings as any) ?? blankExamFindings(),
+          moles_enabled: Boolean(extra.moles_enabled),
+          moles: (extra.moles as any[]) ?? [],
 
           current_step: ((data as any).current_step as number) ?? 1,
           completed_steps: (extra.completed_steps as number[]) ?? [],
