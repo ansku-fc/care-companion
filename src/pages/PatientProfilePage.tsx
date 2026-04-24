@@ -62,14 +62,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useNavHistory } from "@/hooks/useNavHistory";
 import {
-  ensureSeeded as ensureLabReviewSeeded,
+  seedMarkers as seedLabReviewMarkers,
   getNewMarkers,
   verifyMarker,
   subscribeLabReview,
   completeLabReviewTask,
-  hasKorhonenNewColumn,
-  KORHONEN_NEW_VALUES,
-  KORHONEN_NEW_DATE,
+  type NewMarker,
 } from "@/lib/labReview";
 
 // Legacy flat list for backward compat in dimension views
@@ -4271,19 +4269,11 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
 
   const allLabs = [...labResults, ...dummyLabs.filter(d => !labResults.some(r => r.id === d.id))] as Tables<"patient_lab_results">[];
 
-  // For Korhonen, Elena: synthesize a "NEW" most-recent column with the unreviewed values.
-  const korhonenNewLab = hasKorhonenNewColumn(patientId, patientName)
-    ? ({
-        id: "korhonen-new-results",
-        result_date: KORHONEN_NEW_DATE,
-        ldl_mmol_l: KORHONEN_NEW_VALUES.ldl_mmol_l,
-        hba1c_mmol_mol: KORHONEN_NEW_VALUES.hba1c_mmol_mol,
-        alat_u_l: KORHONEN_NEW_VALUES.alat_u_l,
-      } as unknown as Tables<"patient_lab_results">)
-    : null;
-  const labsWithNew = korhonenNewLab ? [...allLabs, korhonenNewLab] : allLabs;
   // Chronological: oldest first (left), newest last (right)
-  const sorted = [...labsWithNew].sort((a, b) => a.result_date.localeCompare(b.result_date));
+  const sorted = [...allLabs].sort((a, b) => a.result_date.localeCompare(b.result_date));
+
+  // The most-recent real lab result (used to drive the AWAITING REVIEW flow).
+  const newestLab = sorted.length > 0 ? sorted[sorted.length - 1] : null;
 
   const categories = [
     {
@@ -4393,11 +4383,24 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   const useSharedPanel = !!(selectedMarker && CARDIO_DUMMY_SERIES[selectedMarker.key]);
 
   // ---- Lab review flow (AWAITING REVIEW) ----
+  // When entering review mode, seed the unreviewed-marker store with all
+  // out-of-range markers from the most recent lab result for this patient.
   React.useEffect(() => {
-    ensureLabReviewSeeded(patientId, patientName);
+    if (!reviewMode || !newestLab) return;
+    const markers: NewMarker[] = [];
+    for (const cat of categories) {
+      for (const row of cat.rows) {
+        if (isOutOfRange(row.key, newestLab)) {
+          const key = row.key === "_bp" ? "blood_pressure_systolic" : row.key;
+          markers.push({ key, label: row.label, unit: row.unit });
+        }
+      }
+    }
+    seedLabReviewMarkers(patientId, markers);
     const unsub = subscribeLabReview(() => forceTick((n) => n + 1));
     return unsub;
-  }, [patientId, patientName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, reviewMode, newestLab?.id]);
 
   const newMarkers = getNewMarkers(patientId);
   const newKeys = new Set(newMarkers.map((m) => m.key));
@@ -4564,8 +4567,16 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                          {sorted.map((lab) => {
                           const d = new Date(lab.result_date);
                           const label = `${d.getFullYear()} / ${String(d.getMonth() + 1).padStart(2, "0")}`;
+                          const isNewCol = reviewMode && newestLab?.id === lab.id;
                           return (
-                            <th key={lab.id} className="h-11 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[100px] whitespace-nowrap">{label}</th>
+                            <th key={lab.id} className="h-11 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[100px] whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span>{label}</span>
+                                {isNewCol && (
+                                  <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-primary">NEW</span>
+                                )}
+                              </div>
+                            </th>
                           );
                         })}
                       </tr>
