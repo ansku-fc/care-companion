@@ -60,6 +60,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
+import { useNavHistory } from "@/hooks/useNavHistory";
 import {
   ensureSeeded as ensureLabReviewSeeded,
   getNewMarkers,
