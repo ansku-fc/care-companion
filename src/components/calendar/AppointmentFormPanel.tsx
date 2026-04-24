@@ -245,6 +245,31 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
       return;
     }
 
+    const apptId = insertedId ?? editingAppointment?.id;
+
+    // Upload attachment if any
+    if (attachedFile && apptId) {
+      try {
+        const path = `${apptId}/${attachedFile.name}`;
+        const { error: upErr } = await supabase.storage
+          .from("appointment-attachments")
+          .upload(path, attachedFile, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage
+          .from("appointment-attachments")
+          .getPublicUrl(path);
+        await supabase
+          .from("appointments")
+          .update({ attachment_url: pub.publicUrl } as any)
+          .eq("id", apptId);
+      } catch (e: any) {
+        toast({
+          title: "File upload not yet configured",
+          description: "Appointment saved without attachment.",
+        });
+      }
+    }
+
     // If created from a task prefill, link the new appointment back to the task
     if (insertedId && prefill?.sourceTaskId) {
       await supabase
