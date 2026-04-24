@@ -74,6 +74,9 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
   // Shared
   const [title, setTitle] = useState("");
+  const [dateValue, setDateValue] = useState<string>(
+    selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")
+  );
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [notes, setNotes] = useState("");
