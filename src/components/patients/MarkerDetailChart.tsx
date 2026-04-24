@@ -301,7 +301,7 @@ export function MarkerDetailChart({
                     <span className="text-foreground">{a.text}</span>
                   </div>
                   <button
-                    onClick={() => onDeleteAnnotation(a.id)}
+                    onClick={() => onDeleteAnnotation?.(a.id)}
                     className="text-muted-foreground hover:text-destructive shrink-0"
                     aria-label="Delete annotation"
                   >
