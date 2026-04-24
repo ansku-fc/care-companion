@@ -77,26 +77,74 @@ export function AddPatientDialog() {
     if (!open) return;
     let cancelled = false;
     (async () => {
-      // Fetch users with the doctor role only
+      const formatName = (full?: string | null) => {
+        const name = (full ?? "").trim();
+        if (!name) return "";
+        if (/^dr\.?\s/i.test(name)) return name;
+        // "Last, First" -> "Dr. Last"
+        if (name.includes(",")) return `Dr. ${name.split(",")[0].trim()}`;
+        const parts = name.split(/\s+/);
+        const last = parts[parts.length - 1];
+        return `Dr. ${last}`;
+      };
+
+      // 1) Try users with the doctor role
       const { data: roles } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "doctor");
-      const ids = (roles ?? []).map((r) => r.user_id);
-      if (ids.length === 0) {
-        if (!cancelled) setDoctors([]);
-        return;
+      const doctorIds = (roles ?? []).map((r) => r.user_id);
+
+      let profs: { user_id: string; full_name: string | null }[] = [];
+      if (doctorIds.length > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", doctorIds);
+        profs = data ?? [];
       }
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", ids);
-      if (!cancelled) setDoctors((profs ?? []).filter((p) => p.full_name?.trim()));
+
+      // 2) Fallback: all profiles
+      if (profs.length === 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("user_id, full_name");
+        profs = data ?? [];
+      }
+
+      // 3) Always include current user
+      if (user && !profs.some((p) => p.user_id === user.id)) {
+        const { data: me } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (me) profs = [me, ...profs];
+        else
+          profs = [
+            { user_id: user.id, full_name: (user.user_metadata as any)?.full_name ?? user.email ?? "Me" },
+            ...profs,
+          ];
+      }
+
+      const list: DoctorOption[] = profs
+        .map((p) => ({ user_id: p.user_id, full_name: formatName(p.full_name) || p.full_name || "Unknown" }))
+        .filter((p) => p.full_name);
+
+      if (!cancelled) {
+        setDoctors(list);
+        // Pre-select current user as default
+        if (user) {
+          setForm((prev) =>
+            prev.assigned_doctor_id ? prev : { ...prev, assigned_doctor_id: user.id },
+          );
+        }
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, user]);
 
   const update = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
