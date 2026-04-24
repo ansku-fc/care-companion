@@ -571,7 +571,7 @@ function computeRadarData(
   const exercise_functional = bmi ? (bmi > 35 ? 7.0 + r(3) : bmi > 30 ? 5.5 + r(4) : bmi > 25 ? 3.5 + r(5) : 1.5 + r(6)) : cat('exercise_functional');
   const scores: Record<string, number> = {
     cardiovascular, metabolic, digestion, exercise_functional,
-    brain_mental_health: cat('brain_mental_health'),
+    brain_mental: cat('brain_mental_health'),
     respiratory_immune: cat('respiratory_immune'),
     cancer_risk: cat('cancer_risk'),
     skin_oral_mucosal: cat('skin_oral_mucosal'),
