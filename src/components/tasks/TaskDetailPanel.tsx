@@ -321,19 +321,19 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                     <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
                       <div className="space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground">
-                          Call summary / outcome
+                          {isReferral ? "Referral summary / outcome" : "Call summary / outcome"}
                         </p>
                         <Textarea
                           value={outcomeText}
                           onChange={(e) => setOutcomeText(e.target.value)}
                           rows={4}
-                          placeholder="What was discussed, decided, or referred…"
+                          placeholder={isReferral ? "Specialist contacted, appointment booked, response received…" : "What was discussed, decided, or referred…"}
                         />
                       </div>
                       <div className="space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground">Outcome tag</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {OUTCOME_TAGS.map((tag) => (
+                          {activeOutcomeTags.map((tag) => (
                             <button
                               key={tag}
                               type="button"
