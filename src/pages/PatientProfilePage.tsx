@@ -62,14 +62,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useNavHistory } from "@/hooks/useNavHistory";
 import {
-  ensureSeeded as ensureLabReviewSeeded,
+  seedMarkers as seedLabReviewMarkers,
   getNewMarkers,
   verifyMarker,
   subscribeLabReview,
   completeLabReviewTask,
-  hasKorhonenNewColumn,
-  KORHONEN_NEW_VALUES,
-  KORHONEN_NEW_DATE,
+  type NewMarker,
 } from "@/lib/labReview";
 
 // Legacy flat list for backward compat in dimension views
