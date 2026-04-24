@@ -1,0 +1,1 @@
+ALTER TABLE public.appointments ALTER COLUMN provider_id DROP NOT NULL;
