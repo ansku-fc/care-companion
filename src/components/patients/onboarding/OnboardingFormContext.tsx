@@ -204,6 +204,25 @@ export function calcWaistHipRatio(waist: number | null, hip: number | null): num
   return Math.round((waist / hip) * 100) / 100;
 }
 
+/** MET hours per week — Easy×3.5 + Moderate×5 + Vigorous×8 + Strength×4. */
+export function calcMetHours(
+  easy: number | null,
+  moderate: number | null,
+  vigorous: number | null,
+  strength: number | null,
+): number | null {
+  const vals = [easy, moderate, vigorous, strength];
+  if (vals.every((v) => v === null || v === 0)) return null;
+  const total = (easy ?? 0) * 3.5 + (moderate ?? 0) * 5 + (vigorous ?? 0) * 8 + (strength ?? 0) * 4;
+  return Math.round(total * 10) / 10;
+}
+
+/** Estimated fiber from fruit+veg grams (×0.05). */
+export function calcFiberFromFruitVeg(fruitVegG: number | null): number | null {
+  if (!fruitVegG || fruitVegG <= 0) return null;
+  return Math.round(fruitVegG * 0.05 * 10) / 10;
+}
+
 /* ---------------- Context ---------------- */
 
 type OnboardingFormContextValue = {
