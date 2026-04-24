@@ -351,11 +351,8 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
       </CardHeader>
 
       <CardContent className="flex-1 min-h-0 flex flex-col p-0 overflow-hidden">
-        <p className="text-xs text-muted-foreground px-4 pb-3 shrink-0">
-          {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
-        </p>
-
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 space-y-4">
+        <div className="relative flex-1 min-h-0">
+          <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto px-4 pt-1 space-y-4">
           {!kind ? (
             <div className="space-y-2">
               {KIND_TILES.map((tile) => (
