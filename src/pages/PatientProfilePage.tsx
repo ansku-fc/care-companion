@@ -418,8 +418,20 @@ const PatientProfilePage = () => {
               else setActiveSectionRaw("overview");
             };
           } else {
-            // No history (deep link). Fall back to the most logical parent.
-            if (
+            // No in-profile history (deep link). Prefer the actual previous route
+            // from the global router history, so the back button reflects where
+            // the doctor really came from (e.g. Tasks, Dashboard).
+            const prevRoute = navHistory.previousRoute;
+            if (prevRoute && !prevRoute.path.startsWith(`/patients/${id}`)) {
+              const dynamicLabel =
+                prevRoute.path === "/" || prevRoute.path.startsWith("/dashboard")
+                  ? "Back to Dashboard"
+                  : prevRoute.path.startsWith("/tasks")
+                    ? "Back to Tasks"
+                    : `Back to ${prevRoute.label}`;
+              label = dynamicLabel;
+              onBack = () => navigate(prevRoute.path);
+            } else if (
               ["details", "medications", "visits", "care_team", "health_overview", "lab_results"].includes(
                 activeSection,
               )
