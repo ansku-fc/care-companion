@@ -240,7 +240,7 @@ const Dashboard = () => {
                 {pendingTasks.length === 0 ? <Empty text="No pending tasks" /> : pendingTasks.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="warning" />)}
               </Section>
               <Section icon={<CheckCircle2 className="h-3 w-3" />} label="Completed today" tone="success">
-                {completedToday.length === 0 ? <Empty text="Nothing completed yet" /> : completedToday.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
+                {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
               </Section>
               <Button variant="ghost" size="sm" className="w-full gap-1 text-primary" onClick={() => navigate("/tasks")}>
                 Open all tasks <ArrowRight className="h-3.5 w-3.5" />
