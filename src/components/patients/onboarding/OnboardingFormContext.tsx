@@ -193,6 +193,41 @@ const blankFamily = (): FamilyHistoryRow => ({
   deceased: false,
 });
 
+const emptyFinding = (): ExamFinding => ({ present: false, notes: "" });
+
+export function blankExamFindings(): ExamFindings {
+  return {
+    heart: emptyFinding(),
+    peripheral_circulation: emptyFinding(),
+    lungs: emptyFinding(),
+    lymph_nodes: emptyFinding(),
+    thyroid: emptyFinding(),
+    skin_general: emptyFinding(),
+    abdomen: emptyFinding(),
+    eyes: emptyFinding(),
+    ears: emptyFinding(),
+    musculoskeletal: emptyFinding(),
+    peripheral_adp: emptyFinding(),
+    peripheral_atp: emptyFinding(),
+    peripheral_afem: emptyFinding(),
+  };
+}
+
+export function blankMole(label = "Mole 1"): MoleEntry {
+  return {
+    id: crypto.randomUUID(),
+    label,
+    side: "front",
+    location: "",
+    asymmetry: "",
+    borders: "",
+    color: "",
+    size: "",
+    change: "",
+    symptoms: "",
+  };
+}
+
 export const blankOnboardingForm: OnboardingForm = {
   age: null,
   height_cm: null,
@@ -258,6 +293,43 @@ export const blankOnboardingForm: OnboardingForm = {
   sleep_apnea: false,
   sleep_apnea_type: "",
   sleep_apnea_severity: "",
+
+  social_support_perceived: null,
+  recovery_perceived: null,
+  workload_perceived: null,
+  stress_perceived: null,
+  gad2_enabled: false,
+  gad2_q1: null,
+  gad2_q2: null,
+  phq2_enabled: false,
+  phq2_q1: null,
+  phq2_q2: null,
+
+  screen_breast: false,
+  screen_breast_year: null,
+  screen_cervix: false,
+  screen_cervix_year: null,
+  screen_colorectum: false,
+  screen_colorectum_year: null,
+  screen_prostate: false,
+  screen_prostate_year: null,
+  screen_skin: false,
+  screen_skin_year: null,
+  screen_lung: false,
+  screen_lung_year: null,
+  precancer_skin: false,
+  precancer_skin_year: null,
+  precancer_cervix: false,
+  precancer_cervix_year: null,
+  precancer_colorectum: false,
+  precancer_colorectum_year: null,
+  sun_exposure: false,
+  sun_protection_method: "",
+  severe_sunburns_history: false,
+
+  exam_findings: blankExamFindings(),
+  moles_enabled: false,
+  moles: [],
 
   current_step: 1,
   completed_steps: [],
