@@ -541,6 +541,7 @@ const PatientProfilePage = () => {
 
 // Compute a simple score (1-10) for each of the 9 main health dimensions
 // from the patient's actual lab results, health categories, and onboarding data.
+// v2 - patient-driven scoring
 function computeRadarData(
   onboarding: Tables<"patient_onboarding"> | null,
   labResults: Tables<"patient_lab_results">[],
