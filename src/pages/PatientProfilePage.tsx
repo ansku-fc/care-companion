@@ -4383,11 +4383,24 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   const useSharedPanel = !!(selectedMarker && CARDIO_DUMMY_SERIES[selectedMarker.key]);
 
   // ---- Lab review flow (AWAITING REVIEW) ----
+  // When entering review mode, seed the unreviewed-marker store with all
+  // out-of-range markers from the most recent lab result for this patient.
   React.useEffect(() => {
-    ensureLabReviewSeeded(patientId, patientName);
+    if (!reviewMode || !newestLab) return;
+    const markers: NewMarker[] = [];
+    for (const cat of categories) {
+      for (const row of cat.rows) {
+        if (isOutOfRange(row.key, newestLab)) {
+          const key = row.key === "_bp" ? "blood_pressure_systolic" : row.key;
+          markers.push({ key, label: row.label, unit: row.unit });
+        }
+      }
+    }
+    seedLabReviewMarkers(patientId, markers);
     const unsub = subscribeLabReview(() => forceTick((n) => n + 1));
     return unsub;
-  }, [patientId, patientName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, reviewMode, newestLab?.id]);
 
   const newMarkers = getNewMarkers(patientId);
   const newKeys = new Set(newMarkers.map((m) => m.key));
