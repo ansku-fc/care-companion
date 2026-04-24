@@ -504,6 +504,8 @@ const PatientProfilePage = () => {
           <HealthDataHub
             patientId={patient.id}
             labResults={labResults}
+            onboarding={onboarding}
+            healthCategories={healthCategories}
             onLabResultsAdded={fetchData}
             onSelectDimension={setActiveSection}
             markerNotes={markerNotes}
