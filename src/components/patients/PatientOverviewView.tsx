@@ -318,6 +318,7 @@ export function PatientOverviewView({
           height_cm: height,
           weight_kg: weight,
           waist_circumference_cm: waist,
+          hip_circumference_cm: hip,
           waist_to_hip_ratio: whr,
           bmi,
         })
@@ -330,6 +331,7 @@ export function PatientOverviewView({
         height_cm: height,
         weight_kg: weight,
         waist_circumference_cm: waist,
+        hip_circumference_cm: hip,
         waist_to_hip_ratio: whr,
         bmi,
       });
@@ -806,7 +808,7 @@ export function PatientOverviewView({
                 const weight = onboarding?.weight_kg ?? 84;
                 const bmi = computedBmi ?? 23.8;
                 const waist = onboarding?.waist_circumference_cm ?? 88;
-                const hip = 96;
+                const hip = onboarding?.hip_circumference_cm ?? 96;
                 const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
 
                 // unit + lower-is-better flag for delta colouring
