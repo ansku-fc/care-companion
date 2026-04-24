@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays, AlertTriangle, ArrowRight, Stethoscope, Plus,
   UserRound, HeartPulse, FileText, ClipboardList, CheckCircle2, Clock, Activity,
@@ -16,18 +16,35 @@ import {
   isCompletedToday, dueWithinDays, isOverdue, isDueToday,
   priorityMeta, type Task,
 } from "@/lib/tasks";
-import { format } from "date-fns";
+import { format, isSameDay, parseISO } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { buildDummyAppointments } from "@/lib/dummyAppointments";
 
 type PatientLite = { id: string; full_name: string };
 
-const todaySchedule = [
-  { time: "08:30", name: "Carter, Jay-Z", type: "Annual review", status: "completed" as const },
-  { time: "09:30", name: "Johnson, Sarah", type: "Follow-up", status: "completed" as const },
-  { time: "11:00", name: "Mäkinen, Aino", type: "Consultation", status: "in_progress" as const },
-  { time: "13:00", name: "Eriksson, Marcus", type: "Lab review", status: "upcoming" as const },
-  { time: "14:30", name: "Korhonen, Elena", type: "Urgent consultation", status: "upcoming" as const },
-  { time: "15:30", name: "Bergström, Thomas", type: "Check-up", status: "upcoming" as const },
-];
+type ScheduleItem = {
+  id: string;
+  time: string;
+  start: Date;
+  end: Date;
+  name: string;
+  type: string;
+  status: "completed" | "in_progress" | "upcoming";
+};
+
+const APPT_TYPE_LABEL: Record<string, string> = {
+  onboarding: "Onboarding",
+  acute: "Acute",
+  consultation: "Consultation",
+  follow_up: "Follow-up",
+  check_up: "Check-up",
+  procedure: "Procedure",
+  urgent: "Urgent consultation",
+  working_time: "Working Time",
+  doctor_meeting: "Doctor Meeting",
+  nurse_task: "Nurse Task",
+};
+
 
 const recentActivity = [
   { time: "Today 09:15", event: "New lab results uploaded", patient: "Korhonen, Elena", actor: "Lab system", section: "health-data" as const },
@@ -94,7 +111,7 @@ const Dashboard = () => {
   };
   const openTask = (t: Task) => { setDetail(t); setOpen(true); };
 
-  const createTaskForAppt = (appt: typeof todaySchedule[number]) => {
+  const createTaskForAppt = (appt: ScheduleItem) => {
     const p = findPatient(appt.name);
     openNewTask({
       title: "Post-visit follow-up",
@@ -125,6 +142,74 @@ const Dashboard = () => {
     (t) => (t.status === "in_progress" || (dueWithinDays(t, 7) && !urgentTasks.includes(t))) && t.status !== "done" && t.status !== "deferred",
   );
   const completedToday = tasks.filter((t) => isCompletedToday(t));
+
+  // Today's schedule = real appointments from DB + today's dummy appointments
+  const todayKey = format(today, "yyyy-MM-dd");
+  const { data: realTodayAppts = [] } = useQuery({
+    queryKey: ["today-appointments", todayKey],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*, patients(full_name)")
+        .gte("start_time", `${todayKey}T00:00:00`)
+        .lte("start_time", `${todayKey}T23:59:59`)
+        .order("start_time", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const todaySchedule: ScheduleItem[] = useMemo(() => {
+    const now = new Date();
+    const dummies = buildDummyAppointments(today).filter((a) =>
+      isSameDay(parseISO(a.start_time), today),
+    );
+    type Raw = {
+      id: string;
+      start_time: string;
+      end_time: string;
+      appointment_type?: string | null;
+      title?: string | null;
+      patient_name?: string | null;
+    };
+    const rawReal: Raw[] = (realTodayAppts as any[]).map((a) => ({
+      id: a.id,
+      start_time: a.start_time,
+      end_time: a.end_time,
+      appointment_type: a.appointment_type,
+      title: a.title,
+      patient_name: a.patients?.full_name ?? null,
+    }));
+    const rawDummy: Raw[] = dummies.map((d) => ({
+      id: d.id,
+      start_time: d.start_time,
+      end_time: d.end_time,
+      appointment_type: d.appointment_type,
+      title: d.title,
+      patient_name: d.patient_name ?? null,
+    }));
+    const combined = [...rawReal, ...rawDummy].sort((a, b) =>
+      a.start_time.localeCompare(b.start_time),
+    );
+    return combined.map((a) => {
+      const start = parseISO(a.start_time);
+      const end = parseISO(a.end_time);
+      const status: ScheduleItem["status"] =
+        now >= end ? "completed" : now >= start ? "in_progress" : "upcoming";
+      const typeKey = a.appointment_type ?? "consultation";
+      const subtitle = APPT_TYPE_LABEL[typeKey] ?? typeKey;
+      const name = a.patient_name ?? a.title ?? "Untitled";
+      return {
+        id: a.id,
+        time: format(start, "HH:mm"),
+        start,
+        end,
+        name,
+        type: subtitle,
+        status,
+      };
+    });
+  }, [realTodayAppts, today]);
 
 
   const statusDot = (status: "upcoming" | "in_progress" | "completed") => {
@@ -188,8 +273,11 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {todaySchedule.length === 0 && (
+                <p className="text-sm text-muted-foreground italic px-1 py-2">No appointments scheduled for today.</p>
+              )}
               {todaySchedule.map((appt) => (
-                <div key={`${appt.time}-${appt.name}`} className="group flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
+                <div key={appt.id} className="group flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
                   <span className="text-sm font-mono text-muted-foreground w-14 tabular-nums">{appt.time}</span>
                   <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(appt.status))} />
                   <div className="flex-1 min-w-0">
