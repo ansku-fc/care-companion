@@ -542,12 +542,11 @@ const PatientProfilePage = () => {
 // Compute a simple score (1-10) for each of the 9 main health dimensions
 // from the patient's actual lab results, health categories, and onboarding data.
 function computeRadarData(
-  patientId: string,
   onboarding: Tables<"patient_onboarding"> | null,
   labResults: Tables<"patient_lab_results">[],
   healthCategories: Tables<"patient_health_categories">[],
 ) {
-  const pid = onboarding?.id ?? onboarding?.patient_id ?? patientId ?? "";
+  const pid = (onboarding as any)?.patient_id ?? (onboarding as any)?.id ?? "";
   const r = (i: number) => ((pid.charCodeAt(i % Math.max(pid.length, 1)) || 5) * 37 % 20) / 20;
 
   const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
