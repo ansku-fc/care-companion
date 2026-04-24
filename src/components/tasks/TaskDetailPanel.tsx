@@ -698,6 +698,7 @@ function ReferralFormPanel({
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [printAttachments, setPrintAttachments] = useState<{ name: string; url: string }[]>([]);
   useEffect(() => {
     if (!patientId) return;
     const needMeds = !(form.medications && form.medications.trim().length > 0);
@@ -906,7 +907,7 @@ function ReferralFormPanel({
   };
 
   return (
-    <div id="referral-print-area" className="rounded-lg border bg-muted/30 p-3 space-y-3">
+    <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2 pb-1">
         <div className="overflow-hidden w-32 h-12">
           <img src={foundationClinicLogo} alt="Foundation Clinic" className="h-24 w-auto object-left object-cover -mt-6" />
