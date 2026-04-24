@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, Pencil, Trash2, User, Stethoscope, HeartPulse, ArrowRight, FlaskConical, Pill, AlertTriangle, PhoneCall, FileText, Mail, Download, Paperclip, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -698,6 +698,33 @@ function ReferralFormPanel({
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const medsFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!patientId || medsFetchedRef.current) return;
+    if (form.medications && form.medications.trim().length > 0) {
+      medsFetchedRef.current = true;
+      return;
+    }
+    medsFetchedRef.current = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("patient_medications")
+        .select("medication_name, dose, frequency")
+        .eq("patient_id", patientId)
+        .eq("status", "active");
+      if (error || !data || data.length === 0) return;
+      const formatted = data
+        .map((m) => {
+          const head = [m.medication_name, m.dose].filter(Boolean).join(" ");
+          return m.frequency ? `${head} · ${m.frequency}` : head;
+        })
+        .filter(Boolean)
+        .join("\n");
+      if (formatted) onChange({ ...form, medications: formatted });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId]);
 
   const update = <K extends keyof ReferralForm>(key: K, value: ReferralForm[K]) => {
     onChange({ ...form, [key]: value });
@@ -897,7 +924,7 @@ ${attachmentLines}
           value={form.medications}
           onChange={(e) => update("medications", e.target.value)}
           rows={2}
-          placeholder="List active medications and doses…"
+          placeholder="No active medications."
           className="text-xs"
         />
       </div>
