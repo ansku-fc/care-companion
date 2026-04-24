@@ -303,7 +303,9 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                       }}
                     >
                       <Calendar className="h-3.5 w-3.5" />
-                      {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id ? "View in Calendar" : "Schedule"}
+                      {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id
+                        ? "View in Calendar"
+                        : isReferral ? "Schedule referral" : "Schedule"}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                     <Button
