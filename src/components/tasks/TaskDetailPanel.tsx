@@ -205,14 +205,51 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
 // inline, with a deep link to the full view.
 // ---------------------------------------------------------------------------
 
-type PreviewKind = "labs" | "interaction" | "renewal" | null;
+type PreviewKind = "labs" | "interaction" | "renewal" | "supply" | "risk_review" | "follow_up" | null;
 
 function detectKind(task: Task): PreviewKind {
   const hay = `${task.title} ${task.created_from ?? ""} ${task.description ?? ""}`.toLowerCase();
   if (/lab result|new lab|review.*lab/.test(hay)) return "labs";
   if (/interaction|warfarin|ibuprofen/.test(hay)) return "interaction";
-  if (/renew|prescription|metformin|refill|supply/.test(hay)) return "renewal";
+  if (/low supply|out of stock|stock low/.test(hay)) return "supply";
+  if (/renew|prescription|refill/.test(hay)) return "renewal";
+  if (/risk factor|doctor.?s summary|dimension review/.test(hay)) return "risk_review";
+  if (/follow.?up|post.?visit/.test(hay)) return "follow_up";
   return null;
+}
+
+function clinicalActionPath(kind: NonNullable<PreviewKind>, task: Task): string {
+  const base = `/patients/${task.patient_id}`;
+  switch (kind) {
+    case "labs":        return `${base}?tab=lab_results&review=1`;
+    case "interaction": return `${base}?tab=medications&focus=interaction`;
+    case "renewal":     return `${base}?tab=medications&focus=renewal`;
+    case "supply":      return `${base}?tab=medications&focus=supply`;
+    case "risk_review": return `${base}?tab=health_data`;
+    case "follow_up":   return `${base}?tab=visits`;
+  }
+}
+
+function clinicalActionLabel(kind: NonNullable<PreviewKind>): string {
+  switch (kind) {
+    case "labs":        return "Go to full lab view";
+    case "interaction": return "Review interaction in Medications";
+    case "renewal":     return "Renew in Medications";
+    case "supply":      return "Update supply in Medications";
+    case "risk_review": return "Review risk factors";
+    case "follow_up":   return "Open patient record";
+  }
+}
+
+function clinicalAutoCompleteHint(kind: NonNullable<PreviewKind>): string {
+  switch (kind) {
+    case "labs":        return "Completes automatically once all new results are verified.";
+    case "interaction": return "Completes when you Resolve, Override, or Defer the alert.";
+    case "renewal":     return "Completes once the prescription is renewed.";
+    case "supply":      return "Completes when supply is renewed above 25%.";
+    case "risk_review": return "Completes when the Doctor's Summary is saved.";
+    case "follow_up":   return "Completes when marked done from the patient record.";
+  }
 }
 
 function ContextualPreview({
