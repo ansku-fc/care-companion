@@ -370,34 +370,74 @@ const PatientProfilePage = () => {
       {/* Main content */}
       <div className={`flex-1 flex flex-col overflow-auto`}>
         {(() => {
-          // Derive back target from current section using the dimension hierarchy.
-          let label = "Back to Patients";
-          let onBack: () => void = () => navigate("/patients");
+          // Build a label for any section key.
+          const sectionLabel = (key: string): string => {
+            if (key === "overview") return "Overview";
+            if (key === "details") return "Patient Details";
+            if (key === "medications") return "Medications";
+            if (key === "visits") return "Visits";
+            if (key === "care_team") return "Care Team";
+            if (key === "health_overview") return "Health Overview";
+            if (key === "lab_results" || key === "lab_results_legacy") return "Health Data";
+            const main = HEALTH_TAXONOMY.find((m) => m.key === key);
+            if (main) return main.label;
+            for (const m of HEALTH_TAXONOMY) {
+              const sub = m.subDimensions.find((s) => s.key === key);
+              if (sub) return sub.label;
+            }
+            return "Back";
+          };
+
+          // Where the doctor actually came from (top of scope stack, below current).
+          const prev = navHistory.peekScope(scopeKey);
+
+          let label: string;
+          let onBack: () => void;
 
           if (activeSection === "overview") {
-            label = "Back to Patients";
-            onBack = () => navigate("/patients");
-          } else if (
-            ["details", "medications", "visits", "care_team", "health_overview", "lab_results"].includes(activeSection)
-          ) {
-            label = "Back to Overview";
-            onBack = () => setActiveSection("overview");
-          } else {
-            // Dimension or sub-dimension
-            const isMain = HEALTH_TAXONOMY.some((m) => m.key === activeSection);
-            if (isMain) {
-              label = "Back to Health Data";
-              onBack = () => setActiveSection("lab_results");
+            // At the patient root — leave the profile to the previous app route
+            // (typically the Patients list, but could be Home/Tasks/Calendar).
+            const prevRoute = navHistory.previousRoute;
+            if (prevRoute && !prevRoute.path.startsWith(`/patients/${id}`)) {
+              label = `Back to ${prevRoute.label}`;
+              onBack = () => navigate(prevRoute.path);
             } else {
-              const parent = HEALTH_TAXONOMY.find((m) =>
-                m.subDimensions.some((s) => s.key === activeSection),
-              );
-              if (parent) {
-                label = `Back to ${parent.label}`;
-                onBack = () => setActiveSection(parent.key);
-              } else {
+              label = "Back to Patients";
+              onBack = () => navigate("/patients");
+            }
+          } else if (prev) {
+            // We have real in-profile history — use it.
+            label = `Back to ${sectionLabel(prev)}`;
+            onBack = () => {
+              const target = navHistory.popScope(scopeKey);
+              if (target) setActiveSectionRaw(target);
+              else setActiveSectionRaw("overview");
+            };
+          } else {
+            // No history (deep link). Fall back to the most logical parent.
+            if (
+              ["details", "medications", "visits", "care_team", "health_overview", "lab_results"].includes(
+                activeSection,
+              )
+            ) {
+              label = "Back to Overview";
+              onBack = () => setActiveSection("overview");
+            } else {
+              const isMain = HEALTH_TAXONOMY.some((m) => m.key === activeSection);
+              if (isMain) {
                 label = "Back to Health Data";
                 onBack = () => setActiveSection("lab_results");
+              } else {
+                const parent = HEALTH_TAXONOMY.find((m) =>
+                  m.subDimensions.some((s) => s.key === activeSection),
+                );
+                if (parent) {
+                  label = `Back to ${parent.label}`;
+                  onBack = () => setActiveSection(parent.key);
+                } else {
+                  label = "Back to Health Data";
+                  onBack = () => setActiveSection("lab_results");
+                }
               }
             }
           }
