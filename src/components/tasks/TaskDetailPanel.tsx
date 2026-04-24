@@ -73,7 +73,8 @@ function buildCommPrefill(task: Task): CommPrefill {
 }
 
 const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No action needed"] as const;
-type OutcomeTag = typeof OUTCOME_TAGS[number];
+const REFERRAL_OUTCOME_TAGS = ["Referral sent", "Awaiting response", "Specialist booked", "No longer needed"] as const;
+type OutcomeTag = string;
 
 interface Props {
   task: Task | null;
