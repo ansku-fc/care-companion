@@ -4903,20 +4903,49 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               </div>
 
               <div className="p-4 flex-1 space-y-5">
-                {/* Data points */}
+                {/* Data points OR Graph (opposite of main view) */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Data points
+                      {showGraph ? "Trend" : "Data points"}
                     </p>
-                    <div className="inline-flex rounded-md border bg-muted/50 p-0.5">
-                      {winBtn("6m", "6m")}
-                      {winBtn("1y", "1y")}
-                      {winBtn("3y", "3y")}
-                      {winBtn("all", "All")}
-                    </div>
+                    {!showGraph && (
+                      <div className="inline-flex rounded-md border bg-muted/50 p-0.5">
+                        {winBtn("6m", "6m")}
+                        {winBtn("1y", "1y")}
+                        {winBtn("3y", "3y")}
+                        {winBtn("all", "All")}
+                      </div>
+                    )}
                   </div>
-                  {filteredPoints.length === 0 ? (
+                  {showGraph ? (
+                    chartData.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">No data points available.</p>
+                    ) : (
+                      <MarkerDetailChart
+                        label={isBp ? "Systolic" : selectedMarker.label}
+                        unit={selectedMarker.unit}
+                        chartData={chartData}
+                        refValues={ref}
+                        secondarySeries={isBp ? diastolicChartData : undefined}
+                        secondaryLabel={isBp ? "Diastolic" : undefined}
+                        secondaryRefValues={isBp ? diastolicRef : undefined}
+                        annotations={annotations.map((a) => ({
+                          id: a.id,
+                          date: a.annotation_date,
+                          text: a.text,
+                          author: a.author_name,
+                        }))}
+                        annotationText={annotationText}
+                        annotationDate={annotationDate}
+                        onAnnotationTextChange={setAnnotationText}
+                        onAnnotationDateChange={setAnnotationDate}
+                        onSaveAnnotation={saveAnnotation}
+                        onDeleteAnnotation={deleteAnnotation}
+                        onCreateTask={createTaskFromMarker}
+                      />
+                    )
+                  ) : filteredPoints.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">No data points in this range.</p>
                   ) : (
                     <div className="rounded-md border overflow-hidden">
@@ -4929,31 +4958,76 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredPoints.map((p, idx) => {
-                            const inR = inRangeFor(p.value);
-                            return (
-                              <tr key={`${p.date}-${idx}`} className="border-t">
-                                <td className="px-3 py-1.5 text-xs text-foreground">
-                                  {new Date(p.date).toLocaleDateString()}
-                                </td>
-                                <td className={cn(
-                                  "px-3 py-1.5 text-xs",
-                                  inR ? "text-foreground" : "font-bold text-rose-600",
-                                )}>
-                                  {p.value}
-                                </td>
-                                <td className="px-3 py-1.5 text-xs">
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <span className={cn(
-                                      "inline-block w-2 h-2 rounded-full",
-                                      inR ? "bg-emerald-500" : "bg-rose-500",
-                                    )} />
-                                    {inR ? "Yes" : "No"}
-                                  </span>
+                          {isBp ? (
+                            <>
+                              <tr className="bg-muted/20">
+                                <td colSpan={3} className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Systolic
                                 </td>
                               </tr>
-                            );
-                          })}
+                              {filteredPoints.map((p, idx) => {
+                                const inR = inRangeWith(ref, p.value);
+                                return (
+                                  <tr key={`s-${p.date}-${idx}`} className="border-t">
+                                    <td className="px-3 py-1.5 text-xs text-foreground">{new Date(p.date).toLocaleDateString()}</td>
+                                    <td className={cn("px-3 py-1.5 text-xs", inR ? "text-foreground" : "font-bold text-rose-600")}>{p.value}</td>
+                                    <td className="px-3 py-1.5 text-xs">
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <span className={cn("inline-block w-2 h-2 rounded-full", inR ? "bg-emerald-500" : "bg-rose-500")} />
+                                        {inR ? "Yes" : "No"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              <tr className="bg-muted/20 border-t">
+                                <td colSpan={3} className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Diastolic
+                                </td>
+                              </tr>
+                              {filteredDiaPoints.map((p, idx) => {
+                                const inR = inRangeWith(diastolicRef, p.value);
+                                return (
+                                  <tr key={`d-${p.date}-${idx}`} className="border-t">
+                                    <td className="px-3 py-1.5 text-xs text-foreground">{new Date(p.date).toLocaleDateString()}</td>
+                                    <td className={cn("px-3 py-1.5 text-xs", inR ? "text-foreground" : "font-bold text-rose-600")}>{p.value}</td>
+                                    <td className="px-3 py-1.5 text-xs">
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <span className={cn("inline-block w-2 h-2 rounded-full", inR ? "bg-emerald-500" : "bg-rose-500")} />
+                                        {inR ? "Yes" : "No"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </>
+                          ) : (
+                            filteredPoints.map((p, idx) => {
+                              const inR = inRangeFor(p.value);
+                              return (
+                                <tr key={`${p.date}-${idx}`} className="border-t">
+                                  <td className="px-3 py-1.5 text-xs text-foreground">
+                                    {new Date(p.date).toLocaleDateString()}
+                                  </td>
+                                  <td className={cn(
+                                    "px-3 py-1.5 text-xs",
+                                    inR ? "text-foreground" : "font-bold text-rose-600",
+                                  )}>
+                                    {p.value}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-xs">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <span className={cn(
+                                        "inline-block w-2 h-2 rounded-full",
+                                        inR ? "bg-emerald-500" : "bg-rose-500",
+                                      )} />
+                                      {inR ? "Yes" : "No"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
                         </tbody>
                       </table>
                     </div>
