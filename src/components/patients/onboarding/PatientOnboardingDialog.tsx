@@ -21,6 +21,10 @@ import {
 import { StepBasicInfo } from "./StepBasicInfo";
 import { StepIllnesses } from "./StepIllnesses";
 import { StepFamilyHistory } from "./StepFamilyHistory";
+import { StepLifestyle } from "./StepLifestyle";
+import { StepActivity } from "./StepActivity";
+import { StepNutrition } from "./StepNutrition";
+import { StepSleep } from "./StepSleep";
 
 type Props = {
   patientId: string;
@@ -360,6 +364,14 @@ function StepRenderer({ step }: { step: number }) {
       return <StepIllnesses />;
     case 3:
       return <StepFamilyHistory />;
+    case 4:
+      return <StepLifestyle />;
+    case 5:
+      return <StepActivity />;
+    case 6:
+      return <StepNutrition />;
+    case 7:
+      return <StepSleep />;
     default:
       return (
         <div className="rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
