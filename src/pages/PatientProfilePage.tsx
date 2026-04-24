@@ -121,7 +121,11 @@ const PatientProfilePage = () => {
   // Honour deep-links like /patients/:id?tab=lab_results&review=1
   useEffect(() => {
     const tab = searchParams.get("tab");
-    const initial = tab === "lab_results" ? "lab_results" : "overview";
+    const initial: SidebarSection =
+      tab === "lab_results" ? "lab_results" :
+      tab === "medications" ? "medications" :
+      tab === "visits" ? "visits" :
+      "overview";
     setActiveSectionRaw(initial);
     navHistory.resetScope(scopeKey, initial);
     // Note: we keep the ?review=1 param so HealthDataHub/LabResultsView can read it.
