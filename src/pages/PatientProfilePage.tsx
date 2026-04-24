@@ -4252,6 +4252,10 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   const [annotationText, setAnnotationText] = useState("");
   const [annotationDate, setAnnotationDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [viewMode, setViewMode] = useState<"graphs" | "table">("graphs");
+  const [panelWindow, setPanelWindow] = useState<"6m" | "1y" | "3y" | "all">("all");
+  const [showAddAnnotation, setShowAddAnnotation] = useState(false);
+  const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
+  const [editingAnnotationText, setEditingAnnotationText] = useState("");
 
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
@@ -4477,6 +4481,14 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   const deleteAnnotation = async (id: string) => {
     const { error } = await supabase.from("marker_annotations").delete().eq("id", id);
     if (error) { toast.error("Could not delete annotation"); return; }
+    loadAnnotations();
+  };
+
+  const updateAnnotation = async (id: string, text: string) => {
+    const { error } = await supabase.from("marker_annotations").update({ text }).eq("id", id);
+    if (error) { toast.error("Could not update annotation"); return; }
+    setEditingAnnotationId(null);
+    setEditingAnnotationText("");
     loadAnnotations();
   };
 
@@ -4780,62 +4792,271 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
         </div>
 
         {/* Detail panel — unified chart with inline annotations & task icon */}
-        {selectedMarker && (
-          <div className="w-[420px] shrink-0 rounded-[20px] border bg-card shadow-card flex flex-col min-h-0 overflow-y-auto">
-            <div className="flex items-center justify-end p-2 border-b shrink-0">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMarker(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="p-4 flex-1">
-            {chartData.length < 1 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
-            ) : (
-              <MarkerDetailChart
-                label={selectedMarker.label}
-                unit={selectedMarker.unit}
-                chartData={chartData}
-                refValues={ref}
-                annotations={annotations.map((a) => ({
-                  id: a.id,
-                  date: a.annotation_date,
-                  text: a.text,
-                  author: a.author_name,
-                }))}
-                annotationText={annotationText}
-                annotationDate={annotationDate}
-                onAnnotationTextChange={setAnnotationText}
-                onAnnotationDateChange={setAnnotationDate}
-                onSaveAnnotation={saveAnnotation}
-                onDeleteAnnotation={deleteAnnotation}
-                onCreateTask={createTaskFromMarker}
-              />
-            )}
-            {selectedMarker && MARKER_DIMENSIONS[selectedMarker.key] && (
-              <div className="mt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
-                    const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
-                    if (!dim) return null;
-                    const Icon = dim.icon;
-                    return (
-                      <button
-                        key={dimKey}
-                        onClick={() => onNavigateDimension(dimKey)}
-                        className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-                      >
-                        <Icon className="h-3 w-3" />
-                        {dim.label}
-                      </button>
-                    );
-                  })}
+        {selectedMarker && (() => {
+          // Determine latest value & out-of-range status
+          const inRangeFor = (v: number) => {
+            if (!ref) return true;
+            if (ref.high != null && v > ref.high) return false;
+            if (ref.low != null && v < ref.low) return false;
+            return true;
+          };
+          const latestPoint = chartData.length > 0 ? chartData[chartData.length - 1] : null;
+          const latestInRange = latestPoint ? inRangeFor(latestPoint.value) : true;
+
+          // Time-window filter for data points
+          const now = new Date();
+          const cutoff = new Date(now);
+          if (panelWindow === "6m") cutoff.setMonth(cutoff.getMonth() - 6);
+          else if (panelWindow === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
+          else if (panelWindow === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+          const filteredPoints = chartData
+            .filter((p) => panelWindow === "all" || new Date(p.date) >= cutoff)
+            .slice()
+            .sort((a, b) => b.date.localeCompare(a.date));
+
+          const winBtn = (k: typeof panelWindow, label: string) => (
+            <button
+              key={k}
+              onClick={() => setPanelWindow(k)}
+              className={cn(
+                "px-2 py-0.5 rounded-sm text-[11px] transition-colors",
+                panelWindow === k
+                  ? "bg-background text-foreground shadow-sm font-medium"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          );
+
+          return (
+            <div className="w-[420px] shrink-0 rounded-[20px] border bg-card shadow-card flex flex-col min-h-0 overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between gap-2 p-3 border-b shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={cn(
+                      "inline-block w-2.5 h-2.5 rounded-full shrink-0",
+                      latestInRange ? "bg-emerald-500" : "bg-rose-500",
+                    )}
+                    aria-hidden
+                  />
+                  <h3 className="font-semibold text-sm truncate">
+                    {selectedMarker.label}
+                    {selectedMarker.unit && (
+                      <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                        ({selectedMarker.unit})
+                      </span>
+                    )}
+                  </h3>
                 </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setSelectedMarker(null)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+
+              <div className="p-4 flex-1 space-y-5">
+                {/* Data points */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Data points
+                    </p>
+                    <div className="inline-flex rounded-md border bg-muted/50 p-0.5">
+                      {winBtn("6m", "6m")}
+                      {winBtn("1y", "1y")}
+                      {winBtn("3y", "3y")}
+                      {winBtn("all", "All")}
+                    </div>
+                  </div>
+                  {filteredPoints.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No data points in this range.</p>
+                  ) : (
+                    <div className="rounded-md border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40">
+                          <tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                            <th className="text-left px-3 py-1.5 font-medium">Date</th>
+                            <th className="text-left px-3 py-1.5 font-medium">Value</th>
+                            <th className="text-left px-3 py-1.5 font-medium">In range</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredPoints.map((p, idx) => {
+                            const inR = inRangeFor(p.value);
+                            return (
+                              <tr key={`${p.date}-${idx}`} className="border-t">
+                                <td className="px-3 py-1.5 text-xs text-foreground">
+                                  {new Date(p.date).toLocaleDateString()}
+                                </td>
+                                <td className={cn(
+                                  "px-3 py-1.5 text-xs",
+                                  inR ? "text-foreground" : "font-bold text-rose-600",
+                                )}>
+                                  {p.value}
+                                </td>
+                                <td className="px-3 py-1.5 text-xs">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <span className={cn(
+                                      "inline-block w-2 h-2 rounded-full",
+                                      inR ? "bg-emerald-500" : "bg-rose-500",
+                                    )} />
+                                    {inR ? "Yes" : "No"}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Annotations */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Annotations ({annotations.length})
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setShowAddAnnotation((v) => !v)}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Add annotation
+                    </Button>
+                  </div>
+
+                  {showAddAnnotation && (
+                    <div className="mb-3 rounded-md border p-2 space-y-2 bg-muted/20">
+                      <Textarea
+                        placeholder="Add a clinical annotation for this marker and date..."
+                        value={annotationText}
+                        onChange={(e) => setAnnotationText(e.target.value)}
+                        className="min-h-[60px] text-xs"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="date"
+                          value={annotationDate}
+                          onChange={(e) => setAnnotationDate(e.target.value)}
+                          className="h-8 text-xs flex-1"
+                        />
+                        <Button
+                          size="sm"
+                          className="h-8"
+                          onClick={async () => {
+                            await saveAnnotation();
+                            setShowAddAnnotation(false);
+                          }}
+                          disabled={!annotationText.trim()}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {annotations.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">No annotations yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {annotations.map((a) => (
+                        <li key={a.id} className="rounded-md border p-2 text-xs">
+                          {editingAnnotationId === a.id ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editingAnnotationText}
+                                onChange={(e) => setEditingAnnotationText(e.target.value)}
+                                className="min-h-[50px] text-xs"
+                              />
+                              <div className="flex justify-end gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7"
+                                  onClick={() => { setEditingAnnotationId(null); setEditingAnnotationText(""); }}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="h-7"
+                                  onClick={() => updateAnnotation(a.id, editingAnnotationText.trim())}
+                                  disabled={!editingAnnotationText.trim()}
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-foreground">
+                                  {new Date(a.annotation_date).toLocaleDateString()}
+                                </p>
+                                <p className="text-foreground mt-0.5 whitespace-pre-wrap">{a.text}</p>
+                                <p className="text-muted-foreground mt-1">— {a.author_name}</p>
+                              </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => {
+                                    setEditingAnnotationId(a.id);
+                                    setEditingAnnotationText(a.text);
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-destructive hover:text-destructive"
+                                  onClick={() => deleteAnnotation(a.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Affects Health Dimensions */}
+                {MARKER_DIMENSIONS[selectedMarker.key] && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {MARKER_DIMENSIONS[selectedMarker.key].map((dimKey) => {
+                        const dim = HEALTH_DIMENSIONS.find((d) => d.key === dimKey);
+                        if (!dim) return null;
+                        const Icon = dim.icon;
+                        return (
+                          <button
+                            key={dimKey}
+                            onClick={() => onNavigateDimension(dimKey)}
+                            className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                          >
+                            <Icon className="h-3 w-3" />
+                            {dim.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
