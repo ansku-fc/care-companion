@@ -8,6 +8,7 @@ type Tab = "dimensions" | "labs" | "diagnoses";
 
 interface Props {
   patientId: string;
+  patientName?: string;
   labResults: Tables<"patient_lab_results">[];
   onboarding: Tables<"patient_onboarding"> | null;
   healthCategories: Tables<"patient_health_categories">[];
@@ -15,8 +16,6 @@ interface Props {
   onSelectDimension: (key: string) => void;
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  // The lab table currently lives inside PatientProfilePage (LabResultsView).
-  // We render it via the existing route key by exposing a switcher node.
   labResultsSlot: React.ReactNode;
   initialTab?: Tab;
 }
