@@ -540,26 +540,81 @@ const PatientProfilePage = () => {
 };
 
 // Compute a simple score (1-10) for each of the 9 main health dimensions
+// from the patient's actual lab results, health categories, and onboarding data.
 function computeRadarData(
-  _onboarding: Tables<"patient_onboarding"> | null,
-  _labResults: Tables<"patient_lab_results">[],
-  _healthCategories: Tables<"patient_health_categories">[],
+  patientId: string,
+  onboarding: Tables<"patient_onboarding"> | null,
+  labResults: Tables<"patient_lab_results">[],
+  healthCategories: Tables<"patient_health_categories">[],
 ) {
-  // Dummy varied risk-index values per dimension to showcase color coding.
-  const DUMMY_SCORES: Record<string, number> = {
-    brain_mental: 3.2,
-    metabolic: 6.7,
-    cardiovascular: 8.4,
-    exercise_functional: 2.1,
-    digestion: 5.5,
-    respiratory_immune: 4.8,
-    cancer_risk: 7.3,
-    skin_oral_mucosal: 1.9,
-    reproductive_sexual: 3.6,
+  // Stable per-patient pseudo-random in [0, 1) — replaces Math.random() so the
+  // scores don't jitter on every render.
+  const seed =
+    (patientId?.charCodeAt(0) ?? 0) + (patientId?.charCodeAt(4) ?? 0);
+  const rand = ((seed * 9301 + 49297) % 233280) / 233280;
+
+  const latest = (key: string): number | null => {
+    const sorted = [...labResults].sort((a, b) =>
+      b.result_date.localeCompare(a.result_date),
+    );
+    const v = sorted.length > 0 ? (sorted[0] as any)[key] : null;
+    return typeof v === "number" ? v : null;
+  };
+
+  const categoryScore = (key: string): number => {
+    const cat = healthCategories.find((c) => c.category === key);
+    if (!cat) return 2.0;
+    switch (cat.status) {
+      case "issue":
+        return 7.5 + rand * 2; // 7.5–9.5
+      case "mild":
+        return 4.5 + rand * 2; // 4.5–6.5
+      default:
+        return 1.5 + rand * 1.5; // 1.5–3.0
+    }
+  };
+
+  const ldl = latest("ldl_mmol_l");
+  const cvBase = categoryScore("cardiovascular");
+  const cardiovascular =
+    ldl && ldl > 3.0 ? Math.min(10, cvBase + (ldl - 3.0)) : cvBase;
+
+  const hba1c = latest("hba1c_mmol_mol");
+  const metBase = categoryScore("metabolic");
+  const metabolic =
+    hba1c && hba1c > 42 ? Math.min(10, metBase + (hba1c - 42) * 0.1) : metBase;
+
+  const brain_mental = categoryScore("brain_mental_health");
+  const digestion = categoryScore("digestion");
+  const respiratory_immune = categoryScore("respiratory_immune");
+  const cancer_risk = categoryScore("cancer_risk");
+  const skin_oral_mucosal = categoryScore("skin_oral_mucosal");
+  const reproductive_sexual = categoryScore("reproductive_sexual");
+
+  const bmi = onboarding?.bmi;
+  const exercise_functional = bmi
+    ? bmi > 30
+      ? 6.0
+      : bmi > 25
+        ? 4.0
+        : 2.5
+    : categoryScore("exercise_functional");
+
+  const scores: Record<string, number> = {
+    cardiovascular,
+    metabolic,
+    brain_mental,
+    exercise_functional,
+    digestion,
+    respiratory_immune,
+    cancer_risk,
+    skin_oral_mucosal,
+    reproductive_sexual,
   };
 
   return HEALTH_TAXONOMY.map((main) => {
-    const score = DUMMY_SCORES[main.key] ?? 1;
+    const raw = scores[main.key] ?? 1;
+    const score = Math.round(raw * 10) / 10;
     return { category: main.label, key: main.key, score };
   });
 }
@@ -576,8 +631,8 @@ function HealthOverviewView({
   onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
   const radarData = useMemo(
-    () => computeRadarData(onboarding, labResults, healthCategories),
-    [onboarding, labResults, healthCategories],
+    () => computeRadarData(patient.id, onboarding, labResults, healthCategories),
+    [patient.id, onboarding, labResults, healthCategories],
   );
 
   const [summary, setSummary] = useState((patient as any).health_summary || "");
