@@ -542,12 +542,11 @@ const PatientProfilePage = () => {
 // Compute a simple score (1-10) for each of the 9 main health dimensions
 // from the patient's actual lab results, health categories, and onboarding data.
 function computeRadarData(
-  patientId: string,
   onboarding: Tables<"patient_onboarding"> | null,
   labResults: Tables<"patient_lab_results">[],
   healthCategories: Tables<"patient_health_categories">[],
 ) {
-  const pid = onboarding?.id ?? onboarding?.patient_id ?? patientId ?? "";
+  const pid = (onboarding as any)?.patient_id ?? (onboarding as any)?.id ?? "";
   const r = (i: number) => ((pid.charCodeAt(i % Math.max(pid.length, 1)) || 5) * 37 % 20) / 20;
 
   const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
@@ -628,8 +627,8 @@ function HealthOverviewView({
   onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
   const radarData = useMemo(
-    () => computeRadarData(patient.id, onboarding, labResults, healthCategories),
-    [patient.id, onboarding, labResults, healthCategories],
+    () => computeRadarData(onboarding, labResults, healthCategories),
+    [onboarding, labResults, healthCategories],
   );
 
   const [summary, setSummary] = useState((patient as any).health_summary || "");
@@ -847,8 +846,8 @@ function ReportsListView({ patient, onboarding, labResults, healthCategories, ap
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
   const radarData = useMemo(
-    () => computeRadarData(patient.id, onboarding, labResults, healthCategories),
-    [patient.id, onboarding, labResults, healthCategories],
+    () => computeRadarData(onboarding, labResults, healthCategories),
+    [onboarding, labResults, healthCategories],
   );
 
   const fetchReports = async () => {
@@ -2480,7 +2479,7 @@ function HealthDimensionView({
 
   // Determine whether this is a main dimension (with subs) or a sub-dimension
   const mainDim = findMainDimension(dimensionKey);
-  const radarData = computeRadarData(patient.id, onboarding, labResults, healthCategories);
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
   const parentScore = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
 
   // Build sub-scores: simple heuristic — share parent's score across subs (placeholder).
@@ -2558,8 +2557,8 @@ function GenericDimensionView({
 
   // ─── Score from main dimension (1–10) ───
   const radarData = useMemo(
-    () => computeRadarData(patient.id, onboarding, labResults, healthCategories),
-    [patient.id, onboarding, labResults, healthCategories],
+    () => computeRadarData(onboarding, labResults, healthCategories),
+    [onboarding, labResults, healthCategories],
   );
   const mainDim = findMainDimension(dimensionKey) ?? null;
   const score = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
@@ -2717,7 +2716,7 @@ function SkinMucousDimensionView({
   onDataChanged?: () => void;
   onNavigateDimension?: (section: string) => void;
 }) {
-  const radarData = computeRadarData(patient.id, onboarding, labResults, healthCategories);
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
   const skinScore = radarData.find((d) => d.category === "Skin & Mucous")?.score ?? 1;
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
@@ -3466,7 +3465,7 @@ function CardiovascularDimensionView({
   onDataChanged?: () => void;
 }) {
   // Compute cardiovascular risk index
-  const radarData = computeRadarData(patient.id, onboarding, labResults, healthCategories);
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
   const cvScore = radarData.find((d) => d.category === "Cardiovascular")?.score ?? 1;
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
