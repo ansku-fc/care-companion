@@ -288,20 +288,28 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
       }
     }
 
-    // If created from a task prefill, link the new appointment back to the task
+    // If created from a task prefill, link the new appointment back to the task and mark task done
+    let taskCompleted = false;
     if (insertedId && prefill?.sourceTaskId) {
       await supabase
         .from("tasks")
-        .update({ scheduled_appointment_id: insertedId } as any)
+        .update({ scheduled_appointment_id: insertedId, status: "done" } as any)
         .eq("id", prefill.sourceTaskId);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      taskCompleted = true;
     }
 
     if (kind === "patient_visit" && sendInvite) {
       toast({ title: "Note", description: "Calendar invite sending requires email integration." });
     }
 
-    toast({ title: editingAppointment ? "Appointment updated" : "Appointment created" });
+    toast({
+      title: taskCompleted
+        ? "Appointment created and task marked as done"
+        : editingAppointment
+          ? "Appointment updated"
+          : "Appointment created",
+    });
     queryClient.invalidateQueries({ queryKey: ["appointments"] });
     onClose();
   };
