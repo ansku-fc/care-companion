@@ -333,8 +333,8 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
   };
 
   return (
-    <Card className="h-fit xl:sticky xl:top-6">
-      <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+    <Card className="flex flex-col h-[calc(100vh-3rem)] xl:sticky xl:top-6 overflow-hidden">
+      <CardHeader className="pb-3 flex-row items-center justify-between space-y-0 shrink-0">
         <div className="flex items-center gap-2">
           {kind && (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setKind(null)} aria-label="Back">
@@ -350,12 +350,12 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         </Button>
       </CardHeader>
 
-      <CardContent>
-        <p className="text-xs text-muted-foreground mb-3">
+      <CardContent className="flex-1 min-h-0 flex flex-col p-0">
+        <p className="text-xs text-muted-foreground px-6 pb-3 shrink-0">
           {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
         </p>
 
-        <ScrollArea className="max-h-[calc(100vh-260px)] pr-2 overflow-visible">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4">
           {!kind ? (
             <div className="space-y-2">
               {KIND_TILES.map((tile) => (
