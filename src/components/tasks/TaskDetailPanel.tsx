@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Pencil, Trash2, User, Stethoscope, HeartPulse, ArrowRight, FlaskConical, Pill, AlertTriangle } from "lucide-react";
+import { Calendar, Pencil, Trash2, User, Stethoscope, HeartPulse, ArrowRight, FlaskConical, Pill, AlertTriangle, PhoneCall } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,6 +18,17 @@ import {
   type Task, type TaskStatus,
 } from "@/lib/tasks";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
+import { useAuth } from "@/hooks/useAuth";
+
+const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
+function isCommunicationTask(task: Task): boolean {
+  const isCareCoord = task.category === "care_coordination" || task.category === "client_communication";
+  const matchesKeyword = COMM_KEYWORDS.test(task.title ?? "");
+  return isCareCoord || matchesKeyword;
+}
+
+const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No action needed"] as const;
+type OutcomeTag = typeof OUTCOME_TAGS[number];
 
 interface Props {
   task: Task | null;
@@ -29,11 +40,21 @@ interface Props {
 export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props) {
   const navigate = useNavigate();
   const { openEditTask, notifyChanged } = useTaskActions();
+  const { user } = useAuth();
   const [notes, setNotes] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
+  // Inline "Log outcome" form state for communication tasks
+  const [logOpen, setLogOpen] = useState(false);
+  const [outcomeText, setOutcomeText] = useState("");
+  const [outcomeTag, setOutcomeTag] = useState<OutcomeTag | "">("");
+  const [savingOutcome, setSavingOutcome] = useState(false);
+
   useEffect(() => {
     setNotes(task?.description ?? "");
+    setLogOpen(false);
+    setOutcomeText("");
+    setOutcomeTag("");
   }, [task]);
 
   if (!task) return null;
@@ -41,6 +62,7 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   const role = assigneeRole(task.assignee_name);
   const kind = detectKind(task);
   const isClinical = kind !== null;
+  const isComm = !isClinical && isCommunicationTask(task);
 
   const updateStatus = async (status: TaskStatus) => {
     const { error } = await supabase.from("tasks").update({ status }).eq("id", task.id);
@@ -66,6 +88,40 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
     const { error } = await supabase.from("tasks").delete().eq("id", task.id);
     if (error) { toast.error("Could not delete task"); return; }
     toast.success("Task deleted");
+    onOpenChange(false);
+    notifyChanged();
+  };
+
+  const saveOutcome = async () => {
+    if (!outcomeText.trim() || !outcomeTag) {
+      toast.error("Add a summary and select an outcome tag");
+      return;
+    }
+    if (!task.patient_id) {
+      toast.error("Task is not linked to a patient");
+      return;
+    }
+    setSavingOutcome(true);
+    const noteBody = `${outcomeText.trim()}\n\nOutcome: ${outcomeTag}`;
+    const { error: visitErr } = await supabase.from("visit_notes").insert({
+      patient_id: task.patient_id,
+      provider_id: user?.id ?? "00000000-0000-0000-0000-000000000001",
+      visit_date: new Date().toISOString().slice(0, 10),
+      chief_complaint: "Care coordination note",
+      notes: noteBody,
+    });
+    if (visitErr) {
+      setSavingOutcome(false);
+      toast.error("Could not log outcome");
+      return;
+    }
+    const { error: taskErr } = await supabase
+      .from("tasks")
+      .update({ status: "done" })
+      .eq("id", task.id);
+    setSavingOutcome(false);
+    if (taskErr) { toast.error("Logged, but task not marked done"); return; }
+    toast.success("Outcome logged and task completed");
     onOpenChange(false);
     notifyChanged();
   };
@@ -181,6 +237,72 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
               </div>
 
               <Separator />
+
+              {isComm && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => { onOpenChange(false); navigate("/calendar"); }}
+                    >
+                      <Calendar className="h-3.5 w-3.5" /> Open Calendar
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      className="gap-1.5"
+                      onClick={() => setLogOpen((v) => !v)}
+                    >
+                      <PhoneCall className="h-3.5 w-3.5" />
+                      {logOpen ? "Cancel" : "Log outcome"}
+                    </Button>
+                  </div>
+
+                  {logOpen && (
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Call summary / outcome
+                        </p>
+                        <Textarea
+                          value={outcomeText}
+                          onChange={(e) => setOutcomeText(e.target.value)}
+                          rows={4}
+                          placeholder="What was discussed, decided, or referred…"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">Outcome tag</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {OUTCOME_TAGS.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => setOutcomeTag(tag)}
+                              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                                outcomeTag === tag
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-foreground border-input hover:bg-accent"
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full"
+                        onClick={saveOutcome}
+                        disabled={savingOutcome || !outcomeText.trim() || !outcomeTag}
+                      >
+                        Save to patient record
+                      </Button>
+                    </div>
+                  )}
+
+                  <Separator />
+                </>
+              )}
 
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openEditTask(task)}>
