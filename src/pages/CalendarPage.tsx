@@ -321,7 +321,6 @@ const CalendarPage = () => {
             </CardTitle>
             <p className="text-xs text-muted-foreground">
               {dayAppointments.length} appointment{dayAppointments.length !== 1 ? "s" : ""}
-              {dayTasks.length > 0 && ` · ${dayTasks.length} task${dayTasks.length === 1 ? "" : "s"}`}
             </p>
           </CardHeader>
           <CardContent>
