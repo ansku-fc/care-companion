@@ -23,9 +23,20 @@ import { cn } from "@/lib/utils";
 
 type ApptKind = "patient_visit" | "doctor_meeting" | "nurse_task" | "working_time";
 
+interface CommPrefill {
+  kind: "doctor_meeting";
+  otherDoctorName: string;
+  linkedPatientId: string | null;
+  coordinationCategory: "" | "referral" | "case_discussion" | "handover" | "specialist_consult" | "other";
+  date: string | null;
+  notes: string;
+  sourceTaskId: string;
+}
+
 interface AppointmentFormPanelProps {
   selectedDate?: Date;
   editingAppointment?: any;
+  prefill?: CommPrefill | null;
   onClose: () => void;
 }
 
@@ -51,7 +62,7 @@ const KIND_TILES: Array<{
   { key: "working_time", icon: Briefcase, emoji: "🗂", title: "Internal / Working Time", desc: "Admin, research, documentation, meeting" },
 ];
 
-export function AppointmentFormPanel({ selectedDate, editingAppointment, onClose }: AppointmentFormPanelProps) {
+export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill, onClose }: AppointmentFormPanelProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -124,6 +135,18 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, onClose
     setLabPackage(editingAppointment.lab_package || "custom");
     setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
   }, [editingAppointment]);
+
+  // Apply prefill (e.g. from a communication task → "Schedule")
+  useEffect(() => {
+    if (!prefill) return;
+    if (prefill.kind === "doctor_meeting") {
+      setKind("doctor_meeting");
+      setOtherDoctorName(prefill.otherDoctorName || "");
+      setLinkedPatientId(prefill.linkedPatientId || "");
+      if (prefill.coordinationCategory) setCoordinationCategory(prefill.coordinationCategory);
+      setNotes(prefill.notes || "");
+    }
+  }, [prefill]);
 
   const handleSubmit = async () => {
     if (!user || !kind) return;
@@ -200,16 +223,32 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, onClose
 
     setLoading(true);
     let error;
+    let insertedId: string | null = null;
     if (editingAppointment) {
       ({ error } = await supabase.from("appointments").update(payload).eq("id", editingAppointment.id));
     } else {
-      ({ error } = await supabase.from("appointments").insert(payload));
+      const { data, error: insErr } = await supabase
+        .from("appointments")
+        .insert(payload)
+        .select("id")
+        .single();
+      error = insErr;
+      insertedId = data?.id ?? null;
     }
     setLoading(false);
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
+    }
+
+    // If created from a task prefill, link the new appointment back to the task
+    if (insertedId && prefill?.sourceTaskId) {
+      await supabase
+        .from("tasks")
+        .update({ scheduled_appointment_id: insertedId } as any)
+        .eq("id", prefill.sourceTaskId);
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     }
 
     if (kind === "patient_visit" && sendInvite) {

@@ -1,0 +1,2 @@
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS scheduled_appointment_id UUID REFERENCES public.appointments(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_scheduled_appointment_id ON public.tasks(scheduled_appointment_id);

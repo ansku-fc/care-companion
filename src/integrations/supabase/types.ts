@@ -1178,6 +1178,7 @@ export type Database = {
           id: string
           patient_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
+          scheduled_appointment_id: string | null
           status: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at: string
@@ -1195,6 +1196,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          scheduled_appointment_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at?: string
@@ -1212,6 +1214,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          scheduled_appointment_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
           updated_at?: string
@@ -1222,6 +1225,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_scheduled_appointment_id_fkey"
+            columns: ["scheduled_appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
             referencedColumns: ["id"]
           },
         ]
