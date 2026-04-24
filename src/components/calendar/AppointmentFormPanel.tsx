@@ -353,7 +353,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
             <div className="space-y-4">
               {/* Date (shared, always shown once a kind is picked) */}
               <Field label="Date">
-                <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} />
+                <DatePopover value={dateValue} onChange={setDateValue} />
               </Field>
 
               {/* Patient Visit */}
