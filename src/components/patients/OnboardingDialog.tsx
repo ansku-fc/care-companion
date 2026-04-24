@@ -158,7 +158,14 @@ const STEPS = [
   "Lab Results",
 ];
 
-export function AddPatientDialog() {
+type OnboardingDialogProps = {
+  patientId?: string;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+export function OnboardingDialog(_props: OnboardingDialogProps = {}) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<OnboardingFormData>({ ...defaultFormData });

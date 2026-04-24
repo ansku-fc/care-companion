@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowDownAZ, LayoutGrid, X, ChevronsUpDown } from "lucide-react";
-import type { OnboardingFormData } from "./AddPatientDialog";
+import type { OnboardingFormData } from "./OnboardingDialog";
 import { IllnessMedicationEditor } from "./IllnessMedicationEditor";
 import { COMMON_ALLERGENS, findAllergen } from "@/lib/allergens";
 
