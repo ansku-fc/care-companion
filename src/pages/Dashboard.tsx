@@ -207,6 +207,7 @@ const Dashboard = () => {
         end,
         name,
         type: subtitle,
+        appointmentType: typeKey,
         status,
       };
     });
