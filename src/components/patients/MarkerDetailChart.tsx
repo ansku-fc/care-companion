@@ -263,7 +263,7 @@ export function MarkerDetailChart({
                 placeholder="Add a clinical annotation..."
                 className="mt-1 min-h-[48px] text-xs resize-none"
                 value={annotationText}
-                onChange={(e) => onAnnotationTextChange(e.target.value)}
+                onChange={(e) => onAnnotationTextChange?.(e.target.value)}
               />
             </div>
             <div className="w-32">
