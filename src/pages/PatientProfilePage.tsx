@@ -4379,8 +4379,6 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     ...customRefs[selectedMarker.key],
   } : null;
 
-  // Use canonical Cardio panel chart whenever the biomarker has shared series data
-  const useSharedPanel = !!(selectedMarker && CARDIO_DUMMY_SERIES[selectedMarker.key]);
 
   // ---- Lab review flow (AWAITING REVIEW) ----
   // When entering review mode, seed the unreviewed-marker store with all
