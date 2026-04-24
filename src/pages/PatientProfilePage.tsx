@@ -4379,8 +4379,6 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     ...customRefs[selectedMarker.key],
   } : null;
 
-  // Use canonical Cardio panel chart whenever the biomarker has shared series data
-  const useSharedPanel = !!(selectedMarker && CARDIO_DUMMY_SERIES[selectedMarker.key]);
 
   // ---- Lab review flow (AWAITING REVIEW) ----
   // When entering review mode, seed the unreviewed-marker store with all
@@ -4645,16 +4643,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
               </Button>
             </div>
             <div className="p-4 flex-1">
-            {useSharedPanel ? (
-              <CardioLabBiomarkerPanel
-                biomarkerKey={selectedMarker.key}
-                label={selectedMarker.label}
-                unit={selectedMarker.unit}
-                refLow={(REFERENCE_VALUES[selectedMarker.key] || {}).low}
-                refHigh={(REFERENCE_VALUES[selectedMarker.key] || {}).high}
-                patientId={patientId}
-              />
-            ) : chartData.length < 1 ? (
+            {chartData.length < 1 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No data points available for this marker.</p>
             ) : (
               <DraggableReferenceChart
@@ -4670,7 +4659,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                 }}
               />
             )}
-            {!useSharedPanel && selectedMarker && (
+            {selectedMarker && (
               <div className="mt-4 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground">Reference Values</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -4711,7 +4700,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                 </div>
               </div>
             )}
-            {!useSharedPanel && (
+            {selectedMarker && (
               <div className="mt-4">
                 <Label className="text-xs">Doctor Notes</Label>
                 <Textarea
