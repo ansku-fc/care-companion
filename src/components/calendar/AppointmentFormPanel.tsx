@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase } from "lucide-react";
+import { X, ChevronLeft, Stethoscope, Phone, UserCheck, Briefcase, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ApptKind = "patient_visit" | "doctor_meeting" | "nurse_task" | "working_time";
@@ -100,6 +100,9 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
   // Internal
   const [internalCategory, setInternalCategory] = useState("admin");
+
+  // Attachment
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -240,6 +243,31 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
+    }
+
+    const apptId = insertedId ?? editingAppointment?.id;
+
+    // Upload attachment if any
+    if (attachedFile && apptId) {
+      try {
+        const path = `${apptId}/${attachedFile.name}`;
+        const { error: upErr } = await supabase.storage
+          .from("appointment-attachments")
+          .upload(path, attachedFile, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage
+          .from("appointment-attachments")
+          .getPublicUrl(path);
+        await supabase
+          .from("appointments")
+          .update({ attachment_url: pub.publicUrl } as any)
+          .eq("id", apptId);
+      } catch (e: any) {
+        toast({
+          title: "File upload not yet configured",
+          description: "Appointment saved without attachment.",
+        });
+      }
     }
 
     // If created from a task prefill, link the new appointment back to the task
@@ -502,6 +530,42 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                   </Field>
                 </>
               )}
+
+              {/* Attach file (shared) */}
+              <Field label="Attach file (optional)">
+                {attachedFile ? (
+                  <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <span className="flex items-center gap-2 truncate">
+                      <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">{attachedFile.name}</span>
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => setAttachedFile(null)}
+                      aria-label="Remove file"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 w-full rounded-md border border-dashed border-input bg-background px-3 py-3 text-sm cursor-pointer hover:bg-accent/40 transition-colors">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <span>📎 Choose file</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) setAttachedFile(f);
+                      }}
+                    />
+                  </label>
+                )}
+              </Field>
 
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
