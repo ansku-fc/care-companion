@@ -94,6 +94,46 @@ export type OnboardingForm = {
   sleep_apnea_type: string;
   sleep_apnea_severity: string;
 
+  /* Step 8 — Mental Health */
+  social_support_perceived: number | null;
+  recovery_perceived: number | null;
+  workload_perceived: number | null;
+  stress_perceived: number | null;
+  gad2_enabled: boolean;
+  gad2_q1: number | null;
+  gad2_q2: number | null;
+  phq2_enabled: boolean;
+  phq2_q1: number | null;
+  phq2_q2: number | null;
+
+  /* Step 9 — Cancer */
+  screen_breast: boolean;
+  screen_breast_year: number | null;
+  screen_cervix: boolean;
+  screen_cervix_year: number | null;
+  screen_colorectum: boolean;
+  screen_colorectum_year: number | null;
+  screen_prostate: boolean;
+  screen_prostate_year: number | null;
+  screen_skin: boolean;
+  screen_skin_year: number | null;
+  screen_lung: boolean;
+  screen_lung_year: number | null;
+  precancer_skin: boolean;
+  precancer_skin_year: number | null;
+  precancer_cervix: boolean;
+  precancer_cervix_year: number | null;
+  precancer_colorectum: boolean;
+  precancer_colorectum_year: number | null;
+  sun_exposure: boolean;
+  sun_protection_method: string;
+  severe_sunburns_history: boolean;
+
+  /* Step 10 — Status */
+  exam_findings: ExamFindings;
+  moles_enabled: boolean;
+  moles: MoleEntry[];
+
   /* Step tracking */
   current_step: number;
   /** Steps the doctor explicitly marked complete (Save) vs skipped. */
