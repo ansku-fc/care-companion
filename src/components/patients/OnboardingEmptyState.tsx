@@ -1,20 +1,25 @@
 import { useState } from "react";
 import { ClipboardList, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { OnboardingDialog } from "./OnboardingDialog";
+import { PatientOnboardingDialog } from "./onboarding/PatientOnboardingDialog";
 
 type OnboardingEmptyStateProps = {
   patientName: string;
   patientId: string;
+  onCompleted?: () => void;
 };
 
 /**
  * Shown on the patient overview when onboarding has not yet been completed.
  * Replaces the clinical dashboard with a single centred call-to-action that
- * launches the onboarding flow.
+ * launches the redesigned onboarding flow.
  */
-export function OnboardingEmptyState({ patientName, patientId }: OnboardingEmptyStateProps) {
+export function OnboardingEmptyState({ patientName, patientId, onCompleted }: OnboardingEmptyStateProps) {
   const [open, setOpen] = useState(false);
+
+  const firstName = patientName.includes(",")
+    ? patientName.split(",")[1]?.trim() || patientName
+    : patientName.split(/\s+/)[0];
 
   return (
     <div className="flex items-center justify-center py-20">
@@ -24,8 +29,7 @@ export function OnboardingEmptyState({ patientName, patientId }: OnboardingEmpty
         </div>
         <h3 className="text-base font-semibold text-foreground">No onboarding data yet</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Complete onboarding for {patientName.split(",")[1]?.trim() || patientName} to populate
-          their clinical dashboard.
+          Complete onboarding for {firstName} to populate their clinical dashboard.
         </p>
         <Button className="mt-6 gap-2" onClick={() => setOpen(true)}>
           Start Onboarding
@@ -33,13 +37,13 @@ export function OnboardingEmptyState({ patientName, patientId }: OnboardingEmpty
         </Button>
       </div>
 
-      {/*
-        Onboarding wizard. Currently uses the legacy multi-step component as a
-        placeholder while the redesigned 10-step flow is being built in the next
-        rounds. The placeholder still creates onboarding/lab/medication records
-        for the existing patient.
-      */}
-      <OnboardingDialog patientId={patientId} open={open} onOpenChange={setOpen} />
+      <PatientOnboardingDialog
+        patientId={patientId}
+        patientName={patientName}
+        open={open}
+        onOpenChange={setOpen}
+        onCompleted={onCompleted}
+      />
     </div>
   );
 }
