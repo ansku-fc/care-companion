@@ -65,6 +65,7 @@ function buildCommPrefill(task: Task): CommPrefill {
     notes: title,
     sourceTaskId: task.id,
   };
+}
 
 const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No action needed"] as const;
 type OutcomeTag = typeof OUTCOME_TAGS[number];
