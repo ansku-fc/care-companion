@@ -154,7 +154,7 @@ const CalendarPage = () => {
   }, [tasks]);
   const dayTasks = tasksByDay.get(selectedDayKey) ?? [];
 
-  const typeStyle = (type: string) => TYPE_STYLES[type] ?? TYPE_STYLES.consultation;
+
 
   const openTaskDetail = (t: Task) => { setTaskDetail(t); setTaskPanelOpen(true); };
 
