@@ -27,6 +27,45 @@ function isCommunicationTask(task: Task): boolean {
   return isCareCoord || matchesKeyword;
 }
 
+// Build prefill payload for the appointment form panel from a communication task.
+export interface CommPrefill {
+  kind: "doctor_meeting";
+  otherDoctorName: string;
+  linkedPatientId: string | null;
+  coordinationCategory: "" | "referral" | "case_discussion" | "handover" | "specialist_consult" | "other";
+  date: string | null; // YYYY-MM-DD
+  notes: string;
+  sourceTaskId: string;
+}
+
+function buildCommPrefill(task: Task): CommPrefill {
+  const title = task.title ?? "";
+  // Extract "Dr. <Name>" / "Dr <Name>" first, fall back to text after "Call "
+  let other = "";
+  const drMatch = title.match(/\bDr\.?\s+[A-ZÄÖÅÜ][\wÄÖÅäöåü-]+(?:\s+[A-ZÄÖÅÜ][\wÄÖÅäöåü-]+)?/);
+  if (drMatch) {
+    other = drMatch[0];
+  } else {
+    const callMatch = title.match(/\b(?:call|contact|reach out|reach-out|phone)\s+([^,–\-:]+?)(?:\s+(?:re|about|regarding)\b|[:,–\-]|$)/i);
+    if (callMatch) other = callMatch[1].trim();
+  }
+
+  const lower = title.toLowerCase();
+  let cat: CommPrefill["coordinationCategory"] = "";
+  if (/\b(referral|refer)\b/.test(lower)) cat = "referral";
+  else if (/\bhandover\b/.test(lower)) cat = "handover";
+  else if (/\b(debrief|discuss|re:)\b/.test(lower)) cat = "case_discussion";
+
+  return {
+    kind: "doctor_meeting",
+    otherDoctorName: other,
+    linkedPatientId: task.patient_id ?? null,
+    coordinationCategory: cat,
+    date: task.due_date ? task.due_date.slice(0, 10) : null,
+    notes: title,
+    sourceTaskId: task.id,
+  };
+
 const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No action needed"] as const;
 type OutcomeTag = typeof OUTCOME_TAGS[number];
 
