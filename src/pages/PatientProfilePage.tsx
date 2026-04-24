@@ -466,17 +466,21 @@ const PatientProfilePage = () => {
         })()}
 
         {activeSection === "overview" ? (
-          <PatientOverviewView
-            patient={patient}
-            onboarding={onboarding}
-            appointments={appointments}
-            labResults={labResults}
-            healthCategories={healthCategories}
-            tasks={patientTasks}
-            onSelectSection={setActiveSection}
-            onTasksChanged={fetchData}
-            onDataChanged={fetchData}
-          />
+          (patient as any).onboarding_status === "pending" || (patient as any).onboarding_status === "in_progress" ? (
+            <OnboardingEmptyState patientName={patient.full_name} patientId={patient.id} />
+          ) : (
+            <PatientOverviewView
+              patient={patient}
+              onboarding={onboarding}
+              appointments={appointments}
+              labResults={labResults}
+              healthCategories={healthCategories}
+              tasks={patientTasks}
+              onSelectSection={setActiveSection}
+              onTasksChanged={fetchData}
+              onDataChanged={fetchData}
+            />
+          )
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
         ) : activeSection === "medications" ? (
