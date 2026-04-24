@@ -416,6 +416,7 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                       form={referralForm}
                       onChange={setReferralForm}
                       patientName={patientName}
+                      patientId={task.patient_id ?? null}
                     />
                   )}
 
