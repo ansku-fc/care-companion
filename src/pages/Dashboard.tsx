@@ -22,14 +22,29 @@ import { buildDummyAppointments } from "@/lib/dummyAppointments";
 
 type PatientLite = { id: string; full_name: string };
 
-const todaySchedule = [
-  { time: "08:30", name: "Carter, Jay-Z", type: "Annual review", status: "completed" as const },
-  { time: "09:30", name: "Johnson, Sarah", type: "Follow-up", status: "completed" as const },
-  { time: "11:00", name: "Mäkinen, Aino", type: "Consultation", status: "in_progress" as const },
-  { time: "13:00", name: "Eriksson, Marcus", type: "Lab review", status: "upcoming" as const },
-  { time: "14:30", name: "Korhonen, Elena", type: "Urgent consultation", status: "upcoming" as const },
-  { time: "15:30", name: "Bergström, Thomas", type: "Check-up", status: "upcoming" as const },
-];
+type ScheduleItem = {
+  id: string;
+  time: string;
+  start: Date;
+  end: Date;
+  name: string;
+  type: string;
+  status: "completed" | "in_progress" | "upcoming";
+};
+
+const APPT_TYPE_LABEL: Record<string, string> = {
+  onboarding: "Onboarding",
+  acute: "Acute",
+  consultation: "Consultation",
+  follow_up: "Follow-up",
+  check_up: "Check-up",
+  procedure: "Procedure",
+  urgent: "Urgent consultation",
+  working_time: "Working Time",
+  doctor_meeting: "Doctor Meeting",
+  nurse_task: "Nurse Task",
+};
+
 
 const recentActivity = [
   { time: "Today 09:15", event: "New lab results uploaded", patient: "Korhonen, Elena", actor: "Lab system", section: "health-data" as const },
