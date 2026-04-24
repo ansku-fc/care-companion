@@ -626,16 +626,18 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                   </label>
                 )}
               </Field>
-
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
-                <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
-                  {loading ? "Saving…" : editingAppointment ? "Update" : "Create"}
-                </Button>
-              </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
+
+        {kind && (
+          <div className="shrink-0 border-t bg-background px-6 py-3 flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+            <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
+              {loading ? "Saving…" : editingAppointment ? "Update" : "Create"}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
