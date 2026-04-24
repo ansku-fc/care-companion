@@ -592,42 +592,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                 </>
               )}
 
-              {/* Attach file (shared) */}
-              <Field label="Attach file (optional)">
-                {attachedFile ? (
-                  <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                    <span className="flex items-center gap-2 truncate">
-                      <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate">{attachedFile.name}</span>
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 shrink-0"
-                      onClick={() => setAttachedFile(null)}
-                      aria-label="Remove file"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label className="flex items-center justify-center gap-2 w-full rounded-md border border-dashed border-input bg-background px-3 py-3 text-sm cursor-pointer hover:bg-accent/40 transition-colors">
-                    <Paperclip className="h-4 w-4 text-muted-foreground" />
-                    <span>Choose file</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".pdf,.doc,.docx,image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) setAttachedFile(f);
-                      }}
-                    />
-                  </label>
-                )}
-              </Field>
+              {/* Attach file (shared, except doctor_meeting which has its own placement) */}
+              {kind !== "doctor_meeting" && (
+                <Field label="Attach file (optional)">
+                  <AttachFileControl attachedFile={attachedFile} setAttachedFile={setAttachedFile} />
+                </Field>
+              )}
             </div>
+          )}
+          </div>
+          {showScrollFade && (
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-background to-transparent" />
           )}
         </div>
 
