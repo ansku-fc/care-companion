@@ -78,6 +78,82 @@ const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No 
 const REFERRAL_OUTCOME_TAGS = ["Referral sent", "Awaiting response", "Specialist booked", "No longer needed"] as const;
 type OutcomeTag = string;
 
+const URGENCY_OPTIONS = ["Routine", "Semi-urgent", "Urgent", "Emergency"] as const;
+const REQUESTED_ACTION_OPTIONS = ["Consultation", "Diagnosis", "Treatment", "Second opinion"] as const;
+
+interface ReferralForm {
+  to: string;
+  from: string;
+  patient: string;
+  dob: string;
+  reason: string;
+  background: string;
+  medications: string;
+  urgency: string;
+  requestedAction: string;
+  additionalNotes: string;
+}
+
+function inferReferralReason(title: string): string {
+  const t = title.toLowerCase();
+  const map: Record<string, string> = {
+    cardiology: "Cardiology consultation requested",
+    neurology: "Neurology consultation requested",
+    dermatology: "Dermatology consultation requested",
+    hepatology: "Hepatology consultation requested",
+    orthopaedic: "Orthopaedic consultation requested",
+    orthopedic: "Orthopaedic consultation requested",
+    gastro: "Gastroenterology consultation requested",
+    psych: "Psychiatry consultation requested",
+    endocrin: "Endocrinology consultation requested",
+  };
+  for (const k of Object.keys(map)) {
+    if (t.includes(k)) return map[k];
+  }
+  return "Specialist consultation requested";
+}
+
+function buildReferralForm(task: Task, patientName: string | null): ReferralForm {
+  return {
+    to: "",
+    from: "Dr. Laine, Foundation Clinic",
+    patient: patientName ?? "",
+    dob: "",
+    reason: inferReferralReason(task.title ?? ""),
+    background: "",
+    medications: "",
+    urgency: "Routine",
+    requestedAction: "Consultation",
+    additionalNotes: "",
+  };
+}
+
+function referralToText(f: ReferralForm): string {
+  return [
+    `REFERRAL`,
+    ``,
+    `To: ${f.to}`,
+    `From: ${f.from}`,
+    `Date: ${new Date().toLocaleDateString()}`,
+    ``,
+    `Patient: ${f.patient}`,
+    `Date of birth: ${f.dob}`,
+    ``,
+    `Referral reason: ${f.reason}`,
+    `Urgency: ${f.urgency}`,
+    `Requested action: ${f.requestedAction}`,
+    ``,
+    `Clinical background:`,
+    f.background || "—",
+    ``,
+    `Current medications:`,
+    f.medications || "—",
+    ``,
+    `Additional notes:`,
+    f.additionalNotes || "—",
+  ].join("\n");
+}
+
 interface Props {
   task: Task | null;
   patientName: string | null;
