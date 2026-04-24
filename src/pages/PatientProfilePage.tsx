@@ -4653,6 +4653,19 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                           return { date: lab.result_date, value: Number(v) };
                         })
                         .filter(Boolean) as { date: string; value: number }[];
+                      const isBp = row.key === "_bp";
+                      const diastolicSeries = isBp
+                        ? (sorted
+                            .map((lab) => {
+                              const v = lab.blood_pressure_diastolic;
+                              if (v === null || v === undefined) return null;
+                              return { date: lab.result_date, value: Number(v) };
+                            })
+                            .filter(Boolean) as { date: string; value: number }[])
+                        : undefined;
+                      const diastolicRef = isBp
+                        ? { ...REFERENCE_VALUES["blood_pressure_diastolic"], ...customRefs["blood_pressure_diastolic"] }
+                        : undefined;
                       const isSel = selectedMarker?.key === dataKey;
                       return (
                         <button
@@ -4664,10 +4677,13 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                           )}
                         >
                           <MarkerDetailChart
-                            label={row.label}
+                            label={isBp ? "Systolic" : row.label}
                             unit={row.unit}
                             chartData={series}
                             refValues={refForRow}
+                            secondarySeries={diastolicSeries}
+                            secondaryLabel={isBp ? "Diastolic" : undefined}
+                            secondaryRefValues={diastolicRef}
                             displayOnly
                           />
                         </button>
