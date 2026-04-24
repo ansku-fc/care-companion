@@ -220,19 +220,47 @@ export function PatientOverviewView({
       : alertSeverity === "medium" ? "bg-[hsl(28_63%_44%/0.08)] border-[hsl(28_63%_44%/0.25)]"
         : "bg-card border-border";
 
-  // ── Risk index per main dimension (dummy varied scores) ──
-  const DIMENSION_RISK_SCORES: Record<string, number> = {
-    brain_mental: 3.2,
-    metabolic: 6.7,
-    cardiovascular: 8.4,
-    exercise_functional: 2.1,
-    digestion: 5.5,
-    respiratory_immune: 4.8,
-    cancer_risk: 7.3,
-    skin_oral_mucosal: 1.9,
-    reproductive_sexual: 3.6,
+  // ── Risk index per main dimension (patient-driven) ──
+  const dimensionScore = (key: string): number => {
+    const pid = patient.id ?? "";
+    const r = (i: number) => ((pid.charCodeAt(i % Math.max(pid.length, 1)) || 5) * 37 % 20) / 20;
+    const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
+    const latest = sorted[0];
+    const ldl = latest?.ldl_mmol_l ?? null;
+    const hba1c = latest?.hba1c_mmol_mol ?? null;
+    const alat = latest?.alat_u_l ?? null;
+    const bmi = onboarding?.bmi ?? null;
+    const cat = (catKey: string) => {
+      const c = healthCategories.find(h => h.category === catKey);
+      switch (c?.status) {
+        case 'issue': return 7.0 + r(0) * 2.5;
+        case 'mild':  return 4.0 + r(1) * 2.5;
+        default:      return 1.5 + r(2) * 2.0;
+      }
+    };
+    switch (key) {
+      case 'cardiovascular': {
+        const base = cat('cardiovascular');
+        return Math.round(Math.min(10, ldl ? (ldl > 4.0 ? base + 1.0 : ldl > 3.0 ? base : Math.max(1, base - 1.0)) : base) * 10) / 10;
+      }
+      case 'metabolic': {
+        const base = cat('metabolic');
+        return Math.round(Math.min(10, hba1c ? (hba1c > 53 ? base + 1.5 : hba1c > 42 ? base : Math.max(1, base - 1.0)) : base) * 10) / 10;
+      }
+      case 'digestion': {
+        const base = cat('digestion');
+        return Math.round(Math.min(10, alat ? (alat > 50 ? base + 1.0 : alat > 40 ? base : Math.max(1, base - 0.5)) : base) * 10) / 10;
+      }
+      case 'exercise_functional':
+        return Math.round((bmi ? (bmi > 35 ? 7.0 + r(3) : bmi > 30 ? 5.5 + r(4) : bmi > 25 ? 3.5 + r(5) : 1.5 + r(6)) : cat('exercise_functional')) * 10) / 10;
+      case 'brain_mental': return Math.round(cat('brain_mental_health') * 10) / 10;
+      case 'respiratory_immune': return Math.round(cat('respiratory_immune') * 10) / 10;
+      case 'cancer_risk': return Math.round(cat('cancer_risk') * 10) / 10;
+      case 'skin_oral_mucosal': return Math.round(cat('skin_oral_mucosal') * 10) / 10;
+      case 'reproductive_sexual': return Math.round(cat('reproductive_sexual') * 10) / 10;
+      default: return Math.round((1.5 + r(2) * 2.0) * 10) / 10;
+    }
   };
-  const dimensionScore = (key: string): number => DIMENSION_RISK_SCORES[key] ?? 1;
 
   // ── Inline add handlers ──────────────────────────────────
   const handleAddAllergy = async () => {
