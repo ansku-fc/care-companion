@@ -191,7 +191,6 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     let payload: any = {
       start_time: `${dateStr}T${startTime}:00`,
       end_time: `${dateStr}T${endTime}:00`,
-      provider_id: user.id,
       notes: notes || null,
     };
 
@@ -201,7 +200,6 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         ...payload,
         title: title || `${visitCategory.replace("_", " ")} – ${patients.find((p) => p.id === patientId)?.full_name ?? ""}`,
         patient_id: patientId,
-        provider_id: assignedNurseId || user.id,
         appointment_type: visitCategory,
         visit_modality: visitModality === "home_visit" ? "in_person" : visitModality,
         is_home_visit: visitModality === "home_visit",
@@ -228,7 +226,6 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         ...payload,
         title: title || taskDescription || "Nurse task",
         patient_id: patientId,
-        provider_id: nurseId,
         appointment_type: "nurse_task" as any,
         is_nurse_visit: true,
         notes: [taskDescription, notes].filter(Boolean).join("\n\n") || null,

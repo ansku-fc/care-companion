@@ -32,7 +32,7 @@ export type Database = {
           notes: string | null
           other_doctor_name: string | null
           patient_id: string
-          provider_id: string
+          provider_id: string | null
           specialist_location: string | null
           specialist_name: string | null
           start_time: string
@@ -56,7 +56,7 @@ export type Database = {
           notes?: string | null
           other_doctor_name?: string | null
           patient_id: string
-          provider_id: string
+          provider_id?: string | null
           specialist_location?: string | null
           specialist_name?: string | null
           start_time: string
@@ -80,7 +80,7 @@ export type Database = {
           notes?: string | null
           other_doctor_name?: string | null
           patient_id?: string
-          provider_id?: string
+          provider_id?: string | null
           specialist_location?: string | null
           specialist_name?: string | null
           start_time?: string
