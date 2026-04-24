@@ -27,6 +27,7 @@ import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   CARTER_MEDICATIONS,
   CARTER_INTERACTIONS,
+  isCarter,
 } from "@/lib/patientClinicalData";
 
 type MedStatus = "active" | "past";
@@ -60,9 +61,10 @@ type Medication = {
 
 const CURRENT_DOCTOR = "Dr. M. Virtanen";
 
-// Build initial medication list from the central source-of-truth (Carter, Jay-Z).
-// All active meds come from CARTER_MEDICATIONS plus a couple of past records for UI completeness.
-const INITIAL_MEDS: Medication[] = [
+// Carter, Jay-Z is the demo patient with rich seeded data. Every other
+// patient (newly created or otherwise) starts with an empty list and is
+// populated from real saved entries.
+const CARTER_SEEDED_MEDS: Medication[] = [
   ...CARTER_MEDICATIONS.map((m) => ({
     id: m.id,
     name: m.name,
@@ -172,7 +174,9 @@ interface Props {
 
 export function PatientMedicationsView({ patientName, patientId }: Props) {
   const { openNewTask } = useTaskActions();
-  const [meds, setMeds] = useState<Medication[]>(INITIAL_MEDS);
+  const [meds, setMeds] = useState<Medication[]>(() =>
+    isCarter(patientId, patientName) ? CARTER_SEEDED_MEDS : [],
+  );
   const [statusTab, setStatusTab] = useState<MedStatus>("active");
   const [sortBy, setSortBy] = useState<"alpha" | "dimension" | "renewal">("alpha");
   const [search, setSearch] = useState("");
