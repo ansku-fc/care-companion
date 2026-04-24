@@ -23,9 +23,20 @@ import { cn } from "@/lib/utils";
 
 type ApptKind = "patient_visit" | "doctor_meeting" | "nurse_task" | "working_time";
 
+interface CommPrefill {
+  kind: "doctor_meeting";
+  otherDoctorName: string;
+  linkedPatientId: string | null;
+  coordinationCategory: "" | "referral" | "case_discussion" | "handover" | "specialist_consult" | "other";
+  date: string | null;
+  notes: string;
+  sourceTaskId: string;
+}
+
 interface AppointmentFormPanelProps {
   selectedDate?: Date;
   editingAppointment?: any;
+  prefill?: CommPrefill | null;
   onClose: () => void;
 }
 
@@ -51,7 +62,7 @@ const KIND_TILES: Array<{
   { key: "working_time", icon: Briefcase, emoji: "🗂", title: "Internal / Working Time", desc: "Admin, research, documentation, meeting" },
 ];
 
-export function AppointmentFormPanel({ selectedDate, editingAppointment, onClose }: AppointmentFormPanelProps) {
+export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill, onClose }: AppointmentFormPanelProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
