@@ -867,27 +867,42 @@ function ReferralFormPanel({
       }
     }
     setUploading(false);
+    setPrintAttachments(uploaded ?? []);
 
-    let attachmentLines = "";
-    if (uploaded && uploaded.length > 0) {
-      attachmentLines = `<h2>Attachments</h2><ul>${uploaded
-        .map((a) =>
-          a.url
-            ? `<li>${a.name} — <a href="${a.url}">${a.url}</a></li>`
-            : `<li>${a.name}</li>`,
-        )
-        .join("")}</ul>`;
-    }
+    // Wait a tick so the print-only area renders attachments
+    await new Promise((r) => setTimeout(r, 50));
 
-    const html = buildPdfHtml(referralToText(form), attachmentLines);
-    const win = window.open("", "_blank", "width=800,height=900");
-    if (!win) {
-      toast.error("Pop-up blocked — allow pop-ups to download the referral PDF.");
-      return;
-    }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
+    const styleId = "print-hide-style";
+    const existing = document.getElementById(styleId);
+    if (existing) existing.remove();
+
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      @media print {
+        body * { visibility: hidden !important; }
+        #referral-print-area, #referral-print-area * { visibility: visible !important; }
+        #referral-print-area {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          padding: 40px !important;
+          background: #fff !important;
+          color: #111 !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    const cleanup = () => {
+      const s = document.getElementById(styleId);
+      if (s) s.remove();
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+
+    window.print();
   };
 
   return (
