@@ -74,6 +74,9 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
   // Shared
   const [title, setTitle] = useState("");
+  const [dateValue, setDateValue] = useState<string>(
+    selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")
+  );
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [notes, setNotes] = useState("");
@@ -137,7 +140,16 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     setNotes(editingAppointment.notes || "");
     setLabPackage(editingAppointment.lab_package || "custom");
     setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
+    if (editingAppointment.start_time) {
+      setDateValue(format(new Date(editingAppointment.start_time), "yyyy-MM-dd"));
+    }
   }, [editingAppointment]);
+
+  // Sync dateValue when selectedDate changes (e.g. user picks a new day before opening form)
+  useEffect(() => {
+    if (editingAppointment) return;
+    if (selectedDate) setDateValue(format(selectedDate, "yyyy-MM-dd"));
+  }, [selectedDate, editingAppointment]);
 
   // Apply prefill (e.g. from a communication task → "Schedule")
   useEffect(() => {
@@ -148,13 +160,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
       setLinkedPatientId(prefill.linkedPatientId || "");
       if (prefill.coordinationCategory) setCoordinationCategory(prefill.coordinationCategory);
       setNotes(prefill.notes || "");
+      if (prefill.date) {
+        const d = new Date(prefill.date);
+        if (!isNaN(d.getTime())) setDateValue(format(d, "yyyy-MM-dd"));
+      }
     }
   }, [prefill]);
 
   const handleSubmit = async () => {
     if (!user || !kind) return;
 
-    const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+    const dateStr = dateValue || format(new Date(), "yyyy-MM-dd");
 
     // Validation per kind
     if (kind === "patient_visit" && !patientId) {
@@ -333,6 +349,11 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Date (shared, always shown once a kind is picked) */}
+              <Field label="Date">
+                <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} />
+              </Field>
+
               {/* Patient Visit */}
               {kind === "patient_visit" && (
                 <>
