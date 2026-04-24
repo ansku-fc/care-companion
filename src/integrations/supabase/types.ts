@@ -174,6 +174,42 @@ export type Database = {
           },
         ]
       }
+      marker_annotations: {
+        Row: {
+          annotation_date: string
+          author_name: string
+          created_at: string
+          created_by: string
+          id: string
+          marker_key: string
+          patient_id: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          annotation_date?: string
+          author_name?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          marker_key: string
+          patient_id: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          annotation_date?: string
+          author_name?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          marker_key?: string
+          patient_id?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patient_allergies: {
         Row: {
           allergen: string
