@@ -179,6 +179,17 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     }
   }, [prefill]);
 
+  // Auto-generate doctor meeting title from category, patient, doctor name
+  useEffect(() => {
+    if (kind !== "doctor_meeting") return;
+    if (doctorMeetingTitleEdited) return;
+    const categoryLabel = CATEGORY_LABELS[coordinationCategory] ?? "";
+    const patientName = patients.find((p) => p.id === linkedPatientId)?.full_name ?? "";
+    const doctorName = otherDoctorName.trim();
+    const parts = [categoryLabel, patientName, doctorName].filter(Boolean);
+    setDoctorMeetingTitle(parts.join(" – "));
+  }, [kind, coordinationCategory, linkedPatientId, otherDoctorName, patients, doctorMeetingTitleEdited]);
+
   const handleSubmit = async () => {
     if (!user || !kind) return;
 
