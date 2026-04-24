@@ -1,0 +1,375 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { format } from "date-fns";
+import { X } from "lucide-react";
+import { toast } from "sonner";
+
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+import {
+  OnboardingFormProvider,
+  useOnboardingForm,
+  blankOnboardingForm,
+  calcBmi,
+  calcWaistHipRatio,
+  type OnboardingForm,
+} from "./OnboardingFormContext";
+import { StepBasicInfo } from "./StepBasicInfo";
+import { StepIllnesses } from "./StepIllnesses";
+import { StepFamilyHistory } from "./StepFamilyHistory";
+
+type Props = {
+  patientId: string;
+  patientName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Called once after the doctor finishes the final step. */
+  onCompleted?: () => void;
+};
+
+const STEP_LABELS = [
+  "Basic Information",
+  "Illnesses & Medications",
+  "Family History",
+  "Lifestyle",
+  "Physical Activity",
+  "Nutrition",
+  "Sleep",
+  "Mental Health",
+  "Cancer",
+  "Status",
+];
+const TOTAL_STEPS = STEP_LABELS.length;
+
+/**
+ * Public wrapper. Loads any existing draft for the patient, then mounts the
+ * form provider so children share state.
+ */
+export function PatientOnboardingDialog(props: Props) {
+  const [initial, setInitial] = useState<Partial<OnboardingForm> | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!props.open) {
+      setInitial(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("patient_onboarding")
+        .select("*")
+        .eq("patient_id", props.patientId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        const extra = ((data as any).extra_data ?? {}) as Record<string, unknown>;
+        setInitial({
+          age: data.age,
+          height_cm: data.height_cm,
+          weight_kg: data.weight_kg,
+          waist_circumference_cm: data.waist_circumference_cm,
+          hip_circumference_cm: data.hip_circumference_cm,
+          occupation: ((data as any).occupation as string) ?? "",
+          education_level: ((data as any).education_level as string) ?? "",
+          shift_work: Boolean((data as any).shift_work),
+          bp1_systolic: (data as any).bp1_systolic ?? null,
+          bp1_diastolic: (data as any).bp1_diastolic ?? null,
+          bp2_systolic: (data as any).bp2_systolic ?? null,
+          bp2_diastolic: (data as any).bp2_diastolic ?? null,
+          ecg_notes: ((data as any).ecg_notes as string) ?? "",
+          allergies: (extra.allergies as string[]) ?? [],
+          supplements: (extra.supplements as string[]) ?? [],
+          current_illnesses: (extra.current_illnesses as any[]) ?? [],
+          previous_illnesses: (extra.previous_illnesses as any[]) ?? [],
+          family_history: (extra.family_history as any[]) ?? [],
+          current_step: ((data as any).current_step as number) ?? 1,
+          completed_steps: (extra.completed_steps as number[]) ?? [],
+          skipped_steps: (extra.skipped_steps as number[]) ?? [],
+        });
+      } else {
+        setInitial({});
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [props.open, props.patientId]);
+
+  if (!props.open) return null;
+  if (loading || initial === null) {
+    return (
+      <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+        <DialogContent className="max-w-5xl">
+          <DialogTitle className="sr-only">Loading onboarding</DialogTitle>
+          <p className="text-sm text-muted-foreground py-12 text-center">Loading…</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <OnboardingFormProvider initial={initial}>
+      <DialogShell {...props} />
+    </OnboardingFormProvider>
+  );
+}
+
+/* ---------------- Shell ---------------- */
+
+function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }: Props) {
+  const { form, set } = useOnboardingForm();
+  const { user } = useAuth();
+  const [saving, setSaving] = useState<"draft" | "save" | "skip" | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollMemory = useRef<Record<number, number>>({});
+
+  const today = useMemo(() => format(new Date(), "MMM d, yyyy"), []);
+
+  // Save & restore scroll position per step
+  useEffect(() => {
+    const node = scrollRef.current?.querySelector<HTMLDivElement>("[data-radix-scroll-area-viewport]");
+    if (!node) return;
+    node.scrollTop = scrollMemory.current[form.current_step] ?? 0;
+  }, [form.current_step]);
+
+  const setStep = (next: number) => {
+    const node = scrollRef.current?.querySelector<HTMLDivElement>("[data-radix-scroll-area-viewport]");
+    if (node) scrollMemory.current[form.current_step] = node.scrollTop;
+    set("current_step", Math.min(Math.max(next, 1), TOTAL_STEPS));
+  };
+
+  const persist = async (
+    nextForm: OnboardingForm,
+    options: { isComplete?: boolean } = {},
+  ) => {
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
+    const bmi = calcBmi(nextForm.height_cm, nextForm.weight_kg);
+    const whr = calcWaistHipRatio(nextForm.waist_circumference_cm, nextForm.hip_circumference_cm);
+
+    // Split form: dedicated columns vs extra_data JSONB
+    const payload: Record<string, unknown> = {
+      patient_id: patientId,
+      created_by: user.id,
+      age: nextForm.age,
+      height_cm: nextForm.height_cm,
+      weight_kg: nextForm.weight_kg,
+      waist_circumference_cm: nextForm.waist_circumference_cm,
+      hip_circumference_cm: nextForm.hip_circumference_cm,
+      bmi,
+      waist_to_hip_ratio: whr,
+      occupation: nextForm.occupation || null,
+      education_level: nextForm.education_level || null,
+      shift_work: nextForm.shift_work,
+      bp1_systolic: nextForm.bp1_systolic,
+      bp1_diastolic: nextForm.bp1_diastolic,
+      bp2_systolic: nextForm.bp2_systolic,
+      bp2_diastolic: nextForm.bp2_diastolic,
+      ecg_notes: nextForm.ecg_notes || null,
+      current_step: nextForm.current_step,
+      draft: !options.isComplete,
+      extra_data: {
+        allergies: nextForm.allergies,
+        supplements: nextForm.supplements,
+        current_illnesses: nextForm.current_illnesses,
+        previous_illnesses: nextForm.previous_illnesses,
+        family_history: nextForm.family_history,
+        completed_steps: nextForm.completed_steps,
+        skipped_steps: nextForm.skipped_steps,
+      },
+    };
+
+    // Upsert by patient_id
+    const { data: existing } = await supabase
+      .from("patient_onboarding")
+      .select("id")
+      .eq("patient_id", patientId)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from("patient_onboarding")
+        .update(payload as any)
+        .eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("patient_onboarding")
+        .insert(payload as any);
+      if (error) throw error;
+    }
+
+    // Sync patient onboarding lifecycle status
+    const newStatus = options.isComplete ? "complete" : "in_progress";
+    await supabase
+      .from("patients")
+      .update({ onboarding_status: newStatus } as any)
+      .eq("id", patientId);
+  };
+
+  const handleSaveDraft = async () => {
+    setSaving("draft");
+    try {
+      await persist(form);
+      toast.success("Draft saved");
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to save draft");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleSkip = () => {
+    const skipped = Array.from(new Set([...form.skipped_steps, form.current_step]));
+    set("skipped_steps", skipped);
+    if (form.current_step < TOTAL_STEPS) setStep(form.current_step + 1);
+  };
+
+  const handleSave = async () => {
+    setSaving("save");
+    try {
+      const completed = Array.from(new Set([...form.completed_steps, form.current_step]));
+      const isLast = form.current_step === TOTAL_STEPS;
+      const nextStep = isLast ? form.current_step : form.current_step + 1;
+      const nextForm: OnboardingForm = {
+        ...form,
+        completed_steps: completed,
+        current_step: nextStep,
+      };
+      await persist(nextForm, { isComplete: isLast });
+      // Reflect locally
+      set("completed_steps", completed);
+      if (!isLast) setStep(nextStep);
+      toast.success(isLast ? "Onboarding complete" : "Step saved");
+      if (isLast) {
+        onOpenChange(false);
+        onCompleted?.();
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to save");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-5xl w-[95vw] h-[90vh] p-0 rounded-xl flex flex-col gap-0 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b">
+          <DialogTitle className="text-lg font-semibold">
+            {patientName}: Onboarding
+          </DialogTitle>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">{today}</span>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Step pills */}
+        <div className="px-6 py-3 border-b overflow-x-auto">
+          <div className="flex items-center gap-2 min-w-max">
+            {STEP_LABELS.map((label, i) => {
+              const stepNum = i + 1;
+              const isActive = stepNum === form.current_step;
+              const isCompleted = form.completed_steps.includes(stepNum);
+              const isSkipped = form.skipped_steps.includes(stepNum);
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setStep(stepNum)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors",
+                    isActive
+                      ? "bg-foreground text-background border-foreground"
+                      : isCompleted
+                      ? "bg-muted text-foreground border-transparent"
+                      : isSkipped
+                      ? "bg-background text-muted-foreground border-dashed border-border"
+                      : "bg-background text-muted-foreground/70 border-border hover:border-primary/40",
+                  )}
+                >
+                  {isCompleted && !isActive && <span aria-hidden>✓</span>}
+                  <span>
+                    {stepNum}. {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content */}
+        <ScrollArea className="flex-1" ref={scrollRef as any}>
+          <div className="px-6 py-6">
+            <StepRenderer step={form.current_step} />
+          </div>
+        </ScrollArea>
+
+        {/* Action bar */}
+        <div className="flex items-center justify-between px-6 py-3 border-t bg-card/40">
+          <div className="text-xs text-muted-foreground">
+            Step {form.current_step} of {TOTAL_STEPS}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={handleSaveDraft} disabled={saving !== null}>
+              {saving === "draft" ? "Saving…" : "Save as Draft"}
+            </Button>
+            <Button variant="ghost" onClick={handleSkip} disabled={saving !== null}>
+              Skip
+            </Button>
+            <Button onClick={handleSave} disabled={saving !== null}>
+              {saving === "save"
+                ? "Saving…"
+                : form.current_step === TOTAL_STEPS
+                ? "Finish"
+                : "Save"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function StepRenderer({ step }: { step: number }) {
+  switch (step) {
+    case 1:
+      return <StepBasicInfo />;
+    case 2:
+      return <StepIllnesses />;
+    case 3:
+      return <StepFamilyHistory />;
+    default:
+      return (
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            This step ({STEP_LABELS[step - 1]}) is being built in the next round.
+          </p>
+        </div>
+      );
+  }
+}
+
+// `blankOnboardingForm` is re-exported so consumers can reuse the shape if needed.
+export { blankOnboardingForm };
