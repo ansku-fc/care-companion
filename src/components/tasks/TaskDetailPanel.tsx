@@ -700,28 +700,75 @@ function ReferralFormPanel({
   const [uploading, setUploading] = useState(false);
   useEffect(() => {
     if (!patientId) return;
-    if (form.medications && form.medications.trim().length > 0) return;
+    const needMeds = !(form.medications && form.medications.trim().length > 0);
+    const needBackground = !(form.background && form.background.trim().length > 0);
+    if (!needMeds && !needBackground) return;
+
     (async () => {
-      const { data, error } = await supabase
-        .from("patient_medications")
-        .select("medication_name, dose, frequency, status")
-        .eq("patient_id", patientId);
-      if (error) return;
-      if (!data || data.length === 0) {
-        onChange({ ...form, medications: "No medications recorded." });
-        return;
+      const updates: Partial<ReferralForm> = {};
+
+      if (needMeds) {
+        const { data, error } = await supabase
+          .from("patient_medications")
+          .select("medication_name, dose, frequency, status, start_date")
+          .eq("patient_id", patientId);
+        if (!error) {
+          if (!data || data.length === 0) {
+            updates.medications = "No medications recorded.";
+          } else {
+            const formatted = data
+              .map((m) => {
+                const head = [m.medication_name, m.dose].filter(Boolean).join(" ");
+                const parts = [head];
+                if (m.frequency) parts.push(m.frequency);
+                if (m.start_date) {
+                  try {
+                    parts.push(`since ${format(new Date(m.start_date), "dd MMM yyyy")}`);
+                  } catch { /* skip invalid date */ }
+                }
+                return parts.filter(Boolean).join(" · ");
+              })
+              .filter(Boolean)
+              .join("\n");
+            updates.medications = formatted || "No medications recorded.";
+          }
+        }
       }
-      const formatted = data
-        .map((m) => {
-          const head = [m.medication_name, m.dose].filter(Boolean).join(" ");
-          return m.frequency ? `${head} · ${m.frequency}` : head;
-        })
-        .filter(Boolean)
-        .join("\n");
-      onChange({
-        ...form,
-        medications: formatted || "No medications recorded.",
-      });
+
+      if (needBackground) {
+        const { data: diagnoses, error: dxError } = await supabase
+          .from("patient_diagnoses")
+          .select("diagnosis, icd_code, status, diagnosed_date")
+          .eq("patient_id", patientId)
+          .order("status", { ascending: true })
+          .order("diagnosed_date", { ascending: false });
+        if (!dxError && diagnoses && diagnoses.length > 0) {
+          const formatLine = (d: typeof diagnoses[number]) => {
+            const icd = d.icd_code ? ` (ICD-10: ${d.icd_code})` : "";
+            let dateStr = "";
+            if (d.diagnosed_date) {
+              try {
+                dateStr = ` — diagnosed ${format(new Date(d.diagnosed_date), "yyyy-MM-dd")}`;
+              } catch { /* skip */ }
+            }
+            return `- ${d.diagnosis}${icd}${dateStr}`;
+          };
+          const active = diagnoses.filter((d) => (d.status ?? "active").toLowerCase() === "active");
+          const past = diagnoses.filter((d) => (d.status ?? "active").toLowerCase() !== "active");
+          const sections: string[] = [];
+          if (active.length > 0) {
+            sections.push(["Active diagnoses:", ...active.map(formatLine)].join("\n"));
+          }
+          if (past.length > 0) {
+            sections.push(["Past diagnoses:", ...past.map(formatLine)].join("\n"));
+          }
+          if (sections.length > 0) updates.background = sections.join("\n\n");
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        onChange({ ...form, ...updates });
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
