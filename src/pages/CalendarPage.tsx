@@ -238,7 +238,7 @@ const CalendarPage = () => {
         ))}
       </div>
 
-      <div className={cn("grid gap-6", formOpen ? "xl:grid-cols-[1fr_360px_380px]" : "xl:grid-cols-[1fr_380px]")}>
+      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
         {/* Month Grid */}
         <Card>
           <CardHeader className="pb-3">
