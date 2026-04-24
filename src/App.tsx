@@ -3,10 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { AuthProvider } from "@/hooks/useAuth";
 import { NavHistoryProvider } from "@/hooks/useNavHistory";
 import { AppLayout } from "@/components/AppLayout";
-import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import CalendarPage from "./pages/CalendarPage";
 import TasksPage from "./pages/TasksPage";
@@ -18,30 +17,18 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
-  if (!session) return <Navigate to="/auth" replace />;
-  return <AppLayout>{children}</AppLayout>;
-}
-
-function AuthRoute() {
-  const { session, loading } = useAuth();
-  if (loading) return null;
-  if (session) return <Navigate to="/" replace />;
-  return <Auth />;
-}
+const Wrap = ({ children }: { children: React.ReactNode }) => <AppLayout>{children}</AppLayout>;
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/auth" element={<AuthRoute />} />
-    <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-    <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
-    <Route path="/patients" element={<ProtectedRoute><PatientsPage /></ProtectedRoute>} />
-    <Route path="/patients/:id" element={<ProtectedRoute><PatientProfilePage /></ProtectedRoute>} />
-    <Route path="/clinical-hours" element={<ProtectedRoute><ClinicalHoursPage /></ProtectedRoute>} />
-    <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+    <Route path="/auth" element={<Navigate to="/" replace />} />
+    <Route path="/" element={<Wrap><Dashboard /></Wrap>} />
+    <Route path="/calendar" element={<Wrap><CalendarPage /></Wrap>} />
+    <Route path="/tasks" element={<Wrap><TasksPage /></Wrap>} />
+    <Route path="/patients" element={<Wrap><PatientsPage /></Wrap>} />
+    <Route path="/patients/:id" element={<Wrap><PatientProfilePage /></Wrap>} />
+    <Route path="/clinical-hours" element={<Wrap><ClinicalHoursPage /></Wrap>} />
+    <Route path="/notes" element={<Wrap><NotesPage /></Wrap>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

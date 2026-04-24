@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,63 +13,41 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  session: null,
-  user: null,
-  role: null,
-  profile: null,
-  loading: true,
-  signOut: async () => {},
-});
+// Mock Dr. Laine — auth is bypassed for now.
+const MOCK_USER_ID = "00000000-0000-0000-0000-000000000001";
+const MOCK_USER = {
+  id: MOCK_USER_ID,
+  email: "dr.laine@clinic.local",
+  app_metadata: {},
+  user_metadata: { full_name: "Dr. Laine" },
+  aud: "authenticated",
+  created_at: new Date().toISOString(),
+} as unknown as User;
+
+const MOCK_SESSION = {
+  access_token: "mock",
+  refresh_token: "mock",
+  expires_in: 3600,
+  expires_at: Date.now() / 1000 + 3600,
+  token_type: "bearer",
+  user: MOCK_USER,
+} as unknown as Session;
+
+const MOCK_CONTEXT: AuthContextType = {
+  session: MOCK_SESSION,
+  user: MOCK_USER,
+  role: "doctor",
+  profile: { full_name: "Dr. Laine", avatar_url: null },
+  loading: false,
+  signOut: async () => {
+    await supabase.auth.signOut().catch(() => {});
+  },
+};
+
+const AuthContext = createContext<AuthContextType>(MOCK_CONTEXT);
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          // Fetch role and profile using setTimeout to avoid deadlock
-          setTimeout(async () => {
-            const [roleRes, profileRes] = await Promise.all([
-              supabase.from("user_roles").select("role").eq("user_id", session.user.id).maybeSingle(),
-              supabase.from("profiles").select("full_name, avatar_url").eq("user_id", session.user.id).maybeSingle(),
-            ]);
-            setRole((roleRes.data?.role as AppRole) ?? null);
-            setProfile(profileRes.data ?? null);
-            setLoading(false);
-          }, 0);
-        } else {
-          setRole(null);
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  return (
-    <AuthContext.Provider value={{ session, user, role, profile, loading, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={MOCK_CONTEXT}>{children}</AuthContext.Provider>;
 }
