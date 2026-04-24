@@ -100,6 +100,18 @@ const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> =
   doctor_meeting: { bg: "bg-teal-500/10", text: "text-teal-700", label: "Doctor Meeting" },
 };
 
+const LEGEND_DOT_COLORS: Record<string, string> = {
+  onboarding: "bg-primary",
+  acute: "bg-destructive",
+  consultation: "bg-purple-500",
+  follow_up: "bg-green-500",
+  check_up: "bg-yellow-500",
+  procedure: "bg-muted-foreground",
+  urgent: "bg-destructive",
+  working_time: "bg-blue-500",
+  doctor_meeting: "bg-teal-500",
+};
+
 const MOCK_NOTES = [
   { id: "n1", title: "Meeting notes - Dr. Patel", content: "Discussed patient referral workflow and new onboarding procedures. Need to follow up on digital forms integration." },
   { id: "n2", title: "Research: New treatment protocols", content: "Review latest guidelines for Tier 2 patients regarding cardiovascular risk reduction. Update care plans accordingly." },
