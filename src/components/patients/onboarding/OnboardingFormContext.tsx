@@ -21,6 +21,39 @@ export type FamilyHistoryRow = {
   deceased: boolean;
 };
 
+export type ExamFindingKey =
+  | "heart"
+  | "peripheral_circulation"
+  | "lungs"
+  | "lymph_nodes"
+  | "thyroid"
+  | "skin_general"
+  | "abdomen"
+  | "eyes"
+  | "ears"
+  | "musculoskeletal";
+
+export type ExamFinding = { present: boolean; notes: string };
+
+export type ExamFindings = Record<ExamFindingKey, ExamFinding> & {
+  peripheral_adp: ExamFinding;
+  peripheral_atp: ExamFinding;
+  peripheral_afem: ExamFinding;
+};
+
+export type MoleEntry = {
+  id: string;
+  label: string;
+  side: "front" | "back";
+  location: string;
+  asymmetry: string;
+  borders: string;
+  color: string;
+  size: string;
+  change: string;
+  symptoms: string;
+};
+
 export type OnboardingForm = {
   /* Step 1 — Basic Info */
   age: number | null;
