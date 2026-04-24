@@ -547,76 +547,73 @@ function computeRadarData(
   labResults: Tables<"patient_lab_results">[],
   healthCategories: Tables<"patient_health_categories">[],
 ) {
-  // Stable per-patient pseudo-random in [0, 1) — replaces Math.random() so the
-  // scores don't jitter on every render.
-  const seed =
-    (patientId?.charCodeAt(0) ?? 0) + (patientId?.charCodeAt(4) ?? 0);
-  const rand = ((seed * 9301 + 49297) % 233280) / 233280;
+  const pid = onboarding?.id ?? onboarding?.patient_id ?? patientId ?? "";
+  const r = (i: number) => ((pid.charCodeAt(i % Math.max(pid.length, 1)) || 5) * 37 % 20) / 20;
 
-  const latest = (key: string): number | null => {
-    const sorted = [...labResults].sort((a, b) =>
-      b.result_date.localeCompare(a.result_date),
-    );
-    const v = sorted.length > 0 ? (sorted[0] as any)[key] : null;
-    return typeof v === "number" ? v : null;
-  };
+  const sorted = [...labResults].sort((a, b) => b.result_date.localeCompare(a.result_date));
+  const latest = sorted[0];
+  const ldl = latest?.ldl_mmol_l ?? null;
+  const hba1c = latest?.hba1c_mmol_mol ?? null;
+  const alat = latest?.alat_u_l ?? null;
 
-  const categoryScore = (key: string): number => {
-    const cat = healthCategories.find((c) => c.category === key);
-    if (!cat) return 2.0;
-    switch (cat.status) {
+  const cat = (key: string) => {
+    const c = healthCategories.find((h) => h.category === key);
+    switch (c?.status) {
       case "issue":
-        return 7.5 + rand * 2; // 7.5–9.5
+        return 7.0 + r(0) * 2.5;
       case "mild":
-        return 4.5 + rand * 2; // 4.5–6.5
+        return 4.0 + r(1) * 2.5;
       default:
-        return 1.5 + rand * 1.5; // 1.5–3.0
+        return 1.5 + r(2) * 2.0;
     }
   };
 
-  const ldl = latest("ldl_mmol_l");
-  const cvBase = categoryScore("cardiovascular");
-  const cardiovascular =
-    ldl && ldl > 3.0 ? Math.min(10, cvBase + (ldl - 3.0)) : cvBase;
+  const cvCat = cat("cardiovascular");
+  const cardiovascular = Math.min(
+    10,
+    ldl ? (ldl > 4.0 ? cvCat + 1.0 : ldl > 3.0 ? cvCat : Math.max(1, cvCat - 1.0)) : cvCat,
+  );
 
-  const hba1c = latest("hba1c_mmol_mol");
-  const metBase = categoryScore("metabolic");
-  const metabolic =
-    hba1c && hba1c > 42 ? Math.min(10, metBase + (hba1c - 42) * 0.1) : metBase;
+  const metCat = cat("metabolic");
+  const metabolic = Math.min(
+    10,
+    hba1c ? (hba1c > 53 ? metCat + 1.5 : hba1c > 42 ? metCat : Math.max(1, metCat - 1.0)) : metCat,
+  );
 
-  const brain_mental = categoryScore("brain_mental_health");
-  const digestion = categoryScore("digestion");
-  const respiratory_immune = categoryScore("respiratory_immune");
-  const cancer_risk = categoryScore("cancer_risk");
-  const skin_oral_mucosal = categoryScore("skin_oral_mucosal");
-  const reproductive_sexual = categoryScore("reproductive_sexual");
+  const digCat = cat("digestion");
+  const digestion = Math.min(
+    10,
+    alat ? (alat > 50 ? digCat + 1.0 : alat > 40 ? digCat : Math.max(1, digCat - 0.5)) : digCat,
+  );
 
   const bmi = onboarding?.bmi;
   const exercise_functional = bmi
-    ? bmi > 30
-      ? 6.0
-      : bmi > 25
-        ? 4.0
-        : 2.5
-    : categoryScore("exercise_functional");
+    ? bmi > 35
+      ? 7.0 + r(3)
+      : bmi > 30
+        ? 5.5 + r(4)
+        : bmi > 25
+          ? 3.5 + r(5)
+          : 1.5 + r(6)
+    : cat("exercise_functional");
 
   const scores: Record<string, number> = {
     cardiovascular,
     metabolic,
-    brain_mental,
-    exercise_functional,
     digestion,
-    respiratory_immune,
-    cancer_risk,
-    skin_oral_mucosal,
-    reproductive_sexual,
+    exercise_functional,
+    brain_mental_health: cat("brain_mental_health"),
+    respiratory_immune: cat("respiratory_immune"),
+    cancer_risk: cat("cancer_risk"),
+    skin_oral_mucosal: cat("skin_oral_mucosal"),
+    reproductive_sexual: cat("reproductive_sexual"),
   };
 
-  return HEALTH_TAXONOMY.map((main) => {
-    const raw = scores[main.key] ?? 1;
-    const score = Math.round(raw * 10) / 10;
-    return { category: main.label, key: main.key, score };
-  });
+  return HEALTH_TAXONOMY.map((main) => ({
+    category: main.label,
+    key: main.key,
+    score: Math.round((scores[main.key] ?? 2.0) * 10) / 10,
+  }));
 }
 
 function HealthOverviewView({
