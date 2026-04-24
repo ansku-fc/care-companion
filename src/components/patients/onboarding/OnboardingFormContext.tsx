@@ -46,6 +46,54 @@ export type OnboardingForm = {
   /* Step 3 — Family history */
   family_history: FamilyHistoryRow[];
 
+  /* Step 4 — Lifestyle */
+  smoking_current: boolean;
+  smoking_cigs_per_day: number | null;
+  smoking_years: number | null;
+  smoking_previous: boolean;
+  smoking_previous_years: number | null;
+  alcohol_current: boolean;
+  alcohol_units_per_week: number | null;
+  caffeine_current: boolean;
+  caffeine_cups_per_day: number | null;
+  caffeine_last_cup_time: string;
+  nicotine_pouches_current: boolean;
+  nicotine_pouches_per_day: number | null;
+  nicotine_pouches_strength: string;
+  drugs_current: boolean;
+  drugs_notes: string;
+
+  /* Step 5 — Physical Activity */
+  cardio_easy_hours_per_week: number | null;
+  cardio_moderate_hours_per_week: number | null;
+  cardio_vigorous_hours_per_week: number | null;
+  strength_hours_per_week: number | null;
+  sedentary_hours_per_day: number | null;
+
+  /* Step 6 — Nutrition */
+  diet_type: string;
+  water_litres_per_day: number | null;
+  fruits_vegetables_g_per_day: number | null;
+  fish_g_per_day: number | null;
+  red_meat_g_per_day: number | null;
+  sugar_g_per_day: number | null;
+  sodium_g_per_day: number | null;
+
+  /* Step 7 — Sleep */
+  sleep_quality: number | null;
+  sleep_bedtime: string;
+  sleep_waking_time: string;
+  sleep_latency_mins: number | null;
+  sleep_total_hours: number | null;
+  sleep_deep_percent: number | null;
+  sleep_efficiency_percent: number | null;
+  daytime_fatigue: number | null;
+  insomnia: boolean;
+  restless_legs: boolean;
+  sleep_apnea: boolean;
+  sleep_apnea_type: string;
+  sleep_apnea_severity: string;
+
   /* Step tracking */
   current_step: number;
   /** Steps the doctor explicitly marked complete (Save) vs skipped. */
@@ -94,6 +142,50 @@ export const blankOnboardingForm: OnboardingForm = {
 
   family_history: [],
 
+  smoking_current: false,
+  smoking_cigs_per_day: null,
+  smoking_years: null,
+  smoking_previous: false,
+  smoking_previous_years: null,
+  alcohol_current: false,
+  alcohol_units_per_week: null,
+  caffeine_current: false,
+  caffeine_cups_per_day: null,
+  caffeine_last_cup_time: "",
+  nicotine_pouches_current: false,
+  nicotine_pouches_per_day: null,
+  nicotine_pouches_strength: "",
+  drugs_current: false,
+  drugs_notes: "",
+
+  cardio_easy_hours_per_week: null,
+  cardio_moderate_hours_per_week: null,
+  cardio_vigorous_hours_per_week: null,
+  strength_hours_per_week: null,
+  sedentary_hours_per_day: null,
+
+  diet_type: "",
+  water_litres_per_day: null,
+  fruits_vegetables_g_per_day: null,
+  fish_g_per_day: null,
+  red_meat_g_per_day: null,
+  sugar_g_per_day: null,
+  sodium_g_per_day: null,
+
+  sleep_quality: null,
+  sleep_bedtime: "",
+  sleep_waking_time: "",
+  sleep_latency_mins: null,
+  sleep_total_hours: null,
+  sleep_deep_percent: null,
+  sleep_efficiency_percent: null,
+  daytime_fatigue: null,
+  insomnia: false,
+  restless_legs: false,
+  sleep_apnea: false,
+  sleep_apnea_type: "",
+  sleep_apnea_severity: "",
+
   current_step: 1,
   completed_steps: [],
   skipped_steps: [],
@@ -110,6 +202,25 @@ export function calcBmi(heightCm: number | null, weightKg: number | null): numbe
 export function calcWaistHipRatio(waist: number | null, hip: number | null): number | null {
   if (!waist || !hip || hip <= 0) return null;
   return Math.round((waist / hip) * 100) / 100;
+}
+
+/** MET hours per week — Easy×3.5 + Moderate×5 + Vigorous×8 + Strength×4. */
+export function calcMetHours(
+  easy: number | null,
+  moderate: number | null,
+  vigorous: number | null,
+  strength: number | null,
+): number | null {
+  const vals = [easy, moderate, vigorous, strength];
+  if (vals.every((v) => v === null || v === 0)) return null;
+  const total = (easy ?? 0) * 3.5 + (moderate ?? 0) * 5 + (vigorous ?? 0) * 8 + (strength ?? 0) * 4;
+  return Math.round(total * 10) / 10;
+}
+
+/** Estimated fiber from fruit+veg grams (×0.05). */
+export function calcFiberFromFruitVeg(fruitVegG: number | null): number | null {
+  if (!fruitVegG || fruitVegG <= 0) return null;
+  return Math.round(fruitVegG * 0.05 * 10) / 10;
 }
 
 /* ---------------- Context ---------------- */
