@@ -784,6 +784,7 @@ export type Database = {
           genetic_melanoma: boolean | null
           genetic_nervous_system: boolean | null
           height_cm: number | null
+          hip_circumference_cm: number | null
           id: string
           illness_cancer: boolean | null
           illness_cancer_notes: string | null
@@ -869,6 +870,7 @@ export type Database = {
           genetic_melanoma?: boolean | null
           genetic_nervous_system?: boolean | null
           height_cm?: number | null
+          hip_circumference_cm?: number | null
           id?: string
           illness_cancer?: boolean | null
           illness_cancer_notes?: string | null
@@ -954,6 +956,7 @@ export type Database = {
           genetic_melanoma?: boolean | null
           genetic_nervous_system?: boolean | null
           height_cm?: number | null
+          hip_circumference_cm?: number | null
           id?: string
           illness_cancer?: boolean | null
           illness_cancer_notes?: string | null
