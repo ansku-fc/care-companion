@@ -39,7 +39,6 @@ const DIMENSIONS: ClinicalDimensionKey[] = [
   "Other",
 ];
 
-// Mini ICD-10 catalogue for the search modal demo
 const ICD_CATALOGUE: { icd10: string; name: string; dimension: ClinicalDimensionKey }[] = [
   { icd10: "I10", name: "Essential Hypertension", dimension: "Cardiovascular Health" },
   { icd10: "I25.10", name: "Atherosclerotic heart disease", dimension: "Cardiovascular Health" },
@@ -58,7 +57,6 @@ const ICD_CATALOGUE: { icd10: string; name: string; dimension: ClinicalDimension
   { icd10: "M17.9", name: "Osteoarthritis of knee", dimension: "Exercise & Functional Health" },
 ];
 
-// Demo metadata not present in the source data (diagnosing doctor / notes).
 const DX_META: Record<string, { doctor: string; note?: string; resolutionNote?: string }> = {
   d1: { doctor: "Dr. Laine", note: "BP averaging 148/94 across 3 readings — started lifestyle counselling and Lisinopril 10 mg." },
   d2: { doctor: "Dr. Laine", note: "HbA1c 58 mmol/mol at diagnosis. Metformin titrated to 500 mg BID." },
@@ -73,33 +71,85 @@ const DX_META: Record<string, { doctor: string; note?: string; resolutionNote?: 
 };
 
 interface Props {
+  patientId?: string;
+  patientName?: string;
   onSelectDimension: (key: string) => void;
 }
 
-export function DiagnosesView({ onSelectDimension }: Props) {
-  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>(CARTER_DIAGNOSES);
+function inferDimension(name: string): ClinicalDimensionKey {
+  const lower = name.toLowerCase();
+  if (/(hypertension|heart|cardio|atrial|vascular|cholesterol)/.test(lower)) return "Cardiovascular Health";
+  if (/(diabetes|metabolic|lipid|obesity|thyroid|glucose)/.test(lower)) return "Metabolic Health";
+  if (/(sleep|depress|anxiety|mental|brain)/.test(lower)) return "Brain & Mental Health";
+  if (/(reflux|gastro|bowel|digestion|liver)/.test(lower)) return "Digestion";
+  if (/(asthma|copd|respiratory|immune|allergy)/.test(lower)) return "Respiratory & Immune Health";
+  if (/(joint|back pain|osteo|mobility|exercise|functional)/.test(lower)) return "Exercise & Functional Health";
+  return "Other";
+}
+
+export function DiagnosesView({ patientId, patientName, onSelectDimension }: Props) {
+  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [filterDim, setFilterDim] = useState<string>("all");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [addOpen, setAddOpen] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadDiagnoses = async () => {
+      if (!patientId) {
+        if (active) setDiagnoses([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("patient_diagnoses")
+        .select("id, diagnosis, icd_code, diagnosed_date, status")
+        .eq("patient_id", patientId)
+        .order("diagnosed_date", { ascending: false, nullsFirst: false });
+
+      if (!active) return;
+
+      if (error) {
+        setDiagnoses(isCarter(patientId, patientName) ? CARTER_DIAGNOSES : []);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setDiagnoses(
+          data.map((row) => ({
+            id: row.id,
+            name: row.diagnosis,
+            icd10: row.icd_code ?? "—",
+            dimension: inferDimension(row.diagnosis),
+            diagnosedDate: row.diagnosed_date ?? new Date().toISOString().slice(0, 10),
+            status: row.status === "resolved" ? "resolved" : "active",
+          })),
+        );
+        return;
+      }
+
+      setDiagnoses(isCarter(patientId, patientName) ? CARTER_DIAGNOSES : []);
+    };
+
+    loadDiagnoses();
+    return () => {
+      active = false;
+    };
+  }, [patientId, patientName]);
+
   const active = useMemo(
-    () =>
-      diagnoses
-        .filter((d) => d.status === "active")
-        .filter((d) => filterDim === "all" || d.dimension === filterDim),
+    () => diagnoses.filter((d) => d.status === "active").filter((d) => filterDim === "all" || d.dimension === filterDim),
     [diagnoses, filterDim],
   );
   const past = useMemo(
-    () =>
-      diagnoses
-        .filter((d) => d.status === "resolved")
-        .filter((d) => filterDim === "all" || d.dimension === filterDim),
+    () => diagnoses.filter((d) => d.status === "resolved").filter((d) => filterDim === "all" || d.dimension === filterDim),
     [diagnoses, filterDim],
   );
 
   const toggle = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
-  const handleAdd = (entry: typeof ICD_CATALOGUE[number]) => {
+  const handleAdd = (entry: (typeof ICD_CATALOGUE)[number]) => {
     const id = `d-new-${Date.now()}`;
     setDiagnoses((prev) => [
       {
@@ -118,7 +168,6 @@ export function DiagnosesView({ onSelectDimension }: Props) {
 
   return (
     <div className="space-y-5 p-1">
-      {/* Header row */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold text-foreground">All Diagnoses</h2>
@@ -144,17 +193,12 @@ export function DiagnosesView({ onSelectDimension }: Props) {
         </div>
       </div>
 
-      {/* Active */}
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Active
-        </h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active</h3>
         <Card className="shadow-card">
           <CardContent className="p-0 divide-y">
             {active.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground text-center">
-                No active diagnoses for this filter.
-              </p>
+              <p className="px-4 py-6 text-sm text-muted-foreground text-center">No active diagnoses for this filter.</p>
             ) : (
               active.map((d) => (
                 <DxRow
@@ -170,17 +214,12 @@ export function DiagnosesView({ onSelectDimension }: Props) {
         </Card>
       </section>
 
-      {/* Past */}
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Past
-        </h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Past</h3>
         <Card className="shadow-card">
           <CardContent className="p-0 divide-y">
             {past.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground text-center">
-                No resolved diagnoses for this filter.
-              </p>
+              <p className="px-4 py-6 text-sm text-muted-foreground text-center">No resolved diagnoses for this filter.</p>
             ) : (
               past.map((d) => (
                 <DxRow
@@ -196,7 +235,6 @@ export function DiagnosesView({ onSelectDimension }: Props) {
         </Card>
       </section>
 
-      {/* Add modal */}
       <AddDiagnosisDialog open={addOpen} onOpenChange={setAddOpen} onPick={handleAdd} />
     </div>
   );
@@ -231,16 +269,11 @@ function DxRow({
             <Badge variant="outline" className="text-[10px]">{d.icd10}</Badge>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <button
-              onClick={(e) => { e.stopPropagation(); onJump(); }}
-              className="text-[11px] text-primary hover:underline"
-            >
+            <button onClick={(e) => { e.stopPropagation(); onJump(); }} className="text-[11px] text-primary hover:underline">
               {d.dimension}
             </button>
             <span className="text-[11px] text-muted-foreground">·</span>
-            <span className="text-[11px] text-muted-foreground">
-              Diagnosed {fmtClinicalDate(d.diagnosedDate)}
-            </span>
+            <span className="text-[11px] text-muted-foreground">Diagnosed {fmtClinicalDate(d.diagnosedDate)}</span>
             {meta?.doctor && (
               <>
                 <span className="text-[11px] text-muted-foreground">·</span>
@@ -251,19 +284,12 @@ function DxRow({
             )}
           </div>
         </div>
-        {d.status === "resolved" && d.resolvedDate && (
-          <span className="text-[11px] text-muted-foreground shrink-0">
-            Resolved {fmtClinicalDate(d.resolvedDate)}
-          </span>
-        )}
       </button>
       {expanded && (
         <div className="px-4 pb-4 pt-1 pl-11 space-y-2 bg-muted/20">
           {meta?.note ? (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                Clinical note
-              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Clinical note</p>
               <p className="text-sm text-foreground">{meta.note}</p>
             </div>
           ) : (
@@ -271,9 +297,7 @@ function DxRow({
           )}
           {meta?.resolutionNote && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                Resolution
-              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Resolution</p>
               <p className="text-sm text-foreground">{meta.resolutionNote}</p>
             </div>
           )}
@@ -290,7 +314,7 @@ function AddDiagnosisDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onPick: (entry: typeof ICD_CATALOGUE[number]) => void;
+  onPick: (entry: (typeof ICD_CATALOGUE)[number]) => void;
 }) {
   const [q, setQ] = useState("");
   const results = useMemo(() => {
@@ -313,43 +337,23 @@ function AddDiagnosisDialog({
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              autoFocus
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by ICD-10 code or diagnosis name…"
-              className="pl-9"
-            />
+            <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by ICD-10 code or diagnosis name…" className="pl-9" />
           </div>
           <div className="border rounded-md divide-y max-h-[320px] overflow-auto">
             {results.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground text-center">
-                No matches.
-              </p>
+              <p className="p-4 text-sm text-muted-foreground text-center">No matches.</p>
             ) : (
               results.map((r) => (
-                <button
-                  key={r.icd10 + r.name}
-                  onClick={() => onPick(r)}
-                  className={cn(
-                    "w-full text-left px-3 py-2.5 hover:bg-muted/60 transition-colors flex items-center gap-3",
-                  )}
-                >
-                  <Badge variant="outline" className="text-[10px] font-mono shrink-0">
-                    {r.icd10}
-                  </Badge>
+                <button key={r.icd10 + r.name} onClick={() => onPick(r)} className={cn("w-full text-left px-3 py-2.5 hover:bg-muted/60 transition-colors flex items-center gap-3")}>
+                  <Badge variant="outline" className="text-[10px] font-mono shrink-0">{r.icd10}</Badge>
                   <span className="text-sm text-foreground flex-1 truncate">{r.name}</span>
-                  <span className="text-[11px] text-muted-foreground shrink-0">
-                    {r.dimension}
-                  </span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">{r.dimension}</span>
                 </button>
               ))
             )}
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-        </DialogFooter>
+        <DialogFooter />
       </DialogContent>
     </Dialog>
   );
