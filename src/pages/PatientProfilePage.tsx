@@ -4725,7 +4725,6 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                 onCreateTask={createTaskFromMarker}
               />
             )}
-            )}
             {selectedMarker && MARKER_DIMENSIONS[selectedMarker.key] && (
               <div className="mt-4">
                 <p className="text-xs font-medium text-muted-foreground mb-2">Affects Health Dimensions</p>
