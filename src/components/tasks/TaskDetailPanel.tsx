@@ -687,33 +687,103 @@ function ReferralFormPanel({
   form,
   onChange,
   patientName,
+  patientId,
 }: {
   form: ReferralForm;
   onChange: (f: ReferralForm) => void;
   patientName: string | null;
+  patientId: string | null;
 }) {
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
   const update = <K extends keyof ReferralForm>(key: K, value: ReferralForm[K]) => {
     onChange({ ...form, [key]: value });
   };
 
-  const handleEmail = () => {
-    const subject = `Referral – ${form.patient || patientName || "Patient"} – ${form.to || "Specialist"}`;
-    const body = referralToText(form);
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const picked = Array.from(e.target.files);
+    setFiles((prev) => [...prev, ...picked]);
+    e.target.value = "";
   };
 
-  const handleDownloadPdf = () => {
-    const text = referralToText(form);
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Referral – ${form.patient || "Patient"}</title>
+  const removeFile = (idx: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const uploadAttachments = async (): Promise<{ name: string; url: string }[] | null> => {
+    if (files.length === 0) return [];
+    if (!patientId) return null;
+    const out: { name: string; url: string }[] = [];
+    for (const f of files) {
+      const safeName = f.name.replace(/[^\w.\-]+/g, "_");
+      const path = `referrals/${patientId}/${Date.now()}_${safeName}`;
+      const { error } = await supabase.storage.from("appointment-attachments").upload(path, f, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) return null;
+      const { data } = supabase.storage.from("appointment-attachments").getPublicUrl(path);
+      out.push({ name: f.name, url: data.publicUrl });
+    }
+    return out;
+  };
+
+  const handleEmail = () => {
+    const subject = `Referral – ${form.patient || patientName || "Patient"} – ${form.to || "Specialist"}`;
+    let body = referralToText(form);
+    if (files.length > 0) {
+      body += `\n\nAttachments: ${files.map((f) => f.name).join(", ")}`;
+    }
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if (files.length > 0) {
+      toast.message("Email opened — remember to attach the files manually");
+    }
+  };
+
+  const buildPdfHtml = (text: string, attachmentLines: string) => {
+    const safeText = text.replace(/^REFERRAL\n*/, "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Referral – ${form.patient || "Patient"}</title>
 <style>
   body { font-family: -apple-system, system-ui, sans-serif; padding: 40px; color: #111; line-height: 1.5; }
   h1 { font-size: 18px; margin: 0 0 16px; letter-spacing: 1px; }
+  h2 { font-size: 13px; margin: 20px 0 6px; letter-spacing: 0.5px; text-transform: uppercase; color: #555; }
   pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; }
+  ul { font-size: 12px; margin: 4px 0 0 18px; padding: 0; }
+  a { color: #0366d6; word-break: break-all; }
 </style></head><body>
 <h1>REFERRAL</h1>
-<pre>${text.replace(/^REFERRAL\n*/, "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!))}</pre>
+<pre>${safeText}</pre>
+${attachmentLines}
 <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 300); };</script>
 </body></html>`;
+  };
+
+  const handleDownloadPdf = async () => {
+    setUploading(true);
+    let uploaded: { name: string; url: string }[] | null = [];
+    if (files.length > 0) {
+      uploaded = await uploadAttachments();
+      if (uploaded === null) {
+        toast.error("File upload failed — PDF saved without attachments");
+        uploaded = files.map((f) => ({ name: f.name, url: "" }));
+      }
+    }
+    setUploading(false);
+
+    let attachmentLines = "";
+    if (uploaded && uploaded.length > 0) {
+      attachmentLines = `<h2>Attachments</h2><ul>${uploaded
+        .map((a) =>
+          a.url
+            ? `<li>${a.name} — <a href="${a.url}">${a.url}</a></li>`
+            : `<li>${a.name}</li>`,
+        )
+        .join("")}</ul>`;
+    }
+
+    const html = buildPdfHtml(referralToText(form), attachmentLines);
     const win = window.open("", "_blank", "width=800,height=900");
     if (!win) {
       toast.error("Pop-up blocked — allow pop-ups to download the referral PDF.");
