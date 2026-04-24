@@ -33,6 +33,7 @@ import { PatientMedicationsView } from "@/components/patients/PatientMedications
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
+import { OnboardingEmptyState } from "@/components/patients/OnboardingEmptyState";
 import { PatientCareTeamView } from "@/components/patients/PatientCareTeamView";
 import { HealthDataView } from "@/components/patients/HealthDataView";
 import { HealthDataHub } from "@/components/patients/HealthDataHub";
