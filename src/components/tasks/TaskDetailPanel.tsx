@@ -351,8 +351,8 @@ function ContextualPreview({
 
   if (kind === "supply") {
     return (
-      <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-2">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+      <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-warning">
           <Pill className="h-3.5 w-3.5" /> Low supply
         </div>
         <p className="text-xs font-semibold">Current stock below 25%</p>
