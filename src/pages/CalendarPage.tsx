@@ -486,6 +486,15 @@ const CalendarPage = () => {
             </ScrollArea>
           </CardContent>
         </Card>
+
+        {/* New Appointment Form Panel */}
+        {formOpen && (
+          <AppointmentFormPanel
+            selectedDate={selectedDate}
+            editingAppointment={editingAppointment}
+            onClose={() => { setFormOpen(false); setEditingAppointment(null); }}
+          />
+        )}
       </div>
 
       <TaskDetailPanel
