@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   CalendarDays, Plus, Video, MapPin, Home, UserCheck, FlaskConical,
   Stethoscope, Clock, Play, Pencil, X, ChevronLeft, ChevronRight,
-  User, FileText, ExternalLink, StickyNote, Import, Briefcase, CheckSquare,
+  User, FileText, ExternalLink, StickyNote, Import, Briefcase, CheckSquare, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
