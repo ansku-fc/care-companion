@@ -356,8 +356,8 @@ export function PatientOverviewView({
         </Button>
       </div>
 
-      {/* 2. ALERTS BAR */}
-      <Card className={cn("border shadow-card transition-colors", alertBarClass)}>
+      {/* 2. ALERTS BAR — merged visually with Tasks card below */}
+      <Card className={cn("border shadow-card transition-colors rounded-b-none", alertBarClass)}>
         <CardContent className="py-3 px-4">
           {!hasAlerts ? (
             <p className="text-sm text-muted-foreground">No active alerts</p>
@@ -405,33 +405,13 @@ export function PatientOverviewView({
                     {moderateInteractions.length} moderate drug interaction{moderateInteractions.length === 1 ? "" : "s"}
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    const parts: string[] = [];
-                    if (severeAllergies.length) parts.push(`${severeAllergies.length} severe allergies`);
-                    if (severeInteractions.length) parts.push(`${severeInteractions.length} severe interactions`);
-                    if (overdueTasksCount) parts.push(`${overdueTasksCount} overdue tasks`);
-                    const summary = parts.join(", ") || "active alerts";
-                    openNewTask({
-                      title: `Review alerts — ${patient.full_name}`,
-                      description: `Active alerts: ${summary}`,
-                      patient_id: patient.id,
-                      category: "clinical",
-                      priority: alertSeverity === "high" ? "urgent" : "high",
-                      created_from: "Patient Overview alerts bar",
-                    });
-                  }}
-                  className="ml-auto text-xs text-primary hover:underline font-medium whitespace-nowrap"
-                >
-                  → Create task
-                </button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* TASKS for this patient */}
+      {/* TASKS for this patient — visually merged with alert bar above */}
       <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
 
       {/* 3. ROW 1 — Diagnoses | Medications */}
