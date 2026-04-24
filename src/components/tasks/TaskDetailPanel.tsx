@@ -698,6 +698,7 @@ function ReferralFormPanel({
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [printAttachments, setPrintAttachments] = useState<{ name: string; url: string }[]>([]);
   useEffect(() => {
     if (!patientId) return;
     const needMeds = !(form.medications && form.medications.trim().length > 0);
@@ -818,43 +819,6 @@ function ReferralFormPanel({
     }
   };
 
-  const buildPdfHtml = (text: string, attachmentLines: string) => {
-    const safeText = text.replace(/^REFERRAL\n*/, "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
-    const logoUrl = new URL(foundationClinicLogo, window.location.origin).href;
-    return `<!doctype html><html><head><meta charset="utf-8"><title>Referral – ${form.patient || "Patient"}</title>
-<style>
-  body { font-family: -apple-system, system-ui, sans-serif; padding: 40px; color: #111; line-height: 1.5; }
-  .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #ddd; margin-bottom: 20px; }
-  .header .logo-crop { width: 160px; height: 56px; overflow: hidden; }
-  .header .logo-crop img { height: 110px; width: auto; object-fit: cover; object-position: left; margin-top: -28px; display: block; }
-  .header .meta { text-align: right; font-size: 11px; color: #666; line-height: 1.4; }
-  h1 { font-size: 18px; margin: 0 0 16px; letter-spacing: 1px; }
-  h2 { font-size: 13px; margin: 20px 0 6px; letter-spacing: 0.5px; text-transform: uppercase; color: #555; }
-  pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; }
-  ul { font-size: 12px; margin: 4px 0 0 18px; padding: 0; }
-  a { color: #0366d6; word-break: break-all; }
-  @media print {
-    body > * { display: none !important; }
-    #referral-print-area { display: block !important; }
-  }
-</style></head><body>
-<div id="referral-print-area">
-  <div class="header">
-    <div class="logo-crop"><img src="${logoUrl}" alt="Foundation Clinic" /></div>
-    <div class="meta">
-      <div>Foundation Health Finland Oy</div>
-      <div>foundation.clinic</div>
-      <div>Ratakatu 29 a 4</div>
-      <div>00120 Helsinki</div>
-    </div>
-  </div>
-  <h1>REFERRAL</h1>
-  <pre>${safeText}</pre>
-  ${attachmentLines}
-</div>
-<script>window.onload = () => { window.print(); setTimeout(() => window.close(), 300); };</script>
-</body></html>`;
-  };
 
   const handleDownloadPdf = async () => {
     setUploading(true);
@@ -867,31 +831,46 @@ function ReferralFormPanel({
       }
     }
     setUploading(false);
+    setPrintAttachments(uploaded ?? []);
 
-    let attachmentLines = "";
-    if (uploaded && uploaded.length > 0) {
-      attachmentLines = `<h2>Attachments</h2><ul>${uploaded
-        .map((a) =>
-          a.url
-            ? `<li>${a.name} — <a href="${a.url}">${a.url}</a></li>`
-            : `<li>${a.name}</li>`,
-        )
-        .join("")}</ul>`;
-    }
+    // Wait a tick so the print-only area renders attachments
+    await new Promise((r) => setTimeout(r, 50));
 
-    const html = buildPdfHtml(referralToText(form), attachmentLines);
-    const win = window.open("", "_blank", "width=800,height=900");
-    if (!win) {
-      toast.error("Pop-up blocked — allow pop-ups to download the referral PDF.");
-      return;
-    }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
+    const styleId = "print-hide-style";
+    const existing = document.getElementById(styleId);
+    if (existing) existing.remove();
+
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      @media print {
+        body * { visibility: hidden !important; }
+        #referral-print-area, #referral-print-area * { visibility: visible !important; }
+        #referral-print-area {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          padding: 40px !important;
+          background: #fff !important;
+          color: #111 !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    const cleanup = () => {
+      const s = document.getElementById(styleId);
+      if (s) s.remove();
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+
+    window.print();
   };
 
   return (
-    <div id="referral-print-area" className="rounded-lg border bg-muted/30 p-3 space-y-3">
+    <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2 pb-1">
         <div className="overflow-hidden w-32 h-12">
           <img src={foundationClinicLogo} alt="Foundation Clinic" className="h-24 w-auto object-left object-cover -mt-6" />
@@ -1060,6 +1039,90 @@ function ReferralFormPanel({
         <Button className="gap-1.5" onClick={handleDownloadPdf} disabled={uploading}>
           <Download className="h-3.5 w-3.5" /> {uploading ? "Uploading…" : "Download as PDF"}
         </Button>
+      </div>
+
+      {/* Hidden print-only document — only visible during window.print() */}
+      <div
+        id="referral-print-area"
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-10000px",
+          top: 0,
+          width: "800px",
+          background: "#fff",
+          color: "#111",
+          fontFamily: "-apple-system, system-ui, sans-serif",
+          fontSize: "13px",
+          lineHeight: 1.5,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingBottom: "12px",
+            borderBottom: "1px solid #ddd",
+            marginBottom: "20px",
+          }}
+        >
+          <div style={{ width: "160px", height: "56px", overflow: "hidden" }}>
+            <img
+              src={foundationClinicLogo}
+              alt="Foundation Clinic"
+              style={{
+                height: "110px",
+                width: "auto",
+                objectFit: "cover",
+                objectPosition: "left",
+                marginTop: "-28px",
+                display: "block",
+              }}
+            />
+          </div>
+          <div style={{ textAlign: "right", fontSize: "11px", color: "#666", lineHeight: 1.4 }}>
+            <div>Foundation Health Finland Oy</div>
+            <div>foundation.clinic</div>
+            <div>Ratakatu 29 a 4</div>
+            <div>00120 Helsinki</div>
+          </div>
+        </div>
+        <h1 style={{ fontSize: "18px", margin: "0 0 16px", letterSpacing: "1px" }}>REFERRAL</h1>
+        <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "13px", margin: 0 }}>
+          {referralToText(form).replace(/^REFERRAL\n*/, "")}
+        </pre>
+        {printAttachments.length > 0 && (
+          <>
+            <h2
+              style={{
+                fontSize: "13px",
+                margin: "20px 0 6px",
+                letterSpacing: "0.5px",
+                textTransform: "uppercase",
+                color: "#555",
+              }}
+            >
+              Attachments
+            </h2>
+            <ul style={{ fontSize: "12px", margin: "4px 0 0 18px", padding: 0 }}>
+              {printAttachments.map((a, i) => (
+                <li key={i}>
+                  {a.url ? (
+                    <>
+                      {a.name} —{" "}
+                      <a href={a.url} style={{ color: "#0366d6", wordBreak: "break-all" }}>
+                        {a.url}
+                      </a>
+                    </>
+                  ) : (
+                    a.name
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </div>
   );
