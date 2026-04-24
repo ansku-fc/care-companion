@@ -10,11 +10,15 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from "recharts";
-import { Flag } from "lucide-react";
+import { Flag, MessageSquarePlus, ListChecks, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type ChartPoint = { date: string; value: number };
-type AnnotationPoint = { id: string; date: string; text: string };
+export type MarkerAnnotation = { id: string; date: string; text: string; author?: string };
 type Window = "6m" | "1y" | "3y" | "all";
 
 const WINDOW_LABELS: Record<Window, string> = {
@@ -33,15 +37,38 @@ function filterByWindow<T extends { date: string }>(data: T[], window: Window): 
 }
 
 interface MarkerDetailChartProps {
+  label: string;
+  unit?: string;
   chartData: ChartPoint[];
   refValues: { low?: number; high?: number } | null;
-  annotations?: AnnotationPoint[];
+  annotations?: MarkerAnnotation[];
+  annotationText: string;
+  annotationDate: string;
+  onAnnotationTextChange: (v: string) => void;
+  onAnnotationDateChange: (v: string) => void;
+  onSaveAnnotation: () => void;
+  onDeleteAnnotation: (id: string) => void;
+  onCreateTask: () => void;
 }
 
 const PRIMARY_LINE = "hsl(var(--foreground))";
 
-export function MarkerDetailChart({ chartData, refValues, annotations = [] }: MarkerDetailChartProps) {
+export function MarkerDetailChart({
+  label,
+  unit,
+  chartData,
+  refValues,
+  annotations = [],
+  annotationText,
+  annotationDate,
+  onAnnotationTextChange,
+  onAnnotationDateChange,
+  onSaveAnnotation,
+  onDeleteAnnotation,
+  onCreateTask,
+}: MarkerDetailChartProps) {
   const [window, setWindow] = useState<Window>("3y");
+  const [annotationsOpen, setAnnotationsOpen] = useState(false);
 
   const data = useMemo(
     () =>
@@ -55,16 +82,12 @@ export function MarkerDetailChart({ chartData, refValues, annotations = [] }: Ma
   const refLow = refValues?.low;
   const refHigh = refValues?.high;
 
-  // Annotation markers visible within current data window
   const annotationFlags = useMemo(() => {
     if (!annotations.length || data.length === 0) return [];
     const visible = new Set(data.map((d) => d.date));
     return annotations
       .filter((a) => visible.has(a.date))
-      .map((a) => ({
-        ...a,
-        idx: data.findIndex((d) => d.date === a.date),
-      }))
+      .map((a) => ({ ...a, idx: data.findIndex((d) => d.date === a.date) }))
       .filter((a) => a.idx >= 0);
   }, [annotations, data]);
 
@@ -90,23 +113,47 @@ export function MarkerDetailChart({ chartData, refValues, annotations = [] }: Ma
 
   return (
     <div className="space-y-2">
-      {/* Time window selector */}
-      <div className="flex justify-end">
-        <div className="inline-flex rounded-md border bg-muted/50 p-0.5 text-[10px]">
-          {(["6m", "1y", "3y", "all"] as Window[]).map((w) => (
-            <button
-              key={w}
-              onClick={() => setWindow(w)}
-              className={cn(
-                "px-1.5 py-0.5 rounded-sm transition-colors",
-                window === w
-                  ? "bg-background text-foreground shadow-sm font-medium"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {WINDOW_LABELS[w]}
-            </button>
-          ))}
+      {/* Unified header */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-sm">
+          <span className="font-semibold text-foreground">{label}</span>
+          {unit && <span className="ml-1 text-muted-foreground">({unit})</span>}
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="inline-flex rounded-md border bg-muted/50 p-0.5 text-[10px]">
+            {(["6m", "1y", "3y", "all"] as Window[]).map((w) => (
+              <button
+                key={w}
+                onClick={() => setWindow(w)}
+                className={cn(
+                  "px-1.5 py-0.5 rounded-sm transition-colors",
+                  window === w
+                    ? "bg-background text-foreground shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {WINDOW_LABELS[w]}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="Add annotation"
+            onClick={() => setAnnotationsOpen((o) => !o)}
+          >
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="Create task from this marker"
+            onClick={onCreateTask}
+          >
+            <ListChecks className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
 
@@ -176,12 +223,8 @@ export function MarkerDetailChart({ chartData, refValues, annotations = [] }: Ma
             </ResponsiveContainer>
           </div>
 
-          {/* Annotation flags row */}
           {annotationFlags.length > 0 && (
-            <div
-              className="relative h-5"
-              style={{ marginLeft: 50, marginRight: 56 }}
-            >
+            <div className="relative h-5" style={{ marginLeft: 50, marginRight: 56 }}>
               {annotationFlags.map((a) => {
                 const left = data.length === 1 ? 50 : (a.idx / (data.length - 1)) * 100;
                 return (
@@ -199,6 +242,69 @@ export function MarkerDetailChart({ chartData, refValues, annotations = [] }: Ma
             </div>
           )}
         </>
+      )}
+
+      {/* Inline annotations panel */}
+      {annotationsOpen && (
+        <div className="rounded-md border bg-muted/20 p-2.5 space-y-2">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Annotation
+              </Label>
+              <Textarea
+                placeholder="Add a clinical annotation..."
+                className="mt-1 min-h-[48px] text-xs resize-none"
+                value={annotationText}
+                onChange={(e) => onAnnotationTextChange(e.target.value)}
+              />
+            </div>
+            <div className="w-32">
+              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Date</Label>
+              <Input
+                type="date"
+                className="h-8 text-xs"
+                value={annotationDate}
+                onChange={(e) => onAnnotationDateChange(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              onClick={onSaveAnnotation}
+              disabled={!annotationText.trim()}
+            >
+              Save
+            </Button>
+          </div>
+          {annotations.length > 0 && (
+            <ul className="space-y-1">
+              {annotations.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-start gap-2 rounded border bg-background px-2 py-1 text-xs"
+                >
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1.5">
+                      {a.date}
+                      {a.author ? ` · ${a.author}` : ""}
+                    </span>
+                    <span className="text-foreground">{a.text}</span>
+                  </div>
+                  <button
+                    onClick={() => onDeleteAnnotation(a.id)}
+                    className="text-muted-foreground hover:text-destructive shrink-0"
+                    aria-label="Delete annotation"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
