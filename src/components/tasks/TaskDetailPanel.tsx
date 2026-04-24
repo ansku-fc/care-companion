@@ -21,10 +21,15 @@ import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useAuth } from "@/hooks/useAuth";
 
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
+const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
+function isReferralTask(task: Task): boolean {
+  const isReferralCat = task.category === "referral";
+  return isReferralCat || REFERRAL_KEYWORDS.test(task.title ?? "");
+}
 function isCommunicationTask(task: Task): boolean {
   const isCareCoord = task.category === "care_coordination" || task.category === "client_communication";
   const matchesKeyword = COMM_KEYWORDS.test(task.title ?? "");
-  return isCareCoord || matchesKeyword;
+  return isCareCoord || matchesKeyword || isReferralTask(task);
 }
 
 // Build prefill payload for the appointment form panel from a communication task.
@@ -68,7 +73,8 @@ function buildCommPrefill(task: Task): CommPrefill {
 }
 
 const OUTCOME_TAGS = ["Informed", "Follow-up needed", "Referral initiated", "No action needed"] as const;
-type OutcomeTag = typeof OUTCOME_TAGS[number];
+const REFERRAL_OUTCOME_TAGS = ["Referral sent", "Awaiting response", "Specialist booked", "No longer needed"] as const;
+type OutcomeTag = string;
 
 interface Props {
   task: Task | null;
@@ -103,6 +109,8 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   const kind = detectKind(task);
   const isClinical = kind !== null;
   const isComm = !isClinical && isCommunicationTask(task);
+  const isReferral = !isClinical && isReferralTask(task);
+  const activeOutcomeTags = isReferral ? REFERRAL_OUTCOME_TAGS : OUTCOME_TAGS;
 
   const updateStatus = async (status: TaskStatus) => {
     const { error } = await supabase.from("tasks").update({ status }).eq("id", task.id);
@@ -147,7 +155,7 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
       patient_id: task.patient_id,
       provider_id: user?.id ?? "00000000-0000-0000-0000-000000000001",
       visit_date: new Date().toISOString().slice(0, 10),
-      chief_complaint: "Care coordination note",
+      chief_complaint: isReferral ? "Referral note" : "Care coordination note",
       notes: noteBody,
     });
     if (visitErr) {
@@ -295,7 +303,9 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                       }}
                     >
                       <Calendar className="h-3.5 w-3.5" />
-                      {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id ? "View in Calendar" : "Schedule"}
+                      {(task as Task & { scheduled_appointment_id?: string | null }).scheduled_appointment_id
+                        ? "View in Calendar"
+                        : isReferral ? "Schedule referral" : "Schedule"}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                     <Button
@@ -311,19 +321,19 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
                     <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
                       <div className="space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground">
-                          Call summary / outcome
+                          {isReferral ? "Referral summary / outcome" : "Call summary / outcome"}
                         </p>
                         <Textarea
                           value={outcomeText}
                           onChange={(e) => setOutcomeText(e.target.value)}
                           rows={4}
-                          placeholder="What was discussed, decided, or referred…"
+                          placeholder={isReferral ? "Specialist contacted, appointment booked, response received…" : "What was discussed, decided, or referred…"}
                         />
                       </div>
                       <div className="space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground">Outcome tag</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {OUTCOME_TAGS.map((tag) => (
+                          {activeOutcomeTags.map((tag) => (
                             <button
                               key={tag}
                               type="button"
