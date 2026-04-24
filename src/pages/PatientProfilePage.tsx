@@ -4251,6 +4251,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [annotationText, setAnnotationText] = useState("");
   const [annotationDate, setAnnotationDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [viewMode, setViewMode] = useState<"graphs" | "table">("graphs");
 
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
