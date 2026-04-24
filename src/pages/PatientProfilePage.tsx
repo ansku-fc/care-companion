@@ -627,8 +627,8 @@ function HealthOverviewView({
   onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
   const radarData = useMemo(
-    () => computeRadarData(patient.id, onboarding, labResults, healthCategories),
-    [patient.id, onboarding, labResults, healthCategories],
+    () => computeRadarData(onboarding, labResults, healthCategories),
+    [onboarding, labResults, healthCategories],
   );
 
   const [summary, setSummary] = useState((patient as any).health_summary || "");
