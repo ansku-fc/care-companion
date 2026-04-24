@@ -153,18 +153,27 @@ export function AddPatientDialog() {
   const reset = () => setForm({ ...blankForm });
 
   const handleSave = async () => {
-    if (!user) {
-      toast.error("You must be logged in");
-      return;
-    }
     if (!form.first_name.trim() || !form.last_name.trim()) {
       toast.error("First and last name are required");
+      return;
+    }
+
+    // Pull the current auth user fresh from the session — don't trust stale state
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const authUser = authData?.user ?? null;
+    if (authError || !authUser?.id) {
+      toast.error("You must be logged in");
       return;
     }
 
     setSaving(true);
     try {
       const fullName = `${form.last_name.trim()}, ${form.first_name.trim()}`;
+      const assignedDoctorId =
+        form.assigned_doctor_id && form.assigned_doctor_id.trim() !== ""
+          ? form.assigned_doctor_id
+          : null;
+
       const { data: patient, error } = await supabase
         .from("patients")
         .insert({
@@ -180,9 +189,9 @@ export function AddPatientDialog() {
           personal_id: form.personal_id.trim() || null,
           insurance_provider: form.insurance_provider.trim() || null,
           tier: (form.tier as any) || "tier_1",
-          assigned_doctor_id: form.assigned_doctor_id || null,
+          assigned_doctor_id: assignedDoctorId,
           onboarding_status: "pending",
-          created_by: user.id,
+          created_by: authUser.id,
         } as any)
         .select("id")
         .single();
