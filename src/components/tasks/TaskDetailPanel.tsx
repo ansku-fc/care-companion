@@ -174,12 +174,18 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   const [outcomeTag, setOutcomeTag] = useState<OutcomeTag | "">("");
   const [savingOutcome, setSavingOutcome] = useState(false);
 
+  // Inline referral form state
+  const [referralOpen, setReferralOpen] = useState(false);
+  const [referralForm, setReferralForm] = useState<ReferralForm | null>(null);
+
   useEffect(() => {
     setNotes(task?.description ?? "");
     setLogOpen(false);
     setOutcomeText("");
     setOutcomeTag("");
-  }, [task]);
+    setReferralOpen(false);
+    setReferralForm(task ? buildReferralForm(task, patientName) : null);
+  }, [task, patientName]);
 
   if (!task) return null;
   const meta = priorityMeta(task.priority);
