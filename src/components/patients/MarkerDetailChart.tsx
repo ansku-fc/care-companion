@@ -42,13 +42,15 @@ interface MarkerDetailChartProps {
   chartData: ChartPoint[];
   refValues: { low?: number; high?: number } | null;
   annotations?: MarkerAnnotation[];
-  annotationText: string;
-  annotationDate: string;
-  onAnnotationTextChange: (v: string) => void;
-  onAnnotationDateChange: (v: string) => void;
-  onSaveAnnotation: () => void;
-  onDeleteAnnotation: (id: string) => void;
-  onCreateTask: () => void;
+  /** When true, hides the annotation/task icon buttons and inline annotation panel. */
+  displayOnly?: boolean;
+  annotationText?: string;
+  annotationDate?: string;
+  onAnnotationTextChange?: (v: string) => void;
+  onAnnotationDateChange?: (v: string) => void;
+  onSaveAnnotation?: () => void;
+  onDeleteAnnotation?: (id: string) => void;
+  onCreateTask?: () => void;
 }
 
 const PRIMARY_LINE = "hsl(var(--foreground))";
