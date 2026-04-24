@@ -4238,13 +4238,20 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   reviewMode?: boolean;
   onReviewComplete?: () => void;
 }) {
-  const { notifyChanged } = useTaskActions();
+  const { notifyChanged, openNewTask } = useTaskActions();
+  const { user } = useAuth();
   const [selectedMarker, setSelectedMarker] = useState<{ key: string; label: string; unit: string } | null>(null);
   // (legacy tab state removed; lab results render directly now)
   const [customRefs, setCustomRefs] = useState<Record<string, { low?: number; high?: number }>>({});
   // Local re-render trigger for the lab-review store
   const [, forceTick] = useState(0);
   const [reviewBanner, setReviewBanner] = useState(false);
+
+  // Annotations for the selected marker
+  type Annotation = { id: string; annotation_date: string; text: string; author_name: string };
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [annotationText, setAnnotationText] = useState("");
+  const [annotationDate, setAnnotationDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const leftScrollRef = React.useRef<HTMLDivElement>(null);
   const rightScrollRef = React.useRef<HTMLDivElement>(null);
