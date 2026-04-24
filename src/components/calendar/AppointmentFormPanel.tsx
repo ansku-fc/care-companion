@@ -220,7 +220,8 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         visit_modality: "remote",
         is_external_specialist: true,
         specialist_name: otherDoctorName,
-        coordination_category: coordinationCategory,
+        coordination_category: coordinationCategory || null,
+        other_doctor_name: otherDoctorName,
       };
     } else if (kind === "nurse_task") {
       payload = {
@@ -238,7 +239,6 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
         title: title || `Working Time – ${internalCategory}`,
         patient_id: null,
         appointment_type: "working_time" as any,
-        working_category: internalCategory,
       };
     }
 
