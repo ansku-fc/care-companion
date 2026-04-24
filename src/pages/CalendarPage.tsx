@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AddAppointmentDialog } from "@/components/calendar/AddAppointmentDialog";
+import { AppointmentFormPanel } from "@/components/calendar/AppointmentFormPanel";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isToday, isSameMonth } from "date-fns";
@@ -112,7 +112,7 @@ const CalendarPage = () => {
   const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<any>(null);
@@ -203,7 +203,7 @@ const CalendarPage = () => {
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
           <p className="text-muted-foreground">Doctor's schedule overview</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> New Appointment
         </Button>
       </div>
@@ -218,7 +218,7 @@ const CalendarPage = () => {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+      <div className={cn("grid gap-6", formOpen ? "xl:grid-cols-[1fr_360px_380px]" : "xl:grid-cols-[1fr_380px]")}>
         {/* Month Grid */}
         <Card>
           <CardHeader className="pb-3">
@@ -486,6 +486,15 @@ const CalendarPage = () => {
             </ScrollArea>
           </CardContent>
         </Card>
+
+        {/* New Appointment Form Panel */}
+        {formOpen && (
+          <AppointmentFormPanel
+            selectedDate={selectedDate}
+            editingAppointment={editingAppointment}
+            onClose={() => { setFormOpen(false); setEditingAppointment(null); }}
+          />
+        )}
       </div>
 
       <TaskDetailPanel
@@ -586,12 +595,7 @@ const CalendarPage = () => {
         </DialogContent>
       </Dialog>
 
-      <AddAppointmentDialog
-        open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingAppointment(null); }}
-        selectedDate={selectedDate}
-        editingAppointment={editingAppointment}
-      />
+      {/* Appointment form panel rendered inside the grid below — no dialog */}
 
       <AlertDialog open={!!cancelId} onOpenChange={(open) => !open && setCancelId(null)}>
         <AlertDialogContent>
