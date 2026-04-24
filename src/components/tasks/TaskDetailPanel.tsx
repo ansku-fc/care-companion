@@ -819,43 +819,6 @@ function ReferralFormPanel({
     }
   };
 
-  const buildPdfHtml = (text: string, attachmentLines: string) => {
-    const safeText = text.replace(/^REFERRAL\n*/, "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
-    const logoUrl = new URL(foundationClinicLogo, window.location.origin).href;
-    return `<!doctype html><html><head><meta charset="utf-8"><title>Referral – ${form.patient || "Patient"}</title>
-<style>
-  body { font-family: -apple-system, system-ui, sans-serif; padding: 40px; color: #111; line-height: 1.5; }
-  .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #ddd; margin-bottom: 20px; }
-  .header .logo-crop { width: 160px; height: 56px; overflow: hidden; }
-  .header .logo-crop img { height: 110px; width: auto; object-fit: cover; object-position: left; margin-top: -28px; display: block; }
-  .header .meta { text-align: right; font-size: 11px; color: #666; line-height: 1.4; }
-  h1 { font-size: 18px; margin: 0 0 16px; letter-spacing: 1px; }
-  h2 { font-size: 13px; margin: 20px 0 6px; letter-spacing: 0.5px; text-transform: uppercase; color: #555; }
-  pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; }
-  ul { font-size: 12px; margin: 4px 0 0 18px; padding: 0; }
-  a { color: #0366d6; word-break: break-all; }
-  @media print {
-    body > * { display: none !important; }
-    #referral-print-area { display: block !important; }
-  }
-</style></head><body>
-<div id="referral-print-area">
-  <div class="header">
-    <div class="logo-crop"><img src="${logoUrl}" alt="Foundation Clinic" /></div>
-    <div class="meta">
-      <div>Foundation Health Finland Oy</div>
-      <div>foundation.clinic</div>
-      <div>Ratakatu 29 a 4</div>
-      <div>00120 Helsinki</div>
-    </div>
-  </div>
-  <h1>REFERRAL</h1>
-  <pre>${safeText}</pre>
-  ${attachmentLines}
-</div>
-<script>window.onload = () => { window.print(); setTimeout(() => window.close(), 300); };</script>
-</body></html>`;
-  };
 
   const handleDownloadPdf = async () => {
     setUploading(true);
