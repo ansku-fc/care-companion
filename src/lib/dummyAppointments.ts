@@ -2,6 +2,21 @@
 // views display the same demo schedule. Builds a deterministic set of demo
 // appointments for the given month.
 
+export const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  onboarding: { bg: "bg-primary/10", text: "text-primary", label: "Onboarding" },
+  acute: { bg: "bg-destructive/10", text: "text-destructive", label: "Acute" },
+  consultation: { bg: "bg-accent/60", text: "text-accent-foreground", label: "Consultation" },
+  follow_up: { bg: "bg-success/10", text: "text-success", label: "Follow-up" },
+  check_up: { bg: "bg-warning/10", text: "text-warning", label: "Check-up" },
+  procedure: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Procedure" },
+  urgent: { bg: "bg-destructive/10", text: "text-destructive", label: "Urgent" },
+  working_time: { bg: "bg-blue-500/10", text: "text-blue-600", label: "Working Time" },
+  doctor_meeting: { bg: "bg-teal-500/10", text: "text-teal-700", label: "Doctor Meeting" },
+};
+
+export const typeStyle = (type: string) => TYPE_STYLES[type] ?? TYPE_STYLES.consultation;
+
+
 const REAL_PATIENTS = [
   { id: "4d46d74b-9948-470f-a8d0-d040b63a2077", name: "Johnson, Sarah" },
   { id: "d343736e-90d7-4804-9691-f334788e712b", name: "Eriksson, Marcus" },

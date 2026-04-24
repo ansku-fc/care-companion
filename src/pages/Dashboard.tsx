@@ -18,7 +18,7 @@ import {
 } from "@/lib/tasks";
 import { format, isSameDay, parseISO } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
-import { buildDummyAppointments } from "@/lib/dummyAppointments";
+import { buildDummyAppointments, typeStyle } from "@/lib/dummyAppointments";
 
 type PatientLite = { id: string; full_name: string };
 
@@ -29,6 +29,7 @@ type ScheduleItem = {
   end: Date;
   name: string;
   type: string;
+  appointmentType: string;
   status: "completed" | "in_progress" | "upcoming";
 };
 
@@ -206,6 +207,7 @@ const Dashboard = () => {
         end,
         name,
         type: subtitle,
+        appointmentType: typeKey,
         status,
       };
     });
@@ -276,33 +278,36 @@ const Dashboard = () => {
               {todaySchedule.length === 0 && (
                 <p className="text-sm text-muted-foreground italic px-1 py-2">No appointments scheduled for today.</p>
               )}
-              {todaySchedule.map((appt) => (
-                <div key={appt.id} className="group flex items-center gap-4 p-3 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
-                  <span className="text-sm font-mono text-muted-foreground w-14 tabular-nums">{appt.time}</span>
-                  <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(appt.status))} />
-                  <div className="flex-1 min-w-0">
-                    <button onClick={() => goToPatient(appt.name, "overview")} className="text-sm font-medium hover:text-primary hover:underline truncate block text-left">
-                      {appt.name}
+              {todaySchedule.map((appt) => {
+                const s = typeStyle(appt.appointmentType);
+                return (
+                  <div key={appt.id} className={cn("group flex items-center gap-4 p-3 rounded-lg transition-colors hover:brightness-95", s.bg)}>
+                    <span className="text-sm font-mono text-muted-foreground w-14 tabular-nums">{appt.time}</span>
+                    <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(appt.status))} />
+                    <div className="flex-1 min-w-0">
+                      <button onClick={() => goToPatient(appt.name, "overview")} className="text-sm font-medium hover:underline truncate block text-left">
+                        {appt.name}
+                      </button>
+                      <p className={cn("text-xs truncate font-medium", s.text)}>{s.label}</p>
+                    </div>
+                    <span className={cn(
+                      "text-[11px] font-medium uppercase tracking-wide",
+                      appt.status === "in_progress" && "text-success",
+                      appt.status === "completed" && "text-muted-foreground",
+                      appt.status === "upcoming" && "text-foreground/70",
+                    )}>{statusLabelText(appt.status)}</span>
+                    <button
+                      type="button"
+                      onClick={() => createTaskForAppt(appt)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-background/60"
+                      aria-label="Create follow-up task"
+                      title="Create follow-up task"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
                     </button>
-                    <p className="text-xs text-muted-foreground truncate">{appt.type}</p>
                   </div>
-                  <span className={cn(
-                    "text-[11px] font-medium uppercase tracking-wide",
-                    appt.status === "in_progress" && "text-success",
-                    appt.status === "completed" && "text-muted-foreground",
-                    appt.status === "upcoming" && "text-foreground/70",
-                  )}>{statusLabelText(appt.status)}</span>
-                  <button
-                    type="button"
-                    onClick={() => createTaskForAppt(appt)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    aria-label="Create follow-up task"
-                    title="Create follow-up task"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
               <div className="pt-2">
                 <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => navigate("/calendar")}>
                   View full calendar <ArrowRight className="h-3.5 w-3.5" />
