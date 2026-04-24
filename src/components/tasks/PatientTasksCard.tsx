@@ -23,7 +23,7 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
   const visible = tasks.slice(0, 3);
 
   return (
-    <Card className="shadow-card">
+    <Card className="shadow-card rounded-t-none border-t-0">
       <CardContent className="py-3 px-3 space-y-2">
         <div className="flex items-center gap-2">
           <ListTodo className="h-3.5 w-3.5 text-primary" />
