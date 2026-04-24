@@ -224,9 +224,11 @@ const CalendarPage = () => {
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
           <p className="text-muted-foreground">Doctor's schedule overview</p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> New Appointment
-        </Button>
+        {!formOpen && (
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> New Appointment
+          </Button>
+        )}
       </div>
 
       {/* Legend */}
