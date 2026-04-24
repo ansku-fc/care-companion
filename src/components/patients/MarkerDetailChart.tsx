@@ -64,6 +64,9 @@ export function MarkerDetailChart({
   unit,
   chartData,
   refValues,
+  secondarySeries,
+  secondaryLabel = "Secondary",
+  secondaryRefValues,
   annotations = [],
   displayOnly = false,
   annotationText = "",
@@ -77,14 +80,19 @@ export function MarkerDetailChart({
   const [window, setWindow] = useState<Window>("3y");
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
 
-  const data = useMemo(
-    () =>
-      filterByWindow(
-        [...chartData].sort((a, b) => a.date.localeCompare(b.date)),
-        window,
-      ),
-    [chartData, window],
-  );
+  const data = useMemo(() => {
+    const primary = [...chartData].sort((a, b) => a.date.localeCompare(b.date));
+    const secMap = new Map<string, number>();
+    if (secondarySeries) {
+      for (const p of secondarySeries) secMap.set(p.date, p.value);
+    }
+    const merged = primary.map((p) => ({
+      date: p.date,
+      value: p.value,
+      value2: secMap.get(p.date),
+    }));
+    return filterByWindow(merged, window);
+  }, [chartData, secondarySeries, window]);
 
   const refLow = refValues?.low;
   const refHigh = refValues?.high;
