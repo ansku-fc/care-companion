@@ -2563,6 +2563,24 @@ function HealthDimensionView({
 }) {
   const dim = findDimension(dimensionKey);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [diagnoses, setDiagnoses] = useState<any[]>([]);
+  const [medications, setMedications] = useState<any[]>([]);
+  const [allergies, setAllergies] = useState<any[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [d, m, a] = await Promise.all([
+        supabase.from("patient_diagnoses").select("diagnosis,icd_code").eq("patient_id", patient.id).eq("status", "active"),
+        supabase.from("patient_medications").select("medication_name,indication").eq("patient_id", patient.id).eq("status", "active"),
+        supabase.from("patient_allergies" as any).select("allergen").eq("patient_id", patient.id).eq("status", "active"),
+      ]);
+      if (cancelled) return;
+      setDiagnoses(d.data || []);
+      setMedications(m.data || []);
+      setAllergies((a as any).data || []);
+    })();
+    return () => { cancelled = true; };
+  }, [patient.id]);
   const toggleRow = (k: string) => setExpandedRows((prev) => {
     const next = new Set(prev);
     if (next.has(k)) next.delete(k); else next.add(k);
