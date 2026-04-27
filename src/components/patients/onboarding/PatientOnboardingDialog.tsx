@@ -734,6 +734,7 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-5xl w-[95vw] h-[90vh] p-0 rounded-xl flex flex-col gap-0 overflow-hidden"
