@@ -196,16 +196,26 @@ function IllnessRowEditor({
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <NotePopover
-          value={row.notes}
-          onChange={(v) => onChange({ notes: v })}
-        />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col items-start min-w-0 flex-1">
+          <NotePopover
+            value={row.notes}
+            onChange={(v) => onChange({ notes: v })}
+          />
+          {row.notes && row.notes.trim().length > 0 && (
+            <p
+              className="text-xs text-muted-foreground mt-0.5 ml-2 max-w-full line-clamp-2"
+              title={row.notes}
+            >
+              {row.notes}
+            </p>
+          )}
+        </div>
         <Button
           size="sm"
           variant="ghost"
           onClick={onDelete}
-          className="gap-1.5 text-muted-foreground hover:text-destructive"
+          className="gap-1.5 text-muted-foreground hover:text-destructive shrink-0"
         >
           <Trash2 className="h-3.5 w-3.5" />
           Remove
