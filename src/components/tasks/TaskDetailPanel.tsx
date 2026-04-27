@@ -23,6 +23,8 @@ import { isClinicalCategory, type TaskCategoryKind } from "@/lib/taskCategory";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useAuth } from "@/hooks/useAuth";
 import foundationClinicLogo from "@/assets/foundation-clinic-logo-cropped.png";
+import { ReferralWorkflowPanel } from "@/components/tasks/ReferralWorkflowPanel";
+import { inferReferralTarget } from "@/lib/referralWorkflow";
 
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
 const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
@@ -120,8 +122,9 @@ function inferReferralReason(title: string): string {
 }
 
 function buildReferralForm(task: Task, patientName: string | null): ReferralForm {
+  const target = inferReferralTarget(task.title ?? "");
   return {
-    to: "",
+    to: target.to,
     from: "Dr. Laine, Foundation Clinic",
     patient: patientName ?? "",
     dob: "",
@@ -349,23 +352,21 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
           ) : isReferral ? (
             <>
               <Separator />
-              <Button
-                variant="outline"
-                className="w-full gap-1.5"
-                onClick={() => setReferralOpen((v) => !v)}
-              >
-                <FileText className="h-3.5 w-3.5" />
-                {referralOpen ? "Cancel" : "Create referral"}
-                {!referralOpen && <ArrowRight className="h-3.5 w-3.5" />}
-              </Button>
-              {referralOpen && referralForm && (
-                <ReferralFormPanel
-                  form={referralForm}
-                  onChange={setReferralForm}
-                  patientName={patientName}
-                  patientId={task.patient_id ?? null}
-                />
-              )}
+              <ReferralWorkflowPanel
+                task={task}
+                defaultTo={inferReferralTarget(task.title ?? "").to}
+                renderReferralDocument={() =>
+                  referralForm ? (
+                    <ReferralFormPanel
+                      form={referralForm}
+                      onChange={setReferralForm}
+                      patientName={patientName}
+                      patientId={task.patient_id ?? null}
+                    />
+                  ) : null
+                }
+                onAllComplete={() => onOpenChange(false)}
+              />
             </>
           ) : (
             <>

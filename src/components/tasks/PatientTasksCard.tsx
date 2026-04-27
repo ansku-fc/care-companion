@@ -12,6 +12,8 @@ import { useState } from "react";
 import {
   priorityMeta, statusLabel, isOverdue, type Task,
 } from "@/lib/tasks";
+import { Badge } from "@/components/ui/badge";
+import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
 
 export function PatientTasksCard({ patientId, patientName }: { patientId: string; patientName: string }) {
   const navigate = useNavigate();
@@ -57,6 +59,10 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
             {visible.map((t) => {
               const meta = priorityMeta(t.priority);
               const overdue = isOverdue(t);
+              const isReferral = (t as Task & { task_category?: string | null }).task_category === "referral";
+              const refProgress = (t as Task & { referral_progress?: ReferralProgress | null }).referral_progress;
+              const stepCount = isReferral ? completedCount(refProgress) : 0;
+              const showRefProgress = isReferral && t.status !== "done";
               return (
                 <li key={t.id}>
                   <button
@@ -68,6 +74,15 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
                       "text-[12px] flex-1 truncate",
                       t.status === "done" && "line-through text-muted-foreground",
                     )}>{t.title}</span>
+                    {showRefProgress && (
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] tabular-nums shrink-0"
+                        title={`Referral: ${stepCount}/${TOTAL_REFERRAL_STEPS} steps complete`}
+                      >
+                        {stepCount}/{TOTAL_REFERRAL_STEPS}
+                      </Badge>
+                    )}
                     <span className="text-[10px] text-muted-foreground truncate">{t.assignee_name}</span>
                     {t.due_date && (
                       <span className={cn(

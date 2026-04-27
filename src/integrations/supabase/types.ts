@@ -1293,6 +1293,7 @@ export type Database = {
           id: string
           patient_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
+          referral_progress: Json
           scheduled_appointment_id: string | null
           status: Database["public"]["Enums"]["task_status"]
           task_category: string
@@ -1313,6 +1314,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          referral_progress?: Json
           scheduled_appointment_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_category?: string
@@ -1333,6 +1335,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          referral_progress?: Json
           scheduled_appointment_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_category?: string
