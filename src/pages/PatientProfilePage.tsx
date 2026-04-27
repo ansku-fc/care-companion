@@ -170,6 +170,14 @@ const PatientProfilePage = () => {
     fetchData();
   }, [id]);
 
+  // Scope module-level annotation/lab caches to the active patient so any
+  // legacy helpers that don't pass a patientId only ever see this patient's
+  // data. Clears on unmount.
+  useEffect(() => {
+    setActiveAnnotationPatient(id);
+    return () => setActiveAnnotationPatient(undefined);
+  }, [id]);
+
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading patient profile...</div>;
   }
