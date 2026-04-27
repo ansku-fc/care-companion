@@ -429,7 +429,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                       <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
                       <SelectContent>
                         {patients.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -540,7 +540,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                       <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                       <SelectContent>
                         {patients.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -588,7 +588,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                       <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
                       <SelectContent>
                         {patients.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
