@@ -631,6 +631,65 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       console.warn("Medication sync failed", e);
     }
 
+    // Sync onboarding illnesses to patient_diagnoses (idempotent).
+    // Marker is stored in notes — rows containing "[from_onboarding]" are wiped and re-inserted.
+    try {
+      await supabase
+        .from("patient_diagnoses")
+        .delete()
+        .eq("patient_id", patientId)
+        .ilike("notes", "%[from_onboarding]%");
+
+      type DiagRow = {
+        patient_id: string;
+        created_by: string;
+        diagnosis: string;
+        icd_code: string | null;
+        diagnosed_date: string | null;
+        status: string;
+        notes: string;
+      };
+
+      const buildDiagRows = (
+        rows: typeof nextForm.current_illnesses,
+        kind: "current" | "previous",
+      ): DiagRow[] => {
+        const out: DiagRow[] = [];
+        for (const ill of rows) {
+          const name = ill.illness_name?.trim();
+          if (!name) continue;
+          const onset = (ill as any).onset_year as number | null;
+          const resolved = (ill as any).resolved_year as number | null;
+          const userNotes = (ill.notes ?? "").trim();
+          const noteParts = [
+            userNotes || null,
+            kind === "previous" && resolved ? `Resolved ${resolved}` : null,
+            "[from_onboarding]",
+          ].filter(Boolean);
+          out.push({
+            patient_id: patientId,
+            created_by: user.id,
+            diagnosis: name,
+            icd_code: ill.icd_code?.trim() || null,
+            diagnosed_date: onset ? `${onset}-01-01` : null,
+            status: kind === "previous" ? "resolved" : "active",
+            notes: noteParts.join(" — "),
+          });
+        }
+        return out;
+      };
+
+      const allDiags = [
+        ...buildDiagRows(nextForm.current_illnesses, "current"),
+        ...buildDiagRows(nextForm.previous_illnesses, "previous"),
+      ];
+      if (allDiags.length > 0) {
+        await supabase.from("patient_diagnoses").insert(allDiags as any);
+      }
+    } catch (e) {
+      console.warn("Diagnoses sync failed", e);
+    }
+
     // Sync ECG files attached in onboarding to patient_health_files (Cardiovascular).
     try {
       const ecgFiles = Array.isArray(nextForm.ecg_files) ? nextForm.ecg_files : [];
