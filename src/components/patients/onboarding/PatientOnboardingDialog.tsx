@@ -509,6 +509,33 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         due_date: due.toISOString().slice(0, 10),
         created_from: "onboarding",
       } as any);
+
+      // Auto-create an "Initial Consultation / Onboarding" visit record (idempotent).
+      try {
+        const { data: existingVisit } = await supabase
+          .from("visit_notes")
+          .select("id")
+          .eq("patient_id", patientId)
+          .eq("chief_complaint", "Initial Consultation / Onboarding")
+          .maybeSingle();
+        if (!existingVisit?.id) {
+          await supabase.from("visit_notes").insert({
+            patient_id: patientId,
+            provider_id: user.id,
+            visit_date: new Date().toISOString().slice(0, 10),
+            chief_complaint: "Initial Consultation / Onboarding",
+            notes: null,
+            vitals: {
+              visit_type: "onboarding",
+              attending_doctor: "Dr. Laine",
+              status: "completed",
+              source: "auto_from_onboarding",
+            },
+          } as any);
+        }
+      } catch (e) {
+        console.warn("Auto-create onboarding visit failed", e);
+      }
     }
   };
 
