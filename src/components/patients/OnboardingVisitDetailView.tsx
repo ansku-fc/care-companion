@@ -341,6 +341,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   const [moleFiles, setMoleFiles] = useState<Tables<"patient_health_files">[]>([]);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxName, setLightboxName] = useState<string>("");
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const initialDoc: DocState = useMemo(() => {
     const ed = ((visit as any).extra_data ?? {}) as any;
