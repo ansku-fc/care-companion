@@ -24,6 +24,7 @@ type Props = {
 
 export function SuggestedTasksDialog({ open, onOpenChange, patientId, suggestions, onDone }: Props) {
   const { user } = useAuth();
+  const { notifyChanged } = useTaskActions();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
