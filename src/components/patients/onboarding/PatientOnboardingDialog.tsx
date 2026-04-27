@@ -80,6 +80,7 @@ const STEP_LABELS = [
   "Mental Health",
   "Cancer Risks",
   "Status",
+  "Moles",
 ];
 const TOTAL_STEPS = STEP_LABELS.length;
 
