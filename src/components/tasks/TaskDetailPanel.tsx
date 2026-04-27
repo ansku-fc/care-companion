@@ -27,6 +27,9 @@ import foundationClinicLogo from "@/assets/foundation-clinic-logo-cropped.png";
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
 const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
 function isReferralTask(task: Task): boolean {
+  const tc = (task as Task & { task_category?: string | null }).task_category;
+  if (tc === "referral") return true;
+  if (tc && tc !== "administrative") return false; // other clinical kinds aren't referrals
   const isReferralCat = task.category === "referral";
   const hay = `${task.title ?? ""} ${task.created_from ?? ""}`;
   return isReferralCat || REFERRAL_KEYWORDS.test(hay) || /referral/i.test(hay);
