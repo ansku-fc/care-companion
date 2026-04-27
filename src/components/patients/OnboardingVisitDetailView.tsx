@@ -722,7 +722,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                   <div className="space-y-2">
                     {basePrev.map((i: any, idx: number) =>
                       editing || i?.illness_name?.trim()
-                        ? renderIllness(i, (next) => updatePrev(idx, next), () => removePrev(idx))
+                        ? renderIllness(i, (next) => updatePrev(idx, next), () => removePrev(idx), editing)
                         : null
                     )}
                   </div>
