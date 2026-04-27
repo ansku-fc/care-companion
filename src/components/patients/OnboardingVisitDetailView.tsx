@@ -1125,46 +1125,52 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             );
           })()}
 
-          <Card className="md:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Clinical Synthesis
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label className="text-sm text-muted-foreground mb-1 block">Doctor's Summary</Label>
-                {editing ? (
-                  <Textarea
-                    value={doc.doctor_summary ?? ""}
-                    onChange={(e) => setDoc({ ...doc, doctor_summary: e.target.value })}
-                    placeholder="Summarise the patient's clinical baseline…"
-                    className="min-h-[100px]"
-                  />
-                ) : (
-                  <p className="text-sm whitespace-pre-wrap">
-                    {doc.doctor_summary?.trim() ? doc.doctor_summary : <span className="italic text-muted-foreground">(empty)</span>}
-                  </p>
-                )}
-              </div>
-              <Separator />
-              <div>
-                <Label className="text-sm text-muted-foreground mb-1 block">Recommendations</Label>
-                {editing ? (
-                  <Textarea
-                    value={doc.recommendations ?? ""}
-                    onChange={(e) => setDoc({ ...doc, recommendations: e.target.value })}
-                    placeholder="Clinical recommendations and next steps…"
-                    className="min-h-[100px]"
-                  />
-                ) : (
-                  <p className="text-sm whitespace-pre-wrap">
-                    {doc.recommendations?.trim() ? doc.recommendations : <span className="italic text-muted-foreground">(empty)</span>}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="md:col-span-2">
+            <Section
+              name="synthesis"
+              title="Clinical Synthesis"
+              editable={canEdit}
+              isActive={activeSection === "synthesis"}
+              onEnter={() => enterSection("synthesis")}
+              onDone={doneSection}
+            >
+              {(editing) => (
+                <>
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-1 block">Doctor's Summary</Label>
+                    {editing ? (
+                      <Textarea
+                        value={doc.doctor_summary ?? ""}
+                        onChange={(e) => setDoc({ ...doc, doctor_summary: e.target.value })}
+                        placeholder="Summarise the patient's clinical baseline…"
+                        className="min-h-[100px]"
+                      />
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">
+                        {doc.doctor_summary?.trim() ? doc.doctor_summary : <span className="italic text-muted-foreground">(empty)</span>}
+                      </p>
+                    )}
+                  </div>
+                  <Separator />
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-1 block">Recommendations</Label>
+                    {editing ? (
+                      <Textarea
+                        value={doc.recommendations ?? ""}
+                        onChange={(e) => setDoc({ ...doc, recommendations: e.target.value })}
+                        placeholder="Clinical recommendations and next steps…"
+                        className="min-h-[100px]"
+                      />
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">
+                        {doc.recommendations?.trim() ? doc.recommendations : <span className="italic text-muted-foreground">(empty)</span>}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </Section>
+          </div>
 
           {/* Edit history */}
           <Card className="md:col-span-2">
