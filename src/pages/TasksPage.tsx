@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, ChevronRight, ListTodo, Layers, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, ListTodo, Layers, Plus, Users } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/hooks/useTasks";
@@ -53,6 +53,12 @@ function AssigneeAvatar({ name, size = "sm" }: { name: string; size?: "xs" | "sm
 
 const STATUS_GROUPS: TaskStatus[] = ["todo", "in_progress", "done", "deferred"];
 
+const TIER_LABELS: Record<string, string> = {
+  tier_1: "Tier 1", tier_2: "Tier 2", tier_3: "Tier 3", tier_4: "Tier 4",
+  children: "Children", onboarding: "Onboarding", acute: "Acute", case_management: "Case Mgmt",
+};
+const tierLabel = (t: string | null) => (t ? TIER_LABELS[t] ?? t : "");
+
 const TasksPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -72,7 +78,7 @@ const TasksPage = () => {
   const [filterPatient, setFilterPatient]     = useState<string>(searchParams.get("patient") ?? "all");
   const [dateFrom, setDateFrom]               = useState<string>("");
   const [dateTo, setDateTo]                   = useState<string>("");
-  const [view, setView]                       = useState<"grouped" | "flat">("grouped");
+  const [view, setView]                       = useState<"grouped" | "flat" | "patient">("grouped");
   const [openSections, setOpenSections]       = useState<Record<TaskStatus, boolean>>({
     todo: true, in_progress: true, done: false, deferred: false,
   });
@@ -128,6 +134,32 @@ const TasksPage = () => {
       return order[a.priority] - order[b.priority];
     });
   }, [filtered]);
+
+  const patientGroups = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    filtered.forEach((t) => {
+      const key = t.patient_id ?? "__none__";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    });
+    const groups = Array.from(map.entries()).map(([pid, list]) => {
+      const sorted = [...list].sort((a, b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      });
+      const overdue = sorted.filter(isOverdue).length;
+      const patient = patients.find((p) => p.id === pid);
+      const name = patient?.full_name ?? (pid === "__none__" ? "Unassigned" : "Unknown patient");
+      return { pid, name, tier: patient?.tier ?? null, tasks: sorted, overdue };
+    });
+    groups.sort((a, b) => a.name.localeCompare(b.name));
+    return groups;
+  }, [filtered, patients]);
+
+  const [openPatients, setOpenPatients] = useState<Record<string, boolean>>({});
+  const isPatientOpen = (pid: string) => openPatients[pid] ?? true;
 
   const clearFilters = () => {
     setFilterStatus("all"); setFilterAssignee("all"); setFilterCategory("all");
@@ -188,7 +220,7 @@ const TasksPage = () => {
               onClick={() => setView("grouped")}
               className="gap-1.5"
             >
-              <Layers className="h-3.5 w-3.5" /> Grouped
+              <Layers className="h-3.5 w-3.5" /> By Status
             </Button>
             <Button
               variant={view === "flat" ? "secondary" : "ghost"}
@@ -196,7 +228,15 @@ const TasksPage = () => {
               onClick={() => setView("flat")}
               className="gap-1.5"
             >
-              <ListTodo className="h-3.5 w-3.5" /> By due date
+              <ListTodo className="h-3.5 w-3.5" /> By Due Date
+            </Button>
+            <Button
+              variant={view === "patient" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView("patient")}
+              className="gap-1.5"
+            >
+              <Users className="h-3.5 w-3.5" /> By Patient
             </Button>
           </div>
         </CardContent>
@@ -243,6 +283,56 @@ const TasksPage = () => {
               />
             ))
           )}
+        </div>
+      ) : view === "patient" ? (
+        <div className="space-y-4">
+          {patientGroups.length === 0 && (
+            <p className="text-sm text-muted-foreground">No tasks match the current filters.</p>
+          )}
+          {patientGroups.map((g) => {
+            const open = isPatientOpen(g.pid);
+            return (
+              <Card key={g.pid}>
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted/40 rounded-t-lg transition-colors"
+                  onClick={() => setOpenPatients((s) => ({ ...s, [g.pid]: !open }))}
+                >
+                  {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  <h2 className="text-sm font-semibold">{g.name}</h2>
+                  {g.tier && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {tierLabel(g.tier)}
+                    </Badge>
+                  )}
+                  <span className="text-[11px] text-muted-foreground">·</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {g.tasks.length} {g.tasks.length === 1 ? "task" : "tasks"}
+                  </span>
+                  {g.overdue > 0 && (
+                    <>
+                      <span className="text-[11px] text-muted-foreground">·</span>
+                      <span className="text-[11px] font-medium tabular-nums text-pink-600 dark:text-pink-400">
+                        {g.overdue} overdue
+                      </span>
+                    </>
+                  )}
+                </button>
+                {open && (
+                  <div className="px-3 pb-3 space-y-2">
+                    {g.tasks.map((t) => (
+                      <TaskRow
+                        key={t.id}
+                        task={t}
+                        patientName={null}
+                        onClick={() => openDetail(t)}
+                        mine={isMine(t)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="space-y-4">
