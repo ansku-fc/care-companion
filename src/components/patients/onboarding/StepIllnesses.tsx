@@ -138,7 +138,7 @@ function IllnessRowEditor({
   return (
     <div className="rounded-xl border border-input bg-card/50 p-4 space-y-3">
       <div className="grid grid-cols-12 gap-3">
-        <div className="col-span-12 md:col-span-5">
+        <div className="col-span-12 md:col-span-8">
           <FieldLabel>Illness</FieldLabel>
           <IcdPicker
             value={{ code: row.icd_code, name: row.illness_name }}
@@ -148,7 +148,7 @@ function IllnessRowEditor({
           />
         </div>
 
-        <div className="col-span-6 md:col-span-2">
+        <div className={cn("col-span-6", showResolved ? "md:col-span-2" : "md:col-span-4")}>
           <FieldLabel>Onset</FieldLabel>
           <YearSelect
             value={row.onset_year}
@@ -165,7 +165,18 @@ function IllnessRowEditor({
             />
           </div>
         )}
+      </div>
 
+      {/* Dimensions sit immediately under the illness field for visual grouping */}
+      <div className="-mt-1">
+        <DimensionChipsRow
+          icdCode={row.icd_code}
+          dimensions={row.dimensions ?? []}
+          confirmed={row.dimensions_confirmed ?? false}
+          onChange={(dims, confirmed) =>
+            onChange({ dimensions: dims, dimensions_confirmed: confirmed })
+          }
+        />
       </div>
 
       <div>
@@ -186,15 +197,6 @@ function IllnessRowEditor({
           className="min-h-[80px]"
         />
       </div>
-
-      <DimensionChipsRow
-        icdCode={row.icd_code}
-        dimensions={row.dimensions ?? []}
-        confirmed={row.dimensions_confirmed ?? false}
-        onChange={(dims, confirmed) =>
-          onChange({ dimensions: dims, dimensions_confirmed: confirmed })
-        }
-      />
 
       <div className="flex justify-end">
         <Button
