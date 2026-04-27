@@ -121,13 +121,20 @@ function inferReferralReason(title: string): string {
   return "Specialist consultation requested";
 }
 
-function buildReferralForm(task: Task, patientName: string | null): ReferralForm {
+function formatDobDDMMYYYY(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return "";
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+function buildReferralForm(task: Task, patientName: string | null, dob: string = ""): ReferralForm {
   const target = inferReferralTarget(task.title ?? "");
   return {
     to: target.to,
     from: "Dr. Laine, Foundation Clinic",
     patient: patientName ?? "",
-    dob: "",
+    dob,
     reason: inferReferralReason(task.title ?? ""),
     background: "",
     medications: "",
