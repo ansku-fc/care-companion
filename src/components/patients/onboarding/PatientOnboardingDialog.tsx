@@ -812,6 +812,18 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         </div>
       </DialogContent>
     </Dialog>
+
+    <SuggestedTasksDialog
+      open={suggestionsOpen}
+      onOpenChange={setSuggestionsOpen}
+      patientId={patientId}
+      suggestions={suggestions}
+      onDone={() => {
+        onOpenChange(false);
+        onCompleted?.();
+      }}
+    />
+    </>
   );
 }
 
