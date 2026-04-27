@@ -498,6 +498,8 @@ export function MainDimensionOverview({
           dimensionKey={main.key}
           dimensionLabel={main.label}
           onNavigateToMedications={onNavigateToMedications}
+          patientId={patient.id}
+          patientName={patient.full_name}
         />
       </section>
 
@@ -648,6 +650,8 @@ export function SubDimensionView({
           dimensionKey={subKey}
           dimensionLabel={sub.label}
           onNavigateToMedications={onNavigateToMedications}
+          patientId={patient.id}
+          patientName={patient.full_name}
         />
       </section>
 

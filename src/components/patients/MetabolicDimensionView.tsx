@@ -195,14 +195,32 @@ export function MetabolicDimensionView({
     ? new Date(onboarding.created_at).toLocaleDateString()
     : "—";
 
+  const extra = ((onboarding as any)?.extra_data ?? {}) as Record<string, any>;
+  const dash = "—";
+  const numOrDash = (v: unknown, suffix = "") => {
+    if (v === null || v === undefined || v === "" || Number.isNaN(Number(v))) return dash;
+    return suffix ? `${v}${suffix}` : String(v);
+  };
+  const valOrDash = (v: unknown) => (v === null || v === undefined || v === "" ? dash : String(v));
+  const allFamily: any[] = Array.isArray(extra.family_history) ? extra.family_history : [];
+  const metabolicFamily = allFamily.filter((f) =>
+    /^E1[0-4]/.test(String(f.icd_code ?? "").toUpperCase()) ||
+    /^E66/.test(String(f.icd_code ?? "").toUpperCase()) ||
+    /^E78/.test(String(f.icd_code ?? "").toUpperCase()),
+  );
+  const familyValue = metabolicFamily.length === 0 ? dash : `${metabolicFamily.length} relative${metabolicFamily.length === 1 ? "" : "s"}`;
+
   const riskFactors: { key: string; label: string; value: string; detail: React.ReactNode }[] = [
-    { key: "bmi", label: "BMI", value: onboarding?.bmi != null ? String(onboarding.bmi) : "—", detail: <p className="text-sm text-muted-foreground">Body Mass Index. Normal range 18.5–24.9.</p> },
-    { key: "waist", label: "Waist Circumference (cm)", value: onboarding?.waist_circumference_cm != null ? String(onboarding.waist_circumference_cm) : "—", detail: <p className="text-sm text-muted-foreground">Elevated risk above 102 cm (men) / 88 cm (women).</p> },
-    { key: "whr", label: "Waist-Hip Ratio", value: onboarding?.waist_to_hip_ratio != null ? String(onboarding.waist_to_hip_ratio) : "—", detail: <p className="text-sm text-muted-foreground">Cardiometabolic risk increases above 0.9 (men) / 0.85 (women).</p> },
-    { key: "hormone", label: "Endocrine / Hormone Illness", value: onboarding?.illness_hormone ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">History of endocrine or hormonal conditions.</p> },
-    { key: "kidney", label: "Kidney Illness", value: onboarding?.illness_kidney ? "Yes" : "No", detail: <p className="text-sm">{onboarding?.illness_kidney_notes || "No additional notes recorded."}</p> },
-    { key: "weight", label: "Weight (kg)", value: onboarding?.weight_kg != null ? String(onboarding.weight_kg) : "—", detail: <p className="text-sm text-muted-foreground">Body weight recorded during onboarding assessment.</p> },
-    { key: "height", label: "Height (cm)", value: onboarding?.height_cm != null ? String(onboarding.height_cm) : "—", detail: <p className="text-sm text-muted-foreground">Patient height recorded during onboarding.</p> },
+    { key: "bmi", label: "BMI", value: numOrDash(onboarding?.bmi), detail: <p className="text-sm text-muted-foreground">Body Mass Index. Normal range 18.5–24.9.</p> },
+    { key: "waist", label: "Waist circumference", value: numOrDash(onboarding?.waist_circumference_cm, " cm"), detail: <p className="text-sm text-muted-foreground">Elevated risk above 102 cm (men) / 88 cm (women).</p> },
+    { key: "hip", label: "Hip circumference", value: numOrDash(onboarding?.hip_circumference_cm, " cm"), detail: <p className="text-sm text-muted-foreground">Used to compute waist-to-hip ratio.</p> },
+    { key: "whr", label: "Waist-to-hip ratio", value: numOrDash(onboarding?.waist_to_hip_ratio), detail: <p className="text-sm text-muted-foreground">Cardiometabolic risk increases above 0.9 (men) / 0.85 (women).</p> },
+    { key: "diet", label: "Diet type", value: valOrDash(extra.diet_type), detail: <p className="text-sm text-muted-foreground">Self-described diet pattern.</p> },
+    { key: "water", label: "Water intake (L/day)", value: numOrDash(extra.water_litres_per_day, " L/day"), detail: <p className="text-sm text-muted-foreground">Daily water intake. Recommended ≥1.5 L/day.</p> },
+    { key: "sugar", label: "Sugar intake (g/day)", value: numOrDash(onboarding?.sugar_g_per_day, " g/day"), detail: <p className="text-sm text-muted-foreground">Daily added sugar consumption.</p> },
+    { key: "salt", label: "Salt intake (g/day)", value: numOrDash(extra.salt_g_per_day ?? onboarding?.sodium_g_per_day, " g/day"), detail: <p className="text-sm text-muted-foreground">Daily salt/sodium intake.</p> },
+    { key: "fiber", label: "Fiber intake (g/day)", value: numOrDash(onboarding?.fiber_g_per_day, " g/day"), detail: <p className="text-sm text-muted-foreground">Daily fiber intake. Recommended ≥25 g/day.</p> },
+    { key: "family", label: "Family history — metabolic/diabetes", value: familyValue, detail: metabolicFamily.length === 0 ? <p className="text-sm text-muted-foreground">No relevant family history recorded.</p> : <ul className="space-y-1 text-sm">{metabolicFamily.map((r, i) => (<li key={i}><span className="font-medium">{r.relative ?? "Relative"}</span> · {r.illness_name ?? r.icd_code ?? dash}</li>))}</ul> },
   ];
 
   const handleSave = async () => {
@@ -524,6 +542,8 @@ export function MetabolicDimensionView({
           dimensionKey="metabolic"
           dimensionLabel="Metabolic Health"
           onNavigateToMedications={() => onNavigateDimension("medications")}
+          patientId={patient.id}
+          patientName={patient.full_name}
         />
       </section>
 

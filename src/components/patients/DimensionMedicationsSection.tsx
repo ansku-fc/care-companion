@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   CARTER_MEDICATIONS,
   CARTER_INTERACTIONS,
+  isCarter,
 } from "@/lib/patientClinicalData";
 
 // ── Mock medication data — sourced from the central clinical data module ──
@@ -119,21 +120,31 @@ interface Props {
   dimensionLabel: string;
   /** navigates to the medications tab in the patient profile */
   onNavigateToMedications: () => void;
+  /** patient id — used to gate seed/demo data so it only shows for the demo patient */
+  patientId?: string;
+  /** patient full name — fallback for demo patient detection */
+  patientName?: string;
 }
 
-export function DimensionMedicationsSection({ dimensionKey, dimensionLabel, onNavigateToMedications }: Props) {
+export function DimensionMedicationsSection({ dimensionKey, dimensionLabel, onNavigateToMedications, patientId, patientName }: Props) {
   const matchingLabels = DIMENSION_LABEL_MAP[dimensionKey] ?? [dimensionLabel];
   const [pastOpen, setPastOpen] = useState(false);
   const [expandedPastIds, setExpandedPastIds] = useState<Set<string>>(new Set());
 
+  // Only the demo patient (Carter) has seeded clinical data. Every other patient
+  // starts empty until medications are explicitly added.
+  const showSeed = isCarter(patientId, patientName);
+  const sourceMeds = showSeed ? SEED_MEDS : [];
+  const sourceInteractions = showSeed ? SEED_INTERACTIONS : [];
+
   const meds = useMemo(
-    () => SEED_MEDS.filter((m) => m.status === "active" && matchingLabels.includes(m.dimension)),
-    [matchingLabels],
+    () => sourceMeds.filter((m) => m.status === "active" && matchingLabels.includes(m.dimension)),
+    [matchingLabels, sourceMeds],
   );
 
   const pastMeds = useMemo(
-    () => SEED_MEDS.filter((m) => m.status === "past" && matchingLabels.includes(m.dimension)),
-    [matchingLabels],
+    () => sourceMeds.filter((m) => m.status === "past" && matchingLabels.includes(m.dimension)),
+    [matchingLabels, sourceMeds],
   );
 
   const medNames = useMemo(() => new Set(meds.map((m) => m.name)), [meds]);
@@ -141,12 +152,12 @@ export function DimensionMedicationsSection({ dimensionKey, dimensionLabel, onNa
   // Surface SEVERE / MODERATE alerts that involve at least one med in this dimension
   const alerts = useMemo(
     () =>
-      SEED_INTERACTIONS.filter(
+      sourceInteractions.filter(
         (i) =>
           (i.severity === "severe" || i.severity === "moderate") &&
           (medNames.has(i.drugs[0]) || medNames.has(i.drugs[1])),
       ),
-    [medNames],
+    [medNames, sourceInteractions],
   );
 
   // Map medication name → involved interaction severities for inline pill on card
