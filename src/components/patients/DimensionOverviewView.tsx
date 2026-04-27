@@ -30,43 +30,9 @@ export { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
 import { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
 
 // ────────────────────────────────────────────────────────────────────
-// Sub-dimension summary card (used in strip)
+// (Sub-dimension strip card removed — sub-dim info is now shown only in
+// the Risk Factors accordion headers.)
 // ────────────────────────────────────────────────────────────────────
-function SubDimensionStripCard({
-  label,
-  score,
-  Icon,
-  onClick,
-}: {
-  label: string;
-  score: number | null;
-  Icon: React.ComponentType<{ className?: string }>;
-  onClick: () => void;
-}) {
-  const hasScore = score != null;
-  return (
-    <button
-      onClick={onClick}
-      className="flex-1 min-w-[160px] text-left rounded-md bg-card shadow-card hover:shadow-md transition-shadow p-3 border-l-4"
-      style={{ borderLeftColor: hasScore ? scoreBorderColor(score!) : "hsl(var(--border))" }}
-    >
-      <div className="flex items-center gap-2 mb-1.5">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs font-medium text-foreground truncate">{label}</span>
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Risk</span>
-        {hasScore ? (
-          <span className={cn("text-lg font-bold leading-none", scoreColorClass(score!))}>
-            {score!.toFixed(1)}
-          </span>
-        ) : (
-          <span className="text-lg font-bold leading-none text-muted-foreground">—</span>
-        )}
-      </div>
-    </button>
-  );
-}
 
 // ────────────────────────────────────────────────────────────────────
 // Lab Results panel (shared by overview + sub-dimension pages)
