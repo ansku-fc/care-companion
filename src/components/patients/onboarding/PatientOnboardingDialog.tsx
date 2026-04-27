@@ -257,7 +257,9 @@ export function PatientOnboardingDialog(props: Props) {
           skipped_steps: (extra.skipped_steps as number[]) ?? [],
         });
       } else {
-        setInitial(dobAge != null ? { age: dobAge } : {});
+        const baseInit: Partial<OnboardingForm> = dobAge != null ? { age: dobAge } : {};
+        if (props.initialStep) baseInit.current_step = props.initialStep;
+        setInitial(baseInit);
       }
       setLoading(false);
     })();
