@@ -258,28 +258,13 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
     }
   }
 
-  async function handleMarkUnderReview() {
-    const next = appendLog(
-      {
-        ts: new Date().toISOString(),
-        editor: DEFAULT_EDITOR,
-        action: "Status changed: Draft → Under Review",
-      },
-      { ...doc, status: "under_review" }
-    );
-    if (await persist(next)) {
-      setDoc(next);
-      toast.success("Document marked as Under Review");
-    }
-  }
-
   async function handleFinalise() {
     const ts = new Date().toISOString();
     const next = appendLog(
       {
         ts,
         editor: DEFAULT_EDITOR,
-        action: "Status changed: Under Review → Finalised",
+        action: "Status changed: Draft → Finalised",
       },
       { ...doc, status: "finalised", finalised_at: ts, finalised_by: DEFAULT_EDITOR }
     );
