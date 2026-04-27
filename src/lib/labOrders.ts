@@ -5,21 +5,6 @@ export type LabPackageKey = "basic" | "cardiovascular" | "metabolic" | "comprehe
 
 export const LAB_PACKAGES: { key: LabPackageKey; label: string; markers: string[] }[] = [
   {
-    key: "basic",
-    label: "Basic",
-    markers: ["CBC", "Glucose", "CRP"],
-  },
-  {
-    key: "cardiovascular",
-    label: "Cardiovascular",
-    markers: ["LDL", "HDL", "Total cholesterol", "Triglycerides", "Glucose", "HbA1c"],
-  },
-  {
-    key: "metabolic",
-    label: "Metabolic",
-    markers: ["HbA1c", "Fasting glucose", "Insulin", "ALAT", "ASAT", "TSH", "T4"],
-  },
-  {
     key: "comprehensive",
     label: "Comprehensive",
     markers: [
@@ -29,6 +14,21 @@ export const LAB_PACKAGES: { key: LabPackageKey; label: string; markers: string[
       "Vitamin D", "Vitamin B12", "Ferritin", "Iron", "Folate",
       "Testosterone/Estradiol", "Cortisol", "Magnesium", "Zinc",
     ],
+  },
+  {
+    key: "basic",
+    label: "Basic Metabolic",
+    markers: ["CBC", "Glucose", "CRP", "LDL", "HDL", "Total cholesterol", "Triglycerides", "HbA1c"],
+  },
+  {
+    key: "metabolic",
+    label: "Hormones",
+    markers: ["TSH", "T4", "Testosterone/Estradiol", "Cortisol", "Insulin", "Fasting glucose"],
+  },
+  {
+    key: "cardiovascular",
+    label: "Cardiovascular",
+    markers: ["LDL", "HDL", "Total cholesterol", "Triglycerides", "Glucose", "HbA1c"],
   },
 ];
 
