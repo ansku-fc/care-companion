@@ -1,14 +1,15 @@
-import { useRef, useState } from "react";
-import { Pencil, Plus, Trash2, X, Image as ImageIcon } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 import {
-  useOnboardingForm,
   blankMole,
+  useOnboardingForm,
   type MoleEntry,
 } from "./OnboardingFormContext";
 import { FieldLabel, SectionHeading } from "./shared";
@@ -20,190 +21,293 @@ const ABCDE_OPTIONS = {
   size: ["<5mm", "5–10mm", ">10mm"],
   change: ["None", "Growing", "Color change", "Shape change"],
   symptoms: ["None", "Itching", "Bleeding", "Crusting"],
-};
+} as const;
 
-/**
- * Approximate body region for a (x, y) percentage on the silhouette.
- * Coarse-grained — the doctor can refine the label inline.
- */
-function regionForPin(side: "front" | "back", x: number, y: number): string {
-  // y: 0 (top) → 100 (feet)
-  let vertical: string;
-  if (y < 12) vertical = "Head";
-  else if (y < 18) vertical = "Neck";
-  else if (y < 30) vertical = side === "front" ? "Chest" : "Upper back";
-  else if (y < 42) vertical = side === "front" ? "Abdomen" : "Mid back";
-  else if (y < 50) vertical = side === "front" ? "Pelvis" : "Lower back";
-  else if (y < 75) vertical = "Thigh";
-  else if (y < 90) vertical = side === "front" ? "Shin" : "Calf";
-  else vertical = "Foot";
+type Side = "front" | "back";
 
-  // Lateral hint (skip for head/neck where centerline matters less)
-  if (vertical === "Head" || vertical === "Neck") return vertical;
-  if (x < 38) return `${vertical} (right)`;
-  if (x > 62) return `${vertical} (left)`;
-  return vertical;
+/** Heuristic location label from pin coordinates (percent of silhouette). */
+function describeLocation(side: Side, x: number, y: number): string {
+  const lr = x < 42 ? "right" : x > 58 ? "left" : "midline"; // mirrored: viewer left = body right
+  let region = "Torso";
+  if (y < 12) region = "Head";
+  else if (y < 22) region = "Neck";
+  else if (y < 38) region = side === "front" ? "Chest" : "Upper back";
+  else if (y < 55) region = side === "front" ? "Abdomen" : "Mid back";
+  else if (y < 65) region = side === "front" ? "Pelvis" : "Lower back";
+  else if (y < 82) region = "Thigh";
+  else region = "Lower leg";
+
+  // Arms (rough)
+  if (y > 22 && y < 60 && (x < 22 || x > 78)) region = "Arm";
+  if (y > 55 && y < 70 && (x < 18 || x > 82)) region = "Forearm";
+
+  if (region === "Head" || region === "Neck") return `${region} (${side})`;
+  return `${region} (${lr}) — ${side}`;
 }
 
-/** Step 11 — Moles with click-to-place pins on body silhouettes. */
+/** Step 11 — Moles (two-panel layout). */
 export function StepMoles() {
   const { form, set } = useOnboardingForm();
+  const [side, setSide] = useState<Side>("front");
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const moles = form.moles;
-
-  const updateMole = (id: string, partial: Partial<MoleEntry>) => {
-    set(
-      "moles",
-      moles.map((m) => (m.id === id ? { ...m, ...partial } : m)),
-    );
+  const update = (id: string, partial: Partial<MoleEntry>) => {
+    set("moles", form.moles.map((m) => (m.id === id ? { ...m, ...partial } : m)));
+  };
+  const remove = (id: string) => {
+    set("moles", form.moles.filter((m) => m.id !== id));
   };
 
-  const removeMole = (id: string) => {
-    const next = moles.filter((m) => m.id !== id);
-    // Re-number remaining moles so labels stay sequential.
-    const renumbered = next.map((m, i) => ({
-      ...m,
-      label: m.label.startsWith("Mole ") ? `Mole ${i + 1}` : m.label,
-    }));
-    set("moles", renumbered);
-  };
+  const visibleMoles = form.moles;
 
-  const addMoleAt = (side: "front" | "back", x: number, y: number) => {
-    const nextNumber = moles.length + 1;
-    const region = regionForPin(side, x, y);
-    const newMole = blankMole(`Mole ${nextNumber}`, {
+  const addAtPin = (x: number, y: number) => {
+    const idx = form.moles.length + 1;
+    const next = blankMole(`Mole ${idx}`, {
       side,
       pin_x: x,
       pin_y: y,
-      location: region,
+      location: describeLocation(side, x, y),
     });
-    set("moles", [...moles, newMole]);
-    // Scroll to new card after render
-    setTimeout(() => focusMole(newMole.id), 50);
+    set("moles", [...form.moles.map((m) => ({ ...m, expanded: false })), next]);
+    requestAnimationFrame(() => focusCard(next.id));
   };
 
-  const focusMole = (id: string) => {
+  const addManually = () => {
+    const idx = form.moles.length + 1;
+    const next = blankMole(`Mole ${idx}`, { side });
+    set("moles", [...form.moles.map((m) => ({ ...m, expanded: false })), next]);
+    requestAnimationFrame(() => focusCard(next.id));
+  };
+
+  const focusCard = (id: string) => {
     setHighlightId(id);
     cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "center" });
-    window.setTimeout(() => setHighlightId((curr) => (curr === id ? null : curr)), 1500);
+    window.setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1600);
   };
 
+  const onPinClick = (id: string) => {
+    const mole = form.moles.find((m) => m.id === id);
+    if (!mole) return;
+    if (mole.side !== side) setSide(mole.side);
+    // Expand the targeted card and collapse others.
+    set(
+      "moles",
+      form.moles.map((m) => ({ ...m, expanded: m.id === id })),
+    );
+    requestAnimationFrame(() => focusCard(id));
+  };
+
+  // Number pins across both sides combined for stable identity.
+  const numbering = useMemo(() => {
+    const map: Record<string, number> = {};
+    form.moles.forEach((m, i) => {
+      map[m.id] = i + 1;
+    });
+    return map;
+  }, [form.moles]);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <SectionHeading>Moles</SectionHeading>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Click anywhere on the silhouettes to add a mole pin. Each click creates a numbered entry below.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <BodySilhouette
-          side="front"
-          moles={moles}
-          onAdd={(x, y) => addMoleAt("front", x, y)}
-          onPinClick={focusMole}
-        />
-        <BodySilhouette
-          side="back"
-          moles={moles}
-          onAdd={(x, y) => addMoleAt("back", x, y)}
-          onPinClick={focusMole}
-        />
-      </div>
-
-      <div className="space-y-3">
-        {moles.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-6 rounded-xl border border-dashed border-border">
-            No moles added yet. Click on the silhouettes above to begin.
-          </p>
-        ) : (
-          moles.map((mole, idx) => (
-            <div
-              key={mole.id}
-              ref={(el) => {
-                cardRefs.current[mole.id] = el;
-              }}
-              className={cn(
-                "transition-all",
-                highlightId === mole.id && "ring-2 ring-primary rounded-xl",
-              )}
-            >
-              <MoleCard
-                index={idx + 1}
-                mole={mole}
-                onChange={(p) => updateMole(mole.id, p)}
-                onRemove={() => removeMole(mole.id)}
-              />
+    <div className="space-y-4">
+      <SectionHeading>Moles</SectionHeading>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
+        {/* LEFT PANEL — body silhouette */}
+        <div className="lg:sticky lg:top-0 lg:self-start">
+          <div className="rounded-xl border border-border bg-card/40 p-3">
+            <div className="mb-3 flex items-center justify-center gap-1 rounded-lg bg-muted p-1">
+              {(["front", "back"] as Side[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSide(s)}
+                  className={cn(
+                    "flex-1 rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors",
+                    side === s
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
-          ))
-        )}
+            <BodySilhouette
+              side={side}
+              moles={visibleMoles}
+              numbering={numbering}
+              onAdd={addAtPin}
+              onPinClick={onPinClick}
+            />
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              Click anywhere on the body to add a mole. Click a pin to edit it.
+            </p>
+          </div>
+        </div>
+
+        {/* RIGHT PANEL — mole cards (scrollable) */}
+        <div className="flex min-h-0 flex-col">
+          <ScrollArea className="h-[560px] pr-2">
+            <div className="space-y-2">
+              {visibleMoles.length === 0 && (
+                <div className="rounded-xl border border-dashed border-border bg-card/30 px-4 py-8 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No moles recorded yet.
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Click on the body silhouette to start, or add one manually below.
+                  </p>
+                </div>
+              )}
+              {visibleMoles.map((mole) => (
+                <div
+                  key={mole.id}
+                  ref={(el) => (cardRefs.current[mole.id] = el)}
+                  className={cn(
+                    "transition-shadow",
+                    highlightId === mole.id && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl",
+                  )}
+                >
+                  {mole.expanded ? (
+                    <ExpandedCard
+                      number={numbering[mole.id]}
+                      mole={mole}
+                      onChange={(p) => update(mole.id, p)}
+                      onSave={() => update(mole.id, { expanded: false })}
+                      onRemove={() => remove(mole.id)}
+                    />
+                  ) : (
+                    <CollapsedCard
+                      number={numbering[mole.id]}
+                      mole={mole}
+                      onEdit={() => {
+                        set(
+                          "moles",
+                          form.moles.map((m) => ({ ...m, expanded: m.id === mole.id })),
+                        );
+                        requestAnimationFrame(() => focusCard(mole.id));
+                      }}
+                      onRemove={() => remove(mole.id)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="mt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addManually}
+              className="w-full gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add mole manually
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ---------------- Silhouette ---------------- */
+/* --------------------------------- Silhouette ---------------------------------- */
 
 function BodySilhouette({
   side,
   moles,
+  numbering,
   onAdd,
   onPinClick,
 }: {
-  side: "front" | "back";
+  side: Side;
   moles: MoleEntry[];
+  numbering: Record<string, number>;
   onAdd: (x: number, y: number) => void;
   onPinClick: (id: string) => void;
 }) {
-  const sidePins = moles
-    .map((m, i) => ({ mole: m, number: i + 1 }))
-    .filter((p) => p.mole.side === side);
+  const ref = useRef<SVGSVGElement | null>(null);
 
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
+    // Ignore clicks that originated on a pin (they handle themselves).
+    if ((e.target as Element).closest("[data-pin]")) return;
+    const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     onAdd(Math.round(x * 10) / 10, Math.round(y * 10) / 10);
   };
 
+  const pins = moles.filter((m) => m.side === side && m.pin_x != null && m.pin_y != null);
+
   return (
-    <div className="rounded-xl border border-border bg-card/40 p-3 flex flex-col items-center">
-      <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-        {side === "front" ? "Front" : "Back"}
-      </div>
+    <div className="relative mx-auto aspect-[1/2.2] w-full max-w-[260px]">
       <svg
-        viewBox="0 0 100 300"
-        className="w-full max-w-[200px] h-auto cursor-crosshair select-none"
+        ref={ref}
+        viewBox="0 0 100 220"
         onClick={handleClick}
-        role="img"
-        aria-label={`${side} body silhouette — click to add a mole pin`}
+        className="h-full w-full cursor-crosshair select-none"
+        preserveAspectRatio="xMidYMid meet"
       >
-        {/* Gender-neutral schematic silhouette */}
-        <BodyOutline side={side} />
+        {/* Generic gender-neutral silhouette */}
+        <g
+          fill="hsl(var(--muted))"
+          stroke="hsl(var(--border))"
+          strokeWidth="0.6"
+        >
+          {/* Head */}
+          <ellipse cx="50" cy="14" rx="9" ry="11" />
+          {/* Neck */}
+          <rect x="46" y="23" width="8" height="6" rx="2" />
+          {/* Torso */}
+          <path d="M30 32 Q50 28 70 32 L72 90 Q50 96 28 90 Z" />
+          {/* Arms */}
+          <path d="M30 33 Q20 36 18 60 Q16 86 22 110 L28 110 Q26 84 28 62 Q30 44 34 36 Z" />
+          <path d="M70 33 Q80 36 82 60 Q84 86 78 110 L72 110 Q74 84 72 62 Q70 44 66 36 Z" />
+          {/* Hands */}
+          <ellipse cx="22" cy="115" rx="4.5" ry="6" />
+          <ellipse cx="78" cy="115" rx="4.5" ry="6" />
+          {/* Legs */}
+          <path d="M32 92 Q34 130 36 170 Q37 200 42 215 L48 215 Q47 195 47 170 Q47 130 46 95 Z" />
+          <path d="M68 92 Q66 130 64 170 Q63 200 58 215 L52 215 Q53 195 53 170 Q53 130 54 95 Z" />
+          {/* Feet */}
+          <ellipse cx="44" cy="217" rx="5" ry="3" />
+          <ellipse cx="56" cy="217" rx="5" ry="3" />
+        </g>
+
+        {/* Subtle back-side hint when viewing back */}
+        {side === "back" && (
+          <line
+            x1="50"
+            y1="32"
+            x2="50"
+            y2="90"
+            stroke="hsl(var(--border))"
+            strokeWidth="0.4"
+            strokeDasharray="1.5 1.5"
+          />
+        )}
 
         {/* Pins */}
-        {sidePins.map(({ mole, number }) => (
+        {pins.map((m) => (
           <g
-            key={mole.id}
-            transform={`translate(${mole.pin_x}, ${(mole.pin_y / 100) * 300})`}
-            className="cursor-pointer"
-            onClick={(ev) => {
-              ev.stopPropagation();
-              onPinClick(mole.id);
+            key={m.id}
+            data-pin
+            transform={`translate(${(m.pin_x! / 100) * 100}, ${(m.pin_y! / 100) * 220})`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPinClick(m.id);
             }}
+            className="cursor-pointer"
           >
-            <circle r="4.5" className="fill-primary stroke-background" strokeWidth="1" />
+            <circle r="3.4" fill="hsl(var(--primary))" stroke="hsl(var(--background))" strokeWidth="0.6" />
             <text
-              y="1.5"
+              y="1.2"
               textAnchor="middle"
-              className="fill-primary-foreground"
-              style={{ fontSize: "5px", fontWeight: 600 }}
+              fontSize="3.4"
+              fontWeight="700"
+              fill="hsl(var(--primary-foreground))"
             >
-              {number}
+              {numbering[m.id]}
             </text>
           </g>
         ))}
@@ -212,186 +316,193 @@ function BodySilhouette({
   );
 }
 
-function BodyOutline({ side: _side }: { side: "front" | "base" | "back" | string }) {
-  // Simple, gender-neutral outline. ViewBox 100 × 300.
-  // Head, neck, torso, arms, legs.
+/* --------------------------------- Cards --------------------------------------- */
+
+function CollapsedCard({
+  number,
+  mole,
+  onEdit,
+  onRemove,
+}: {
+  number: number;
+  mole: MoleEntry;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
   return (
-    <g className="fill-muted/40 stroke-foreground/40" strokeWidth="0.8">
-      {/* Head */}
-      <ellipse cx="50" cy="18" rx="11" ry="14" />
-      {/* Neck */}
-      <rect x="46" y="30" width="8" height="8" />
-      {/* Torso */}
-      <path d="M 34 38 Q 28 44 28 60 L 30 130 Q 32 140 38 142 L 62 142 Q 68 140 70 130 L 72 60 Q 72 44 66 38 Z" />
-      {/* Arms */}
-      <path d="M 28 44 Q 18 46 16 70 L 14 120 Q 13 135 18 138 L 24 138 Q 27 130 26 118 L 28 80 Z" />
-      <path d="M 72 44 Q 82 46 84 70 L 86 120 Q 87 135 82 138 L 76 138 Q 73 130 74 118 L 72 80 Z" />
-      {/* Hips/legs */}
-      <path d="M 36 142 L 32 230 Q 32 260 36 285 L 46 285 Q 50 260 50 230 L 50 142 Z" />
-      <path d="M 64 142 L 68 230 Q 68 260 64 285 L 54 285 Q 50 260 50 230 L 50 142 Z" />
-      {/* Feet */}
-      <ellipse cx="41" cy="290" rx="6" ry="4" />
-      <ellipse cx="59" cy="290" rx="6" ry="4" />
-    </g>
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-card/40 px-3 py-2">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+        {number}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium text-foreground">
+          {mole.label}
+        </div>
+        <div className="truncate text-xs text-muted-foreground">
+          {mole.location || <span className="italic">No location</span>}
+          {" · "}
+          <span className="capitalize">{mole.side}</span>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onEdit}
+        aria-label="Edit mole"
+        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onRemove}
+        aria-label="Remove mole"
+        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
   );
 }
 
-/* ---------------- Mole card ---------------- */
-
-function MoleCard({
-  index,
+function ExpandedCard({
+  number,
   mole,
   onChange,
+  onSave,
   onRemove,
 }: {
-  index: number;
+  number: number;
   mole: MoleEntry;
   onChange: (p: Partial<MoleEntry>) => void;
+  onSave: () => void;
   onRemove: () => void;
 }) {
-  const [editingLocation, setEditingLocation] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const files = mole.image_files ?? [];
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const accepted = Array.from(files).filter((f) => /image\/(jpe?g|png)/i.test(f.type));
-    if (accepted.length === 0) return;
-    onChange({ image_files: [...(mole.image_files ?? []), ...accepted] });
+  const onPickFiles = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    const next = [...files, ...Array.from(list)];
+    onChange({ image_files: next });
   };
 
-  const removeImage = (idx: number) => {
-    const next = (mole.image_files ?? []).filter((_, i) => i !== idx);
+  const removeFile = (i: number) => {
+    const next = files.slice();
+    next.splice(i, 1);
     onChange({ image_files: next });
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card/40 px-4 py-3 space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold shrink-0">
-            {index}
-          </span>
-          {editingLocation ? (
-            <Input
-              autoFocus
-              value={mole.location}
-              onChange={(e) => onChange({ location: e.target.value })}
-              onBlur={() => setEditingLocation(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") setEditingLocation(false);
-              }}
-              className="h-8 text-sm"
-              placeholder="Location label"
-            />
-          ) : (
-            <span className="text-sm font-medium text-foreground truncate">
-              {mole.location || "(no location)"}
-            </span>
-          )}
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            · {mole.side}
-          </span>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => setEditingLocation((v) => !v)}
-          aria-label="Edit location label"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
+    <div className="rounded-xl border border-border bg-card/40 p-3 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+          {number}
+        </span>
+        <Input
+          value={mole.location}
+          onChange={(e) => onChange({ location: e.target.value })}
+          placeholder="Location (e.g. Upper back, left scapula)"
+          className="h-8 text-sm"
+        />
+        <Select value={mole.side} onValueChange={(v) => onChange({ side: v as Side })}>
+          <SelectTrigger className="h-8 w-[110px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="front">Front</SelectItem>
+            <SelectItem value="back">Back</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           type="button"
           variant="ghost"
           size="icon"
           onClick={onRemove}
           aria-label="Remove mole"
-          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {(Object.entries(ABCDE_OPTIONS) as [keyof typeof ABCDE_OPTIONS, string[]][]).map(([key, opts]) => (
-          <div key={key}>
-            <FieldLabel>{key[0].toUpperCase() + key.slice(1)}</FieldLabel>
-            <Select
-              value={mole[key]}
-              onValueChange={(v) => onChange({ [key]: v } as Partial<MoleEntry>)}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="—" />
-              </SelectTrigger>
-              <SelectContent>
-                {opts.map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {(Object.entries(ABCDE_OPTIONS) as [keyof typeof ABCDE_OPTIONS, readonly string[]][]).map(
+          ([key, opts]) => (
+            <div key={key}>
+              <FieldLabel>{key[0].toUpperCase() + key.slice(1)}</FieldLabel>
+              <Select
+                value={(mole as any)[key]}
+                onValueChange={(v) => onChange({ [key]: v } as Partial<MoleEntry>)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  {opts.map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ),
+        )}
       </div>
 
       <div>
         <FieldLabel>Images</FieldLabel>
-        <div className="flex flex-wrap items-center gap-2">
-          {(mole.image_files ?? []).map((f, i) => (
-            <ImageThumb key={`${f.name}-${i}`} file={f} onRemove={() => removeImage(i)} />
-          ))}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/40"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add image
-          </button>
+        <div className="space-y-2">
+          {files.length > 0 && (
+            <ul className="space-y-1">
+              {files.map((f, i) => (
+                <li
+                  key={`${f.name}-${i}`}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-xs"
+                >
+                  <span className="truncate text-foreground">{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    aria-label="Remove image"
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <input
-            ref={fileInputRef}
+            ref={fileRef}
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/*"
             multiple
             className="hidden"
-            onChange={(e) => {
-              handleFiles(e.target.files);
-              e.target.value = "";
-            }}
+            onChange={(e) => onPickFiles(e.target.files)}
           />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileRef.current?.click()}
+            className="gap-1.5"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Upload image
+          </Button>
         </div>
       </div>
-    </div>
-  );
-}
 
-function ImageThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
-  const [url, setUrl] = useState<string | null>(null);
-  // Create preview URL
-  if (typeof window !== "undefined" && url === null) {
-    try {
-      const u = URL.createObjectURL(file);
-      setUrl(u);
-    } catch {
-      // ignore
-    }
-  }
-  return (
-    <div className="relative h-14 w-14 rounded-lg overflow-hidden border border-border bg-muted/50">
-      {url ? (
-        <img src={url} alt={file.name} className="h-full w-full object-cover" />
-      ) : (
-        <ImageIcon className="absolute inset-0 m-auto h-5 w-5 text-muted-foreground" />
-      )}
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label="Remove image"
-        className="absolute top-0.5 right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-background/90 text-foreground hover:bg-destructive hover:text-destructive-foreground"
-      >
-        <X className="h-3 w-3" />
-      </button>
+      <div className="flex justify-end">
+        <Button type="button" size="sm" onClick={onSave}>
+          Save mole
+        </Button>
+      </div>
     </div>
   );
 }

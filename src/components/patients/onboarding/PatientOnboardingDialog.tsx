@@ -30,11 +30,11 @@ import { StepSleep } from "./StepSleep";
 import { StepMentalHealth } from "./StepMentalHealth";
 import { StepCancer } from "./StepCancer";
 import { StepStatus } from "./StepStatus";
-import { blankExamFindings, normalizeIllnessRows, blankMole, type AllergyEntry, type MoleEntry } from "./OnboardingFormContext";
+import { StepMoles } from "./StepMoles";
+import { blankExamFindings, normalizeIllnessRows, type AllergyEntry } from "./OnboardingFormContext";
 import { findAllergen } from "@/lib/allergens";
 import { buildSuggestedTasks, type SuggestedTask } from "./suggestedTasks";
 import { SuggestedTasksDialog } from "./SuggestedTasksDialog";
-import { StepMoles } from "./StepMoles";
 
 function normalizeAllergies(raw: unknown): AllergyEntry[] {
   if (!Array.isArray(raw)) return [];
@@ -58,27 +58,6 @@ function normalizeAllergies(raw: unknown): AllergyEntry[] {
       return null;
     })
     .filter((x): x is AllergyEntry => x !== null);
-}
-
-function normalizeMoles(raw: unknown): MoleEntry[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter((m): m is Record<string, unknown> => Boolean(m) && typeof m === "object")
-    .map((m, i) => blankMole(`Mole ${i + 1}`, {
-      id: typeof m.id === "string" ? m.id : crypto.randomUUID(),
-      label: typeof m.label === "string" ? m.label : `Mole ${i + 1}`,
-      side: m.side === "back" ? "back" : "front",
-      pin_x: typeof m.pin_x === "number" ? m.pin_x : 50,
-      pin_y: typeof m.pin_y === "number" ? m.pin_y : 50,
-      location: typeof m.location === "string" ? m.location : "",
-      asymmetry: typeof m.asymmetry === "string" ? m.asymmetry : "",
-      borders: typeof m.borders === "string" ? m.borders : "",
-      color: typeof m.color === "string" ? m.color : "",
-      size: typeof m.size === "string" ? m.size : "",
-      change: typeof m.change === "string" ? m.change : "",
-      symptoms: typeof m.symptoms === "string" ? m.symptoms : "",
-      image_files: [],
-    }));
 }
 
 type Props = {
@@ -248,7 +227,7 @@ export function PatientOnboardingDialog(props: Props) {
           // Step 10 — Status
           exam_findings: (extra.exam_findings as any) ?? blankExamFindings(),
           moles_enabled: Boolean(extra.moles_enabled),
-          moles: normalizeMoles(extra.moles),
+          moles: (extra.moles as any[]) ?? [],
 
           current_step: ((data as any).current_step as number) ?? 1,
           completed_steps: (extra.completed_steps as number[]) ?? [],
@@ -463,8 +442,7 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         // Status
         exam_findings: nextForm.exam_findings,
         moles_enabled: nextForm.moles_enabled,
-        // Strip transient File[] from moles before persisting to JSON.
-        moles: nextForm.moles.map(({ image_files: _img, ...rest }) => rest),
+        moles: nextForm.moles,
 
         completed_steps: nextForm.completed_steps,
         skipped_steps: nextForm.skipped_steps,
@@ -653,39 +631,6 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       }
     } catch (e) {
       console.warn("ECG file sync failed", e);
-    }
-
-    // Sync mole images attached in onboarding to patient_health_files (Skin).
-    try {
-      const moles = Array.isArray(nextForm.moles) ? nextForm.moles : [];
-      for (let i = 0; i < moles.length; i++) {
-        const mole = moles[i];
-        const imgs = Array.isArray(mole.image_files) ? mole.image_files : [];
-        for (const f of imgs) {
-          if (!(f instanceof File)) continue;
-          const path = `${patientId}/moles/${Date.now()}_${i + 1}_${f.name}`;
-          const { error: upErr } = await supabase.storage
-            .from("patient-health-files")
-            .upload(path, f);
-          if (upErr) {
-            console.warn("Mole image upload failed", upErr);
-            continue;
-          }
-          await supabase.from("patient_health_files").insert({
-            patient_id: patientId,
-            created_by: user.id,
-            file_category: "mole_image",
-            file_name: f.name,
-            file_path: path,
-            file_size: f.size,
-            health_dimension: "Skin, Oral & Mucosal Health",
-            source: `Onboarding — Mole ${i + 1}`,
-            notes: mole.location || mole.label || `Mole ${i + 1}`,
-          } as any);
-        }
-      }
-    } catch (e) {
-      console.warn("Mole image sync failed", e);
     }
 
     // On completion, auto-create a review task (skip silently if it fails)
