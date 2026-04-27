@@ -2846,7 +2846,7 @@ function HealthDimensionView({
               {scoreLabel}
             </span>
           </button>
-          {!collapsed && (
+          {expanded && (
             <div className="pl-4">
               {group.extra}
               {group.rows.length > 0 ? (
