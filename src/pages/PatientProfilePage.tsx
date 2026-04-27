@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { formatLastFirst as fmtLastFirst } from "@/lib/patientName";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -210,7 +211,7 @@ const PatientProfilePage = () => {
       {/* Sidebar */}
       <div className="w-64 shrink-0 border rounded-lg bg-card flex flex-col">
         <div className="px-4 py-3 border-b flex items-center gap-2 flex-wrap">
-          <p className="font-medium text-sm truncate flex-1 min-w-0">{patient.full_name}</p>
+          <p className="font-medium text-sm truncate flex-1 min-w-0">{fmtLastFirst(patient.full_name)}</p>
           <button
             onClick={() => setActiveSection("details")}
             className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -1141,7 +1142,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
     <div className="flex gap-6 h-full">
     <div className={`space-y-6 p-1 ${showAllMedications ? "w-1/2 shrink-0" : "flex-1"} overflow-auto`}>
       <div>
-        <h2 className="text-xl font-semibold">{patient.full_name}</h2>
+        <h2 className="text-xl font-semibold">{fmtLastFirst(patient.full_name)}</h2>
         <p className="text-sm text-muted-foreground">Care Coordination Overview</p>
       </div>
 

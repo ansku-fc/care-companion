@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import type { Task } from "@/lib/tasks";
+import { formatLastFirst } from "@/lib/patientName";
 
 interface UseTasksOptions {
   patientId?: string;
@@ -37,8 +38,11 @@ export function useTasks(options: UseTasksOptions = {}) {
     return unsubscribe;
   }, [fetchTasks, subscribe]);
 
-  const patientName = (id: string | null) =>
-    id ? patients.find((p) => p.id === id)?.full_name ?? null : null;
+  const patientName = (id: string | null) => {
+    if (!id) return null;
+    const raw = patients.find((p) => p.id === id)?.full_name;
+    return raw ? formatLastFirst(raw) : null;
+  };
 
   return { tasks, patients, patientName, loading, refetch: fetchTasks };
 }

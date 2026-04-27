@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatLastFirst, initialsLastFirst } from "@/lib/patientName";
 
 const TIER_OPTIONS = [
   { value: "all", label: "All Tiers" },
@@ -44,8 +45,10 @@ const PatientsPage = () => {
   }, []);
 
   const filtered = useMemo(() => {
+    const q = search.toLowerCase();
     let list = patients.filter((p) =>
-      p.full_name.toLowerCase().includes(search.toLowerCase())
+      p.full_name.toLowerCase().includes(q) ||
+      formatLastFirst(p.full_name).toLowerCase().includes(q)
     );
     if (tierFilter === "none") {
       list = list.filter((p) => !p.tier);
@@ -55,7 +58,7 @@ const PatientsPage = () => {
     list.sort((a, b) => {
       let cmp = 0;
       if (sortField === "name") {
-        cmp = a.full_name.localeCompare(b.full_name);
+        cmp = formatLastFirst(a.full_name).localeCompare(formatLastFirst(b.full_name), undefined, { sensitivity: "base" });
       } else {
         cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       }
@@ -81,17 +84,7 @@ const PatientsPage = () => {
     return Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
   };
 
-  const getInitials = (name: string) => {
-    // Supports "Surname, First" → "FS" (first-name initial + surname initial)
-    // Falls back to "First Last" → "FL" for legacy values.
-    if (name.includes(",")) {
-      const [surname, rest = ""] = name.split(",").map((s) => s.trim());
-      const firstInitial = rest.split(/\s+/)[0]?.[0] ?? "";
-      const surnameInitial = surname[0] ?? "";
-      return (firstInitial + surnameInitial).toUpperCase();
-    }
-    return name.split(/\s+/).map((n) => n[0]).join("").toUpperCase();
-  };
+  const getInitials = (name: string) => initialsLastFirst(name);
 
   return (
     <div className="space-y-6">
@@ -153,7 +146,7 @@ const PatientsPage = () => {
                       <span className="text-sm font-medium text-primary">{getInitials(patient.full_name)}</span>
                     </div>
                     <div>
-                      <p className="font-medium">{patient.full_name}</p>
+                      <p className="font-medium">{formatLastFirst(patient.full_name)}</p>
                       <p className="text-sm text-muted-foreground">
                         {age != null ? `Age ${age}` : ""}{age != null && patient.gender ? " • " : ""}{patient.gender || ""}
                         {(age != null || patient.gender) && patient.created_at ? " • " : ""}

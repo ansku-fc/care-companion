@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useTasks } from "@/hooks/useTasks";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
+import { formatLastFirst } from "@/lib/patientName";
 import {
   isCompletedToday, dueWithinDays, isOverdue, isDueToday,
   priorityMeta, type Task,
@@ -179,7 +180,7 @@ const Dashboard = () => {
       end_time: a.end_time,
       appointment_type: a.appointment_type,
       title: a.title,
-      patient_name: a.patients?.full_name ?? null,
+      patient_name: a.patients?.full_name ? formatLastFirst(a.patients.full_name) : null,
     }));
     const rawDummy: Raw[] = dummies.map((d) => ({
       id: d.id,
@@ -187,7 +188,7 @@ const Dashboard = () => {
       end_time: d.end_time,
       appointment_type: d.appointment_type,
       title: d.title,
-      patient_name: d.patient_name ?? null,
+      patient_name: d.patient_name ? formatLastFirst(d.patient_name) : null,
     }));
     const combined = [...rawReal, ...rawDummy].sort((a, b) =>
       a.start_time.localeCompare(b.start_time),
