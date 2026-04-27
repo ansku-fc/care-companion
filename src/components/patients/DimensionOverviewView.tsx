@@ -596,22 +596,32 @@ export function MainDimensionOverview({
         <Card>
           <CardContent className="pt-6">
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-              <TabsList>
-                <TabsTrigger value="risk_factors">Risk Factors</TabsTrigger>
-                <TabsTrigger value="lab_results">Lab Results</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <TabsList>
+                  <TabsTrigger value="risk_factors">Risk Factors</TabsTrigger>
+                  <TabsTrigger value="lab_results">Lab Results</TabsTrigger>
+                </TabsList>
+                {tab === "lab_results" && (
+                  <LabResultsControls
+                    viewMode={labViewMode}
+                    onViewModeChange={setLabViewMode}
+                    patientId={patient.id}
+                  />
+                )}
+              </div>
               <TabsContent value="risk_factors" className="mt-4">
                 {renderRiskFactors()}
               </TabsContent>
               <TabsContent value="lab_results" className="mt-4">
                 <LabResultsBlock
-                  biomarkers={biomarkers}
+                  categories={labCategories}
                   filter={labFilter}
                   onFilterChange={setLabFilter}
                   filterOptions={filterOptions}
                   patientId={patient.id}
                   patientName={patient.full_name}
                   labResults={labResults}
+                  viewMode={labViewMode}
                 />
               </TabsContent>
             </Tabs>
