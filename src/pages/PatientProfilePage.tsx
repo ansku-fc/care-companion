@@ -370,6 +370,16 @@ const PatientProfilePage = () => {
             })()}
 
             <button
+              onClick={() => setActiveSection("documents")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "documents" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <FolderOpen className="h-4 w-4" />
+              Documents & Images
+            </button>
+
+            <button
               onClick={() => setActiveSection("medications")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 activeSection === "medications" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
