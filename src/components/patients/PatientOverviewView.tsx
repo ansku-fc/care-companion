@@ -210,11 +210,13 @@ export function PatientOverviewView({
 
   const hasAlerts =
     openTasks.length > 0 ||
+    anaphylacticAllergies.length > 0 ||
     severeAllergies.length > 0 ||
     moderateAllergies.length > 0 ||
+    mildAllergies.length > 0 ||
     activeInteractions.length > 0;
   const alertSeverity: "high" | "medium" | "none" =
-    severeAllergies.length > 0 || overdueTasksCount > 0 || severeInteractions.length > 0 ? "high"
+    anaphylacticAllergies.length > 0 || severeAllergies.length > 0 || overdueTasksCount > 0 || severeInteractions.length > 0 ? "high"
       : (openTasks.length > 0 || moderateAllergies.length > 0 || moderateInteractions.length > 0) ? "medium"
         : "none";
 
