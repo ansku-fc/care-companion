@@ -202,6 +202,29 @@ const TasksPage = () => {
         </CardContent>
       </Card>
 
+      {/* My Tasks / All Tasks scope */}
+      <div className="flex items-center gap-2">
+        <ScopePill
+          active={scope === "mine"}
+          onClick={() => setScope("mine")}
+          label="My Tasks"
+          count={myCount}
+          variant="primary"
+        />
+        <ScopePill
+          active={scope === "all"}
+          onClick={() => setScope("all")}
+          label="All Tasks"
+          count={allCount}
+          variant="outline"
+        />
+        {scope === "all" && (
+          <span className="text-[11px] text-muted-foreground ml-1">
+            Team tasks shown as <span className="font-medium">FYI</span>.
+          </span>
+        )}
+      </div>
+
       {/* Task list */}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading tasks…</p>
@@ -211,7 +234,13 @@ const TasksPage = () => {
             <p className="text-sm text-muted-foreground">No tasks match the current filters.</p>
           ) : (
             flatSorted.map((t) => (
-              <TaskRow key={t.id} task={t} patientName={patientName(t.patient_id)} onClick={() => openDetail(t)} />
+              <TaskRow
+                key={t.id}
+                task={t}
+                patientName={patientName(t.patient_id)}
+                onClick={() => openDetail(t)}
+                mine={isMine(t)}
+              />
             ))
           )}
         </div>
