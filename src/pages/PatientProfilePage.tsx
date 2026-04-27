@@ -2858,6 +2858,11 @@ function HealthDimensionView({
             <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("smoking")} onToggle={() => toggleRow("smoking")}>
               <p className="text-sm text-muted-foreground">Smoking status from onboarding.</p>
             </ExpandableRow>
+            {extra.nicotine_pouches_current && (
+              <ExpandableRow label="Nicotine Pouches" value={<>{`${extra.nicotine_pouches_per_day ?? "?"}/day · ${extra.nicotine_pouches_strength ?? ""}`}<Flag tone="amber">Respiratory risk</Flag></>} recorded={onboardingDate} expanded={expandedRows.has("nico_resp")} onToggle={() => toggleRow("nico_resp")}>
+                <p className="text-sm text-muted-foreground">Active nicotine pouch use — risk factor for respiratory and immune health.</p>
+              </ExpandableRow>
+            )}
             <ExpandableRow label="Infections/Year" value={onboarding?.infections_per_year ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("infections")} onToggle={() => toggleRow("infections")}>
               <p className="text-sm text-muted-foreground">Self-reported frequency of infections.</p>
             </ExpandableRow>
