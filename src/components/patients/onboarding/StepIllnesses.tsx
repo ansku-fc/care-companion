@@ -779,15 +779,6 @@ function MedicationsEditor({
                         onChange={(y) => updateAt(idx, { start_year: y })}
                       />
                     </div>
-                    <div className="col-span-12">
-                      <FieldLabel>Notes</FieldLabel>
-                      <Input
-                        value={med.notes}
-                        onChange={(e) => updateAt(idx, { notes: e.target.value })}
-                        placeholder="Additional instructions…"
-                        className="h-9"
-                      />
-                    </div>
                   </div>
                 )}
               </div>
