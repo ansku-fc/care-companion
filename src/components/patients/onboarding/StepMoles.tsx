@@ -47,7 +47,8 @@ function describeLocation(side: Side, x: number, y: number): string {
 
 /** Step 11 — Moles (two-panel layout). */
 export function StepMoles() {
-  const { form, set } = useOnboardingForm();
+  const { form, set, patientGender } = useOnboardingForm();
+  const sex: Sex = (patientGender || "").toLowerCase() === "male" ? "male" : "female";
   const [side, setSide] = useState<Side>("front");
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
