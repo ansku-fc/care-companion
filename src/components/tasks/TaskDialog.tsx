@@ -135,7 +135,10 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
   }, [isMedicationTask, assigneeName]);
 
   const assigneeMeta = ASSIGNEES.find((a) => a.name === assigneeName);
-  const patientLabel = patients.find((p) => p.id === patientId)?.full_name;
+  const patientLabel = (() => {
+    const raw = patients.find((p) => p.id === patientId)?.full_name;
+    return raw ? formatLastFirst(raw) : undefined;
+  })();
 
   const handleSave = async () => {
     if (!user || !title.trim() || !dueDate) {
