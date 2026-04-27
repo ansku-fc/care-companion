@@ -1138,19 +1138,22 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
               onDone={doneSection}
             >
               {(editing) => (
-                <>
+                <div className="space-y-4">
                   <div>
                     <Label className="text-sm text-muted-foreground mb-1 block">Doctor's Summary</Label>
                     {editing ? (
                       <Textarea
                         value={doc.doctor_summary ?? ""}
                         onChange={(e) => setDoc({ ...doc, doctor_summary: e.target.value })}
-                        placeholder="Summarise the patient's clinical baseline…"
-                        className="min-h-[100px]"
+                        placeholder="Write a clinical summary..."
+                        className="min-h-[120px] text-sm"
+                        autoFocus
                       />
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">
-                        {doc.doctor_summary?.trim() ? doc.doctor_summary : <span className="italic text-muted-foreground">(empty)</span>}
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {doc.doctor_summary?.trim()
+                          ? doc.doctor_summary
+                          : <span className="italic text-muted-foreground">(empty)</span>}
                       </p>
                     )}
                   </div>
@@ -1161,16 +1164,18 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                       <Textarea
                         value={doc.recommendations ?? ""}
                         onChange={(e) => setDoc({ ...doc, recommendations: e.target.value })}
-                        placeholder="Clinical recommendations and next steps…"
-                        className="min-h-[100px]"
+                        placeholder="Write recommendations..."
+                        className="min-h-[120px] text-sm"
                       />
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">
-                        {doc.recommendations?.trim() ? doc.recommendations : <span className="italic text-muted-foreground">(empty)</span>}
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {doc.recommendations?.trim()
+                          ? doc.recommendations
+                          : <span className="italic text-muted-foreground">(empty)</span>}
                       </p>
                     )}
                   </div>
-                </>
+                </div>
               )}
             </Section>
           </div>
