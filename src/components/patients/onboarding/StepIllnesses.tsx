@@ -566,9 +566,12 @@ function MedicationsEditor({
       return { name: n, atc: meta?.atc ?? "" };
     });
 
+  const showList = layout !== "trigger";
+  const showTrigger = layout !== "list";
+
   return (
     <div className="space-y-2">
-      {medications.length > 0 && (
+      {showList && medications.length > 0 && (
         <div className="space-y-2">
           {medications.map((med, idx) => {
             const isOpen = expandedIdx === idx;
