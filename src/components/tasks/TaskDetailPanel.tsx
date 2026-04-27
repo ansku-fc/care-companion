@@ -196,10 +196,18 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   if (!task) return null;
   const meta = priorityMeta(task.priority);
   const role = assigneeRole(task.assignee_name);
+  const storedCategory = (task as Task & { task_category?: string | null }).task_category as
+    | TaskCategoryKind
+    | null
+    | undefined;
   const kind = detectKind(task);
-  const isClinical = kind !== null;
-  const isComm = !isClinical && isCommunicationTask(task);
-  const isReferral = !isClinical && isReferralTask(task);
+  // Stored clinical categories ALWAYS render the clinical panel.
+  const isAdministrative = !storedCategory || storedCategory === "administrative";
+  const isClinical =
+    (kind !== null) ||
+    (!!storedCategory && isClinicalCategory(storedCategory) && storedCategory !== "referral");
+  const isReferral = !isClinical && (storedCategory === "referral" || isReferralTask(task));
+  const isComm = !isClinical && !isReferral && isAdministrative && isCommunicationTask(task);
   const activeOutcomeTags = isReferral ? REFERRAL_OUTCOME_TAGS : OUTCOME_TAGS;
 
   const updateStatus = async (status: TaskStatus) => {
