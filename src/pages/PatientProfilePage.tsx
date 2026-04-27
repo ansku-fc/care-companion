@@ -2904,8 +2904,17 @@ function HealthDimensionView({
             <ExpandableRow label="Hours/Night" value={onboarding?.sleep_hours_per_night ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("hours")} onToggle={() => toggleRow("hours")}>
               <p className="text-sm text-muted-foreground">Average hours of sleep per night.</p>
             </ExpandableRow>
-            <ExpandableRow label="Deep Sleep %" value={onboarding?.deep_sleep_percent ? `${onboarding.deep_sleep_percent}%` : "—"} recorded={onboardingDate} expanded={expandedRows.has("deep")} onToggle={() => toggleRow("deep")}>
-              <p className="text-sm text-muted-foreground">Percentage of sleep time in deep sleep phase.</p>
+            <ExpandableRow label="Bedtime" value={extra.sleep_bedtime ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("bedtime")} onToggle={() => toggleRow("bedtime")}>
+              <p className="text-sm text-muted-foreground">Usual bedtime reported at onboarding.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Waking Time" value={extra.sleep_waking_time ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("waking")} onToggle={() => toggleRow("waking")}>
+              <p className="text-sm text-muted-foreground">Usual wake time reported at onboarding.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Deep Sleep %" value={<>{onboarding?.deep_sleep_percent ? `${onboarding.deep_sleep_percent}%` : "—"}{onboarding?.deep_sleep_percent != null && Number(onboarding.deep_sleep_percent) < 13 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("deep")} onToggle={() => toggleRow("deep")}>
+              <p className="text-sm text-muted-foreground">Percentage of sleep time in deep sleep phase. Healthy adults typically 13–23%.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Daytime Fatigue" value={<>{extra.daytime_fatigue ?? "—"}{extra.daytime_fatigue != null && Number(extra.daytime_fatigue) >= 7 && <Flag tone="amber">High</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("fatigue")} onToggle={() => toggleRow("fatigue")}>
+              <p className="text-sm text-muted-foreground">Self-reported daytime fatigue (1–10).</p>
             </ExpandableRow>
             <ExpandableRow label="Insomnia" value={onboarding?.insomnia ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("insomnia")} onToggle={() => toggleRow("insomnia")}>
               <p className="text-sm text-muted-foreground">Reported insomnia symptoms.</p>
