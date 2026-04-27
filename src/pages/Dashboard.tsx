@@ -397,7 +397,7 @@ const Dashboard = () => {
   );
 };
 
-function Section({ icon, label, tone, children }: { icon: React.ReactNode; label: string; tone: "destructive" | "warning" | "success"; children: React.ReactNode }) {
+function Section({ icon, label, tone, count, children }: { icon: React.ReactNode; label: string; tone: "destructive" | "warning" | "success"; count?: number; children: React.ReactNode }) {
   return (
     <div>
       <p className={cn(
@@ -405,7 +405,14 @@ function Section({ icon, label, tone, children }: { icon: React.ReactNode; label
         tone === "destructive" && "text-destructive",
         tone === "warning" && "text-warning",
         tone === "success" && "text-success",
-      )}>{icon} {label}</p>
+      )}>
+        {icon} {label}
+        {typeof count === "number" && count > 0 && (
+          <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-muted text-[10px] font-semibold text-foreground/80">
+            {count}
+          </span>
+        )}
+      </p>
       <div className="space-y-2">{children}</div>
     </div>
   );
