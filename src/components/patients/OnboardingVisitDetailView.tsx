@@ -316,6 +316,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
 
   // Re-open dialog
   const [reopenOpen, setReopenOpen] = useState(false);
+  const [finaliseConfirmOpen, setFinaliseConfirmOpen] = useState(false);
   const [reopenReason, setReopenReason] = useState<string>(REOPEN_REASONS[0]);
   const [reopenOther, setReopenOther] = useState("");
 
