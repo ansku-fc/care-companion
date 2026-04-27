@@ -511,6 +511,8 @@ const PatientProfilePage = () => {
         ) : activeSection === "lab_results" ? (
           <HealthDataHub
             patientId={patient.id}
+            patientName={patient.full_name}
+            patientStatus={(patient as any).onboarding_status}
             labResults={labResults}
             onboarding={onboarding}
             healthCategories={healthCategories}
@@ -519,6 +521,7 @@ const PatientProfilePage = () => {
             markerNotes={markerNotes}
             setMarkerNotes={setMarkerNotes}
             initialTab={healthDataInitialTab}
+            onOnboardingCompleted={fetchData}
             labResultsSlot={
               <LabResultsView
                 patientId={patient.id}
