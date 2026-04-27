@@ -24,6 +24,248 @@ const ABCDE_OPTIONS = {
 } as const;
 
 type Side = "front" | "back";
+type Sex = "female" | "male";
+
+/**
+ * Clean solid-fill body silhouettes built directly into the component.
+ * Coordinate space: viewBox 0 0 100 220, centered horizontally on x=50.
+ *
+ * Each path traces the outline starting at the top of the head, down the
+ * left side (viewer's left = body's right), across the feet, up the right
+ * side, and closes back at the head. No facial or clothing detail.
+ */
+const SILHOUETTE_PATHS: Record<Sex, Record<Side, string>> = {
+  female: {
+    // Narrower shoulders, defined waist, wider hips. Slightly rounded head
+    // suggesting hair contour at the crown.
+    front:
+      "M50 4 " +
+      "C42 4 36 9 36 17 " + // left side of head
+      "C36 22 38 25 40 27 " + // jaw
+      "L40 30 " + // neck left
+      "C36 31 33 33 30 35 " + // shoulder slope (narrow)
+      "C26 37 22 42 21 50 " + // upper arm out
+      "C20 60 20 72 22 86 " + // arm down
+      "C23 96 25 104 26 110 " + // forearm
+      "C26 114 25 117 24 119 " + // wrist/hand
+      "L20 119 " +
+      "C19 119 19 117 19 115 " + // hand tip
+      "C18 109 17 100 16 88 " +
+      "C15 74 15 60 17 50 " +
+      "C18 42 19 36 22 32 " + // back of arm
+      "L28 32 " +
+      "C30 36 30 40 31 46 " + // back into torso
+      "C32 54 33 62 33 70 " + // ribcage to waist
+      "C32 76 31 80 30 84 " + // waist (narrow)
+      "C29 88 30 94 33 100 " + // hip flare
+      "C35 106 36 112 36 120 " + // hip
+      "C36 130 35 142 35 156 " + // thigh
+      "C35 170 36 184 37 198 " +
+      "C37 206 37 212 38 216 " + // ankle
+      "C38 218 40 219 42 219 " +
+      "L48 219 " +
+      "C49 219 49 218 49 216 " + // inner leg up
+      "C49 200 49 180 49 160 " +
+      "C49 140 49 120 50 110 " + // crotch midline
+      "C51 120 51 140 51 160 " +
+      "C51 180 51 200 51 216 " +
+      "C51 218 51 219 52 219 " +
+      "L58 219 " +
+      "C60 219 62 218 62 216 " +
+      "C63 212 63 206 63 198 " +
+      "C64 184 65 170 65 156 " +
+      "C65 142 64 130 64 120 " +
+      "C64 112 65 106 67 100 " + // right hip
+      "C70 94 71 88 70 84 " +
+      "C69 80 68 76 67 70 " +
+      "C67 62 68 54 69 46 " +
+      "C70 40 70 36 72 32 " +
+      "L78 32 " +
+      "C81 36 82 42 83 50 " +
+      "C85 60 85 74 84 88 " +
+      "C83 100 82 109 81 115 " +
+      "C81 117 81 119 80 119 " +
+      "L76 119 " +
+      "C75 117 74 114 74 110 " +
+      "C75 104 77 96 78 86 " +
+      "C80 72 80 60 79 50 " +
+      "C78 42 74 37 70 35 " +
+      "C67 33 64 31 60 30 " +
+      "L60 27 " +
+      "C62 25 64 22 64 17 " +
+      "C64 9 58 4 50 4 Z",
+
+    // Back view — same outer contour. No facial features anyway.
+    back:
+      "M50 4 " +
+      "C42 4 36 9 36 17 " +
+      "C36 22 38 25 40 27 " +
+      "L40 30 " +
+      "C36 31 33 33 30 35 " +
+      "C26 37 22 42 21 50 " +
+      "C20 60 20 72 22 86 " +
+      "C23 96 25 104 26 110 " +
+      "C26 114 25 117 24 119 " +
+      "L20 119 " +
+      "C19 119 19 117 19 115 " +
+      "C18 109 17 100 16 88 " +
+      "C15 74 15 60 17 50 " +
+      "C18 42 19 36 22 32 " +
+      "L28 32 " +
+      "C30 36 30 40 31 46 " +
+      "C32 54 33 62 33 70 " +
+      "C32 76 31 80 30 84 " +
+      "C29 88 30 94 33 100 " +
+      "C35 106 36 112 36 120 " +
+      "C36 130 35 142 35 156 " +
+      "C35 170 36 184 37 198 " +
+      "C37 206 37 212 38 216 " +
+      "C38 218 40 219 42 219 " +
+      "L48 219 " +
+      "C49 219 49 218 49 216 " +
+      "C49 200 49 180 49 160 " +
+      "C49 140 49 120 50 110 " +
+      "C51 120 51 140 51 160 " +
+      "C51 180 51 200 51 216 " +
+      "C51 218 51 219 52 219 " +
+      "L58 219 " +
+      "C60 219 62 218 62 216 " +
+      "C63 212 63 206 63 198 " +
+      "C64 184 65 170 65 156 " +
+      "C65 142 64 130 64 120 " +
+      "C64 112 65 106 67 100 " +
+      "C70 94 71 88 70 84 " +
+      "C69 80 68 76 67 70 " +
+      "C67 62 68 54 69 46 " +
+      "C70 40 70 36 72 32 " +
+      "L78 32 " +
+      "C81 36 82 42 83 50 " +
+      "C85 60 85 74 84 88 " +
+      "C83 100 82 109 81 115 " +
+      "C81 117 81 119 80 119 " +
+      "L76 119 " +
+      "C75 117 74 114 74 110 " +
+      "C75 104 77 96 78 86 " +
+      "C80 72 80 60 79 50 " +
+      "C78 42 74 37 70 35 " +
+      "C67 33 64 31 60 30 " +
+      "L60 27 " +
+      "C62 25 64 22 64 17 " +
+      "C64 9 58 4 50 4 Z",
+  },
+  male: {
+    // Broader shoulders, straighter waist, narrower hips.
+    front:
+      "M50 4 " +
+      "C43 4 38 9 38 16 " + // head
+      "C38 21 40 24 42 26 " +
+      "L42 30 " +
+      "C38 31 34 33 30 35 " + // neck/shoulder
+      "C24 37 18 42 16 50 " + // wide shoulder
+      "C14 60 14 74 16 88 " +
+      "C17 98 19 106 20 112 " + // arm down
+      "C20 116 19 119 18 121 " +
+      "L14 121 " +
+      "C13 121 13 119 13 117 " +
+      "C12 110 11 100 10 88 " +
+      "C9 72 10 58 12 48 " +
+      "C13 40 15 35 19 32 " +
+      "L26 32 " +
+      "C28 36 28 40 28 46 " + // torso side
+      "C28 56 28 66 28 76 " + // straight waist
+      "C28 86 28 96 30 104 " + // pelvis
+      "C32 110 33 116 33 122 " +
+      "C33 134 33 148 34 162 " + // thigh
+      "C34 178 35 192 36 206 " +
+      "C36 212 37 216 38 218 " +
+      "C39 219 41 219 43 219 " +
+      "L48 219 " +
+      "C49 219 49 218 49 216 " +
+      "C49 200 49 180 49 160 " +
+      "C49 140 49 122 50 112 " + // crotch midline
+      "C51 122 51 140 51 160 " +
+      "C51 180 51 200 51 216 " +
+      "C51 218 51 219 52 219 " +
+      "L57 219 " +
+      "C59 219 61 219 62 218 " +
+      "C63 216 64 212 64 206 " +
+      "C65 192 66 178 66 162 " +
+      "C67 148 67 134 67 122 " +
+      "C67 116 68 110 70 104 " +
+      "C72 96 72 86 72 76 " +
+      "C72 66 72 56 72 46 " +
+      "C72 40 72 36 74 32 " +
+      "L81 32 " +
+      "C85 35 87 40 88 48 " +
+      "C90 58 91 72 90 88 " +
+      "C89 100 88 110 87 117 " +
+      "C87 119 87 121 86 121 " +
+      "L82 121 " +
+      "C81 119 80 116 80 112 " +
+      "C81 106 83 98 84 88 " +
+      "C86 74 86 60 84 50 " +
+      "C82 42 76 37 70 35 " +
+      "C66 33 62 31 58 30 " +
+      "L58 26 " +
+      "C60 24 62 21 62 16 " +
+      "C62 9 57 4 50 4 Z",
+
+    back:
+      "M50 4 " +
+      "C43 4 38 9 38 16 " +
+      "C38 21 40 24 42 26 " +
+      "L42 30 " +
+      "C38 31 34 33 30 35 " +
+      "C24 37 18 42 16 50 " +
+      "C14 60 14 74 16 88 " +
+      "C17 98 19 106 20 112 " +
+      "C20 116 19 119 18 121 " +
+      "L14 121 " +
+      "C13 121 13 119 13 117 " +
+      "C12 110 11 100 10 88 " +
+      "C9 72 10 58 12 48 " +
+      "C13 40 15 35 19 32 " +
+      "L26 32 " +
+      "C28 36 28 40 28 46 " +
+      "C28 56 28 66 28 76 " +
+      "C28 86 28 96 30 104 " +
+      "C32 110 33 116 33 122 " +
+      "C33 134 33 148 34 162 " +
+      "C34 178 35 192 36 206 " +
+      "C36 212 37 216 38 218 " +
+      "C39 219 41 219 43 219 " +
+      "L48 219 " +
+      "C49 219 49 218 49 216 " +
+      "C49 200 49 180 49 160 " +
+      "C49 140 49 122 50 112 " +
+      "C51 122 51 140 51 160 " +
+      "C51 180 51 200 51 216 " +
+      "C51 218 51 219 52 219 " +
+      "L57 219 " +
+      "C59 219 61 219 62 218 " +
+      "C63 216 64 212 64 206 " +
+      "C65 192 66 178 66 162 " +
+      "C67 148 67 134 67 122 " +
+      "C67 116 68 110 70 104 " +
+      "C72 96 72 86 72 76 " +
+      "C72 66 72 56 72 46 " +
+      "C72 40 72 36 74 32 " +
+      "L81 32 " +
+      "C85 35 87 40 88 48 " +
+      "C90 58 91 72 90 88 " +
+      "C89 100 88 110 87 117 " +
+      "C87 119 87 121 86 121 " +
+      "L82 121 " +
+      "C81 119 80 116 80 112 " +
+      "C81 106 83 98 84 88 " +
+      "C86 74 86 60 84 50 " +
+      "C82 42 76 37 70 35 " +
+      "C66 33 62 31 58 30 " +
+      "L58 26 " +
+      "C60 24 62 21 62 16 " +
+      "C62 9 57 4 50 4 Z",
+  },
+};
 
 /** Heuristic location label from pin coordinates (percent of silhouette). */
 function describeLocation(side: Side, x: number, y: number): string {
@@ -47,7 +289,8 @@ function describeLocation(side: Side, x: number, y: number): string {
 
 /** Step 11 — Moles (two-panel layout). */
 export function StepMoles() {
-  const { form, set } = useOnboardingForm();
+  const { form, set, patientGender } = useOnboardingForm();
+  const sex: Sex = (patientGender || "").toLowerCase() === "male" ? "male" : "female";
   const [side, setSide] = useState<Side>("front");
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -132,6 +375,7 @@ export function StepMoles() {
               ))}
             </div>
             <BodySilhouette
+              sex={sex}
               side={side}
               moles={visibleMoles}
               numbering={numbering}
@@ -214,12 +458,14 @@ export function StepMoles() {
 /* --------------------------------- Silhouette ---------------------------------- */
 
 function BodySilhouette({
+  sex,
   side,
   moles,
   numbering,
   onAdd,
   onPinClick,
 }: {
+  sex: Sex;
   side: Side;
   moles: MoleEntry[];
   numbering: Record<string, number>;
@@ -238,6 +484,7 @@ function BodySilhouette({
   };
 
   const pins = moles.filter((m) => m.side === side && m.pin_x != null && m.pin_y != null);
+  const bodyPath = SILHOUETTE_PATHS[sex][side];
 
   return (
     <div className="relative mx-auto aspect-[1/2.2] w-full max-w-[260px]">
@@ -248,45 +495,10 @@ function BodySilhouette({
         className="h-full w-full cursor-crosshair select-none"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Generic gender-neutral silhouette */}
-        <g
-          fill="hsl(var(--muted))"
-          stroke="hsl(var(--border))"
-          strokeWidth="0.6"
-        >
-          {/* Head */}
-          <ellipse cx="50" cy="14" rx="9" ry="11" />
-          {/* Neck */}
-          <rect x="46" y="23" width="8" height="6" rx="2" />
-          {/* Torso */}
-          <path d="M30 32 Q50 28 70 32 L72 90 Q50 96 28 90 Z" />
-          {/* Arms */}
-          <path d="M30 33 Q20 36 18 60 Q16 86 22 110 L28 110 Q26 84 28 62 Q30 44 34 36 Z" />
-          <path d="M70 33 Q80 36 82 60 Q84 86 78 110 L72 110 Q74 84 72 62 Q70 44 66 36 Z" />
-          {/* Hands */}
-          <ellipse cx="22" cy="115" rx="4.5" ry="6" />
-          <ellipse cx="78" cy="115" rx="4.5" ry="6" />
-          {/* Legs */}
-          <path d="M32 92 Q34 130 36 170 Q37 200 42 215 L48 215 Q47 195 47 170 Q47 130 46 95 Z" />
-          <path d="M68 92 Q66 130 64 170 Q63 200 58 215 L52 215 Q53 195 53 170 Q53 130 54 95 Z" />
-          {/* Feet */}
-          <ellipse cx="44" cy="217" rx="5" ry="3" />
-          <ellipse cx="56" cy="217" rx="5" ry="3" />
-        </g>
+        {/* Solid lavender silhouette — clinical, no facial detail */}
+        <path d={bodyPath} fill="#C4B5E8" />
 
-        {/* Subtle back-side hint when viewing back */}
-        {side === "back" && (
-          <line
-            x1="50"
-            y1="32"
-            x2="50"
-            y2="90"
-            stroke="hsl(var(--border))"
-            strokeWidth="0.4"
-            strokeDasharray="1.5 1.5"
-          />
-        )}
-
+        {/* Pins */}
         {/* Pins */}
         {pins.map((m) => (
           <g
