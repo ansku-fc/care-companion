@@ -513,6 +513,7 @@ export function MainDimensionOverview({
   const [showRiskHistory, setShowRiskHistory] = useState(false);
   const [tab, setTab] = useState<"risk_factors" | "lab_results">("risk_factors");
   const [labFilter, setLabFilter] = useState<string>("all");
+  const [labViewMode, setLabViewMode] = useState<"graphs" | "table">("graphs");
 
   const subKeys = main.subDimensions.map((s) => s.key);
   const biomarkers = useMemo(
@@ -520,8 +521,16 @@ export function MainDimensionOverview({
     [main.key, subKeys.join(",")],
   );
 
+  // Pull the same registry slice the main lab page uses, filtered to this dimension.
+  const labCategories = useMemo(
+    () => getLabCategoriesForMainDimension(main.key),
+    [main.key],
+  );
+
+  // Sub-dimension filter options derived from the registry (so order and presence
+  // match the main lab table).
   const filterOptions = main.subDimensions
-    .filter((s) => biomarkers.some((b) => b.subDimension === s.key))
+    .filter((s) => labCategories.some((c) => c.rows.some((r) => r.subDimension === s.key)))
     .map((s) => ({ key: s.key, label: s.label }));
 
   const categoryKey = main.label.toLowerCase();
