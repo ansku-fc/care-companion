@@ -166,9 +166,6 @@ function IllnessRowEditor({
           </div>
         )}
 
-        <div className={cn("col-span-12", showResolved ? "md:col-span-7" : "md:col-span-12")}>
-          {/* spacer/placeholder for grid balance — medications below */}
-        </div>
       </div>
 
       <div>
