@@ -109,7 +109,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
 
   // Patient visit
   const [patientId, setPatientId] = useState("");
-  const [visitCategory, setVisitCategory] = useState<string>("consultation");
+  const [visitCategory, setVisitCategory] = useState<string>("onboarding");
   const [visitModality, setVisitModality] = useState("in_person");
   const [isLabs, setIsLabs] = useState(false);
   const [labPackage, setLabPackage] = useState("custom");
@@ -183,7 +183,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
     if (editKind === "patient_visit") {
       setPatientId(editingAppointment.patient_id || "");
       setVisitModality(editingAppointment.is_home_visit ? "home_visit" : editingAppointment.visit_modality || "in_person");
-      setVisitCategory(editingAppointment.appointment_type || "consultation");
+      setVisitCategory(editingAppointment.appointment_type || "onboarding");
       setIsLabs(editingAppointment.is_labs || false);
       setLabPackage(editingAppointment.lab_package || "custom");
       setSelectedLabTests(Array.isArray(editingAppointment.lab_tests_selected) ? editingAppointment.lab_tests_selected : []);
@@ -440,10 +440,9 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="onboarding">Onboarding</SelectItem>
-                        <SelectItem value="acute">Acute</SelectItem>
-                        <SelectItem value="consultation">Consultation</SelectItem>
-                        <SelectItem value="follow_up">Follow-up</SelectItem>
-                        <SelectItem value="check_up">Check-up</SelectItem>
+                        <SelectItem value="annual_checkup">Annual check-up</SelectItem>
+                        <SelectItem value="acute_consultation">Acute consultation</SelectItem>
+                        <SelectItem value="care_coordination">Care coordination</SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>
