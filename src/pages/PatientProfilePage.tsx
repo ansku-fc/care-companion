@@ -131,6 +131,17 @@ const PatientProfilePage = () => {
     [navHistory, scopeKey],
   );
 
+  // Mark Health Data as "reviewed" when the doctor opens that view, so the
+  // sidebar new-labs badge clears.
+  useEffect(() => {
+    if (activeSection !== "lab_results" || !id) return;
+    try {
+      window.localStorage.setItem(`labReviewedAt:${id}`, new Date().toISOString());
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [activeSection, id]);
+
   // Honour deep-links like /patients/:id?tab=lab_results&review=1
   useEffect(() => {
     const tab = searchParams.get("tab");
