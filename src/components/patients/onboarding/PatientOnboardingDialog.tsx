@@ -30,7 +30,7 @@ import { StepSleep } from "./StepSleep";
 import { StepMentalHealth } from "./StepMentalHealth";
 import { StepCancer } from "./StepCancer";
 import { StepStatus } from "./StepStatus";
-import { blankExamFindings, type AllergyEntry } from "./OnboardingFormContext";
+import { blankExamFindings, normalizeIllnessRows, type AllergyEntry } from "./OnboardingFormContext";
 import { findAllergen } from "@/lib/allergens";
 
 function normalizeAllergies(raw: unknown): AllergyEntry[] {
