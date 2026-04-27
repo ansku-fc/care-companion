@@ -2762,23 +2762,136 @@ function HealthDimensionView({
     // Allergies count + list
     const allergiesList: any[] = Array.isArray(extra.allergies) ? extra.allergies : [];
 
-    // Toggle helper bound to the existing expanded set
-    const row = (key: string, label: string, value: React.ReactNode, detail?: React.ReactNode) => (
+    // Subgroup score badge — same colour scale used elsewhere in the app.
+    const scoreColor = (s: number | null | undefined): string => {
+      if (s == null) return "bg-muted text-muted-foreground";
+      if (s >= 7) return "bg-[hsl(137_25%_39%/0.15)] text-[hsl(137_25%_30%)]";
+      if (s >= 4) return "bg-[hsl(28_63%_44%/0.15)] text-[hsl(28_63%_38%)]";
+      return "bg-[hsl(330_81%_60%/0.15)] text-[hsl(330_81%_45%)]";
+    };
+
+    // Row spec — defer rendering until we know which subgroup it belongs to.
+    type RowSpec = {
+      key: string;
+      label: string;
+      value: React.ReactNode;
+      detail?: React.ReactNode;
+      flagged?: boolean;
+    };
+    const r = (
+      key: string,
+      label: string,
+      value: React.ReactNode,
+      detail?: React.ReactNode,
+      flagged?: boolean,
+    ): RowSpec => ({ key, label, value, detail, flagged });
+
+    const renderRowSpec = (spec: RowSpec) => (
       <ExpandableRow
-        key={key}
-        label={label}
-        value={value}
+        key={spec.key}
+        label={spec.label}
+        value={spec.value}
         recorded={onboardingDate}
-        expanded={expandedRows.has(key)}
-        onToggle={() => toggleRow(key)}
+        expanded={expandedRows.has(spec.key)}
+        onToggle={() => toggleRow(spec.key)}
       >
-        {detail ?? <p className="text-sm text-muted-foreground">Recorded during onboarding.</p>}
+        {spec.detail ?? <p className="text-sm text-muted-foreground">Recorded during onboarding.</p>}
       </ExpandableRow>
     );
 
-    const rows = (items: React.ReactNode[]) => (
-      <div className="divide-y border rounded-md">{items}</div>
+    // Subgroup spec
+    type GroupSpec = {
+      key: string;          // stable id for collapse state (also used to look up subdim score)
+      title: string;
+      scoreKey?: string;    // which sub-score to show (defaults to `key`)
+      rows: RowSpec[];
+      extra?: React.ReactNode; // optional content above rows (e.g. mole cards)
+    };
+
+    const subScoresLocal = computeSubScores({ onboarding, labResults, diagnoses, medications, allergies });
+
+    const Subgroup = ({ group }: { group: GroupSpec }) => {
+      const collapsed = collapsedGroups.has(group.key);
+      const flagged = group.rows.some((row) => row.flagged);
+      const score = subScoresLocal[group.scoreKey ?? group.key];
+      const scoreLabel = score == null ? "—" : score.toFixed(1);
+      const toggle = () => setCollapsedGroups((prev) => {
+        const next = new Set(prev);
+        if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
+        return next;
+      });
+      return (
+        <div className={cn(
+          "rounded-md border overflow-hidden",
+          flagged && "border-l-4 border-l-[hsl(330_81%_60%/0.5)]",
+        )}>
+          <button
+            type="button"
+            onClick={toggle}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2">
+              {collapsed
+                ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              <span className="font-semibold text-sm">{group.title}</span>
+            </div>
+            <span className={cn(
+              "inline-flex items-center justify-center min-w-[2.25rem] h-7 px-2 rounded-full text-xs font-semibold",
+              scoreColor(score),
+            )}>
+              {scoreLabel}
+            </span>
+          </button>
+          {!collapsed && (
+            <div className="pl-4">
+              {group.extra}
+              {group.rows.length > 0 ? (
+                <div className="divide-y">{group.rows.map(renderRowSpec)}</div>
+              ) : (
+                <p className="px-4 py-3 text-sm text-muted-foreground">No rows for this subdimension.</p>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const renderGroups = (groups: GroupSpec[]) => {
+      // When on a specific sub-dim page, only show the matching group.
+      const filtered = groups.filter((g) => {
+        if (mainDim && mainDim.key === dimensionKey) return true; // main dim → show all
+        // sub-dim page → show the group whose scoreKey matches
+        return (g.scoreKey ?? g.key) === dimensionKey || g.key === dimensionKey;
+      });
+      const list = filtered.length > 0 ? filtered : groups;
+      return <div className="space-y-2">{list.map((g) => <Subgroup key={g.key} group={g} />)}</div>;
+    };
+
+    // ── Diagnoses helpers ────────────────────────────────────────────
+    const diagByPrefix = (matcher: (icd: string) => boolean) =>
+      diagnoses.filter((d) => matcher(String(d.icd_code ?? "").toUpperCase()));
+    const diagRowValue = (rows: any[]) =>
+      rows.length === 0 ? dash : `${rows.length} active`;
+    const diagRowDetail = (rows: any[]) => rows.length === 0 ? undefined : (
+      <ul className="space-y-1 text-sm">
+        {rows.map((d, i) => (
+          <li key={i}>
+            {d.icd_code && <Badge variant="outline" className="mr-2 text-[10px]">{d.icd_code}</Badge>}
+            <span className="font-medium">{d.diagnosis ?? d.illness_name ?? "—"}</span>
+          </li>
+        ))}
+      </ul>
     );
+
+    // Exam-finding helper for "Status step" exam findings
+    const examFindings = (extra.exam_findings ?? {}) as Record<string, { present?: boolean; notes?: string } | undefined>;
+    const examVal = (key: string): React.ReactNode => {
+      const ex = examFindings[key];
+      if (!ex || (ex.present !== true && !ex.notes)) return dash;
+      if (ex.present === true) return ex.notes ? `Finding · ${ex.notes}` : "Finding present";
+      return ex.notes ?? dash;
+    };
 
     switch (dimensionKey) {
       // ── Brain & Mental Health ─────────────────────────────────────
@@ -2787,7 +2900,11 @@ function HealthDimensionView({
       case "mental_health":
       case "mental_wellbeing":
       case "sleep":
-      case "sleep_recovery": {
+      case "sleep_recovery":
+      case "substance_use":
+      case "pain":
+      case "memory":
+      case "sensory_organs": {
         const stress = onboarding?.stress_perceived;
         const workload = extra.workload_perceived;
         const recovery = extra.recovery_perceived;
@@ -2796,62 +2913,109 @@ function HealthDimensionView({
         const phq2 = onboarding?.phq2_score;
         const sq = onboarding?.sleep_quality;
         const fatigue = extra.daytime_fatigue;
-        return rows([
-          row("bm_stress", "Stress (perceived) · 1–10",
-            <>{numOrDash(stress)}{stress != null && Number(stress) >= 8 && <Flag tone="pink">High</Flag>}{stress != null && Number(stress) >= 6 && Number(stress) < 8 && <Flag tone="amber">Elevated</Flag>}</>,
-            <p className="text-sm text-muted-foreground">Self-reported stress level. ≥8 indicates high chronic stress load.</p>),
-          row("bm_workload", "Workload (perceived) · 1–10",
-            <>{numOrDash(workload)}{workload != null && Number(workload) >= 8 && <Flag tone="pink">High</Flag>}{workload != null && Number(workload) >= 6 && Number(workload) < 8 && <Flag tone="amber">Elevated</Flag>}</>),
-          row("bm_recovery", "Recovery (perceived) · 1–10",
-            <>{numOrDash(recovery)}{recovery != null && Number(recovery) <= 4 && <Flag tone="amber">Low</Flag>}</>),
-          row("bm_social", "Social support · 1–10",
-            <>{numOrDash(social)}{social != null && Number(social) <= 3 && <Flag tone="amber">Low</Flag>}</>),
-          row("bm_gad2", "GAD-2 score · 0–6",
-            <>{numOrDash(gad2)}{gad2 != null && Number(gad2) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>,
-            <p className="text-sm text-muted-foreground">Anxiety screen. ≥3 suggests further evaluation.</p>),
-          row("bm_phq2", "PHQ-2 score · 0–6",
-            <>{numOrDash(phq2)}{phq2 != null && Number(phq2) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>,
-            <p className="text-sm text-muted-foreground">Depression screen. ≥3 suggests further evaluation.</p>),
-          row("bm_sleep_q", "Sleep quality · 1–10",
-            <>{numOrDash(sq)}{sq != null && Number(sq) <= 4 && <Flag tone="amber">Low</Flag>}</>),
-          row("bm_fatigue", "Daytime fatigue · 1–10",
-            <>{numOrDash(fatigue)}{fatigue != null && Number(fatigue) >= 7 && <Flag tone="amber">High</Flag>}</>),
-          row("bm_insomnia", "Insomnia", yesOrDash(onboarding?.insomnia)),
-          row("bm_rls", "Restless legs", yesOrDash(extra.restless_legs)),
-          row("bm_apnea", "Sleep apnea",
-            yesOrDash(extra.sleep_apnea ?? onboarding?.symptom_sleep_apnoea)),
-          row("bm_nicotine", "Nicotine pouches", nicotinePouchesVal()),
-          row("bm_alcohol", "Alcohol use", alcoholVal()),
-          row("bm_drugs", "Drugs", drugsVal()),
-        ]);
+        const painDx = diagByPrefix((c) => /^M(?:5[0-4]|79|25\.5)/.test(c) || /^G(?:43|44|50|54)/.test(c) || /^R52/.test(c));
+        const groups: GroupSpec[] = [
+          { key: "mental_wellbeing", title: "Mental Wellbeing", rows: [
+            r("bm_stress", "Stress (perceived) · 1–10",
+              <>{numOrDash(stress)}{stress != null && Number(stress) >= 8 && <Flag tone="pink">High</Flag>}{stress != null && Number(stress) >= 6 && Number(stress) < 8 && <Flag tone="amber">Elevated</Flag>}</>,
+              <p className="text-sm text-muted-foreground">Self-reported stress level. ≥8 indicates high chronic stress load.</p>,
+              stress != null && Number(stress) >= 6),
+            r("bm_workload", "Workload (perceived) · 1–10",
+              <>{numOrDash(workload)}{workload != null && Number(workload) >= 8 && <Flag tone="pink">High</Flag>}{workload != null && Number(workload) >= 6 && Number(workload) < 8 && <Flag tone="amber">Elevated</Flag>}</>,
+              undefined,
+              workload != null && Number(workload) >= 6),
+            r("bm_recovery", "Recovery (perceived) · 1–10",
+              <>{numOrDash(recovery)}{recovery != null && Number(recovery) <= 4 && <Flag tone="amber">Low</Flag>}</>,
+              undefined,
+              recovery != null && Number(recovery) <= 4),
+            r("bm_social", "Social support · 1–10",
+              <>{numOrDash(social)}{social != null && Number(social) <= 3 && <Flag tone="amber">Low</Flag>}</>,
+              undefined,
+              social != null && Number(social) <= 3),
+            r("bm_gad2", "GAD-2 score · 0–6",
+              <>{numOrDash(gad2)}{gad2 != null && Number(gad2) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>,
+              <p className="text-sm text-muted-foreground">Anxiety screen. ≥3 suggests further evaluation.</p>,
+              gad2 != null && Number(gad2) >= 3),
+            r("bm_phq2", "PHQ-2 score · 0–6",
+              <>{numOrDash(phq2)}{phq2 != null && Number(phq2) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>,
+              <p className="text-sm text-muted-foreground">Depression screen. ≥3 suggests further evaluation.</p>,
+              phq2 != null && Number(phq2) >= 3),
+          ]},
+          { key: "sleep_recovery", title: "Sleep & Recovery", rows: [
+            r("bm_sleep_q", "Sleep quality · 1–10",
+              <>{numOrDash(sq)}{sq != null && Number(sq) <= 4 && <Flag tone="amber">Low</Flag>}</>,
+              undefined, sq != null && Number(sq) <= 4),
+            r("bm_fatigue", "Daytime fatigue · 1–10",
+              <>{numOrDash(fatigue)}{fatigue != null && Number(fatigue) >= 7 && <Flag tone="amber">High</Flag>}</>,
+              undefined, fatigue != null && Number(fatigue) >= 7),
+            r("bm_insomnia", "Insomnia", yesOrDash(onboarding?.insomnia), undefined, onboarding?.insomnia === true),
+            r("bm_rls", "Restless legs", yesOrDash(extra.restless_legs), undefined, extra.restless_legs === true),
+            r("bm_apnea", "Sleep apnea",
+              yesOrDash(extra.sleep_apnea ?? onboarding?.symptom_sleep_apnoea),
+              undefined,
+              extra.sleep_apnea === true || onboarding?.symptom_sleep_apnoea === true),
+          ]},
+          { key: "substance_use", title: "Substance Use", rows: [
+            r("bm_nicotine", "Nicotine pouches", nicotinePouchesVal(), undefined, extra.nicotine_pouches_current === true),
+            r("bm_alcohol", "Alcohol use", alcoholVal(), undefined, onboarding?.alcohol_units_per_week != null && Number(onboarding.alcohol_units_per_week) > 14),
+            r("bm_drugs", "Drugs", drugsVal(), undefined, onboarding?.other_substances === true || extra.drugs_current === true),
+          ]},
+          { key: "pain", title: "Pain", rows: [
+            r("bm_pain_dx", "Pain-related diagnoses", diagRowValue(painDx), diagRowDetail(painDx), painDx.length > 0),
+          ]},
+          ...(age != null && Number(age) >= 50 ? [{
+            key: "memory", title: "Memory (50+)", rows: [
+              r("bm_memory", "Memory concerns", dash, <p className="text-sm text-muted-foreground">No structured memory screen captured during onboarding.</p>),
+            ],
+          } as GroupSpec] : []),
+          { key: "sensory_organs", title: "Sensory Organs", rows: [
+            r("bm_eyes", "Eyes (Status exam)", examVal("eyes"), undefined, examFindings.eyes?.present === true),
+            r("bm_ears", "Ears (Status exam)", examVal("ears"), undefined, examFindings.ears?.present === true),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
-      // ── Cardiovascular Health ─────────────────────────────────────
+      // ── Cardiovascular Health (handled by CardiovascularDimensionView, but keep fallback) ─
       case "cardiovascular": {
         const bp1 = (onboarding?.bp1_systolic != null && onboarding?.bp1_diastolic != null)
-          ? `${onboarding.bp1_systolic}/${onboarding.bp1_diastolic}`
-          : dash;
+          ? `${onboarding.bp1_systolic}/${onboarding.bp1_diastolic}` : dash;
         const bp1Flag = onboarding?.bp1_systolic != null && (Number(onboarding.bp1_systolic) >= 140 || Number(onboarding?.bp1_diastolic) >= 90);
         const bp2 = (onboarding?.bp2_systolic != null && onboarding?.bp2_diastolic != null)
-          ? `${onboarding.bp2_systolic}/${onboarding.bp2_diastolic}`
-          : dash;
+          ? `${onboarding.bp2_systolic}/${onboarding.bp2_diastolic}` : dash;
         const bp2Flag = onboarding?.bp2_systolic != null && (Number(onboarding.bp2_systolic) >= 140 || Number(onboarding?.bp2_diastolic) >= 90);
         const cardioFamily = familyByPrefix(isCardioIcd);
-        return rows([
-          row("cv_bp1", "Blood pressure 1st (SYS/DIA)",
-            <>{bp1}{bp1Flag && <Flag tone="amber">High</Flag>}</>),
-          row("cv_bp2", "Blood pressure 2nd (SYS/DIA)",
-            <>{bp2}{bp2Flag && <Flag tone="amber">High</Flag>}</>),
-          row("cv_smoking", "Smoking (current)",
-            <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>),
-          row("cv_smoked", "Previously smoked · years", previouslySmokedYearsVal()),
-          row("cv_nicotine", "Nicotine pouches", nicotinePouchesVal()),
-          row("cv_alcohol", "Alcohol use", alcoholVal()),
-          row("cv_sedentary", "Sedentary hours/day",
-            numOrDash(onboarding?.sedentary_hours_per_day, " h/day")),
-          row("cv_family", "Family history — cardiovascular",
-            familyRowValue(cardioFamily), familyRowDetail(cardioFamily)),
-        ]);
+        const arrhythmiaDx = diagByPrefix((c) => /^I4[78]/.test(c) || /^I49/.test(c));
+        const groups: GroupSpec[] = [
+          { key: "blood_pressure", scoreKey: "cardiovascular", title: "Blood Pressure", rows: [
+            r("cv_bp1", "Blood pressure 1st (SYS/DIA)", <>{bp1}{bp1Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp1Flag),
+            r("cv_bp2", "Blood pressure 2nd (SYS/DIA)", <>{bp2}{bp2Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp2Flag),
+          ]},
+          { key: "vascular_risk", scoreKey: "cardiovascular", title: "Vascular Risk", rows: [
+            r("cv_smoking", "Smoking (current)",
+              <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>,
+              undefined, !!(onboarding?.smoking && onboarding.smoking !== "never")),
+            r("cv_smoked", "Previously smoked · years", previouslySmokedYearsVal()),
+            r("cv_nicotine", "Nicotine pouches", nicotinePouchesVal(), undefined, extra.nicotine_pouches_current === true),
+            r("cv_alcohol", "Alcohol use", alcoholVal()),
+            r("cv_family", "Family history — cardiovascular", familyRowValue(cardioFamily), familyRowDetail(cardioFamily), cardioFamily.length > 0),
+          ]},
+          { key: "peripheral_circulation", scoreKey: "cardiovascular", title: "Peripheral Circulation", rows: [
+            r("cv_adp", "ADP exam finding", examVal("adp")),
+            r("cv_atp", "ATP exam finding", examVal("atp")),
+            r("cv_afem", "AFEM exam finding", examVal("afem")),
+          ]},
+          { key: "heart_rhythm", scoreKey: "cardiovascular", title: "Heart Rate & Rhythm", rows: [
+            r("cv_heart", "Heart exam finding", examVal("heart"), undefined, examFindings.heart?.present === true),
+            r("cv_ecg", "ECG notes", valOrDash(onboarding?.ecg_notes)),
+            r("cv_arr_dx", "Arrhythmia diagnoses", diagRowValue(arrhythmiaDx), diagRowDetail(arrhythmiaDx), arrhythmiaDx.length > 0),
+          ]},
+          { key: "sedentary_cv", scoreKey: "cardiovascular", title: "Sedentary Behavior", rows: [
+            r("cv_sedentary", "Sedentary hours/day", numOrDash(onboarding?.sedentary_hours_per_day, " h/day"),
+              undefined, onboarding?.sedentary_hours_per_day != null && Number(onboarding.sedentary_hours_per_day) >= 8),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
       // ── Metabolic Health ──────────────────────────────────────────
@@ -2866,43 +3030,66 @@ function HealthDimensionView({
         const hip = onboarding?.hip_circumference_cm;
         const whr = onboarding?.waist_to_hip_ratio;
         const metabolicFamily = familyByPrefix(isMetabolicIcd);
-        return rows([
-          row("met_bmi", "BMI",
-            <>{numOrDash(bmi)}{bmi != null && Number(bmi) >= 30 && <Flag tone="pink">Obese</Flag>}{bmi != null && Number(bmi) >= 25 && Number(bmi) < 30 && <Flag tone="amber">Overweight</Flag>}</>),
-          row("met_waist", "Waist circumference", numOrDash(waist, " cm")),
-          row("met_hip", "Hip circumference", numOrDash(hip, " cm")),
-          row("met_whr", "Waist-to-hip ratio", numOrDash(whr)),
-          row("met_diet", "Diet type", valOrDash(extra.diet_type)),
-          row("met_water", "Water intake (L/day)",
-            <>{numOrDash(extra.water_litres_per_day, " L/day")}{extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5 && <Flag tone="amber">Low</Flag>}</>),
-          row("met_sugar", "Sugar intake (g/day)", numOrDash(onboarding?.sugar_g_per_day, " g/day")),
-          row("met_salt", "Salt intake (g/day)",
-            numOrDash(extra.salt_g_per_day ?? onboarding?.sodium_g_per_day, " g/day")),
-          row("met_fiber", "Fiber intake (g/day)",
-            <>{numOrDash(onboarding?.fiber_g_per_day, " g/day")}{onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25 && <Flag tone="amber">Below rec.</Flag>}</>),
-          row("met_family", "Family history — metabolic/diabetes",
-            familyRowValue(metabolicFamily), familyRowDetail(metabolicFamily)),
-        ]);
+        const thyroidDx = diagByPrefix((c) => /^E0[0-7]/.test(c));
+        const groups: GroupSpec[] = [
+          { key: "body_composition", title: "Weight & Body Composition", rows: [
+            r("met_bmi", "BMI",
+              <>{numOrDash(bmi)}{bmi != null && Number(bmi) >= 30 && <Flag tone="pink">Obese</Flag>}{bmi != null && Number(bmi) >= 25 && Number(bmi) < 30 && <Flag tone="amber">Overweight</Flag>}</>,
+              undefined, bmi != null && Number(bmi) >= 25),
+            r("met_waist", "Waist circumference", numOrDash(waist, " cm")),
+            r("met_hip", "Hip circumference", numOrDash(hip, " cm")),
+            r("met_whr", "Waist-to-hip ratio", numOrDash(whr)),
+          ]},
+          { key: "nutrition", title: "Nutrition", rows: [
+            r("met_diet", "Diet type", valOrDash(extra.diet_type)),
+            r("met_water", "Water intake (L/day)",
+              <>{numOrDash(extra.water_litres_per_day, " L/day")}{extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5 && <Flag tone="amber">Low</Flag>}</>,
+              undefined, extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5),
+            r("met_sugar", "Sugar (g/day)", numOrDash(onboarding?.sugar_g_per_day, " g/day")),
+            r("met_salt", "Salt (g/day)", numOrDash(extra.salt_g_per_day ?? onboarding?.sodium_g_per_day, " g/day")),
+            r("met_fiber", "Fiber (g/day)",
+              <>{numOrDash(onboarding?.fiber_g_per_day, " g/day")}{onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25 && <Flag tone="amber">Below rec.</Flag>}</>,
+              undefined, onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25),
+            r("met_fv", "Fruit & vegetables (g/day)", numOrDash(onboarding?.fruits_vegetables_g_per_day, " g/day")),
+            r("met_redmeat", "Red meat (g/day)", numOrDash(onboarding?.red_meat_g_per_day, " g/day")),
+            r("met_fish", "Fish (g/day)", numOrDash(onboarding?.fish_g_per_day, " g/day")),
+          ]},
+          { key: "endocrine", title: "Thyroid", rows: [
+            r("met_thyroid_exam", "Thyroid exam finding", examVal("thyroid"), undefined, examFindings.thyroid?.present === true),
+            r("met_thyroid_dx", "Thyroid diagnoses", diagRowValue(thyroidDx), diagRowDetail(thyroidDx), thyroidDx.length > 0),
+          ]},
+          { key: "metabolism", title: "Family History", rows: [
+            r("met_family", "Family history — metabolic/diabetes", familyRowValue(metabolicFamily), familyRowDetail(metabolicFamily), metabolicFamily.length > 0),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
       // ── Exercise & Functional Capacity ────────────────────────────
       case "physical_performance":
       case "exercise_functional":
       case "musculoskeletal": {
-        return rows([
-          row("ex_easy", "Cardiovascular — Easy (hrs/week)",
-            numOrDash(onboarding?.cardio_easy_hours_per_week, " h/wk")),
-          row("ex_mod", "Cardiovascular — Moderate (hrs/week)",
-            numOrDash(onboarding?.cardio_moderate_hours_per_week, " h/wk")),
-          row("ex_vig", "Cardiovascular — Vigorous (hrs/week)",
-            numOrDash(onboarding?.cardio_vigorous_hours_per_week, " h/wk")),
-          row("ex_strength", "Strength training (hrs/week)",
-            numOrDash(onboarding?.strength_hours_per_week, " h/wk")),
-          row("ex_met", "MET hours/week",
-            <>{numOrDash(onboarding?.exercise_met_hours)}{onboarding?.exercise_met_hours != null && Number(onboarding.exercise_met_hours) >= 17.5 && <Flag tone="green">Above WHO rec.</Flag>}{onboarding?.exercise_met_hours != null && Number(onboarding.exercise_met_hours) < 8 && <Flag tone="amber">Below rec.</Flag>}</>),
-          row("ex_sed", "Sedentary hours/day",
-            numOrDash(onboarding?.sedentary_hours_per_day, " h/day")),
-        ]);
+        const groups: GroupSpec[] = [
+          { key: "physical_performance", title: "Cardiovascular Fitness", rows: [
+            r("ex_easy", "Cardio — Easy (hrs/week)", numOrDash(onboarding?.cardio_easy_hours_per_week, " h/wk")),
+            r("ex_mod", "Cardio — Moderate (hrs/week)", numOrDash(onboarding?.cardio_moderate_hours_per_week, " h/wk")),
+            r("ex_vig", "Cardio — Vigorous (hrs/week)", numOrDash(onboarding?.cardio_vigorous_hours_per_week, " h/wk")),
+            r("ex_met", "MET hours/week",
+              <>{numOrDash(onboarding?.exercise_met_hours)}{onboarding?.exercise_met_hours != null && Number(onboarding.exercise_met_hours) >= 17.5 && <Flag tone="green">Above WHO rec.</Flag>}{onboarding?.exercise_met_hours != null && Number(onboarding.exercise_met_hours) < 8 && <Flag tone="amber">Below rec.</Flag>}</>,
+              undefined, onboarding?.exercise_met_hours != null && Number(onboarding.exercise_met_hours) < 8),
+          ]},
+          { key: "strength", scoreKey: "physical_performance", title: "Strength", rows: [
+            r("ex_strength", "Strength training (hrs/week)", numOrDash(onboarding?.strength_hours_per_week, " h/wk")),
+          ]},
+          { key: "sedentary_ex", scoreKey: "physical_performance", title: "Sedentary Behavior", rows: [
+            r("ex_sed", "Sedentary hours/day", numOrDash(onboarding?.sedentary_hours_per_day, " h/day"),
+              undefined, onboarding?.sedentary_hours_per_day != null && Number(onboarding.sedentary_hours_per_day) >= 8),
+          ]},
+          { key: "musculoskeletal", title: "Mobility", rows: [
+            r("ex_mobility", "Musculoskeletal exam finding", examVal("musculoskeletal"), undefined, examFindings.musculoskeletal?.present === true),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
       // ── Digestion ─────────────────────────────────────────────────
@@ -2910,32 +3097,52 @@ function HealthDimensionView({
       case "gastrointestinal":
       case "liver":
       case "gut": {
-        return rows([
-          row("dig_water", "Water intake (L/day)",
-            <>{numOrDash(extra.water_litres_per_day, " L/day")}{extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5 && <Flag tone="amber">Low</Flag>}</>),
-          row("dig_fv", "Fruit & vegetables (g/day)",
-            numOrDash(onboarding?.fruits_vegetables_g_per_day, " g/day")),
-          row("dig_fiber", "Fiber (g/day)",
-            <>{numOrDash(onboarding?.fiber_g_per_day, " g/day")}{onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25 && <Flag tone="amber">Below rec.</Flag>}</>),
-          row("dig_sugar", "Sugar (g/day)", numOrDash(onboarding?.sugar_g_per_day, " g/day")),
-          row("dig_salt", "Salt (g/day)",
-            numOrDash(extra.salt_g_per_day ?? onboarding?.sodium_g_per_day, " g/day")),
-          row("dig_redmeat", "Red meat (g/day)",
-            numOrDash(onboarding?.red_meat_g_per_day, " g/day")),
-          row("dig_fish", "Fish (g/day)", numOrDash(onboarding?.fish_g_per_day, " g/day")),
-          row("dig_diet", "Diet type", valOrDash(extra.diet_type)),
-          row("dig_alcohol", "Alcohol use", alcoholVal()),
-        ]);
+        const gutDx = diagByPrefix((c) => /^K/.test(c));
+        const liverDx = diagByPrefix((c) => /^K7[0-7]/.test(c) || /^B1[5-9]/.test(c));
+        const alat = labResults[0]?.alat_u_l;
+        const ratio = labResults[0]?.alat_asat_ratio;
+        const groups: GroupSpec[] = [
+          { key: "gastrointestinal", title: "Gut Health", rows: [
+            r("dig_dx", "GI diagnoses", diagRowValue(gutDx), diagRowDetail(gutDx), gutDx.length > 0),
+            r("dig_stomach", "Stomach exam finding", examVal("stomach"), undefined, examFindings.stomach?.present === true),
+          ]},
+          { key: "nutrition_dig", scoreKey: "nutrition", title: "Nutrition Quality", rows: [
+            r("dig_sugar", "Sugar (g/day)", numOrDash(onboarding?.sugar_g_per_day, " g/day")),
+            r("dig_salt", "Salt (g/day)", numOrDash(extra.salt_g_per_day ?? onboarding?.sodium_g_per_day, " g/day")),
+            r("dig_fiber", "Fiber (g/day)",
+              <>{numOrDash(onboarding?.fiber_g_per_day, " g/day")}{onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25 && <Flag tone="amber">Below rec.</Flag>}</>,
+              undefined, onboarding?.fiber_g_per_day != null && Number(onboarding.fiber_g_per_day) < 25),
+            r("dig_fv", "Fruit & vegetables (g/day)", numOrDash(onboarding?.fruits_vegetables_g_per_day, " g/day")),
+            r("dig_redmeat", "Red meat (g/day)", numOrDash(onboarding?.red_meat_g_per_day, " g/day")),
+            r("dig_fish", "Fish (g/day)", numOrDash(onboarding?.fish_g_per_day, " g/day")),
+            r("dig_diet", "Diet type", valOrDash(extra.diet_type)),
+          ]},
+          { key: "hydration", scoreKey: "gastrointestinal", title: "Hydration", rows: [
+            r("dig_water", "Water intake (L/day)",
+              <>{numOrDash(extra.water_litres_per_day, " L/day")}{extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5 && <Flag tone="amber">Low</Flag>}</>,
+              undefined, extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5),
+          ]},
+          { key: "liver", title: "Liver", rows: [
+            r("dig_alat", "ALAT (U/L)", numOrDash(alat),
+              undefined, alat != null && Number(alat) > 50),
+            r("dig_ratio", "ALAT/ASAT ratio", numOrDash(ratio)),
+            r("dig_alcohol", "Alcohol use", alcoholVal(), undefined, onboarding?.alcohol_units_per_week != null && Number(onboarding.alcohol_units_per_week) > 14),
+            r("dig_liver_dx", "Liver diagnoses", diagRowValue(liverDx), diagRowDetail(liverDx), liverDx.length > 0),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
       // ── Respiratory & Immune Health ───────────────────────────────
       case "respiratory":
       case "respiratory_immune":
-      case "immune": {
+      case "immune":
+      case "immune_defence":
+      case "allergies": {
         const respFamily = familyByPrefix(isRespImmuneIcd);
-        const allergyValue = allergiesList.length === 0
-          ? dash
-          : `${allergiesList.length} recorded`;
+        const lungDx = diagByPrefix((c) => /^J4[0-7]/.test(c));
+        const autoimmuneDx = diagByPrefix((c) => /^M3[2-5]/.test(c) || /^L40/.test(c) || /^K50|^K51/.test(c) || /^E10/.test(c) || /^E06/.test(c));
+        const allergyValue = allergiesList.length === 0 ? dash : `${allergiesList.length} recorded`;
         const allergyDetail = allergiesList.length === 0 ? undefined : (
           <ul className="space-y-1 text-sm">
             {allergiesList.map((a, i) => (
@@ -2949,15 +3156,28 @@ function HealthDimensionView({
             ))}
           </ul>
         );
-        return rows([
-          row("ri_smoking", "Smoking (current)",
-            <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>),
-          row("ri_smoked", "Previously smoked · years", previouslySmokedYearsVal()),
-          row("ri_nicotine", "Nicotine pouches", nicotinePouchesVal()),
-          row("ri_allergies", "Allergies", allergyValue, allergyDetail),
-          row("ri_family", "Family history — respiratory/immune",
-            familyRowValue(respFamily), familyRowDetail(respFamily)),
-        ]);
+        const groups: GroupSpec[] = [
+          { key: "respiratory", title: "Lung Function", rows: [
+            r("ri_lungs", "Lungs exam finding", examVal("lungs"), undefined, examFindings.lungs?.present === true),
+            r("ri_lung_dx", "Lung diagnoses (asthma/COPD)", diagRowValue(lungDx), diagRowDetail(lungDx), lungDx.length > 0),
+          ]},
+          { key: "smoking_impact", scoreKey: "respiratory", title: "Smoking Impact", rows: [
+            r("ri_smoking", "Smoking (current)",
+              <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>,
+              undefined, !!(onboarding?.smoking && onboarding.smoking !== "never")),
+            r("ri_smoked", "Previously smoked · years", previouslySmokedYearsVal()),
+            r("ri_nicotine", "Nicotine pouches", nicotinePouchesVal(), undefined, extra.nicotine_pouches_current === true),
+          ]},
+          { key: "allergies", title: "Allergies", rows: [
+            r("ri_allergies", "Allergies", allergyValue, allergyDetail, allergiesList.length > 0),
+          ]},
+          { key: "immune_defence", title: "Immune Resilience", rows: [
+            r("ri_lymph", "Lymph node finding", examVal("lymph_nodes"), undefined, examFindings.lymph_nodes?.present === true),
+            r("ri_autoimmune", "Autoimmune diagnoses", diagRowValue(autoimmuneDx), diagRowDetail(autoimmuneDx), autoimmuneDx.length > 0),
+            r("ri_family", "Family history — respiratory/immune", familyRowValue(respFamily), familyRowDetail(respFamily), respFamily.length > 0),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
       // ── Cancer Risk ───────────────────────────────────────────────
@@ -2978,50 +3198,78 @@ function HealthDimensionView({
         const highRiskMoles = moles.filter((m) => flagMole(m) >= 3);
         const cancerFamily = familyByPrefix(isCancerIcd);
         const bmi = onboarding?.bmi;
-        return (
-          <div className="space-y-3">
-            {highRiskMoles.length > 0 && (
-              <div className="rounded-md border border-[hsl(330_81%_60%/0.4)] bg-[hsl(330_81%_60%/0.08)] px-4 py-3">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-[hsl(330_81%_45%)] mt-0.5 shrink-0" />
-                  <div className="text-sm">
-                    {highRiskMoles.map((m) => (
-                      <div key={m.id} className="text-[hsl(330_81%_35%)] font-medium">
-                        {m.label ?? "Mole"} — {m.location ?? "—"} — {flagMole(m)} ABCDE concerns — immediate dermatology review recommended
-                      </div>
-                    ))}
+
+        const moleAlert = highRiskMoles.length === 0 ? null : (
+          <div className="rounded-md border border-[hsl(330_81%_60%/0.4)] bg-[hsl(330_81%_60%/0.08)] px-4 py-3 mb-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-[hsl(330_81%_45%)] mt-0.5 shrink-0" />
+              <div className="text-sm">
+                {highRiskMoles.map((m) => (
+                  <div key={m.id} className="text-[hsl(330_81%_35%)] font-medium">
+                    {m.label ?? "Mole"} — {m.location ?? "—"} — {flagMole(m)} ABCDE concerns — immediate dermatology review recommended
                   </div>
-                </div>
+                ))}
               </div>
-            )}
-            {rows([
-              row("can_breast", "Breast screening · year", screeningVal(extra.screen_breast_year)),
-              row("can_cervix", "Cervix screening · year", screeningVal(extra.screen_cervix_year)),
-              row("can_colorectum", "Colorectum screening · year", screeningVal(extra.screen_colorectum_year)),
-              row("can_prostate", "Prostate screening · year", screeningVal(extra.screen_prostate_year)),
-              row("can_skin", "Skin (dermatoscopy) · year", screeningVal(extra.screen_skin_year)),
-              row("can_lung", "Lung CT · year", screeningVal(extra.screen_lung_year ?? extra.screen_lung_ct_year)),
-              row("can_pre_skin", "Skin precancerous changes",
-                yesOrDash(extra.precancerous_skin ?? (onboarding?.prev_precancerous && /skin|melanoma|actinic/i.test(onboarding?.prev_precancerous_notes ?? ""))),
-                <p className="text-sm">{onboarding?.prev_precancerous_notes || "Recorded during onboarding."}</p>),
-              row("can_pre_cervix", "Cervix precancerous changes (CIN)",
-                yesOrDash(extra.precancerous_cervix ?? (onboarding?.prev_precancerous && /cin|cervi/i.test(onboarding?.prev_precancerous_notes ?? "")))),
-              row("can_pre_colorectum", "Colorectum precancerous changes (polyps)",
-                yesOrDash(extra.precancerous_colorectum ?? (onboarding?.prev_precancerous && /polyp|colon|rectum/i.test(onboarding?.prev_precancerous_notes ?? "")))),
-              row("can_sun", "Regular sun exposure", yesOrDash(onboarding?.sun_exposure)),
-              row("can_sun_protection", "Sun protection method", valOrDash(extra.sun_protection_method)),
-              row("can_sunburns", "History of severe sunburns", yesOrDash(extra.severe_sunburns_history)),
-              row("can_smoking", "Smoking (current)",
-                <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>),
-              row("can_smoked", "Previously smoked · years", previouslySmokedYearsVal()),
-              row("can_alcohol", "Alcohol use", alcoholVal()),
-              row("can_bmi", "BMI",
-                <>{numOrDash(bmi)}{bmi != null && Number(bmi) >= 30 && <Flag tone="pink">Obese</Flag>}{bmi != null && Number(bmi) >= 25 && Number(bmi) < 30 && <Flag tone="amber">Overweight</Flag>}</>),
-              row("can_family", "Family history — cancer",
-                familyRowValue(cancerFamily), familyRowDetail(cancerFamily)),
-            ])}
+            </div>
           </div>
         );
+
+        const groups: GroupSpec[] = [
+          { key: "screening", scoreKey: "cancer_risk", title: "Screening Compliance", rows: [
+            r("can_breast", "Breast · year", screeningVal(extra.screen_breast_year)),
+            r("can_cervix", "Cervix · year", screeningVal(extra.screen_cervix_year)),
+            r("can_colorectum", "Colorectum · year", screeningVal(extra.screen_colorectum_year)),
+            r("can_prostate", "Prostate · year", screeningVal(extra.screen_prostate_year)),
+            r("can_skin", "Skin (dermatoscopy) · year", screeningVal(extra.screen_skin_year)),
+            r("can_lung", "Lung CT · year", screeningVal(extra.screen_lung_year ?? extra.screen_lung_ct_year)),
+          ]},
+          { key: "precancerous", title: "Precancerous Changes", rows: [
+            r("can_pre_skin", "Skin precancerous changes",
+              yesOrDash(extra.precancerous_skin ?? (onboarding?.prev_precancerous && /skin|melanoma|actinic/i.test(onboarding?.prev_precancerous_notes ?? ""))),
+              <p className="text-sm">{onboarding?.prev_precancerous_notes || "Recorded during onboarding."}</p>,
+              extra.precancerous_skin === true),
+            r("can_pre_cervix", "Cervix precancerous changes (CIN)",
+              yesOrDash(extra.precancerous_cervix ?? (onboarding?.prev_precancerous && /cin|cervi/i.test(onboarding?.prev_precancerous_notes ?? "")))),
+            r("can_pre_colorectum", "Colorectum precancerous changes (polyps)",
+              yesOrDash(extra.precancerous_colorectum ?? (onboarding?.prev_precancerous && /polyp|colon|rectum/i.test(onboarding?.prev_precancerous_notes ?? "")))),
+          ]},
+          { key: "lifestyle_risk", scoreKey: "cancer_risk", title: "Lifestyle Risk", rows: [
+            r("can_smoking", "Smoking (current)",
+              <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>,
+              undefined, !!(onboarding?.smoking && onboarding.smoking !== "never")),
+            r("can_alcohol", "Alcohol use", alcoholVal(), undefined, onboarding?.alcohol_units_per_week != null && Number(onboarding.alcohol_units_per_week) > 14),
+            r("can_bmi", "BMI",
+              <>{numOrDash(bmi)}{bmi != null && Number(bmi) >= 30 && <Flag tone="pink">Obese</Flag>}{bmi != null && Number(bmi) >= 25 && Number(bmi) < 30 && <Flag tone="amber">Overweight</Flag>}</>,
+              undefined, bmi != null && Number(bmi) >= 25),
+            r("can_sun", "Regular sun exposure", yesOrDash(onboarding?.sun_exposure)),
+            r("can_sun_protection", "Sun protection method", valOrDash(extra.sun_protection_method)),
+            r("can_sunburns", "History of severe sunburns", yesOrDash(extra.severe_sunburns_history), undefined, extra.severe_sunburns_history === true),
+          ]},
+          { key: "family_cancer", scoreKey: "cancer_risk", title: "Family History", rows: [
+            r("can_family", "Family history — cancer", familyRowValue(cancerFamily), familyRowDetail(cancerFamily), cancerFamily.length > 0),
+          ]},
+          {
+            key: "moles", scoreKey: "skin", title: "Moles",
+            extra: moleAlert,
+            rows: moles.length === 0
+              ? [r("can_moles_empty", "Moles", dash)]
+              : moles.map((m) => r(
+                  `can_mole_${m.id}`,
+                  `${m.label ?? "Mole"} — ${m.location ?? "—"}`,
+                  <>{flagMole(m)} ABCDE flag{flagMole(m) === 1 ? "" : "s"}{flagMole(m) >= 3 && <Flag tone="pink">High</Flag>}</>,
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                    <div><span className="text-muted-foreground">A:</span> {m.asymmetry ?? dash}</div>
+                    <div><span className="text-muted-foreground">B:</span> {m.borders ?? dash}</div>
+                    <div><span className="text-muted-foreground">C:</span> {m.color ?? dash}</div>
+                    <div><span className="text-muted-foreground">D:</span> {m.size ?? dash}</div>
+                    <div><span className="text-muted-foreground">E:</span> {m.change ?? dash}</div>
+                    <div><span className="text-muted-foreground">Symptoms:</span> {m.symptoms ?? dash}</div>
+                  </div>,
+                  flagMole(m) >= 3,
+                )),
+          },
+        ];
+        return renderGroups(groups);
       }
 
       // ── Skin, Oral & Mucosal Health ───────────────────────────────
@@ -3039,61 +3287,61 @@ function HealthDimensionView({
           if (m.symptoms && m.symptoms !== "None" && m.symptoms !== "") count++;
           return count;
         };
-        const skinExam = (extra.exam_findings as any)?.skin_general as { present?: boolean; notes?: string } | undefined;
-        const skinExamValue = (): React.ReactNode => {
-          if (!skinExam || (skinExam.present !== true && !skinExam.notes)) return dash;
-          if (skinExam.present === true) {
-            return skinExam.notes ? `Finding · ${skinExam.notes}` : "Finding present";
-          }
-          return skinExam.notes ? skinExam.notes : dash;
-        };
-        return (
-          <div className="space-y-3">
-            {moles.length > 0 && (
-              <div className="space-y-2">
-                {moles.map((m) => {
-                  const flags = flagMole(m);
-                  const high = flags >= 3;
-                  return (
-                    <div key={m.id} className={cn(
-                      "rounded-md border p-3 space-y-2",
-                      high ? "border-[hsl(330_81%_60%/0.4)] bg-[hsl(330_81%_60%/0.06)]" : "border-border",
-                    )}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-medium text-sm">{m.label ?? "Mole"} — {m.location ?? "—"}</div>
-                          <div className="text-xs text-muted-foreground">Recorded {onboardingDate}</div>
-                        </div>
-                        {high && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[hsl(330_81%_60%/0.15)] text-[hsl(330_81%_40%)]">
-                            <AlertTriangle className="h-3 w-3" />
-                            {flags} ABCDE flags — high suspicion — dermatology referral recommended
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-xs">
-                        <div><span className="text-muted-foreground">A — Asymmetry:</span> <span className={m.asymmetry === "Asymmetrical" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.asymmetry ?? dash}</span></div>
-                        <div><span className="text-muted-foreground">B — Borders:</span> <span className={m.borders === "Irregular" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.borders ?? dash}</span></div>
-                        <div><span className="text-muted-foreground">C — Color:</span> <span className={m.color && /multi|black|red/i.test(m.color) ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.color ?? dash}</span></div>
-                        <div><span className="text-muted-foreground">D — Size:</span> {m.size ?? dash}</div>
-                        <div><span className="text-muted-foreground">E — Change:</span> <span className={m.change && m.change !== "No change" && m.change !== "" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.change ?? dash}</span></div>
-                        <div><span className="text-muted-foreground">Symptoms:</span> <span className={m.symptoms && m.symptoms !== "None" && m.symptoms !== "" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.symptoms ?? dash}</span></div>
-                      </div>
+        const skinDx = diagByPrefix((c) => /^L/.test(c));
+
+        const moleCards = moles.length === 0 ? null : (
+          <div className="space-y-2 px-4 py-3">
+            {moles.map((m) => {
+              const flags = flagMole(m);
+              const high = flags >= 3;
+              return (
+                <div key={m.id} className={cn(
+                  "rounded-md border p-3 space-y-2",
+                  high ? "border-[hsl(330_81%_60%/0.4)] bg-[hsl(330_81%_60%/0.06)]" : "border-border",
+                )}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-sm">{m.label ?? "Mole"} — {m.location ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">Recorded {onboardingDate}</div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-            {rows([
-              row("skin_moles", "Moles",
-                moles.length === 0 ? dash : `${moles.length} recorded`),
-              row("skin_sun", "Regular sun exposure", yesOrDash(onboarding?.sun_exposure)),
-              row("skin_sun_protection", "Sun protection method", valOrDash(extra.sun_protection_method)),
-              row("skin_sunburns", "History of severe sunburns", yesOrDash(extra.severe_sunburns_history)),
-              row("skin_exam", "Skin exam finding (Status step)", skinExamValue()),
-            ])}
+                    {high && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[hsl(330_81%_60%/0.15)] text-[hsl(330_81%_40%)]">
+                        <AlertTriangle className="h-3 w-3" />
+                        {flags} ABCDE flags — high suspicion
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                    <div><span className="text-muted-foreground">A — Asymmetry:</span> <span className={m.asymmetry === "Asymmetrical" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.asymmetry ?? dash}</span></div>
+                    <div><span className="text-muted-foreground">B — Borders:</span> <span className={m.borders === "Irregular" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.borders ?? dash}</span></div>
+                    <div><span className="text-muted-foreground">C — Color:</span> <span className={m.color && /multi|black|red/i.test(m.color) ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.color ?? dash}</span></div>
+                    <div><span className="text-muted-foreground">D — Size:</span> {m.size ?? dash}</div>
+                    <div><span className="text-muted-foreground">E — Change:</span> <span className={m.change && m.change !== "No change" && m.change !== "" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.change ?? dash}</span></div>
+                    <div><span className="text-muted-foreground">Symptoms:</span> <span className={m.symptoms && m.symptoms !== "None" && m.symptoms !== "" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.symptoms ?? dash}</span></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
+
+        const groups: GroupSpec[] = [
+          {
+            key: "skin", title: "Moles",
+            extra: moleCards,
+            rows: [r("skin_moles_count", "Moles recorded", moles.length === 0 ? dash : `${moles.length}`, undefined, moles.some((m) => flagMole(m) >= 3))],
+          },
+          { key: "sun_damage", scoreKey: "skin", title: "Sun Damage Risk", rows: [
+            r("skin_sun", "Regular sun exposure", yesOrDash(onboarding?.sun_exposure)),
+            r("skin_sun_protection", "Sun protection method", valOrDash(extra.sun_protection_method)),
+            r("skin_sunburns", "History of severe sunburns", yesOrDash(extra.severe_sunburns_history), undefined, extra.severe_sunburns_history === true),
+          ]},
+          { key: "skin_findings", scoreKey: "skin", title: "Skin Findings", rows: [
+            r("skin_exam", "Skin exam finding (Status step)", examVal("skin_general"), undefined, examFindings.skin_general?.present === true),
+            r("skin_dx", "Skin diagnoses", diagRowValue(skinDx), diagRowDetail(skinDx), skinDx.length > 0),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
       // ── Reproductive & Sexual Health ──────────────────────────────
@@ -3101,34 +3349,60 @@ function HealthDimensionView({
       case "gynaecology":
       case "urology":
       case "pregnancy": {
-        // "Relevant diagnoses" — pull from current_illnesses with reproductive ICD codes (N, O, Q5x)
         const illnesses: any[] = Array.isArray(extra.current_illnesses) ? extra.current_illnesses : [];
         const isReproIcd = (c: string) => /^N/.test(c) || /^O/.test(c);
-        const relevant = illnesses.filter((i) => isReproIcd(String(i.icd_code ?? "").toUpperCase()));
-        const relevantValue = relevant.length === 0 ? dash : `${relevant.length} recorded`;
-        const relevantDetail = relevant.length === 0 ? undefined : (
+        const isHormonalIcd = (c: string) => /^E2[0-3]/.test(c) || /^E28/.test(c) || /^E29/.test(c) || /^N91|^N92|^N95/.test(c);
+        const isSexualIcd = (c: string) => /^N4[8-9]/.test(c) || /^F52/.test(c);
+        const reproDx = illnesses.filter((i) => isReproIcd(String(i.icd_code ?? "").toUpperCase()));
+        const hormoneDx = illnesses.filter((i) => isHormonalIcd(String(i.icd_code ?? "").toUpperCase()));
+        const sexualDx = illnesses.filter((i) => isSexualIcd(String(i.icd_code ?? "").toUpperCase()));
+        const detailFor = (rows: any[]) => rows.length === 0 ? undefined : (
           <ul className="space-y-1 text-sm">
-            {relevant.map((d, i) => (
-              <li key={i} className="flex items-center justify-between gap-2">
-                <span>
-                  {d.icd_code && <Badge variant="outline" className="mr-2 text-[10px]">{d.icd_code}</Badge>}
-                  <span className="font-medium">{d.illness_name ?? d.name ?? dash}</span>
-                </span>
+            {rows.map((d, i) => (
+              <li key={i}>
+                {d.icd_code && <Badge variant="outline" className="mr-2 text-[10px]">{d.icd_code}</Badge>}
+                <span className="font-medium">{d.illness_name ?? d.name ?? dash}</span>
               </li>
             ))}
           </ul>
         );
-        return rows([
-          row("rep_cervix", "Cervix screening · year", screeningVal(extra.screen_cervix_year)),
-          row("rep_prostate", "Prostate screening · year", screeningVal(extra.screen_prostate_year)),
-          row("rep_diagnoses", "Relevant diagnoses", relevantValue, relevantDetail),
-        ]);
+        const hormoneMeds = medications.filter((m: any) => /estrogen|estradiol|progester|testosteron|levothyrox|thyrox|hormon/i.test(`${m.medication_name} ${m.indication ?? ""}`));
+        const groups: GroupSpec[] = [
+          { key: "screening_repro", scoreKey: "gynaecology", title: "Screening", rows: [
+            r("rep_cervix", "Cervix screening · year", screeningVal(extra.screen_cervix_year)),
+            r("rep_prostate", "Prostate screening · year", screeningVal(extra.screen_prostate_year)),
+          ]},
+          { key: "hormonal_health", scoreKey: "gynaecology", title: "Hormonal Health", rows: [
+            r("rep_hormone_dx", "Hormonal diagnoses",
+              hormoneDx.length === 0 ? dash : `${hormoneDx.length} recorded`,
+              detailFor(hormoneDx), hormoneDx.length > 0),
+            r("rep_hormone_meds", "Hormone medications",
+              hormoneMeds.length === 0 ? dash : `${hormoneMeds.length} active`,
+              hormoneMeds.length === 0 ? undefined : (
+                <ul className="space-y-1 text-sm">
+                  {hormoneMeds.map((m: any, i: number) => (
+                    <li key={i}><span className="font-medium">{m.medication_name}</span>{m.indication && <span className="text-muted-foreground"> · {m.indication}</span>}</li>
+                  ))}
+                </ul>
+              )),
+          ]},
+          { key: "sexual_health", scoreKey: "urology", title: "Sexual Health", rows: [
+            r("rep_sexual_dx", "Sexual health diagnoses",
+              sexualDx.length === 0 ? dash : `${sexualDx.length} recorded`,
+              detailFor(sexualDx), sexualDx.length > 0),
+            r("rep_repro_dx", "Other reproductive diagnoses",
+              reproDx.length === 0 ? dash : `${reproDx.length} recorded`,
+              detailFor(reproDx), reproDx.length > 0),
+          ]},
+        ];
+        return renderGroups(groups);
       }
 
       default:
         return <p className="text-sm text-muted-foreground">No structured risk factors defined for this dimension.</p>;
     }
   };
+
 
   // Determine whether this is a main dimension (with subs) or a sub-dimension
   const mainDim = findMainDimension(dimensionKey);
