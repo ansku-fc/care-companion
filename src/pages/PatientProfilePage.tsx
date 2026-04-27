@@ -3601,6 +3601,7 @@ function HealthDimensionView({
         subScore={subScores[dimensionKey] ?? null}
         patient={patient}
         healthCategories={healthCategories}
+        labResults={labResults}
         onNavigateToParent={() => onNavigateDimension(mainDim.key)}
         onNavigateToMedications={() => onNavigateDimension("medications")}
         renderRiskFactors={renderContent}
@@ -3618,6 +3619,7 @@ function HealthDimensionView({
         subScores={subScores}
         patient={patient}
         healthCategories={healthCategories}
+        labResults={labResults}
         onNavigateToSub={(k) => onNavigateDimension(k)}
         onNavigateToMedications={() => onNavigateDimension("medications")}
         renderRiskFactors={renderContent}
@@ -3772,6 +3774,7 @@ function GenericDimensionView({
                   biomarkers={biomarkers}
                   patientId={patient.id}
                   patientName={patient.full_name}
+                  labResults={labResults}
                 />
               </TabsContent>
             </Tabs>
@@ -5089,6 +5092,7 @@ function CardiovascularDimensionView({
                         onSelect={() => selectMarker(b)}
                         patientId={patient?.id}
                         patientName={patient?.full_name}
+                        labResults={labResults}
                       />
                     ))}
                   </div>
@@ -5100,6 +5104,7 @@ function CardiovascularDimensionView({
                       selectedMarker.refLow,
                       selectedMarker.refHigh,
                       patient?.id,
+                      labResults,
                     );
                     return (
                       <div

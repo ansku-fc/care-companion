@@ -53,6 +53,7 @@ export function LabResultsBlock({
   filterOptions,
   patientId,
   patientName,
+  labResults,
 }: {
   biomarkers: BiomarkerDef[];
   filter?: string;
@@ -60,6 +61,7 @@ export function LabResultsBlock({
   filterOptions?: { key: string; label: string }[];
   patientId?: string;
   patientName?: string;
+  labResults?: Array<Record<string, any>> | null;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<SelectedMarker | null>(null);
   const [sidebarWindow, setSidebarWindow] = useState<"6m" | "1y" | "3y" | "all">("3y");
@@ -129,6 +131,7 @@ export function LabResultsBlock({
                 onSelect={() => selectMarker(b)}
                 patientId={patientId}
                 patientName={patientName}
+                labResults={labResults}
               />
             ))}
           </div>
@@ -140,6 +143,7 @@ export function LabResultsBlock({
               selectedMarker.refLow,
               selectedMarker.refHigh,
               patientId,
+              labResults,
             );
             return (
               <div
@@ -314,6 +318,7 @@ export function MainDimensionOverview({
   subScores,
   patient,
   healthCategories,
+  labResults,
   onNavigateToSub,
   onNavigateToMedications,
   renderRiskFactors,
@@ -324,6 +329,7 @@ export function MainDimensionOverview({
   subScores: Record<string, number | null>;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
+  labResults?: Tables<"patient_lab_results">[] | null;
   onNavigateToSub: (subKey: string) => void;
   onNavigateToMedications: () => void;
   renderRiskFactors: () => React.ReactNode;
@@ -422,6 +428,7 @@ export function MainDimensionOverview({
                   filterOptions={filterOptions}
                   patientId={patient.id}
                   patientName={patient.full_name}
+                  labResults={labResults}
                 />
               </TabsContent>
             </Tabs>
@@ -479,6 +486,7 @@ export function SubDimensionView({
   subScore,
   patient,
   healthCategories,
+  labResults,
   onNavigateToParent,
   onNavigateToMedications,
   renderRiskFactors,
@@ -490,6 +498,7 @@ export function SubDimensionView({
   subScore: number | null;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
+  labResults?: Tables<"patient_lab_results">[] | null;
   onNavigateToParent: () => void;
   onNavigateToMedications: () => void;
   renderRiskFactors: () => React.ReactNode;
@@ -574,7 +583,7 @@ export function SubDimensionView({
                 {renderRiskFactors()}
               </TabsContent>
               <TabsContent value="lab_results" className="mt-4">
-                <LabResultsBlock biomarkers={biomarkers} patientId={patient.id} patientName={patient.full_name} />
+                <LabResultsBlock biomarkers={biomarkers} patientId={patient.id} patientName={patient.full_name} labResults={labResults} />
               </TabsContent>
             </Tabs>
           </CardContent>

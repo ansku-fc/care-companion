@@ -426,6 +426,7 @@ export function MetabolicDimensionView({
                       onSelect={() => selectMarker(b)}
                       patientId={patient.id}
                       patientName={patient.full_name}
+                      labResults={labResults}
                     />
                   ))}
                 </div>
@@ -437,6 +438,7 @@ export function MetabolicDimensionView({
                     selectedMarker.refLow,
                     selectedMarker.refHigh,
                     patient.id,
+                    labResults,
                   );
                   return (
                     <div
