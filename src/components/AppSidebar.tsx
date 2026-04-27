@@ -137,7 +137,6 @@ export function AppSidebar() {
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{profile?.full_name || "User"}</p>
-              {role && <Badge variant="secondary" className="text-xs capitalize">{role}</Badge>}
             </div>
             <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
               <LogOut className="h-4 w-4" />
