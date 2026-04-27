@@ -783,7 +783,16 @@ function MedicationsEditor({
                         value={med.start_year}
                         onChange={(y) => updateAt(idx, { start_year: y })}
                       />
-                    </div>
+                    {showEndYear && (
+                      <div className="col-span-6 md:col-span-3">
+                        <FieldLabel>End year</FieldLabel>
+                        <YearSelect
+                          value={med.end_year}
+                          onChange={(y) => updateAt(idx, { end_year: y })}
+                        />
+                      </div>
+                    )}
+                  </div>
                   </div>
                 )}
               </div>
