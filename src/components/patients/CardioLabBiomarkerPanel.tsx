@@ -167,6 +167,173 @@ function useAnnotations(patientId: string | undefined, biomarkerKey: string, lab
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// Backward-compat module-level annotation API (patient-scoped).
+// Older callers used `getAnnotations()`/`addAnnotation()` etc. without
+// passing a patient id. They now operate on whichever patient is the
+// "active" one — set via `setActiveAnnotationPatient(patientId)`.
+// All data still comes from `marker_annotations` filtered by patient_id.
+// ──────────────────────────────────────────────────────────────────────
+type LegacyAnn = LabAnnotation & {
+  includedInSummary?: boolean;
+  includedInRecommendations?: boolean;
+};
+
+let activePatientId: string | undefined;
+const legacyCache: LegacyAnn[] = [];
+const legacyListeners = new Set<() => void>();
+const legacyNotify = () => legacyListeners.forEach((l) => l());
+
+async function reloadLegacyCache() {
+  legacyCache.length = 0;
+  if (!activePatientId) {
+    legacyNotify();
+    return;
+  }
+  const { data, error } = await supabase
+    .from("marker_annotations")
+    .select("*")
+    .eq("patient_id", activePatientId)
+    .order("annotation_date", { ascending: true });
+  if (error) {
+    console.error("[marker_annotations] legacy load failed", error);
+    legacyNotify();
+    return;
+  }
+  for (const r of data ?? []) {
+    legacyCache.push({
+      id: (r as any).id,
+      biomarkerKey: (r as any).marker_key,
+      biomarkerLabel: (r as any).marker_key,
+      date: (r as any).annotation_date,
+      text: (r as any).text,
+      doctor: (r as any).author_name ?? "Dr. Laine",
+      createdAt: (r as any).created_at,
+      updatedAt:
+        (r as any).updated_at !== (r as any).created_at ? (r as any).updated_at : undefined,
+    });
+  }
+  legacyNotify();
+}
+
+export function setActiveAnnotationPatient(patientId: string | undefined) {
+  if (activePatientId === patientId) return;
+  activePatientId = patientId;
+  void reloadLegacyCache();
+}
+
+export function getAnnotations(): LegacyAnn[] {
+  return [...legacyCache];
+}
+
+export function getAnnotationsForBiomarker(key: string): LegacyAnn[] {
+  return legacyCache.filter((a) => a.biomarkerKey === key);
+}
+
+export async function addAnnotation(a: {
+  biomarkerKey: string;
+  biomarkerLabel: string;
+  date: string;
+  text: string;
+  doctor: string;
+}): Promise<void> {
+  if (!activePatientId) {
+    toast.error("No active patient — cannot add annotation");
+    return;
+  }
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) {
+    toast.error("Not signed in");
+    return;
+  }
+  const { error } = await supabase.from("marker_annotations").insert({
+    patient_id: activePatientId,
+    marker_key: a.biomarkerKey,
+    annotation_date: a.date,
+    text: a.text,
+    author_name: a.doctor,
+    created_by: uid,
+  });
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+  await reloadLegacyCache();
+}
+
+export async function updateAnnotation(
+  id: string,
+  patch: { text?: string; date?: string },
+): Promise<void> {
+  const upd: Record<string, unknown> = {};
+  if (patch.text !== undefined) upd.text = patch.text;
+  if (patch.date !== undefined) upd.annotation_date = patch.date;
+  const { error } = await supabase.from("marker_annotations").update(upd).eq("id", id);
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+  await reloadLegacyCache();
+}
+
+export async function deleteAnnotation(
+  id: string,
+  reason: string,
+  deletedBy: string,
+): Promise<void> {
+  const target = legacyCache.find((a) => a.id === id);
+  const { error } = await supabase.from("marker_annotations").delete().eq("id", id);
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+  if (target) {
+    annotationDeletionLog.push({
+      id: `del-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      annotationId: target.id,
+      biomarkerKey: target.biomarkerKey,
+      biomarkerLabel: target.biomarkerLabel,
+      date: target.date,
+      text: target.text,
+      doctor: target.doctor,
+      deletedBy,
+      deletedAt: new Date().toISOString(),
+      reason,
+    });
+  }
+  await reloadLegacyCache();
+}
+
+export function markIncluded(ids: string[], target: "summary" | "recommendations") {
+  for (const a of legacyCache) {
+    if (ids.includes(a.id)) {
+      if (target === "summary") a.includedInSummary = true;
+      else a.includedInRecommendations = true;
+    }
+  }
+  legacyNotify();
+}
+
+export function useAnnotationsVersion() {
+  const [, setV] = useState(0);
+  useEffect(() => {
+    const fn = () => setV((x) => x + 1);
+    legacyListeners.add(fn);
+    seriesListeners.add(fn);
+    return () => {
+      legacyListeners.delete(fn);
+      seriesListeners.delete(fn);
+    };
+  }, []);
+  return null;
+}
+
+// Backward-compat empty series export — older code imported this. Now
+// that lab data is fetched per-patient from the database, no demo
+// series exist. Kept to preserve the import surface.
+export const CARDIO_DUMMY_SERIES: Record<string, { single?: Point[]; bp?: BPPoint[] }> = {};
+
+// ──────────────────────────────────────────────────────────────────────
 // Patient-scoped lab series — reads from `patient_lab_results`.
 // ──────────────────────────────────────────────────────────────────────
 type Point = { date: string; value: number };
