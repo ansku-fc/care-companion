@@ -130,8 +130,8 @@ export function PatientOnboardingDialog(props: Props) {
           ecg_notes: ((data as any).ecg_notes as string) ?? "",
           allergies: normalizeAllergies(extra.allergies),
           supplements: (extra.supplements as string[]) ?? [],
-          current_illnesses: (extra.current_illnesses as any[]) ?? [],
-          previous_illnesses: (extra.previous_illnesses as any[]) ?? [],
+          current_illnesses: normalizeIllnessRows(extra.current_illnesses),
+          previous_illnesses: normalizeIllnessRows(extra.previous_illnesses),
           family_history: (extra.family_history as any[]) ?? [],
 
           // Step 4 — Lifestyle (mostly extra_data; alcohol_units_per_week is a column)
