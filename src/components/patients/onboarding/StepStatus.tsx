@@ -20,6 +20,7 @@ const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "skin_general", label: "Skin (general)" },
   { key: "abdomen", label: "Abdomen" },
   { key: "eyes", label: "Eyes" },
+  { key: "ears", label: "Ears" },
   { key: "musculoskeletal", label: "Musculoskeletal" },
 ];
 
