@@ -115,7 +115,7 @@ export function LabResultsBlock({
         </p>
       ) : (
         <div className="flex gap-4">
-          <div className="grid grid-cols-1 gap-4 flex-1 min-w-0">
+          <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
             {visible.map((b) => (
               <CardioLabBiomarkerPanel
                 key={b.key}
