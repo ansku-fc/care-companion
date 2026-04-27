@@ -131,9 +131,9 @@ export type MoleEntry = {
   id: string;
   label: string;
   side: "front" | "back";
-  /** Pin coordinates as percentages (0-100) of the silhouette bounding box. */
-  pin_x: number | null;
-  pin_y: number | null;
+  /** Pin position on the silhouette, as a percentage (0–100) of the SVG's viewBox. */
+  pin_x: number;
+  pin_y: number;
   location: string;
   asymmetry: string;
   borders: string;
@@ -141,10 +141,8 @@ export type MoleEntry = {
   size: string;
   change: string;
   symptoms: string;
-  /** Transient: files chosen in onboarding; uploaded on save. */
-  image_files?: File[];
-  /** UI-only: whether the card is expanded for editing. Not persisted. */
-  expanded?: boolean;
+  /** Transient: chosen during onboarding, uploaded on save. */
+  image_files: File[];
 };
 
 export type OnboardingForm = {
@@ -315,8 +313,8 @@ export function blankMole(label = "Mole 1", overrides: Partial<MoleEntry> = {}):
     id: crypto.randomUUID(),
     label,
     side: "front",
-    pin_x: null,
-    pin_y: null,
+    pin_x: 50,
+    pin_y: 50,
     location: "",
     asymmetry: "",
     borders: "",
@@ -325,7 +323,6 @@ export function blankMole(label = "Mole 1", overrides: Partial<MoleEntry> = {}):
     change: "",
     symptoms: "",
     image_files: [],
-    expanded: true,
     ...overrides,
   };
 }

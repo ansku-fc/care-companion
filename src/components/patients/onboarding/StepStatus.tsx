@@ -1,5 +1,5 @@
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import {
@@ -23,11 +23,9 @@ const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "musculoskeletal", label: "Musculoskeletal" },
 ];
 
-const PERIPHERAL_SUBS: { key: keyof ExamFindings; label: string }[] = [
-  { key: "peripheral_adp", label: "ADP (arteria dorsalis pedis)" },
-  { key: "peripheral_atp", label: "ATP (arteria tibialis posterior)" },
-  { key: "peripheral_afem", label: "AFEM (arteria femoralis)" },
-];
+// Note: ADP / ATP / AFEM sub-toggles previously lived under "Peripheral
+// circulation" but only duplicated the parent. They have been replaced with a
+// single free-text notes field shown when the parent toggle is on.
 
 /** Step 10 — Status (Physical Examination). */
 export function StepStatus() {
@@ -48,20 +46,7 @@ export function StepStatus() {
               label={f.label}
               finding={form.exam_findings[f.key]}
               onChange={(p) => updateFinding(f.key, p)}
-            >
-              {f.key === "peripheral_circulation" && form.exam_findings.peripheral_circulation.present && (
-                <div className="mt-3 space-y-2 pl-3 border-l-2 border-border/60">
-                  {PERIPHERAL_SUBS.map((s) => (
-                    <PeripheralSubRow
-                      key={String(s.key)}
-                      label={s.label}
-                      finding={form.exam_findings[s.key]}
-                      onChange={(p) => updateFinding(s.key, p)}
-                    />
-                  ))}
-                </div>
-              )}
-            </FindingRow>
+            />
           ))}
         </div>
       </div>
@@ -73,57 +58,35 @@ function FindingRow({
   label,
   finding,
   onChange,
-  children,
   compact,
 }: {
   label: string;
   finding: ExamFinding;
   onChange: (p: Partial<ExamFinding>) => void;
-  children?: React.ReactNode;
   compact?: boolean;
 }) {
   return (
     <div className={cn("rounded-xl border border-border bg-card/40", compact ? "px-3 py-2" : "px-4 py-3")}>
       <div className="flex items-center justify-between gap-4">
         <span className={cn("font-medium text-foreground", compact ? "text-xs" : "text-sm")}>{label}</span>
-        <div className="flex items-center gap-3 flex-1 max-w-md">
-          {finding.present && (
-            <Input
-              value={finding.notes}
-              onChange={(e) => onChange({ notes: e.target.value })}
-              placeholder="Notes…"
-              className="h-9"
-            />
-          )}
-          <Switch checked={finding.present} onCheckedChange={(v) => onChange({ present: v })} />
+        <Switch checked={finding.present} onCheckedChange={(v) => onChange({ present: v })} />
+      </div>
+      <div
+        className={cn(
+          "grid transition-all duration-200",
+          finding.present ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+        )}
+      >
+        <div className="overflow-hidden pl-3 border-l-2 border-border/60">
+          <Textarea
+            value={finding.notes}
+            onChange={(e) => onChange({ notes: e.target.value })}
+            placeholder="Add details…"
+            rows={2}
+            className="resize-none"
+          />
         </div>
       </div>
-      {children}
     </div>
   );
 }
-
-function PeripheralSubRow({
-  label,
-  finding,
-  onChange,
-}: {
-  label: string;
-  finding: ExamFinding;
-  onChange: (p: Partial<ExamFinding>) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card/40 px-3 py-2">
-      <span className="text-xs font-medium text-foreground">{label}</span>
-      <Input
-        value={finding.notes}
-        onChange={(e) =>
-          onChange({ notes: e.target.value, present: e.target.value.trim().length > 0 })
-        }
-        placeholder="Findings / measurements…"
-        className="h-8 max-w-[260px] text-xs"
-      />
-    </div>
-  );
-}
-
