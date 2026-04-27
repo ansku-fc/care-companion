@@ -5484,7 +5484,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
       rows: [
         { label: "LDL", unit: "mmol/l", key: "ldl_mmol_l" as const },
         { label: "HbA1c", unit: "mmol/mol", key: "hba1c_mmol_mol" as const },
-        { label: "RR / Blood Pressure", unit: "mmHg", key: "_bp" as const },
+        
       ],
     },
     {
