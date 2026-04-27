@@ -57,8 +57,19 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
 
   const now = new Date();
   const todayStr = now.toISOString().slice(0, 10);
-  const upcomingVisits = visitNotes.filter((v) => v.visit_date >= todayStr).sort((a, b) => a.visit_date.localeCompare(b.visit_date));
-  const pastVisits     = visitNotes.filter((v) => v.visit_date <  todayStr).sort((a, b) => b.visit_date.localeCompare(a.visit_date));
+  // A visit is "completed" if its vitals.status flag is set, OR if it's an
+  // onboarding visit (those are always finalized at the moment they're created).
+  const isCompleted = (v: Tables<"visit_notes">) => {
+    if (isOnboardingVisit(v)) return true;
+    const status = ((v as any).vitals?.status as string | undefined) ?? null;
+    return status === "completed";
+  };
+  const upcomingVisits = visitNotes
+    .filter((v) => !isCompleted(v) && v.visit_date >= todayStr)
+    .sort((a, b) => a.visit_date.localeCompare(b.visit_date));
+  const pastVisits = visitNotes
+    .filter((v) => isCompleted(v) || v.visit_date < todayStr)
+    .sort((a, b) => b.visit_date.localeCompare(a.visit_date));
 
   if (openVisitNote) {
     if (isOnboardingVisit(openVisitNote)) {
