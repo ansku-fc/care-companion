@@ -66,6 +66,9 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
   const [assigneeName, setAssigneeName] = useState<string>("Dr. Laine");
   const [dueDate, setDueDate] = useState<string>(DEFAULT_DUE_DATE());
   const [createdFrom, setCreatedFrom] = useState<string | null>(null);
+  // Auto-detected category derived from title; doctor can override.
+  const [taskCategory, setTaskCategory] = useState<TaskCategoryKind>("administrative");
+  const [taskCategoryOverridden, setTaskCategoryOverridden] = useState(false);
 
   // Load patients once dialog opens.
   useEffect(() => {
