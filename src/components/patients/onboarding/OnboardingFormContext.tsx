@@ -155,6 +155,8 @@ export type OnboardingForm = {
   bp2_systolic: number | null;
   bp2_diastolic: number | null;
   ecg_notes: string;
+  /** Files chosen for ECG in onboarding; uploaded on save. */
+  ecg_files: File[];
   allergies: AllergyEntry[];
   supplements: string[];
 
