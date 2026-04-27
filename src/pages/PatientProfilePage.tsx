@@ -2615,7 +2615,23 @@ function HealthDimensionView({
 
   const renderContent = () => {
     const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
-    
+    const extra = ((onboarding as any)?.extra_data ?? {}) as Record<string, any>;
+
+    // Coloured pill helper for flagged values (amber = borderline, pink = high)
+    const Flag = ({ tone, children }: { tone: "amber" | "pink" | "green"; children: React.ReactNode }) => {
+      const cls =
+        tone === "pink"
+          ? "bg-[hsl(330_81%_60%/0.15)] text-[hsl(330_81%_45%)]"
+          : tone === "amber"
+            ? "bg-[hsl(28_63%_44%/0.15)] text-[hsl(28_63%_38%)]"
+            : "bg-[hsl(137_25%_39%/0.15)] text-[hsl(137_25%_30%)]";
+      return (
+        <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ml-2", cls)}>
+          {children}
+        </span>
+      );
+    };
+
     // Helper component for expandable risk rows (same as cardiovascular)
     const ExpandableRow = ({ 
       label, 
