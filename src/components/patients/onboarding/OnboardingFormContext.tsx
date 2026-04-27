@@ -131,6 +131,9 @@ export type MoleEntry = {
   id: string;
   label: string;
   side: "front" | "back";
+  /** Pin coordinates as percentages (0-100) of the silhouette bounding box. */
+  pin_x: number | null;
+  pin_y: number | null;
   location: string;
   asymmetry: string;
   borders: string;
@@ -138,6 +141,10 @@ export type MoleEntry = {
   size: string;
   change: string;
   symptoms: string;
+  /** Transient: files chosen in onboarding; uploaded on save. */
+  image_files?: File[];
+  /** UI-only: whether the card is expanded for editing. Not persisted. */
+  expanded?: boolean;
 };
 
 export type OnboardingForm = {
