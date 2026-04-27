@@ -3654,6 +3654,15 @@ function GenericDimensionView({
   const scoreBg = "";
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
+  const [riskTab, setRiskTab] = useState<"risk_factors" | "lab_results">("risk_factors");
+
+  // Biomarkers for the Lab Results tab — pulled from the central registry
+  // so this view stays in sync with MainDimensionOverview / SubDimensionView.
+  const biomarkers = useMemo(() => {
+    const subKeys = mainDim?.subDimensions.map((s) => s.key) ?? [];
+    const key = mainDim?.key ?? dimensionKey;
+    return getBiomarkersForMainDimension(key, subKeys);
+  }, [mainDim?.key, dimensionKey, mainDim?.subDimensions.map((s) => s.key).join(",")]);
 
   // ─── Doctor's Summary & Recommendations ───
   const categoryKey = (mainDim?.label || dim.label).toLowerCase();
