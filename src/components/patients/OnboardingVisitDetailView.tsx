@@ -234,10 +234,6 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   function getCollection<T = any>(key: string, source: T[]): T[] {
     return overrides[key] !== undefined ? (overrides[key] as T[]) : source;
   }
-  function updateCollection<T = any>(key: string, updater: (curr: T[]) => T[], source: T[]) {
-    const curr = (overrides[key] !== undefined ? overrides[key] : source) as T[];
-    setOverride(key, updater(curr));
-  }
 
   async function persist(next: DocState) {
     setSaving(true);
