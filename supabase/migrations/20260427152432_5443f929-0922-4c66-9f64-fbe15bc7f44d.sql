@@ -1,0 +1,1 @@
+ALTER TABLE public.visit_notes ADD COLUMN IF NOT EXISTS extra_data jsonb NOT NULL DEFAULT '{}'::jsonb;

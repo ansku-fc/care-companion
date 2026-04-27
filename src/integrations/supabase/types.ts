@@ -1489,6 +1489,7 @@ export type Database = {
           chief_complaint: string | null
           clinical_notes: string | null
           created_at: string
+          extra_data: Json
           id: string
           internal_note_to_nurse: string | null
           lab_order_id: string | null
@@ -1508,6 +1509,7 @@ export type Database = {
           chief_complaint?: string | null
           clinical_notes?: string | null
           created_at?: string
+          extra_data?: Json
           id?: string
           internal_note_to_nurse?: string | null
           lab_order_id?: string | null
@@ -1527,6 +1529,7 @@ export type Database = {
           chief_complaint?: string | null
           clinical_notes?: string | null
           created_at?: string
+          extra_data?: Json
           id?: string
           internal_note_to_nurse?: string | null
           lab_order_id?: string | null
