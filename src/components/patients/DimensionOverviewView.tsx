@@ -445,7 +445,7 @@ export function MainDimensionOverview({
             <SubDimensionStripCard
               key={sub.key}
               label={sub.label}
-              score={subScores[sub.key] ?? parentScore}
+              score={subScores[sub.key] ?? null}
               Icon={sub.icon}
               onClick={() => onNavigateToSub(sub.key)}
             />
