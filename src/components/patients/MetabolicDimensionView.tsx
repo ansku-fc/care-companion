@@ -15,6 +15,7 @@ import {
   getSeriesRowsForBiomarker,
 } from "@/components/patients/CardioLabBiomarkerPanel";
 import { cn } from "@/lib/utils";
+import { scoreColorClass as scoreColorFn } from "@/lib/scoreColor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
