@@ -310,13 +310,26 @@ function AllergiesPicker({
             <ChevronsUpDown className="h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
+        <PopoverContent
+          className="p-0 w-[var(--radix-popover-trigger-width)]"
+          align="start"
+          onWheel={(e) => e.stopPropagation()}
+          onEscapeKeyDown={() => setOpen(false)}
+          onInteractOutside={() => setOpen(false)}
+          onPointerDownOutside={() => setOpen(false)}
+        >
           <Command shouldFilter>
             <CommandInput
               placeholder="Search allergen or ICD code…"
               value={query}
               onValueChange={setQuery}
               onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setOpen(false);
+                  return;
+                }
                 if (e.key === "Enter" && query.trim()) {
                   // Only add custom if no list match exists
                   const hasMatch = COMMON_ALLERGENS.some((a) =>
@@ -329,7 +342,10 @@ function AllergiesPicker({
                 }
               }}
             />
-            <CommandList className="max-h-72">
+            <CommandList
+              className="max-h-72 overflow-y-auto overscroll-contain"
+              onWheel={(e) => e.stopPropagation()}
+            >
               <CommandEmpty>
                 {query.trim() ? (
                   <button
