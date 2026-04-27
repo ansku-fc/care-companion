@@ -26,25 +26,79 @@ const ABCDE_OPTIONS = {
 
 /**
  * Approximate body region for a (x, y) percentage on the silhouette.
- * Coarse-grained — the doctor can refine the label inline.
+ * Coordinates are 0–100 with origin at top-left.
+ *
+ * Anatomical left/right: the patient's left is the viewer's right side of the
+ * image (mirrored), so x > 50 → patient's left, x < 50 → patient's right.
  */
 function regionForPin(side: "front" | "back", x: number, y: number): string {
-  // y: 0 (top) → 100 (feet)
-  let vertical: string;
-  if (y < 12) vertical = "Head";
-  else if (y < 18) vertical = "Neck";
-  else if (y < 30) vertical = side === "front" ? "Chest" : "Upper back";
-  else if (y < 42) vertical = side === "front" ? "Abdomen" : "Mid back";
-  else if (y < 50) vertical = side === "front" ? "Pelvis" : "Lower back";
-  else if (y < 75) vertical = "Thigh";
-  else if (y < 90) vertical = side === "front" ? "Shin" : "Calf";
-  else vertical = "Foot";
+  // Patient-anatomical lateral side (mirrors viewer perspective).
+  const lateral: "left" | "right" | "center" =
+    x > 62 ? "left" : x < 38 ? "right" : "center";
+  const isOuter = x < 30 || x > 70; // outer third for arms/hands/legs
+  const isFarOuter = x < 22 || x > 78; // very outer for arms/hands
 
-  // Lateral hint (skip for head/neck where centerline matters less)
-  if (vertical === "Head" || vertical === "Neck") return vertical;
-  if (x < 38) return `${vertical} (right)`;
-  if (x > 62) return `${vertical} (left)`;
-  return vertical;
+  // Head & neck (centerline-dominant, ignore lateral)
+  if (y < 10) return "Head";
+  if (y < 14) return "Neck";
+
+  // Upper torso band: 14–22% — shoulder vs chest split by lateral position.
+  if (y < 22) {
+    if (isOuter) return `Shoulder (${lateral === "center" ? "left" : lateral})`;
+    return side === "front"
+      ? lateral === "center"
+        ? "Chest (center)"
+        : `Chest (${lateral})`
+      : `Upper back${lateral === "center" ? "" : ` (${lateral})`}`;
+  }
+
+  // Chest / upper-back band continues to 28%, with arms on the outside.
+  if (y < 28) {
+    if (isFarOuter) return `Upper arm (${lateral === "center" ? "left" : lateral})`;
+    return side === "front"
+      ? lateral === "center"
+        ? "Chest (center)"
+        : `Chest (${lateral})`
+      : `Upper back${lateral === "center" ? "" : ` (${lateral})`}`;
+  }
+
+  // Abdomen / mid-back, with upper arm continuing on the sides.
+  if (y < 38) {
+    if (isFarOuter) return `Upper arm (${lateral === "center" ? "left" : lateral})`;
+    return side === "front"
+      ? "Abdomen"
+      : `Mid back${lateral === "center" ? "" : ` (${lateral})`}`;
+  }
+
+  // Lower abdomen / lower back transitioning into forearm on the sides.
+  if (y < 42) {
+    if (isFarOuter) return `Forearm (${lateral === "center" ? "left" : lateral})`;
+    return side === "front"
+      ? "Abdomen"
+      : `Lower back${lateral === "center" ? "" : ` (${lateral})`}`;
+  }
+
+  // Groin/hip band.
+  if (y < 52) {
+    if (isFarOuter) return `Forearm (${lateral === "center" ? "left" : lateral})`;
+    if (lateral === "center") return side === "front" ? "Groin" : "Lower back";
+    return `Hip (${lateral})`;
+  }
+
+  // Hand band on the outer sides; thigh in the middle.
+  if (y < 60) {
+    if (isFarOuter) return `Hand (${lateral === "center" ? "left" : lateral})`;
+    return `Thigh (${lateral === "center" ? "left" : lateral})`;
+  }
+
+  // Thigh
+  if (y < 68) return `Thigh (${lateral === "center" ? "left" : lateral})`;
+  // Knee
+  if (y < 74) return `Knee (${lateral === "center" ? "left" : lateral})`;
+  // Lower leg
+  if (y < 88) return `Lower leg (${lateral === "center" ? "left" : lateral})`;
+  // Foot
+  return `Foot (${lateral === "center" ? "left" : lateral})`;
 }
 
 /** Step 11 — Moles with click-to-place pins on body silhouettes. */
