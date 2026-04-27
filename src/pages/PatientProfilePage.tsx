@@ -55,6 +55,7 @@ import {
   updateAnnotation,
   deleteAnnotation,
   addAnnotation,
+  setActiveAnnotationPatient,
   getSeriesRowsForBiomarker,
   type LabAnnotation,
 } from "@/components/patients/CardioLabBiomarkerPanel";
