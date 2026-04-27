@@ -60,23 +60,21 @@ export function normalizeMedications(input: unknown): MedicationDetail[] {
   return input
     .map((m): MedicationDetail | null => {
       if (typeof m === "string") {
-        return { name: m, dose: "", frequency: "", route: "", start_year: null, notes: "" };
+        return { name: m, dose: "", frequency: "", route: "", start_year: null, end_year: null, notes: "" };
       }
       if (m && typeof m === "object") {
         const o = m as Record<string, unknown>;
         if (typeof o.name !== "string" || !o.name.trim()) return null;
+        const toYear = (v: unknown): number | null =>
+          typeof v === "number" ? v : v == null ? null : Number(v) || null;
         return {
           name: o.name,
           atc: typeof o.atc === "string" ? o.atc : undefined,
           dose: typeof o.dose === "string" ? o.dose : "",
           frequency: (o.frequency as MedicationFrequency) ?? "",
           route: (o.route as MedicationRoute) ?? "",
-          start_year:
-            typeof o.start_year === "number"
-              ? o.start_year
-              : o.start_year == null
-                ? null
-                : Number(o.start_year) || null,
+          start_year: toYear(o.start_year),
+          end_year: toYear(o.end_year),
           notes: typeof o.notes === "string" ? o.notes : "",
         };
       }
