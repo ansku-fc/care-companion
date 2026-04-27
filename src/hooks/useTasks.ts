@@ -11,7 +11,7 @@ export function useTasks(options: UseTasksOptions = {}) {
   const { patientId } = options;
   const { subscribe } = useTaskActions();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [patients, setPatients] = useState<{ id: string; full_name: string }[]>([]);
+  const [patients, setPatients] = useState<{ id: string; full_name: string; tier: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTasks = useCallback(async () => {
@@ -30,9 +30,9 @@ export function useTasks(options: UseTasksOptions = {}) {
     fetchTasks();
     supabase
       .from("patients")
-      .select("id, full_name")
+      .select("id, full_name, tier")
       .order("full_name")
-      .then(({ data }) => setPatients(data ?? []));
+      .then(({ data }) => setPatients((data ?? []) as { id: string; full_name: string; tier: string | null }[]));
     const unsubscribe = subscribe(fetchTasks);
     return unsubscribe;
   }, [fetchTasks, subscribe]);
