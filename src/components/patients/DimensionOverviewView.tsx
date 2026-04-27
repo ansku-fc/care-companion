@@ -391,7 +391,7 @@ export function MainDimensionOverview({
     (c) => c.category.toLowerCase() === categoryKey,
   );
 
-  const scoreColor = scoreColorClass(parentScore);
+  const scoreColor = parentScore != null ? scoreColorClass(parentScore) : "text-muted-foreground";
 
   return (
     <div className="space-y-4">
