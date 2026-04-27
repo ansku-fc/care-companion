@@ -49,7 +49,7 @@ interface Props {
   onBack: () => void;
 }
 
-type DocStatus = "draft" | "under_review" | "finalised";
+type DocStatus = "draft" | "finalised";
 
 interface EditLogEntry {
   ts: string;
@@ -91,13 +91,6 @@ function StatusBadge({ status }: { status: DocStatus }) {
     return (
       <Badge className="gap-1 bg-yellow-100 text-yellow-900 hover:bg-yellow-100 border border-yellow-300">
         <FileText className="h-3 w-3" /> Draft
-      </Badge>
-    );
-  }
-  if (status === "under_review") {
-    return (
-      <Badge className="gap-1 bg-blue-100 text-blue-900 hover:bg-blue-100 border border-blue-300">
-        <Pencil className="h-3 w-3" /> Under Review
       </Badge>
     );
   }
@@ -265,28 +258,13 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
     }
   }
 
-  async function handleMarkUnderReview() {
-    const next = appendLog(
-      {
-        ts: new Date().toISOString(),
-        editor: DEFAULT_EDITOR,
-        action: "Status changed: Draft → Under Review",
-      },
-      { ...doc, status: "under_review" }
-    );
-    if (await persist(next)) {
-      setDoc(next);
-      toast.success("Document marked as Under Review");
-    }
-  }
-
   async function handleFinalise() {
     const ts = new Date().toISOString();
     const next = appendLog(
       {
         ts,
         editor: DEFAULT_EDITOR,
-        action: "Status changed: Under Review → Finalised",
+        action: "Status changed: Draft → Finalised",
       },
       { ...doc, status: "finalised", finalised_at: ts, finalised_by: DEFAULT_EDITOR }
     );
@@ -306,7 +284,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
         action: "Re-opened for editing",
         reason,
       },
-      { ...doc, status: "under_review" }
+      { ...doc, status: "draft", finalised_at: null, finalised_by: null }
     );
     if (await persist(next)) {
       setDoc(next);
@@ -393,11 +371,6 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
           </div>
           <div className="flex items-center gap-2">
             {doc.status === "draft" && (
-              <Button size="sm" onClick={handleMarkUnderReview} disabled={saving}>
-                Mark as Under Review
-              </Button>
-            )}
-            {doc.status === "under_review" && (
               <>
                 <Button size="sm" variant="outline" onClick={handleSaveEdits} disabled={saving} className="gap-1.5">
                   <Save className="h-3.5 w-3.5" /> Save
@@ -406,11 +379,6 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                   <Lock className="h-3.5 w-3.5" /> Finalise Document
                 </Button>
               </>
-            )}
-            {doc.status === "draft" && (
-              <Button size="sm" variant="outline" onClick={handleSaveEdits} disabled={saving} className="gap-1.5">
-                <Save className="h-3.5 w-3.5" /> Save
-              </Button>
             )}
             {doc.status === "finalised" && (
               <Button size="sm" variant="outline" onClick={() => setReopenOpen(true)} className="gap-1.5">
@@ -698,7 +666,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
           <DialogHeader>
             <DialogTitle>Re-open document for editing</DialogTitle>
             <DialogDescription>
-              Please provide a reason. The document will return to "Under Review" and the reason will be recorded in the edit history.
+              Please provide a reason. The document will return to "Draft" and the reason will be recorded in the edit history.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
