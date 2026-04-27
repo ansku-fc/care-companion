@@ -640,33 +640,7 @@ function ContextualPreview({
   }
 
   if (kind === "renewal") {
-    return (
-      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          <Pill className="h-3.5 w-3.5" /> Prescription renewal
-        </div>
-        <div className="space-y-1">
-          <p className="text-xs font-semibold">Metformin 500 mg · twice daily</p>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Current supply</span>
-            <span className="font-semibold text-destructive">6 / 180 (3%)</span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-destructive" style={{ width: "3%" }} />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-            <span>Last dispensed</span>
-            <span>14 Jan 2026</span>
-          </div>
-        </div>
-        <button
-          onClick={() => onNavigate(`${base}?tab=medications&focus=metformin`)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
-        >
-          Renew prescription <ArrowRight className="h-3 w-3" />
-        </button>
-      </div>
-    );
+    return <MedicationPreview task={task} onNavigate={onNavigate} />;
   }
 
   if (kind === "supply") {
