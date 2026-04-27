@@ -686,6 +686,7 @@ function MedicationsEditor({
         </div>
       )}
 
+      {showTrigger && (
       <Popover open={pickerOpen} onOpenChange={setPickerOpen} modal>
         <PopoverTrigger asChild>
           <Button
