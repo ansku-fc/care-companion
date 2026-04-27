@@ -292,121 +292,172 @@ function YearSelect({
   );
 }
 
-/* ---------- Dimension @-tag aware textarea ---------- */
+/* ---------- Dimension chips for an illness row ---------- */
 
 /**
- * Lightweight @-tag picker for the notes field. Detects when the cursor is
- * actively typing a token after `@` and shows a popover of dimension chips.
- * Selected tags are inserted into the text, and we render colored preview
- * chips below the textarea so the doctor can see what was tagged.
+ * Renders auto-suggested dimension chips for the illness's ICD code. The
+ * doctor reviews them and clicks "Confirm" to lock in. Suggested chips are
+ * outlined; confirmed chips are solid. Doctor can remove individual chips,
+ * add more from the full 9-dimension list, or re-suggest after the ICD
+ * changes.
  */
-function DimensionTagTextarea({
-  value,
+function DimensionChipsRow({
+  icdCode,
+  dimensions,
+  confirmed,
   onChange,
 }: {
-  value: string;
-  onChange: (v: string) => void;
+  icdCode: string;
+  dimensions: string[];
+  confirmed: boolean;
+  onChange: (dimensions: string[], confirmed: boolean) => void;
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const lastIcdRef = useRef<string>(icdCode);
 
-  const tagsInText = useMemo(() => {
-    const matches = value.match(/@[a-z-]+/gi) ?? [];
-    return Array.from(new Set(matches.map((m) => m.toLowerCase())))
-      .map((m) => findDimensionTag(m))
-      .filter((t): t is NonNullable<typeof t> => Boolean(t));
-  }, [value]);
-
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const next = e.target.value;
-    onChange(next);
-    const caret = e.target.selectionStart ?? next.length;
-    const upToCaret = next.slice(0, caret);
-    const m = upToCaret.match(/@([a-z-]*)$/i);
-    if (m) {
-      setQuery(m[1].toLowerCase());
-      setPickerOpen(true);
-    } else {
-      setPickerOpen(false);
+  // When the ICD code changes (and dimensions weren't manually confirmed for
+  // a different code), re-seed the suggestions.
+  useEffect(() => {
+    if (icdCode === lastIcdRef.current) return;
+    lastIcdRef.current = icdCode;
+    if (!icdCode) {
+      onChange([], false);
+      return;
     }
-  };
+    const suggested = getSuggestedDimensionsForIcd(icdCode);
+    onChange(suggested, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [icdCode]);
 
-  const insertTag = (key: string) => {
-    const ta = ref.current;
-    if (!ta) return;
-    const caret = ta.selectionStart ?? value.length;
-    const before = value.slice(0, caret).replace(/@([a-z-]*)$/i, `@${key} `);
-    const after = value.slice(caret);
-    const next = before + after;
-    onChange(next);
-    setPickerOpen(false);
-    setQuery("");
-    requestAnimationFrame(() => {
-      ta.focus();
-      const pos = before.length;
-      ta.setSelectionRange(pos, pos);
-    });
-  };
+  // First render with no stored dimensions but a known ICD: seed once.
+  useEffect(() => {
+    if (dimensions.length === 0 && !confirmed && icdCode) {
+      const suggested = getSuggestedDimensionsForIcd(icdCode);
+      if (suggested.length > 0) onChange(suggested, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const filteredTags = DIMENSION_TAGS.filter((t) =>
-    t.key.includes(query.toLowerCase()),
-  );
+  if (!icdCode || dimensions.length === 0) {
+    if (!icdCode) return null;
+    // ICD selected but no suggestions found — still allow manual add.
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">No dimensions suggested.</span>
+        <AddDimensionPopover
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          existing={dimensions}
+          onAdd={(key) => {
+            onChange([...dimensions, key], confirmed);
+            setAddOpen(false);
+          }}
+        />
+      </div>
+    );
+  }
+
+  const removeChip = (key: string) =>
+    onChange(dimensions.filter((d) => d !== key), confirmed);
 
   return (
-    <div className="space-y-2">
-      <Popover open={pickerOpen && filteredTags.length > 0} onOpenChange={setPickerOpen}>
-        <PopoverTrigger asChild>
-          <Textarea
-            ref={ref}
-            value={value}
-            onChange={handleInput}
-            placeholder="Notes… type @ to tag a dimension"
-            className="min-h-[80px]"
-          />
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="p-1 w-64"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <div className="text-[11px] text-muted-foreground px-2 py-1">Tag a health dimension</div>
-          <div className="space-y-0.5">
-            {filteredTags.map((tag) => (
-              <button
-                key={tag.key}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => insertTag(tag.key)}
-                className={cn(
-                  "w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-muted",
-                  tag.tone === "pink" ? "text-pink-700 dark:text-pink-300" : "text-teal-700 dark:text-teal-300",
-                )}
-              >
-                {tag.label}
-              </button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      {tagsInText.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {tagsInText.map((tag) => (
-            <span
-              key={tag.key}
-              className={cn(
-                "inline-flex items-center px-2 py-0.5 rounded-md border text-[11px]",
-                tag.tone === "pink"
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        Health dimensions
+      </span>
+      {dimensions.map((key) => {
+        const tag = findDimensionTag(key);
+        if (!tag) return null;
+        return (
+          <span
+            key={key}
+            className={cn(
+              "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] border",
+              confirmed
+                ? tag.tone === "pink"
                   ? "bg-pink-100 text-pink-900 border-pink-200 dark:bg-pink-900/30 dark:text-pink-200 dark:border-pink-900"
-                  : "bg-teal-100 text-teal-900 border-teal-200 dark:bg-teal-900/30 dark:text-teal-200 dark:border-teal-900",
+                  : "bg-teal-100 text-teal-900 border-teal-200 dark:bg-teal-900/30 dark:text-teal-200 dark:border-teal-900"
+                : tag.tone === "pink"
+                  ? "bg-transparent text-pink-700 border-pink-300 border-dashed dark:text-pink-300 dark:border-pink-700"
+                  : "bg-transparent text-teal-700 border-teal-300 border-dashed dark:text-teal-300 dark:border-teal-700",
+            )}
+          >
+            {tag.label}
+            <button
+              type="button"
+              onClick={() => removeChip(key)}
+              className="opacity-60 hover:opacity-100"
+              aria-label={`Remove ${tag.label}`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        );
+      })}
+      <AddDimensionPopover
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        existing={dimensions}
+        onAdd={(key) => {
+          onChange([...dimensions, key], confirmed);
+          setAddOpen(false);
+        }}
+      />
+      {!confirmed && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => onChange(dimensions, true)}
+          className="h-6 px-2 text-[11px]"
+        >
+          Confirm
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function AddDimensionPopover({
+  open,
+  onOpenChange,
+  existing,
+  onAdd,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  existing: string[];
+  onAdd: (key: string) => void;
+}) {
+  const remaining = DIMENSION_TAGS.filter((t) => !existing.includes(t.key));
+  if (remaining.length === 0) return null;
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px] gap-1">
+          <Plus className="h-3 w-3" />
+          Add dimension
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-1 w-56">
+        <div className="space-y-0.5">
+          {remaining.map((tag) => (
+            <button
+              key={tag.key}
+              type="button"
+              onClick={() => onAdd(tag.key)}
+              className={cn(
+                "w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-muted",
+                tag.tone === "pink"
+                  ? "text-pink-700 dark:text-pink-300"
+                  : "text-teal-700 dark:text-teal-300",
               )}
             >
               {tag.label}
-            </span>
+            </button>
           ))}
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
