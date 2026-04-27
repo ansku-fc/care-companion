@@ -148,6 +148,8 @@ function IllnessRowEditor({
             placeholder="Add medication…"
             tone="neutral"
             allowCustom
+            suggested={getSuggestedMedications(row.icd_code)}
+            suggestedLabel="Commonly used"
           />
         </div>
       </div>
