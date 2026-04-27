@@ -486,6 +486,7 @@ export function SubDimensionView({
   subScore,
   patient,
   healthCategories,
+  labResults,
   onNavigateToParent,
   onNavigateToMedications,
   renderRiskFactors,
@@ -497,6 +498,7 @@ export function SubDimensionView({
   subScore: number | null;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
+  labResults?: Tables<"patient_lab_results">[] | null;
   onNavigateToParent: () => void;
   onNavigateToMedications: () => void;
   renderRiskFactors: () => React.ReactNode;
