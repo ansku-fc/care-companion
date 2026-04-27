@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronsUpDown, X, Upload, FileText, Image as ImageIcon } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
