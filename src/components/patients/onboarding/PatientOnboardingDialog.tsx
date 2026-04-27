@@ -86,11 +86,13 @@ const TOTAL_STEPS = STEP_LABELS.length;
  */
 export function PatientOnboardingDialog(props: Props) {
   const [initial, setInitial] = useState<Partial<OnboardingForm> | null>(null);
+  const [patientGender, setPatientGender] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!props.open) {
       setInitial(null);
+      setPatientGender(null);
       return;
     }
     let cancelled = false;
@@ -104,11 +106,12 @@ export function PatientOnboardingDialog(props: Props) {
           .maybeSingle(),
         supabase
           .from("patients")
-          .select("date_of_birth")
+          .select("date_of_birth, gender")
           .eq("id", props.patientId)
           .maybeSingle(),
       ]);
       if (cancelled) return;
+      setPatientGender((patientRow as any)?.gender ?? null);
       const dobAge = patientRow?.date_of_birth
         ? Math.floor((Date.now() - new Date(patientRow.date_of_birth).getTime()) / 31557600000)
         : null;
