@@ -1949,6 +1949,13 @@ const TIER_OPTIONS = [
 function splitName(full: string): { first: string; last: string } {
   const trimmed = (full || "").trim();
   if (!trimmed) return { first: "", last: "" };
+  // Handle "Last, First" format (comma-separated) — common in clinical lists.
+  if (trimmed.includes(",")) {
+    const [lastPart, ...rest] = trimmed.split(",");
+    const last = lastPart.trim();
+    const first = rest.join(",").trim();
+    if (first || last) return { first, last };
+  }
   const parts = trimmed.split(/\s+/);
   if (parts.length === 1) return { first: parts[0], last: "" };
   return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
@@ -2083,15 +2090,16 @@ function PatientDetailsView({
 
   const savePatient = async (updates: Partial<Tables<"patients">>, section: "personal" | "contact" | "billing") => {
     setSavingSection(section);
+    const payload = { ...updates, updated_at: new Date().toISOString() } as any;
     const { data, error } = await supabase
       .from("patients")
-      .update(updates as any)
+      .update(payload)
       .eq("id", patient.id)
       .select("*")
       .single();
     setSavingSection(null);
     if (error || !data) {
-      toast.error("Failed to save changes");
+      toast.error(error?.message ? `Failed to save: ${error.message}` : "Failed to save changes");
       console.error(error);
       return false;
     }
