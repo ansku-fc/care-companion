@@ -541,8 +541,8 @@ export function SubDimensionView({
 }: {
   parent: MainDimension;
   subKey: string;
-  parentScore: number;
-  subScore: number;
+  parentScore: number | null;
+  subScore: number | null;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
   onNavigateToParent: () => void;
@@ -561,8 +561,8 @@ export function SubDimensionView({
     (c) => c.category.toLowerCase() === categoryKey,
   );
 
-  const subScoreColor = scoreColorClass(subScore);
-  const parentScoreColor = scoreColorClass(parentScore);
+  const subScoreColor = subScore != null ? scoreColorClass(subScore) : "text-muted-foreground";
+  const parentScoreColor = parentScore != null ? scoreColorClass(parentScore) : "text-muted-foreground";
 
   return (
     <div className="space-y-4">
