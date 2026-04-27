@@ -313,29 +313,77 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   const meaningfulCurrent = currentIllnesses.filter((i: any) => i?.illness_name?.trim());
   const meaningfulPrevious = previousIllnesses.filter((i: any) => i?.illness_name?.trim());
 
-  function renderIllness(i: any) {
+  function renderIllness(
+    i: any,
+    onChange: (next: any) => void,
+    onRemove: () => void,
+  ) {
     const meds: any[] = Array.isArray(i.medications) ? i.medications : [];
-    return (
-      <div key={i.id ?? i.illness_name} className="text-sm">
-        <div className="font-medium">
-          {i.icd_code ? <span className="text-muted-foreground mr-1">{i.icd_code}</span> : null}
-          {i.illness_name}
-          {i.onset_year ? <span className="text-muted-foreground"> · onset {i.onset_year}</span> : null}
-          {i.resolved_year ? <span className="text-muted-foreground"> · resolved {i.resolved_year}</span> : null}
-        </div>
-        {meds.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {meds.map((m: any, idx: number) => (
-              <Badge key={idx} variant="outline" className="text-[11px] font-normal">
-                {m.atc_code ? `${m.atc_code} ` : ""}
-                {m.name}
-                {m.dose ? ` · ${m.dose}` : ""}
-                {m.frequency ? ` · ${m.frequency}` : ""}
-                {m.route ? ` · ${m.route}` : ""}
-              </Badge>
-            ))}
+    if (!editing) {
+      return (
+        <div key={i.id ?? i.illness_name} className="text-sm">
+          <div className="font-medium">
+            {i.icd_code ? <span className="text-muted-foreground mr-1">{i.icd_code}</span> : null}
+            {i.illness_name}
+            {i.onset_year ? <span className="text-muted-foreground"> · onset {i.onset_year}</span> : null}
+            {i.resolved_year ? <span className="text-muted-foreground"> · resolved {i.resolved_year}</span> : null}
           </div>
-        )}
+          {meds.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {meds.map((m: any, idx: number) => (
+                <Badge key={idx} variant="outline" className="text-[11px] font-normal">
+                  {m.atc_code ? `${m.atc_code} ` : ""}
+                  {m.name}
+                  {m.dose ? ` · ${m.dose}` : ""}
+                  {m.frequency ? ` · ${m.frequency}` : ""}
+                  {m.route ? ` · ${m.route}` : ""}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    const setMed = (idx: number, patch: any) => {
+      const nextMeds = meds.map((m, j) => (j === idx ? { ...m, ...patch } : m));
+      onChange({ ...i, medications: nextMeds });
+    };
+    const removeMed = (idx: number) => {
+      onChange({ ...i, medications: meds.filter((_, j) => j !== idx) });
+    };
+    const addMed = () => {
+      onChange({ ...i, medications: [...meds, { name: "", atc_code: "", dose: "", frequency: "", route: "" }] });
+    };
+    return (
+      <div key={i.id ?? i.illness_name} className="border rounded-md p-2 space-y-2 bg-muted/20">
+        <div className="flex items-start gap-2">
+          <div className="grid grid-cols-[90px_1fr] gap-1.5 flex-1">
+            <Input value={i.icd_code ?? ""} onChange={(e) => onChange({ ...i, icd_code: e.target.value })} placeholder="ICD" className="h-7 text-xs" />
+            <Input value={i.illness_name ?? ""} onChange={(e) => onChange({ ...i, illness_name: e.target.value })} placeholder="Illness name" className="h-7 text-xs" />
+            <Input value={i.onset_year ?? ""} onChange={(e) => onChange({ ...i, onset_year: e.target.value })} placeholder="Onset year" className="h-7 text-xs" />
+            <Input value={i.resolved_year ?? ""} onChange={(e) => onChange({ ...i, resolved_year: e.target.value })} placeholder="Resolved year" className="h-7 text-xs" />
+          </div>
+          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={onRemove}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        <div className="space-y-1">
+          {meds.map((m: any, idx: number) => (
+            <div key={idx} className="flex items-center gap-1">
+              <Input value={m.atc_code ?? ""} onChange={(e) => setMed(idx, { atc_code: e.target.value })} placeholder="ATC" className="h-7 text-xs w-20" />
+              <Input value={m.name ?? ""} onChange={(e) => setMed(idx, { name: e.target.value })} placeholder="Medication" className="h-7 text-xs flex-1" />
+              <Input value={m.dose ?? ""} onChange={(e) => setMed(idx, { dose: e.target.value })} placeholder="Dose" className="h-7 text-xs w-20" />
+              <Input value={m.frequency ?? ""} onChange={(e) => setMed(idx, { frequency: e.target.value })} placeholder="Freq" className="h-7 text-xs w-24" />
+              <Input value={m.route ?? ""} onChange={(e) => setMed(idx, { route: e.target.value })} placeholder="Route" className="h-7 text-xs w-20" />
+              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => removeMed(idx)}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+          <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-1.5" onClick={addMed}>
+            <Plus className="h-3 w-3" /> Add medication
+          </Button>
+        </div>
       </div>
     );
   }
