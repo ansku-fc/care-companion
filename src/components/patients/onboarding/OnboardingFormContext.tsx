@@ -2,6 +2,14 @@ import { createContext, useContext, useState, useCallback, useMemo, type ReactNo
 
 /* ---------------- Types ---------------- */
 
+import type { AllergySeverity } from "@/lib/allergens";
+
+export type AllergyEntry = {
+  name: string;
+  icd_code: string | null;
+  severity: AllergySeverity | null;
+};
+
 export type IllnessRow = {
   id: string;
   icd_code: string;
