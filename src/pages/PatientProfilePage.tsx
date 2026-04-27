@@ -2765,13 +2765,8 @@ function HealthDimensionView({
     // Allergies count + list
     const allergiesList: any[] = Array.isArray(extra.allergies) ? extra.allergies : [];
 
-    // Subgroup score badge — same colour scale used elsewhere in the app.
-    const scoreColor = (s: number | null | undefined): string => {
-      if (s == null) return "bg-muted text-muted-foreground";
-      if (s >= 7) return "bg-[hsl(137_25%_39%/0.15)] text-[hsl(137_25%_30%)]";
-      if (s >= 4) return "bg-[hsl(28_63%_44%/0.15)] text-[hsl(28_63%_38%)]";
-      return "bg-[hsl(330_81%_60%/0.15)] text-[hsl(330_81%_45%)]";
-    };
+    // Subgroup score badge — uses shared @/lib/scoreColor.scoreBadgeClass
+    const scoreColor = scoreBadgeClass;
 
     // Row spec — defer rendering until we know which subgroup it belongs to.
     type RowSpec = {
