@@ -201,6 +201,22 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
     setOutcomeTag("");
     setReferralOpen(false);
     setReferralForm(task ? buildReferralForm(task, patientName) : null);
+    // Pre-fill DOB from patient record
+    let cancelled = false;
+    if (task?.patient_id) {
+      supabase
+        .from("patients")
+        .select("date_of_birth")
+        .eq("id", task.patient_id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (cancelled || !data?.date_of_birth) return;
+          const dob = formatDobDDMMYYYY(data.date_of_birth as string);
+          if (!dob) return;
+          setReferralForm((prev) => (prev ? { ...prev, dob: prev.dob || dob } : prev));
+        });
+    }
+    return () => { cancelled = true; };
   }, [task, patientName]);
 
   if (!task) return null;
