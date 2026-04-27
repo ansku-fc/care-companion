@@ -1221,7 +1221,7 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
                 </TableBody>
               </Table>
             )}
-            <Button variant="ghost" size="sm" className="w-full text-xs mt-2" onClick={() => navigate("/tasks")}>
+            <Button variant="ghost" size="sm" className="w-full text-xs mt-2" onClick={() => navigate(`/tasks?patient=${patient.id}`)}>
               See all tasks →
             </Button>
           </CardContent>
