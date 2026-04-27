@@ -72,21 +72,7 @@ export function StepStatus() {
               label={f.label}
               finding={form.exam_findings[f.key]}
               onChange={(p) => updateFinding(f.key, p)}
-            >
-              {f.key === "peripheral_circulation" && form.exam_findings.peripheral_circulation.present && (
-                <div className="mt-3 space-y-2 pl-3 border-l-2 border-border/60">
-                  {PERIPHERAL_SUBS.map((s) => (
-                    <FindingRow
-                      key={String(s.key)}
-                      label={s.label}
-                      finding={form.exam_findings[s.key]}
-                      onChange={(p) => updateFinding(s.key, p)}
-                      compact
-                    />
-                  ))}
-                </div>
-              )}
-            </FindingRow>
+            />
           ))}
         </div>
       </div>
