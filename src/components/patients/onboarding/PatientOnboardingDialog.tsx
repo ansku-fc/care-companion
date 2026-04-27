@@ -32,6 +32,8 @@ import { StepCancer } from "./StepCancer";
 import { StepStatus } from "./StepStatus";
 import { blankExamFindings, normalizeIllnessRows, type AllergyEntry } from "./OnboardingFormContext";
 import { findAllergen } from "@/lib/allergens";
+import { buildSuggestedTasks, type SuggestedTask } from "./suggestedTasks";
+import { SuggestedTasksDialog } from "./SuggestedTasksDialog";
 
 function normalizeAllergies(raw: unknown): AllergyEntry[] {
   if (!Array.isArray(raw)) return [];
@@ -266,6 +268,8 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
   const [saving, setSaving] = useState<"draft" | "save" | "skip" | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollMemory = useRef<Record<number, number>>({});
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<SuggestedTask[]>([]);
 
   const today = useMemo(() => format(new Date(), "MMM d, yyyy"), []);
 
@@ -709,8 +713,18 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       if (!isLast) setStep(nextStep);
       toast.success(isLast ? "Onboarding complete" : "Step saved");
       if (isLast) {
-        onOpenChange(false);
-        onCompleted?.();
+        // Build & show suggested follow-up tasks before navigating away.
+        const { count } = await supabase
+          .from("patient_lab_results")
+          .select("id", { count: "exact", head: true })
+          .eq("patient_id", patientId);
+        const built = buildSuggestedTasks({
+          form: nextForm,
+          patientName,
+          hasLabResults: (count ?? 0) > 0,
+        });
+        setSuggestions(built);
+        setSuggestionsOpen(true);
       }
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save");
@@ -720,6 +734,7 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-5xl w-[95vw] h-[90vh] p-0 rounded-xl flex flex-col gap-0 overflow-hidden"
@@ -798,6 +813,18 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         </div>
       </DialogContent>
     </Dialog>
+
+    <SuggestedTasksDialog
+      open={suggestionsOpen}
+      onOpenChange={setSuggestionsOpen}
+      patientId={patientId}
+      suggestions={suggestions}
+      onDone={() => {
+        onOpenChange(false);
+        onCompleted?.();
+      }}
+    />
+    </>
   );
 }
 
