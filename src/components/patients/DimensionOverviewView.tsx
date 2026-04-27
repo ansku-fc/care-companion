@@ -428,6 +428,7 @@ export function MainDimensionOverview({
                   filterOptions={filterOptions}
                   patientId={patient.id}
                   patientName={patient.full_name}
+                  labResults={labResults}
                 />
               </TabsContent>
             </Tabs>
