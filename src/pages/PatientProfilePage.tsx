@@ -2570,6 +2570,7 @@ function HealthDimensionView({
 }) {
   const dim = findDimension(dimensionKey);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
