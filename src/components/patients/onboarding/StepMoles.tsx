@@ -258,17 +258,6 @@ function BodySilhouette({
         <path d={bodyPath} fill="#C4B5E8" />
 
         {/* Pins */}
-        {pins.map((m) => (
-          <g
-            key={m.id}
-            data-pin
-            transform={`translate(${(m.pin_x! / 100) * 100}, ${(m.pin_y! / 100) * 220})`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onPinClick(m.id);
-            }}
-            className="cursor-pointer"
-
         {/* Pins */}
         {pins.map((m) => (
           <g
