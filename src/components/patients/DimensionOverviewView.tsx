@@ -593,14 +593,14 @@ export function SubDimensionView({
                   {parent.label}
                 </span>
                 <span className={cn("text-base font-semibold leading-none", parentScoreColor)}>
-                  {parentScore.toFixed(1)}
+                  {parentScore != null ? parentScore.toFixed(1) : "—"}
                 </span>
               </button>
               <span className="text-muted-foreground/50">→</span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
                 <span className={cn("text-2xl font-bold leading-none", subScoreColor)}>
-                  {subScore.toFixed(1)}
+                  {subScore != null ? subScore.toFixed(1) : "—"}
                 </span>
               </div>
             </div>
