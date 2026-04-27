@@ -30,7 +30,32 @@ import { StepSleep } from "./StepSleep";
 import { StepMentalHealth } from "./StepMentalHealth";
 import { StepCancer } from "./StepCancer";
 import { StepStatus } from "./StepStatus";
-import { blankExamFindings } from "./OnboardingFormContext";
+import { blankExamFindings, type AllergyEntry } from "./OnboardingFormContext";
+import { findAllergen } from "@/lib/allergens";
+
+function normalizeAllergies(raw: unknown): AllergyEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): AllergyEntry | null => {
+      if (typeof item === "string") {
+        // Legacy string[] format
+        const trimmed = item.trim();
+        if (!trimmed) return null;
+        return { name: trimmed, icd_code: findAllergen(trimmed)?.icd10 ?? null, severity: null };
+      }
+      if (item && typeof item === "object" && typeof (item as any).name === "string") {
+        const name = (item as any).name.trim();
+        if (!name) return null;
+        return {
+          name,
+          icd_code: (item as any).icd_code ?? findAllergen(name)?.icd10 ?? null,
+          severity: ((item as any).severity ?? null) as AllergyEntry["severity"],
+        };
+      }
+      return null;
+    })
+    .filter((x): x is AllergyEntry => x !== null);
+}
 
 type Props = {
   patientId: string;
