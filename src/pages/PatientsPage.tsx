@@ -171,10 +171,13 @@ const PatientsPage = () => {
                           </Badge>
                         );
                       }
-                      if (status === "in_progress") {
+                      if (status === "in_progress" || status === "draft") {
                         return (
-                          <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground border-transparent">
-                            Onboarding in progress
+                          <Badge
+                            variant="secondary"
+                            className="text-xs border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                          >
+                            In progress
                           </Badge>
                         );
                       }
