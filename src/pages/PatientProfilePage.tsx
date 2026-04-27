@@ -2090,15 +2090,16 @@ function PatientDetailsView({
 
   const savePatient = async (updates: Partial<Tables<"patients">>, section: "personal" | "contact" | "billing") => {
     setSavingSection(section);
+    const payload = { ...updates, updated_at: new Date().toISOString() } as any;
     const { data, error } = await supabase
       .from("patients")
-      .update(updates as any)
+      .update(payload)
       .eq("id", patient.id)
       .select("*")
       .single();
     setSavingSection(null);
     if (error || !data) {
-      toast.error("Failed to save changes");
+      toast.error(error?.message ? `Failed to save: ${error.message}` : "Failed to save changes");
       console.error(error);
       return false;
     }
