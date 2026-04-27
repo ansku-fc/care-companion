@@ -54,6 +54,9 @@ type SelectedMarker = {
 };
 
 export function LabResultsBlock({
+  /** Pre-grouped categories from the shared registry. Required for the new view. */
+  categories,
+  /** Legacy flat biomarker list — used only by sub-dimension callers that still pass it. */
   biomarkers,
   filter,
   onFilterChange,
@@ -61,20 +64,47 @@ export function LabResultsBlock({
   patientId,
   patientName,
   labResults,
+  viewMode = "graphs",
 }: {
-  biomarkers: BiomarkerDef[];
+  categories?: LabMarkerCategory[];
+  biomarkers?: BiomarkerDef[];
   filter?: string;
   onFilterChange?: (k: string) => void;
   filterOptions?: { key: string; label: string }[];
   patientId?: string;
   patientName?: string;
   labResults?: Array<Record<string, any>> | null;
+  viewMode?: "graphs" | "table";
 }) {
   const [selectedMarker, setSelectedMarker] = useState<SelectedMarker | null>(null);
   const [sidebarWindow, setSidebarWindow] = useState<"6m" | "1y" | "3y" | "all">("3y");
-  const visible = filter && filter !== "all"
-    ? biomarkers.filter((b) => b.subDimension === filter)
-    : biomarkers;
+
+  // Build a unified `sections` view: prefer the shared registry (categories);
+  // fall back to legacy biomarkers list grouped under a single section.
+  const sections = useMemo<{ title: string; rows: BiomarkerDef[] }[]>(() => {
+    if (categories && categories.length > 0) {
+      return categories.map((c) => ({
+        title: c.title,
+        rows: c.rows.map(rowToBiomarkerDef),
+      }));
+    }
+    if (biomarkers && biomarkers.length > 0) {
+      return [{ title: "", rows: biomarkers }];
+    }
+    return [];
+  }, [categories, biomarkers]);
+
+  const filteredSections = useMemo(() => {
+    if (!filter || filter === "all") return sections;
+    return sections
+      .map((s) => ({ ...s, rows: s.rows.filter((b) => b.subDimension === filter) }))
+      .filter((s) => s.rows.length > 0);
+  }, [sections, filter]);
+
+  const allVisibleRows = useMemo(
+    () => filteredSections.flatMap((s) => s.rows),
+    [filteredSections],
+  );
 
   const selectMarker = (b: BiomarkerDef) =>
     setSelectedMarker({
@@ -118,28 +148,41 @@ export function LabResultsBlock({
         </div>
       )}
 
-      {visible.length === 0 ? (
+      {allVisibleRows.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
           No biomarkers tracked for this selection yet.
         </p>
+      ) : viewMode === "table" ? (
+        <DimensionLabTable sections={filteredSections} labResults={labResults} />
       ) : (
         <div className="flex gap-4">
-          <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4 flex-1 min-w-0`}>
-            {visible.map((b) => (
-              <CardioLabBiomarkerPanel
-                key={b.key}
-                biomarkerKey={b.key}
-                label={b.label}
-                unit={b.unit}
-                refLow={b.refLow}
-                refHigh={b.refHigh}
-                accentColorVar="#2C1A0E"
-                selected={selectedMarker?.key === b.key}
-                onSelect={() => selectMarker(b)}
-                patientId={patientId}
-                patientName={patientName}
-                labResults={labResults}
-              />
+          <div className="flex-1 min-w-0 space-y-6">
+            {filteredSections.map((section) => (
+              <div key={section.title || "default"} className="space-y-3">
+                {section.title && (
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    {section.title}
+                  </h3>
+                )}
+                <div className={`grid grid-cols-1 ${selectedMarker ? "lg:grid-cols-1" : "lg:grid-cols-2"} gap-4`}>
+                  {section.rows.map((b) => (
+                    <CardioLabBiomarkerPanel
+                      key={b.key}
+                      biomarkerKey={b.key}
+                      label={b.label}
+                      unit={b.unit}
+                      refLow={b.refLow}
+                      refHigh={b.refHigh}
+                      accentColorVar="#2C1A0E"
+                      selected={selectedMarker?.key === b.key}
+                      onSelect={() => selectMarker(b)}
+                      patientId={patientId}
+                      patientName={patientName}
+                      labResults={labResults}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 
@@ -212,6 +255,130 @@ export function LabResultsBlock({
           })()}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Convert a registry row to the BiomarkerDef shape the chart panel expects. */
+function rowToBiomarkerDef(r: LabMarkerRow): BiomarkerDef {
+  return {
+    key: r.key,
+    label: r.label,
+    unit: r.unit,
+    refLow: r.refLow,
+    refHigh: r.refHigh,
+    subDimension: r.subDimension ?? "",
+  };
+}
+
+/** Compact per-dimension table — same shape as the main lab table. */
+function DimensionLabTable({
+  sections,
+  labResults,
+}: {
+  sections: { title: string; rows: BiomarkerDef[] }[];
+  labResults?: Array<Record<string, any>> | null;
+}) {
+  const labs = (labResults ?? []) as Array<Record<string, any>>;
+  const sorted = [...labs].sort((a, b) =>
+    String(a.result_date ?? "").localeCompare(String(b.result_date ?? "")),
+  );
+
+  if (sorted.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-8 text-center">
+        No lab results yet.
+      </p>
+    );
+  }
+
+  const cellValue = (lab: Record<string, any>, key: string): string => {
+    const v = lab[key];
+    if (v === null || v === undefined) return "—";
+    if (typeof v === "boolean") return v ? "1" : "0";
+    return String(v);
+  };
+
+  const isOOR = (b: BiomarkerDef, lab: Record<string, any>): "high" | "low" | null => {
+    const raw = lab[b.key];
+    if (raw === null || raw === undefined || typeof raw === "boolean") return null;
+    const n = Number(raw);
+    if (isNaN(n)) return null;
+    if (b.refHigh != null && n > b.refHigh) return "high";
+    if (b.refLow != null && n < b.refLow) return "low";
+    return null;
+  };
+
+  return (
+    <div className="border rounded-lg overflow-hidden bg-card">
+      <div className="overflow-x-auto">
+        <table className="text-sm border-collapse w-full">
+          <thead>
+            <tr className="border-b bg-muted/30">
+              <th className="h-10 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sticky left-0 bg-muted/30 z-10 min-w-[200px]">
+                Marker
+              </th>
+              <th className="h-10 px-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[80px]">
+                Unit
+              </th>
+              {sorted.map((lab) => {
+                const d = new Date(String(lab.result_date));
+                const label = `${d.getFullYear()} / ${String(d.getMonth() + 1).padStart(2, "0")}`;
+                return (
+                  <th
+                    key={String(lab.id)}
+                    className="h-10 px-3 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground min-w-[90px] whitespace-nowrap"
+                  >
+                    {label}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {sections.map((section) => (
+              <Fragment key={section.title || "default"}>
+                {section.title && (
+                  <tr>
+                    <td
+                      colSpan={2 + sorted.length}
+                      className="font-semibold text-[10px] uppercase tracking-[0.08em] text-muted-foreground py-2 px-4 bg-muted/20"
+                    >
+                      {section.title}
+                    </td>
+                  </tr>
+                )}
+                {section.rows.map((b) => (
+                  <tr key={b.key} className="border-b hover:bg-primary/[0.04]">
+                    <td className="px-4 py-2.5 align-middle font-medium text-sm sticky left-0 bg-card">
+                      {b.label}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle text-xs text-muted-foreground">
+                      {b.unit}
+                    </td>
+                    {sorted.map((lab) => {
+                      const oor = isOOR(b, lab);
+                      return (
+                        <td
+                          key={String(lab.id)}
+                          className={cn(
+                            "px-3 py-2.5 align-middle text-center text-sm whitespace-nowrap tabular-nums",
+                            oor && "text-[hsl(0_72%_45%)] font-semibold",
+                          )}
+                        >
+                          {cellValue(lab, b.key)}
+                          {oor === "high" && " ▲"}
+                          {oor === "low" && " ▼"}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
