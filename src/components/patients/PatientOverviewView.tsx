@@ -46,17 +46,8 @@ const TIER_LABELS: Record<string, string> = {
   children: "Child", onboarding: "Onboarding", acute: "Acute", case_management: "Case Management",
 };
 
-// Risk colour helpers
-function scoreColorClass(score: number): string {
-  if (score <= 3) return "text-[hsl(189_94%_43%)]";  /* teal */
-  if (score <= 6) return "text-[hsl(330_81%_60%)]";  /* pink */
-  return "text-[hsl(330_81%_50%)]";                  /* hot pink-red */
-}
-function scoreBorderColor(score: number): string {
-  if (score <= 3) return "hsl(189 94% 43%)";
-  if (score <= 6) return "hsl(330 81% 60%)";
-  return "hsl(330 81% 50%)";
-}
+// Risk colour helpers — single source of truth in @/lib/scoreColor
+import { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
 
 interface Props {
   patient: Tables<"patients">;
