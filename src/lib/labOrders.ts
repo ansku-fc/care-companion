@@ -27,8 +27,8 @@ export const LAB_PACKAGES: { key: LabPackageKey; label: string; markers: string[
   },
   {
     key: "cardiovascular",
-    label: "Custom",
-    markers: [],
+    label: "Cardiovascular",
+    markers: ["LDL", "HDL", "Total cholesterol", "Triglycerides", "Glucose", "HbA1c"],
   },
 ];
 
