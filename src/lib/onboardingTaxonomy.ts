@@ -308,7 +308,8 @@ export const SUPPLEMENT_LIST = [
   "Collagen", "Other",
 ] as const;
 
-/** Dimension tags rendered as colored chips inside notes textareas. */
+/** Health-dimension chips shown on illness rows. Aligned with the 9 main
+ * dimensions used across the rest of the app (see clinical taxonomy). */
 export type DimensionTag = {
   key: string;
   label: string;
@@ -317,20 +318,67 @@ export type DimensionTag = {
 };
 
 export const DIMENSION_TAGS: DimensionTag[] = [
-  { key: "cardiovascular", label: "@cardiovascular", tone: "pink" },
-  { key: "metabolic", label: "@metabolic", tone: "pink" },
-  { key: "brain-mental", label: "@brain-mental", tone: "pink" },
-  { key: "cancer", label: "@cancer", tone: "pink" },
-  { key: "respiratory", label: "@respiratory", tone: "teal" },
-  { key: "exercise", label: "@exercise", tone: "teal" },
-  { key: "digestion", label: "@digestion", tone: "teal" },
-  { key: "skin", label: "@skin", tone: "teal" },
-  { key: "reproductive", label: "@reproductive", tone: "teal" },
+  { key: "cardiovascular", label: "Cardiovascular Health", tone: "pink" },
+  { key: "metabolic", label: "Metabolic Health", tone: "pink" },
+  { key: "brain-mental", label: "Brain & Mental Health", tone: "pink" },
+  { key: "cancer", label: "Cancer Risk", tone: "pink" },
+  { key: "respiratory", label: "Respiratory & Immune Health", tone: "teal" },
+  { key: "exercise", label: "Exercise & Functional Capacity", tone: "teal" },
+  { key: "digestion", label: "Digestion", tone: "teal" },
+  { key: "skin", label: "Skin", tone: "teal" },
+  { key: "oral", label: "Oral & Mucosal Health", tone: "teal" },
+  { key: "reproductive", label: "Reproductive & Sexual Health", tone: "teal" },
 ];
 
 export function findDimensionTag(key: string): DimensionTag | undefined {
   const k = key.replace(/^@/, "").toLowerCase();
   return DIMENSION_TAGS.find((t) => t.key === k);
+}
+
+/** Map IcdDimension (the lookup-list grouping) to one or more main app
+ * dimension keys. Used as the baseline suggestion before per-code overrides. */
+const ICD_DIMENSION_TO_KEYS: Record<IcdDimension, string[]> = {
+  Cardiovascular: ["cardiovascular"],
+  Metabolic: ["metabolic"],
+  Digestive: ["digestion"],
+  "Respiratory & Immune": ["respiratory"],
+  "Brain & Mental Health": ["brain-mental"],
+  Cancer: ["cancer"],
+  Musculoskeletal: ["exercise"],
+  "Reproductive & Sexual": ["reproductive"],
+  Skin: ["skin"],
+};
+
+/** Per-code overrides where a condition spans multiple main dimensions. */
+const ICD_CODE_DIMENSION_OVERRIDES: Record<string, string[]> = {
+  E10: ["metabolic", "cardiovascular"],
+  E11: ["metabolic", "cardiovascular"],
+  E14: ["metabolic", "cardiovascular"],
+  E66: ["metabolic", "cardiovascular"],
+  E78: ["metabolic", "cardiovascular"],
+  E88: ["metabolic", "cardiovascular"],
+  I63: ["cardiovascular", "brain-mental"],
+  I65: ["cardiovascular", "brain-mental"],
+  G47: ["brain-mental", "cardiovascular"],
+  K70: ["digestion", "metabolic"],
+  K76: ["digestion", "metabolic"],
+  J30: ["respiratory", "oral"],
+  N18: ["reproductive", "metabolic"],
+  O24: ["reproductive", "metabolic"],
+};
+
+export function getSuggestedDimensionsForIcd(
+  icdCode: string | null | undefined,
+): string[] {
+  if (!icdCode) return [];
+  const code = icdCode.trim().toUpperCase();
+  if (!code) return [];
+  if (ICD_CODE_DIMENSION_OVERRIDES[code]) return ICD_CODE_DIMENSION_OVERRIDES[code];
+  const prefix = code.slice(0, 3);
+  if (ICD_CODE_DIMENSION_OVERRIDES[prefix]) return ICD_CODE_DIMENSION_OVERRIDES[prefix];
+  const entry = ICD10_ILLNESSES.find((e) => e.code === code || e.code === prefix);
+  if (!entry) return [];
+  return ICD_DIMENSION_TO_KEYS[entry.dimension] ?? [];
 }
 
 /** Years dropdown helper — descending list from current year back N years. */
