@@ -309,24 +309,67 @@ function FilterSelect({
   );
 }
 
+function ScopePill({
+  active, onClick, label, count, variant,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  variant: "primary" | "outline";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-colors border",
+        active && variant === "primary" && "bg-primary text-primary-foreground border-primary",
+        active && variant === "outline" && "bg-foreground text-background border-foreground",
+        !active && "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/40",
+      )}
+    >
+      <span>{label}</span>
+      <span
+        className={cn(
+          "inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] tabular-nums",
+          active ? "bg-background/20 text-current" : "bg-muted text-muted-foreground",
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
 function TaskRow({
-  task, patientName, onClick,
-}: { task: Task; patientName: string | null; onClick: () => void }) {
+  task, patientName, onClick, mine,
+}: { task: Task; patientName: string | null; onClick: () => void; mine: boolean }) {
   const meta = priorityMeta(task.priority);
   const overdue = isOverdue(task);
   const isReferral = (task as Task & { task_category?: string | null }).task_category === "referral";
   const refProgress = (task as Task & { referral_progress?: ReferralProgress | null }).referral_progress;
   const stepCount = isReferral ? completedCount(refProgress) : 0;
   const showRefProgress = isReferral && task.status !== "done";
+  const fyi = !mine;
   return (
     <button
       onClick={onClick}
       className={cn(
         "w-full text-left bg-card border rounded-lg px-3 py-2.5 hover:border-primary/40 transition-colors",
         "flex items-center gap-3",
+        fyi && "opacity-60 border-l-2 border-l-muted-foreground/30",
       )}
     >
-      <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", meta.dot)} />
+      <span
+        className={cn(
+          "h-2.5 w-2.5 rounded-full shrink-0",
+          fyi ? "bg-muted-foreground/40" : meta.dot,
+        )}
+      />
+      {fyi && task.assignee_name && (
+        <AssigneeAvatar name={task.assignee_name} size="xs" />
+      )}
       <div className="flex-1 min-w-0">
         <p className={cn(
           "text-sm font-medium truncate flex items-center gap-2",
@@ -351,10 +394,21 @@ function TaskRow({
           {patientName && <span className="text-foreground/80 font-medium">{patientName}</span>}
           {patientName && <span>·</span>}
           <span>{categoryLabel(task.category)}</span>
-          {task.assignee_name && <><span>·</span><span>{task.assignee_name}</span></>}
+          {fyi && task.assignee_name && (
+            <>
+              <span>·</span>
+              <span>{task.assignee_name}</span>
+              <span className="ml-0.5 inline-flex items-center px-1.5 h-4 rounded bg-muted text-[9px] uppercase tracking-wide font-semibold text-muted-foreground">
+                FYI
+              </span>
+            </>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {task.assignee_name && (
+          <AssigneeAvatar name={task.assignee_name} size="sm" />
+        )}
         {task.due_date && (
           <span className={cn(
             "text-[11px] tabular-nums",
