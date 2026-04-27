@@ -496,12 +496,8 @@ function DimensionChipsRow({
             className={cn(
               "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] border",
               confirmed
-                ? tag.tone === "pink"
-                  ? "bg-pink-100 text-pink-900 border-pink-200 dark:bg-pink-900/30 dark:text-pink-200 dark:border-pink-900"
-                  : "bg-teal-100 text-teal-900 border-teal-200 dark:bg-teal-900/30 dark:text-teal-200 dark:border-teal-900"
-                : tag.tone === "pink"
-                  ? "bg-transparent text-pink-700 border-pink-300 border-dashed dark:text-pink-300 dark:border-pink-700"
-                  : "bg-transparent text-teal-700 border-teal-300 border-dashed dark:text-teal-300 dark:border-teal-700",
+                ? "bg-secondary text-secondary-foreground border-border"
+                : "bg-transparent text-muted-foreground border-dashed border-border",
             )}
           >
             {tag.label}
@@ -516,25 +512,27 @@ function DimensionChipsRow({
           </span>
         );
       })}
-      <AddDimensionPopover
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        existing={dimensions}
-        onAdd={(key) => {
-          onChange([...dimensions, key], confirmed);
-          setAddOpen(false);
-        }}
-      />
       {!confirmed && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => onChange(dimensions, true)}
-          className="h-6 px-2 text-[11px]"
-        >
-          Confirm suggestion
-        </Button>
+        <>
+          <AddDimensionPopover
+            open={addOpen}
+            onOpenChange={setAddOpen}
+            existing={dimensions}
+            onAdd={(key) => {
+              onChange([...dimensions, key], confirmed);
+              setAddOpen(false);
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onChange(dimensions, true)}
+            className="h-6 px-2 text-[11px]"
+          >
+            Confirm suggestion
+          </Button>
+        </>
       )}
     </div>
   );
