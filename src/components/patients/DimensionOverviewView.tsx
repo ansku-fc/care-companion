@@ -362,8 +362,8 @@ export function MainDimensionOverview({
   onDataChanged,
 }: {
   main: MainDimension;
-  parentScore: number;
-  subScores: Record<string, number>;
+  parentScore: number | null;
+  subScores: Record<string, number | null>;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
   onNavigateToSub: (subKey: string) => void;
