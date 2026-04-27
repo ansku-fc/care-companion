@@ -556,7 +556,11 @@ export function OnboardingFormProvider({
     [form, set, patch, hydrate, addIllness, removeIllness, updateIllness, addFamilyRow, removeFamilyRow, updateFamilyRow],
   );
 
-  return <OnboardingFormContext.Provider value={value}>{children}</OnboardingFormContext.Provider>;
+  return (
+    <OnboardingFormContext.Provider value={{ ...value, patientGender }}>
+      {children}
+    </OnboardingFormContext.Provider>
+  );
 }
 
 export function useOnboardingForm() {
