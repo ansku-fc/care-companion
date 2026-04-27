@@ -284,7 +284,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
         action: "Re-opened for editing",
         reason,
       },
-      { ...doc, status: "under_review" }
+      { ...doc, status: "draft", finalised_at: null, finalised_by: null }
     );
     if (await persist(next)) {
       setDoc(next);
