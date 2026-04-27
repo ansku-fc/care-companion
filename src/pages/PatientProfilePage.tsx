@@ -2615,7 +2615,23 @@ function HealthDimensionView({
 
   const renderContent = () => {
     const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
-    
+    const extra = ((onboarding as any)?.extra_data ?? {}) as Record<string, any>;
+
+    // Coloured pill helper for flagged values (amber = borderline, pink = high)
+    const Flag = ({ tone, children }: { tone: "amber" | "pink" | "green"; children: React.ReactNode }) => {
+      const cls =
+        tone === "pink"
+          ? "bg-[hsl(330_81%_60%/0.15)] text-[hsl(330_81%_45%)]"
+          : tone === "amber"
+            ? "bg-[hsl(28_63%_44%/0.15)] text-[hsl(28_63%_38%)]"
+            : "bg-[hsl(137_25%_39%/0.15)] text-[hsl(137_25%_30%)]";
+      return (
+        <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ml-2", cls)}>
+          {children}
+        </span>
+      );
+    };
+
     // Helper component for expandable risk rows (same as cardiovascular)
     const ExpandableRow = ({ 
       label, 
@@ -2727,20 +2743,44 @@ function HealthDimensionView({
       }
       case "nervous_system":
       case "brain_mental": {
+        const stress = onboarding?.stress_perceived;
+        const workload = extra.workload_perceived;
+        const recovery = extra.recovery_perceived;
+        const socialSupport = onboarding?.social_support_perceived;
         return (
           <div className="divide-y border rounded-md">
             {renderCurrentIllnessesRow("Brain & Mental Health", "current_illness")}
+            <ExpandableRow label="Stress (perceived)" value={<>{stress ?? "—"}{stress != null && Number(stress) >= 8 && <Flag tone="pink">High</Flag>}{stress != null && Number(stress) >= 6 && Number(stress) < 8 && <Flag tone="amber">Elevated</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("stress_bm")} onToggle={() => toggleRow("stress_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported stress level (1–10). ≥8 indicates high chronic stress load.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Workload (perceived)" value={<>{workload ?? "—"}{workload != null && Number(workload) >= 8 && <Flag tone="pink">High</Flag>}{workload != null && Number(workload) >= 6 && Number(workload) < 8 && <Flag tone="amber">Elevated</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("workload_bm")} onToggle={() => toggleRow("workload_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported workload intensity (1–10).</p>
+            </ExpandableRow>
+            <ExpandableRow label="Recovery (perceived)" value={<>{recovery ?? "—"}{recovery != null && Number(recovery) <= 4 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("recovery_bm")} onToggle={() => toggleRow("recovery_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported recovery capacity (1–10). ≤4 indicates poor recovery.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Social Support" value={<>{socialSupport ?? "—"}{socialSupport != null && Number(socialSupport) <= 3 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("social_bm")} onToggle={() => toggleRow("social_bm")}>
+              <p className="text-sm text-muted-foreground">Perceived social support (1–10).</p>
+            </ExpandableRow>
+            <ExpandableRow label="GAD-2 Score" value={<>{onboarding?.gad2_score ?? "—"}{onboarding?.gad2_score != null && Number(onboarding.gad2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("gad2_bm")} onToggle={() => toggleRow("gad2_bm")}>
+              <p className="text-sm text-muted-foreground">Anxiety screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="PHQ-2 Score" value={<>{onboarding?.phq2_score ?? "—"}{onboarding?.phq2_score != null && Number(onboarding.phq2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("phq2_bm")} onToggle={() => toggleRow("phq2_bm")}>
+              <p className="text-sm text-muted-foreground">Depression screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sleep Quality" value={<>{onboarding?.sleep_quality ? `${onboarding.sleep_quality}/10` : "—"}</>} recorded={onboardingDate} expanded={expandedRows.has("sleep_q_bm")} onToggle={() => toggleRow("sleep_q_bm")}>
+              <p className="text-sm text-muted-foreground">Bedtime {extra.sleep_bedtime ?? "—"} · Wake {extra.sleep_waking_time ?? "—"} · Deep sleep {onboarding?.deep_sleep_percent != null ? `${onboarding.deep_sleep_percent}%` : "—"}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Daytime Fatigue" value={<>{extra.daytime_fatigue ?? "—"}{extra.daytime_fatigue != null && Number(extra.daytime_fatigue) >= 7 && <Flag tone="amber">High</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("fatigue_bm")} onToggle={() => toggleRow("fatigue_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported daytime fatigue (1–10).</p>
+            </ExpandableRow>
+            {extra.nicotine_pouches_current && (
+              <ExpandableRow label="Nicotine Pouches" value={<>{`${extra.nicotine_pouches_per_day ?? "?"}/day · ${extra.nicotine_pouches_strength ?? ""}`}<Flag tone="amber">Substance use</Flag></>} recorded={onboardingDate} expanded={expandedRows.has("nico_bm")} onToggle={() => toggleRow("nico_bm")}>
+                <p className="text-sm text-muted-foreground">Active nicotine pouch use — risk factor for cardiovascular and brain health.</p>
+              </ExpandableRow>
+            )}
             <ExpandableRow label="Neurological Illness" value={onboarding?.illness_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_illness")} onToggle={() => toggleRow("neuro_illness")}>
               <p className="text-sm text-muted-foreground">History of neurological conditions.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Neurological Symptoms" value={onboarding?.symptom_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_symptoms")} onToggle={() => toggleRow("neuro_symptoms")}>
-              <p className="text-sm text-muted-foreground">Current neurological symptom reporting.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Balance Issues" value={onboarding?.symptom_balance ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("balance")} onToggle={() => toggleRow("balance")}>
-              <p className="text-sm text-muted-foreground">Balance and coordination concerns.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Genetic (Nervous System)" value={onboarding?.genetic_nervous_system ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic")} onToggle={() => toggleRow("genetic")}>
-              <p className="text-sm text-muted-foreground">Family history of neurological conditions.</p>
             </ExpandableRow>
             <ExpandableRow label="Previous Brain Damage" value={onboarding?.prev_brain_damage ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("brain_damage")} onToggle={() => toggleRow("brain_damage")}>
               <p className="text-sm">{onboarding?.prev_brain_damage_notes || "No additional notes recorded."}</p>
@@ -2760,9 +2800,10 @@ function HealthDimensionView({
           { date: "2024-06-01", value: 8 },
           { date: "2025-01-01", value: Number(exerciseCurrent) || 8 },
         ];
+        const met = onboarding?.exercise_met_hours;
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Exercise (MET hrs/week)" value={exerciseCurrent} recorded={onboardingDate} expanded={expandedRows.has("exercise")} onToggle={() => toggleRow("exercise")}>
+            <ExpandableRow label="Exercise (MET hrs/week)" value={<>{exerciseCurrent}{met != null && Number(met) >= 17.5 && <Flag tone="green">Above WHO rec.</Flag>}{met != null && Number(met) < 8 && <Flag tone="amber">Below rec.</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("exercise")} onToggle={() => toggleRow("exercise")}>
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Exercise history</p>
                 <table className="w-full text-sm">
@@ -2776,6 +2817,21 @@ function HealthDimensionView({
                   </tbody>
                 </table>
               </div>
+            </ExpandableRow>
+            <ExpandableRow label="Cardio Easy" value={onboarding?.cardio_easy_hours_per_week != null ? `${onboarding.cardio_easy_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("cardio_easy")} onToggle={() => toggleRow("cardio_easy")}>
+              <p className="text-sm text-muted-foreground">Low-intensity aerobic activity hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Cardio Moderate" value={onboarding?.cardio_moderate_hours_per_week != null ? `${onboarding.cardio_moderate_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("cardio_mod")} onToggle={() => toggleRow("cardio_mod")}>
+              <p className="text-sm text-muted-foreground">Moderate-intensity aerobic activity hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Cardio Vigorous" value={onboarding?.cardio_vigorous_hours_per_week != null ? `${onboarding.cardio_vigorous_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("cardio_vig")} onToggle={() => toggleRow("cardio_vig")}>
+              <p className="text-sm text-muted-foreground">High-intensity aerobic activity hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Strength Training" value={onboarding?.strength_hours_per_week != null ? `${onboarding.strength_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("strength")} onToggle={() => toggleRow("strength")}>
+              <p className="text-sm text-muted-foreground">Resistance training hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sedentary Hours" value={onboarding?.sedentary_hours_per_day != null ? `${onboarding.sedentary_hours_per_day} h/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("sedentary")} onToggle={() => toggleRow("sedentary")}>
+              <p className="text-sm text-muted-foreground">Average sedentary hours per day.</p>
             </ExpandableRow>
             <ExpandableRow label="Mobility Restriction" value={onboarding?.symptom_mobility_restriction ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("mobility")} onToggle={() => toggleRow("mobility")}>
               <p className="text-sm text-muted-foreground">Patient-reported mobility limitations.</p>
@@ -2802,6 +2858,11 @@ function HealthDimensionView({
             <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("smoking")} onToggle={() => toggleRow("smoking")}>
               <p className="text-sm text-muted-foreground">Smoking status from onboarding.</p>
             </ExpandableRow>
+            {extra.nicotine_pouches_current && (
+              <ExpandableRow label="Nicotine Pouches" value={<>{`${extra.nicotine_pouches_per_day ?? "?"}/day · ${extra.nicotine_pouches_strength ?? ""}`}<Flag tone="amber">Respiratory risk</Flag></>} recorded={onboardingDate} expanded={expandedRows.has("nico_resp")} onToggle={() => toggleRow("nico_resp")}>
+                <p className="text-sm text-muted-foreground">Active nicotine pouch use — risk factor for respiratory and immune health.</p>
+              </ExpandableRow>
+            )}
             <ExpandableRow label="Infections/Year" value={onboarding?.infections_per_year ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("infections")} onToggle={() => toggleRow("infections")}>
               <p className="text-sm text-muted-foreground">Self-reported frequency of infections.</p>
             </ExpandableRow>
@@ -2843,8 +2904,17 @@ function HealthDimensionView({
             <ExpandableRow label="Hours/Night" value={onboarding?.sleep_hours_per_night ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("hours")} onToggle={() => toggleRow("hours")}>
               <p className="text-sm text-muted-foreground">Average hours of sleep per night.</p>
             </ExpandableRow>
-            <ExpandableRow label="Deep Sleep %" value={onboarding?.deep_sleep_percent ? `${onboarding.deep_sleep_percent}%` : "—"} recorded={onboardingDate} expanded={expandedRows.has("deep")} onToggle={() => toggleRow("deep")}>
-              <p className="text-sm text-muted-foreground">Percentage of sleep time in deep sleep phase.</p>
+            <ExpandableRow label="Bedtime" value={extra.sleep_bedtime ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("bedtime")} onToggle={() => toggleRow("bedtime")}>
+              <p className="text-sm text-muted-foreground">Usual bedtime reported at onboarding.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Waking Time" value={extra.sleep_waking_time ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("waking")} onToggle={() => toggleRow("waking")}>
+              <p className="text-sm text-muted-foreground">Usual wake time reported at onboarding.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Deep Sleep %" value={<>{onboarding?.deep_sleep_percent ? `${onboarding.deep_sleep_percent}%` : "—"}{onboarding?.deep_sleep_percent != null && Number(onboarding.deep_sleep_percent) < 13 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("deep")} onToggle={() => toggleRow("deep")}>
+              <p className="text-sm text-muted-foreground">Percentage of sleep time in deep sleep phase. Healthy adults typically 13–23%.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Daytime Fatigue" value={<>{extra.daytime_fatigue ?? "—"}{extra.daytime_fatigue != null && Number(extra.daytime_fatigue) >= 7 && <Flag tone="amber">High</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("fatigue")} onToggle={() => toggleRow("fatigue")}>
+              <p className="text-sm text-muted-foreground">Self-reported daytime fatigue (1–10).</p>
             </ExpandableRow>
             <ExpandableRow label="Insomnia" value={onboarding?.insomnia ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("insomnia")} onToggle={() => toggleRow("insomnia")}>
               <p className="text-sm text-muted-foreground">Reported insomnia symptoms.</p>
@@ -2884,14 +2954,26 @@ function HealthDimensionView({
                 <p className="text-xs text-muted-foreground">Score ≥15 indicates severe anxiety</p>
               </div>
             </ExpandableRow>
-            <ExpandableRow label="Stress (perceived)" value={onboarding?.stress_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("stress")} onToggle={() => toggleRow("stress")}>
+            <ExpandableRow label="GAD-2 Score" value={<>{onboarding?.gad2_score ?? "—"}{onboarding?.gad2_score != null && Number(onboarding.gad2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("gad2")} onToggle={() => toggleRow("gad2")}>
+              <p className="text-sm text-muted-foreground">Anxiety screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="PHQ-2 Score" value={<>{onboarding?.phq2_score ?? "—"}{onboarding?.phq2_score != null && Number(onboarding.phq2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("phq2")} onToggle={() => toggleRow("phq2")}>
+              <p className="text-sm text-muted-foreground">Depression screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Stress (perceived)" value={<>{onboarding?.stress_perceived ?? "—"}{onboarding?.stress_perceived != null && Number(onboarding.stress_perceived) >= 8 && <Flag tone="pink">High</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("stress")} onToggle={() => toggleRow("stress")}>
               <p className="text-sm text-muted-foreground">Self-reported stress level (1-10 scale).</p>
+            </ExpandableRow>
+            <ExpandableRow label="Workload (perceived)" value={<>{extra.workload_perceived ?? "—"}{extra.workload_perceived != null && Number(extra.workload_perceived) >= 6 && <Flag tone="amber">Elevated</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("workload_mw")} onToggle={() => toggleRow("workload_mw")}>
+              <p className="text-sm text-muted-foreground">Self-reported workload intensity (1–10).</p>
+            </ExpandableRow>
+            <ExpandableRow label="Recovery (perceived)" value={<>{extra.recovery_perceived ?? "—"}{extra.recovery_perceived != null && Number(extra.recovery_perceived) <= 4 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("recovery_mw")} onToggle={() => toggleRow("recovery_mw")}>
+              <p className="text-sm text-muted-foreground">Self-reported recovery capacity (1–10).</p>
             </ExpandableRow>
             <ExpandableRow label="Job Strain" value={onboarding?.job_strain_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("job_strain")} onToggle={() => toggleRow("job_strain")}>
               <p className="text-sm text-muted-foreground">Perceived job strain level.</p>
             </ExpandableRow>
-            <ExpandableRow label="Social Support" value={onboarding?.social_support_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("social")} onToggle={() => toggleRow("social")}>
-              <p className="text-sm text-muted-foreground">Perceived social support level.</p>
+            <ExpandableRow label="Social Support" value={<>{onboarding?.social_support_perceived ?? "—"}{onboarding?.social_support_perceived != null && Number(onboarding.social_support_perceived) <= 3 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("social")} onToggle={() => toggleRow("social")}>
+              <p className="text-sm text-muted-foreground">Perceived social support level (1–10).</p>
             </ExpandableRow>
           </div>
         );
@@ -2906,6 +2988,11 @@ function HealthDimensionView({
             <ExpandableRow label="Smoking" value={onboarding?.smoking ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("smoking")} onToggle={() => toggleRow("smoking")}>
               <p className="text-sm text-muted-foreground">Current smoking status.</p>
             </ExpandableRow>
+            {extra.nicotine_pouches_current && (
+              <ExpandableRow label="Nicotine Pouches" value={<>{`${extra.nicotine_pouches_per_day ?? "?"}/day · ${extra.nicotine_pouches_strength ?? ""}`}<Flag tone="amber">Active use</Flag></>} recorded={onboardingDate} expanded={expandedRows.has("nico_su")} onToggle={() => toggleRow("nico_su")}>
+                <p className="text-sm text-muted-foreground">Active nicotine pouch use reported during onboarding.</p>
+              </ExpandableRow>
+            )}
             <ExpandableRow label="Other Substances" value={onboarding?.other_substances ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("substances")} onToggle={() => toggleRow("substances")}>
               <p className="text-sm">{onboarding?.other_substances_notes || "No additional notes recorded."}</p>
             </ExpandableRow>
@@ -2919,32 +3006,73 @@ function HealthDimensionView({
       case "gynaecological_cancer":
       case "prostate_other_cancer":
       case "precancerous": {
+        const moles: any[] = Array.isArray(extra.moles) ? extra.moles : [];
+        const flagMole = (m: any) => {
+          let count = 0;
+          if (m.asymmetry === "Asymmetrical") count++;
+          if (m.borders === "Irregular") count++;
+          if (m.color && /multi|black|red/i.test(m.color)) count++;
+          if (m.change && m.change !== "No change" && m.change !== "") count++;
+          if (m.symptoms && m.symptoms !== "None" && m.symptoms !== "") count++;
+          return count;
+        };
+        const highRiskMoles = moles.filter((m) => flagMole(m) >= 3);
         return (
-          <div className="divide-y border rounded-md">
-            <ExpandableRow label="Cancer Illness" value={onboarding?.illness_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("illness")} onToggle={() => toggleRow("illness")}>
-              <p className="text-sm">{onboarding?.illness_cancer_notes || "No additional notes recorded."}</p>
-            </ExpandableRow>
-            <ExpandableRow label="Previous Cancer" value={onboarding?.prev_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("prev")} onToggle={() => toggleRow("prev")}>
-              <p className="text-sm">{onboarding?.prev_cancer_notes || "No additional notes recorded."}</p>
-            </ExpandableRow>
-            <ExpandableRow label="Precancerous Conditions" value={onboarding?.prev_precancerous ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("precancerous")} onToggle={() => toggleRow("precancerous")}>
-              <p className="text-sm">{onboarding?.prev_precancerous_notes || "No additional notes recorded."}</p>
-            </ExpandableRow>
-            <ExpandableRow label="Genetic (Cancer)" value={onboarding?.genetic_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic_cancer")} onToggle={() => toggleRow("genetic_cancer")}>
-              <p className="text-sm text-muted-foreground">Family history of cancer.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Genetic (Melanoma)" value={onboarding?.genetic_melanoma ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic_melanoma")} onToggle={() => toggleRow("genetic_melanoma")}>
-              <p className="text-sm text-muted-foreground">Family history of melanoma.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Breast Screening" value={onboarding?.cancer_screening_breast === true ? "Yes" : onboarding?.cancer_screening_breast === false ? "No" : "—"} recorded={onboardingDate} expanded={expandedRows.has("breast")} onToggle={() => toggleRow("breast")}>
-              <p className="text-sm text-muted-foreground">Up to date with breast cancer screening.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Cervical Screening" value={onboarding?.cancer_screening_cervical === true ? "Yes" : onboarding?.cancer_screening_cervical === false ? "No" : "—"} recorded={onboardingDate} expanded={expandedRows.has("cervical")} onToggle={() => toggleRow("cervical")}>
-              <p className="text-sm text-muted-foreground">Up to date with cervical cancer screening.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Colorectal Screening" value={onboarding?.cancer_screening_colorectal === true ? "Yes" : onboarding?.cancer_screening_colorectal === false ? "No" : "—"} recorded={onboardingDate} expanded={expandedRows.has("colorectal")} onToggle={() => toggleRow("colorectal")}>
-              <p className="text-sm text-muted-foreground">Up to date with colorectal cancer screening.</p>
-            </ExpandableRow>
+          <div className="space-y-3">
+            {highRiskMoles.length > 0 && (
+              <div className="rounded-md border border-[hsl(330_81%_60%/0.4)] bg-[hsl(330_81%_60%/0.08)] px-4 py-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-[hsl(330_81%_45%)] mt-0.5 shrink-0" />
+                  <div className="text-sm">
+                    {highRiskMoles.map((m) => (
+                      <div key={m.id} className="text-[hsl(330_81%_35%)] font-medium">
+                        {m.label ?? "Mole"} — {m.location ?? "—"} — {flagMole(m)} ABCDE concerns — immediate dermatology review recommended
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="divide-y border rounded-md">
+              <ExpandableRow label="Cervical Screening" value={<>{onboarding?.cancer_screening_cervical === true ? "Yes" : onboarding?.cancer_screening_cervical === false ? "No" : "—"}{extra.screen_cervix_year && <Flag tone="green">{extra.screen_cervix_year}</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("cervical")} onToggle={() => toggleRow("cervical")}>
+                <p className="text-sm text-muted-foreground">Most recent cervical screening{extra.screen_cervix_year ? ` was in ${extra.screen_cervix_year}.` : "."}</p>
+              </ExpandableRow>
+              <ExpandableRow label="Breast Screening" value={<>{onboarding?.cancer_screening_breast === true ? "Yes" : onboarding?.cancer_screening_breast === false ? "No" : "—"}{extra.screen_breast_year && <Flag tone="green">{extra.screen_breast_year}</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("breast")} onToggle={() => toggleRow("breast")}>
+                <p className="text-sm text-muted-foreground">Up to date with breast cancer screening.</p>
+              </ExpandableRow>
+              <ExpandableRow label="Colorectal Screening" value={<>{onboarding?.cancer_screening_colorectal === true ? "Yes" : onboarding?.cancer_screening_colorectal === false ? "No" : "—"}{extra.screen_colorectum_year && <Flag tone="green">{extra.screen_colorectum_year}</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("colorectal")} onToggle={() => toggleRow("colorectal")}>
+                <p className="text-sm text-muted-foreground">Up to date with colorectal cancer screening.</p>
+              </ExpandableRow>
+              {moles.length > 0 && (
+                <ExpandableRow label="Skin Moles" value={<>{`${moles.length} recorded`}{highRiskMoles.length > 0 && <Flag tone="pink">{highRiskMoles.length} high-risk</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("moles_cancer")} onToggle={() => toggleRow("moles_cancer")}>
+                  <ul className="space-y-2 text-sm">
+                    {moles.map((m) => (
+                      <li key={m.id}>
+                        <div className="font-medium">{m.label ?? "Mole"} — {m.location ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Asymmetry: {m.asymmetry ?? "—"} · Borders: {m.borders ?? "—"} · Color: {m.color ?? "—"} · Size: {m.size ?? "—"} · Change: {m.change ?? "—"} · Symptoms: {m.symptoms ?? "—"}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </ExpandableRow>
+              )}
+              <ExpandableRow label="Cancer Illness" value={onboarding?.illness_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("illness")} onToggle={() => toggleRow("illness")}>
+                <p className="text-sm">{onboarding?.illness_cancer_notes || "No additional notes recorded."}</p>
+              </ExpandableRow>
+              <ExpandableRow label="Previous Cancer" value={onboarding?.prev_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("prev")} onToggle={() => toggleRow("prev")}>
+                <p className="text-sm">{onboarding?.prev_cancer_notes || "No additional notes recorded."}</p>
+              </ExpandableRow>
+              <ExpandableRow label="Precancerous Conditions" value={onboarding?.prev_precancerous ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("precancerous")} onToggle={() => toggleRow("precancerous")}>
+                <p className="text-sm">{onboarding?.prev_precancerous_notes || "No additional notes recorded."}</p>
+              </ExpandableRow>
+              <ExpandableRow label="Genetic (Cancer)" value={onboarding?.genetic_cancer ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic_cancer")} onToggle={() => toggleRow("genetic_cancer")}>
+                <p className="text-sm text-muted-foreground">Family history of cancer.</p>
+              </ExpandableRow>
+              <ExpandableRow label="Genetic (Melanoma)" value={onboarding?.genetic_melanoma ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic_melanoma")} onToggle={() => toggleRow("genetic_melanoma")}>
+                <p className="text-sm text-muted-foreground">Family history of melanoma.</p>
+              </ExpandableRow>
+            </div>
           </div>
         );
       }
@@ -2957,6 +3085,21 @@ function HealthDimensionView({
         return (
           <div className="divide-y border rounded-md">
             {renderCurrentIllnessesRow("Metabolic Health", "current_illness")}
+            <ExpandableRow label="BMI" value={<>{onboarding?.bmi ?? "—"}{onboarding?.bmi != null && Number(onboarding.bmi) >= 18.5 && Number(onboarding.bmi) < 25 && <Flag tone="green">Healthy</Flag>}{onboarding?.bmi != null && Number(onboarding.bmi) >= 25 && Number(onboarding.bmi) < 30 && <Flag tone="amber">Overweight</Flag>}{onboarding?.bmi != null && Number(onboarding.bmi) >= 30 && <Flag tone="pink">Obese</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("bmi_m")} onToggle={() => toggleRow("bmi_m")}>
+              <p className="text-sm text-muted-foreground">Body Mass Index. Healthy range 18.5–24.9.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Waist / Hip" value={`${onboarding?.waist_circumference_cm ?? "—"} cm / ${onboarding?.hip_circumference_cm ?? "—"} cm`} recorded={onboardingDate} expanded={expandedRows.has("wh_m")} onToggle={() => toggleRow("wh_m")}>
+              <p className="text-sm text-muted-foreground">Waist-to-hip ratio: {onboarding?.waist_to_hip_ratio ?? "—"}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Water Intake" value={<>{extra.water_litres_per_day != null ? `${extra.water_litres_per_day} L/day` : "—"}{extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5 && <Flag tone="amber">Below rec.</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("water_m")} onToggle={() => toggleRow("water_m")}>
+              <p className="text-sm text-muted-foreground">Daily water intake. Recommended ≥1.5 L/day.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sugar Intake" value={onboarding?.sugar_g_per_day != null ? `${onboarding.sugar_g_per_day} g/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("sugar_m")} onToggle={() => toggleRow("sugar_m")}>
+              <p className="text-sm text-muted-foreground">Daily added sugar consumption.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Fiber Intake" value={onboarding?.fiber_g_per_day != null ? `${onboarding.fiber_g_per_day} g/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("fiber_m")} onToggle={() => toggleRow("fiber_m")}>
+              <p className="text-sm text-muted-foreground">Daily fiber intake. Recommended ≥25 g/day.</p>
+            </ExpandableRow>
           </div>
         );
       }
@@ -2967,6 +3110,100 @@ function HealthDimensionView({
         return (
           <div className="divide-y border rounded-md">
             {renderCurrentIllnessesRow("Digestion", "current_illness")}
+            <ExpandableRow label="Diet Type" value={extra.diet_type ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("diet_d")} onToggle={() => toggleRow("diet_d")}>
+              <p className="text-sm text-muted-foreground">Self-described diet pattern.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Water Intake" value={<>{extra.water_litres_per_day != null ? `${extra.water_litres_per_day} L/day` : "—"}{extra.water_litres_per_day != null && Number(extra.water_litres_per_day) < 1.5 && <Flag tone="amber">Below rec.</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("water_d")} onToggle={() => toggleRow("water_d")}>
+              <p className="text-sm text-muted-foreground">Daily water intake. Recommended ≥1.5 L/day.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Fiber Intake" value={onboarding?.fiber_g_per_day != null ? `${onboarding.fiber_g_per_day} g/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("fiber_d")} onToggle={() => toggleRow("fiber_d")}>
+              <p className="text-sm text-muted-foreground">Daily fiber intake. Recommended ≥25 g/day.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sugar Intake" value={onboarding?.sugar_g_per_day != null ? `${onboarding.sugar_g_per_day} g/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("sugar_d")} onToggle={() => toggleRow("sugar_d")}>
+              <p className="text-sm text-muted-foreground">Daily added sugar consumption.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Red Meat" value={onboarding?.red_meat_g_per_day != null ? `${onboarding.red_meat_g_per_day} g/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("redmeat_d")} onToggle={() => toggleRow("redmeat_d")}>
+              <p className="text-sm text-muted-foreground">Daily red meat consumption.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Fruit & Vegetables" value={onboarding?.fruits_vegetables_g_per_day != null ? `${onboarding.fruits_vegetables_g_per_day} g/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("fv_d")} onToggle={() => toggleRow("fv_d")}>
+              <p className="text-sm text-muted-foreground">Daily fruit and vegetable intake.</p>
+            </ExpandableRow>
+          </div>
+        );
+      }
+      case "skin_oral_mucosal":
+      case "skin":
+      case "mucous_membranes":
+      case "dental_health": {
+        const moles: any[] = Array.isArray(extra.moles) ? extra.moles : [];
+        const flagMole = (m: any) => {
+          let count = 0;
+          if (m.asymmetry === "Asymmetrical") count++;
+          if (m.borders === "Irregular") count++;
+          if (m.color && /multi|black|red/i.test(m.color)) count++;
+          if (m.change && m.change !== "No change" && m.change !== "") count++;
+          if (m.symptoms && m.symptoms !== "None" && m.symptoms !== "") count++;
+          return count;
+        };
+        return (
+          <div className="space-y-3">
+            {moles.map((m) => {
+              const flags = flagMole(m);
+              const high = flags >= 3;
+              return (
+                <div key={m.id} className={cn(
+                  "rounded-md border p-3 space-y-2",
+                  high ? "border-[hsl(330_81%_60%/0.4)] bg-[hsl(330_81%_60%/0.06)]" : "border-border",
+                )}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-sm">{m.label ?? "Mole"} — {m.location ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">Recorded {onboardingDate}</div>
+                    </div>
+                    {high && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[hsl(330_81%_60%/0.15)] text-[hsl(330_81%_40%)]">
+                        <AlertTriangle className="h-3 w-3" />
+                        {flags} ABCDE flags — high suspicion — dermatology referral recommended
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                    <div><span className="text-muted-foreground">A — Asymmetry:</span> <span className={m.asymmetry === "Asymmetrical" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.asymmetry ?? "—"}</span></div>
+                    <div><span className="text-muted-foreground">B — Borders:</span> <span className={m.borders === "Irregular" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.borders ?? "—"}</span></div>
+                    <div><span className="text-muted-foreground">C — Color:</span> <span className={m.color && /multi|black|red/i.test(m.color) ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.color ?? "—"}</span></div>
+                    <div><span className="text-muted-foreground">D — Size:</span> {m.size ?? "—"}</div>
+                    <div><span className="text-muted-foreground">E — Change:</span> <span className={m.change && m.change !== "No change" && m.change !== "" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.change ?? "—"}</span></div>
+                    <div><span className="text-muted-foreground">Symptoms:</span> <span className={m.symptoms && m.symptoms !== "None" && m.symptoms !== "" ? "text-[hsl(330_81%_45%)] font-medium" : ""}>{m.symptoms ?? "—"}</span></div>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="divide-y border rounded-md">
+              <ExpandableRow label="Skin Condition (1–10)" value={onboarding?.skin_condition ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("skin_score")} onToggle={() => toggleRow("skin_score")}>
+                <p className="text-sm text-muted-foreground">Self-reported skin condition score.</p>
+              </ExpandableRow>
+              <ExpandableRow label="Skin Rash Symptom" value={onboarding?.symptom_skin_rash ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("rash")} onToggle={() => toggleRow("rash")}>
+                <p className="text-sm text-muted-foreground">Patient-reported skin rash.</p>
+              </ExpandableRow>
+              <ExpandableRow label="Mucous Membrane Symptoms" value={onboarding?.symptom_mucous_membranes ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("mucous")} onToggle={() => toggleRow("mucous")}>
+                <p className="text-sm text-muted-foreground">Mucous membrane related symptoms.</p>
+              </ExpandableRow>
+            </div>
+          </div>
+        );
+      }
+      case "reproductive_sexual":
+      case "gynaecology":
+      case "urology":
+      case "pregnancy": {
+        return (
+          <div className="divide-y border rounded-md">
+            <ExpandableRow label="Cervical Screening" value={<>{onboarding?.cancer_screening_cervical === true ? "Yes" : onboarding?.cancer_screening_cervical === false ? "No" : "—"}{extra.screen_cervix_year && <Flag tone="green">{extra.screen_cervix_year}</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("cervical_r")} onToggle={() => toggleRow("cervical_r")}>
+              <p className="text-sm text-muted-foreground">Most recent cervical screening{extra.screen_cervix_year ? ` was in ${extra.screen_cervix_year}.` : "."}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Menstruation/Menopause Symptoms" value={onboarding?.symptom_menstruation_menopause ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("menstr")} onToggle={() => toggleRow("menstr")}>
+              <p className="text-sm text-muted-foreground">Symptoms related to menstrual cycle or menopause.</p>
+            </ExpandableRow>
           </div>
         );
       }
