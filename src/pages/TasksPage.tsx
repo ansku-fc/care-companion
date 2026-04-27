@@ -278,6 +278,56 @@ const TasksPage = () => {
             ))
           )}
         </div>
+      ) : view === "patient" ? (
+        <div className="space-y-4">
+          {patientGroups.length === 0 && (
+            <p className="text-sm text-muted-foreground">No tasks match the current filters.</p>
+          )}
+          {patientGroups.map((g) => {
+            const open = isPatientOpen(g.pid);
+            return (
+              <Card key={g.pid}>
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted/40 rounded-t-lg transition-colors"
+                  onClick={() => setOpenPatients((s) => ({ ...s, [g.pid]: !open }))}
+                >
+                  {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  <h2 className="text-sm font-semibold">{g.name}</h2>
+                  {g.tier && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {tierLabel(g.tier)}
+                    </Badge>
+                  )}
+                  <span className="text-[11px] text-muted-foreground">·</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {g.tasks.length} {g.tasks.length === 1 ? "task" : "tasks"}
+                  </span>
+                  {g.overdue > 0 && (
+                    <>
+                      <span className="text-[11px] text-muted-foreground">·</span>
+                      <span className="text-[11px] font-medium tabular-nums text-pink-600 dark:text-pink-400">
+                        {g.overdue} overdue
+                      </span>
+                    </>
+                  )}
+                </button>
+                {open && (
+                  <div className="px-3 pb-3 space-y-2">
+                    {g.tasks.map((t) => (
+                      <TaskRow
+                        key={t.id}
+                        task={t}
+                        patientName={null}
+                        onClick={() => openDetail(t)}
+                        mine={isMine(t)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
       ) : (
         <div className="space-y-4">
           {STATUS_GROUPS.map((status) => {
