@@ -371,11 +371,6 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
           </div>
           <div className="flex items-center gap-2">
             {doc.status === "draft" && (
-              <Button size="sm" onClick={handleMarkUnderReview} disabled={saving}>
-                Mark as Under Review
-              </Button>
-            )}
-            {doc.status === "under_review" && (
               <>
                 <Button size="sm" variant="outline" onClick={handleSaveEdits} disabled={saving} className="gap-1.5">
                   <Save className="h-3.5 w-3.5" /> Save
@@ -384,11 +379,6 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                   <Lock className="h-3.5 w-3.5" /> Finalise Document
                 </Button>
               </>
-            )}
-            {doc.status === "draft" && (
-              <Button size="sm" variant="outline" onClick={handleSaveEdits} disabled={saving} className="gap-1.5">
-                <Save className="h-3.5 w-3.5" /> Save
-              </Button>
             )}
             {doc.status === "finalised" && (
               <Button size="sm" variant="outline" onClick={() => setReopenOpen(true)} className="gap-1.5">
