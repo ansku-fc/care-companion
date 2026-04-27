@@ -1571,6 +1571,10 @@ export type Database = {
         | "doctor_meeting"
         | "nurse_task"
         | "working_time"
+        | "onboarding"
+        | "annual_checkup"
+        | "acute_consultation"
+        | "care_coordination"
       patient_tier:
         | "tier_1"
         | "tier_2"
@@ -1727,6 +1731,10 @@ export const Constants = {
         "doctor_meeting",
         "nurse_task",
         "working_time",
+        "onboarding",
+        "annual_checkup",
+        "acute_consultation",
+        "care_coordination",
       ],
       patient_tier: [
         "tier_1",
