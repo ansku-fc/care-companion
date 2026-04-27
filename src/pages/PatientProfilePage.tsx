@@ -5092,6 +5092,7 @@ function CardiovascularDimensionView({
                         onSelect={() => selectMarker(b)}
                         patientId={patient?.id}
                         patientName={patient?.full_name}
+                        labResults={labResults}
                       />
                     ))}
                   </div>
@@ -5103,6 +5104,7 @@ function CardiovascularDimensionView({
                       selectedMarker.refLow,
                       selectedMarker.refHigh,
                       patient?.id,
+                      labResults,
                     );
                     return (
                       <div
