@@ -543,7 +543,7 @@ function clinicalActionPath(kind: NonNullable<PreviewKind>, task: Task): string 
   switch (kind) {
     case "labs":        return `${base}?tab=lab_results&review=1`;
     case "interaction": return `${base}?tab=medications&focus=interaction`;
-    case "renewal":     return `${base}?tab=medications&focus=renewal`;
+    case "renewal":     return `${base}?tab=medications`;
     case "supply":      return `${base}?tab=medications&focus=supply`;
     case "risk_review": return `${base}?tab=health_data`;
     case "follow_up":   return `${base}?tab=visits`;
@@ -554,7 +554,7 @@ function clinicalActionLabel(kind: NonNullable<PreviewKind>): string {
   switch (kind) {
     case "labs":        return "Go to full lab view";
     case "interaction": return "Review interaction in Medications";
-    case "renewal":     return "Renew in Medications";
+    case "renewal":     return "Go to Medications";
     case "supply":      return "Update supply in Medications";
     case "risk_review": return "Review risk factors";
     case "follow_up":   return "Open patient record";
@@ -565,7 +565,7 @@ function clinicalAutoCompleteHint(kind: NonNullable<PreviewKind>): string {
   switch (kind) {
     case "labs":        return "Completes automatically once all new results are verified.";
     case "interaction": return "Completes when you Resolve, Override, or Defer the alert.";
-    case "renewal":     return "Completes once the prescription is renewed.";
+    case "renewal":     return "Completes once the medication review is recorded.";
     case "supply":      return "Completes when supply is renewed above 25%.";
     case "risk_review": return "Completes when the Doctor's Summary is saved.";
     case "follow_up":   return "Completes when marked done from the patient record.";
