@@ -88,6 +88,8 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   /** Called once after the doctor finishes the final step. */
   onCompleted?: () => void;
+  /** Optional step number (1-based) to open the dialog directly at, e.g. 2 for Illnesses. */
+  initialStep?: number;
 };
 
 const STEP_LABELS = [
@@ -250,12 +252,14 @@ export function PatientOnboardingDialog(props: Props) {
           moles_enabled: Boolean(extra.moles_enabled),
           moles: normalizeMoles(extra.moles),
 
-          current_step: ((data as any).current_step as number) ?? 1,
+          current_step: props.initialStep ?? ((data as any).current_step as number) ?? 1,
           completed_steps: (extra.completed_steps as number[]) ?? [],
           skipped_steps: (extra.skipped_steps as number[]) ?? [],
         });
       } else {
-        setInitial(dobAge != null ? { age: dobAge } : {});
+        const baseInit: Partial<OnboardingForm> = dobAge != null ? { age: dobAge } : {};
+        if (props.initialStep) baseInit.current_step = props.initialStep;
+        setInitial(baseInit);
       }
       setLoading(false);
     })();
