@@ -3414,12 +3414,24 @@ function SkinMucousDimensionView({
     return dummyHistory;
   }, [skinScore]);
 
+  const skinExtra = ((onboarding as any)?.extra_data ?? {}) as Record<string, any>;
+  const skinDash = "—";
+  const skinYesOrDash = (v: unknown) => (v === true ? "Yes" : skinDash);
+  const skinValOrDash = (v: unknown) => (v === null || v === undefined || v === "" ? skinDash : String(v));
+  const skinMolesArr: any[] = Array.isArray(skinExtra.moles) ? skinExtra.moles : [];
+  const skinExamFinding = (skinExtra.exam_findings as any)?.skin_general as { present?: boolean; notes?: string } | undefined;
+  const skinExamValue = !skinExamFinding || (skinExamFinding.present !== true && !skinExamFinding.notes)
+    ? skinDash
+    : skinExamFinding.present === true
+      ? (skinExamFinding.notes ? `Finding · ${skinExamFinding.notes}` : "Finding present")
+      : (skinExamFinding.notes || skinDash);
+
   const riskFactors: { key: string; label: string; value: string; detail: React.ReactNode }[] = [
-    { key: "skin_condition", label: "Skin Condition (1-10)", value: onboarding?.skin_condition != null ? String(onboarding.skin_condition) : "—", detail: <p className="text-sm text-muted-foreground">Self-reported skin condition score recorded at onboarding.</p> },
-    { key: "skin_rash", label: "Skin Rash", value: onboarding?.symptom_skin_rash ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Patient-reported active rash symptoms.</p> },
-    { key: "mucous", label: "Mucous Membrane Issues", value: onboarding?.symptom_mucous_membranes ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Symptoms affecting mucous membranes (oral, nasal, etc.).</p> },
-    { key: "sun", label: "Sun Exposure", value: onboarding?.sun_exposure ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Significant cumulative sun exposure history.</p> },
-    { key: "melanoma", label: "Genetic Melanoma Risk", value: onboarding?.genetic_melanoma ? "Yes" : "No", detail: <p className="text-sm text-muted-foreground">Family history of melanoma or genetic predisposition.</p> },
+    { key: "skin_moles", label: "Moles", value: skinMolesArr.length === 0 ? skinDash : `${skinMolesArr.length} recorded`, detail: <p className="text-sm text-muted-foreground">See the Skin Map tab for the full list with ABCDE assessment.</p> },
+    { key: "skin_sun", label: "Regular sun exposure", value: skinYesOrDash(onboarding?.sun_exposure), detail: <p className="text-sm text-muted-foreground">Significant cumulative sun exposure history.</p> },
+    { key: "skin_sun_protection", label: "Sun protection method", value: skinValOrDash(skinExtra.sun_protection_method), detail: <p className="text-sm text-muted-foreground">Sun protection method recorded at onboarding.</p> },
+    { key: "skin_sunburns", label: "History of severe sunburns", value: skinYesOrDash(skinExtra.severe_sunburns_history), detail: <p className="text-sm text-muted-foreground">History of blistering / severe sunburns is a melanoma risk factor.</p> },
+    { key: "skin_exam", label: "Skin exam finding (Status step)", value: skinExamValue, detail: <p className="text-sm text-muted-foreground">{skinExamFinding?.notes || "From the Status step skin examination."}</p> },
   ];
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
