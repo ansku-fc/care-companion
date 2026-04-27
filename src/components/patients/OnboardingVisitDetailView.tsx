@@ -186,12 +186,14 @@ function SelectField({
 function Section({
   title,
   children,
+  name: _name,
   editable = false,
   isActive = false,
   onEnter,
   onDone,
 }: {
   title: string;
+  name?: string;
   children: React.ReactNode | ((editing: boolean) => React.ReactNode);
   editable?: boolean;
   isActive?: boolean;
