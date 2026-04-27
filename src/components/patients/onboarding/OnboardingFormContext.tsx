@@ -69,7 +69,7 @@ export type OnboardingForm = {
   bp2_systolic: number | null;
   bp2_diastolic: number | null;
   ecg_notes: string;
-  allergies: string[];
+  allergies: AllergyEntry[];
   supplements: string[];
 
   /* Step 2 — Illnesses & medications */
