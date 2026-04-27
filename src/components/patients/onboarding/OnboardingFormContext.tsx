@@ -475,13 +475,15 @@ type OnboardingFormContextValue = {
   updateFamilyRow: (id: string, updates: Partial<FamilyHistoryRow>) => void;
 };
 
-const OnboardingFormContext = createContext<OnboardingFormContextValue | null>(null);
+const OnboardingFormContext = createContext<(OnboardingFormContextValue & { patientGender: string | null }) | null>(null);
 
 export function OnboardingFormProvider({
   initial,
+  patientGender = null,
   children,
 }: {
   initial?: Partial<OnboardingForm>;
+  patientGender?: string | null;
   children: ReactNode;
 }) {
   const [form, setForm] = useState<OnboardingForm>({ ...blankOnboardingForm, ...initial });
@@ -554,7 +556,11 @@ export function OnboardingFormProvider({
     [form, set, patch, hydrate, addIllness, removeIllness, updateIllness, addFamilyRow, removeFamilyRow, updateFamilyRow],
   );
 
-  return <OnboardingFormContext.Provider value={value}>{children}</OnboardingFormContext.Provider>;
+  return (
+    <OnboardingFormContext.Provider value={{ ...value, patientGender }}>
+      {children}
+    </OnboardingFormContext.Provider>
+  );
 }
 
 export function useOnboardingForm() {
