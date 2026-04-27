@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { categoryLabel, priorityMeta, ASSIGNEES } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { dueDateFromDays, type SuggestedTask } from "./suggestedTasks";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 
 type Props = {
   open: boolean;
