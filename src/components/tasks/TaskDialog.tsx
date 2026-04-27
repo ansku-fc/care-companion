@@ -18,6 +18,9 @@ import {
   ASSIGNEES, PRIORITY_OPTIONS, STATUS_OPTIONS, TASK_CATEGORIES,
   type Task, type TaskCategory, type TaskPriority, type TaskStatus,
 } from "@/lib/tasks";
+import {
+  detectTaskCategory, TASK_CATEGORY_META, type TaskCategoryKind,
+} from "@/lib/taskCategory";
 
 export interface TaskPrefill {
   title?: string;
@@ -29,7 +32,10 @@ export interface TaskPrefill {
   assignee_type?: string;
   due_date?: string;          // YYYY-MM-DD
   created_from?: string | null;
+  task_category?: TaskCategoryKind;
 }
+
+const TASK_CATEGORY_KINDS = Object.keys(TASK_CATEGORY_META) as TaskCategoryKind[];
 
 interface Props {
   open: boolean;
@@ -60,6 +66,9 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
   const [assigneeName, setAssigneeName] = useState<string>("Dr. Laine");
   const [dueDate, setDueDate] = useState<string>(DEFAULT_DUE_DATE());
   const [createdFrom, setCreatedFrom] = useState<string | null>(null);
+  // Auto-detected category derived from title; doctor can override.
+  const [taskCategory, setTaskCategory] = useState<TaskCategoryKind>("administrative");
+  const [taskCategoryOverridden, setTaskCategoryOverridden] = useState(false);
 
   // Load patients once dialog opens.
   useEffect(() => {
@@ -84,8 +93,12 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
       setAssigneeName(task.assignee_name ?? "Dr. Laine");
       setDueDate(task.due_date ?? DEFAULT_DUE_DATE());
       setCreatedFrom((task as Task & { created_from?: string | null }).created_from ?? null);
+      const existingTC = (task as Task & { task_category?: string | null }).task_category;
+      setTaskCategory((existingTC as TaskCategoryKind) ?? detectTaskCategory(task.title));
+      setTaskCategoryOverridden(true); // editing — keep stored value unless title changes
     } else {
-      setTitle(prefill?.title ?? "");
+      const initialTitle = prefill?.title ?? "";
+      setTitle(initialTitle);
       setDescription(prefill?.description ?? "");
       setPatientId(prefill?.patient_id ?? null);
       setCategory(prefill?.category ?? "clinical");
@@ -94,8 +107,21 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
       setAssigneeName(prefill?.assignee_name ?? "Dr. Laine");
       setDueDate(prefill?.due_date ?? DEFAULT_DUE_DATE());
       setCreatedFrom(prefill?.created_from ?? null);
+      if (prefill?.task_category) {
+        setTaskCategory(prefill.task_category);
+        setTaskCategoryOverridden(true);
+      } else {
+        setTaskCategory(detectTaskCategory(initialTitle));
+        setTaskCategoryOverridden(false);
+      }
     }
   }, [open, task, prefill]);
+
+  // Re-classify as the doctor types the title (unless overridden).
+  useEffect(() => {
+    if (taskCategoryOverridden) return;
+    setTaskCategory(detectTaskCategory(title));
+  }, [title, taskCategoryOverridden]);
 
   const assigneeMeta = ASSIGNEES.find((a) => a.name === assigneeName);
   const patientLabel = patients.find((p) => p.id === patientId)?.full_name;
@@ -117,6 +143,7 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
       assignee_type: assigneeMeta?.type ?? "doctor_internal",
       due_date: dueDate,
       created_from: createdFrom,
+      task_category: taskCategory,
     };
 
     if (task) {
@@ -154,6 +181,55 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
               placeholder="Short description of the action required"
               autoFocus
             />
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              <span className="text-[11px] text-muted-foreground">Detected category:</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-input bg-background hover:bg-accent transition-colors"
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${TASK_CATEGORY_META[taskCategory].isClinical ? "bg-primary" : "bg-muted-foreground"}`} />
+                    {TASK_CATEGORY_META[taskCategory].label}
+                    {taskCategoryOverridden && (
+                      <span className="text-muted-foreground">· override</span>
+                    )}
+                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-1" align="start">
+                  {TASK_CATEGORY_KINDS.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        setTaskCategory(k);
+                        setTaskCategoryOverridden(true);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 text-left text-xs px-2 py-1.5 rounded hover:bg-accent",
+                        taskCategory === k && "bg-accent",
+                      )}
+                    >
+                      <Check className={cn("h-3.5 w-3.5", taskCategory === k ? "opacity-100" : "opacity-0")} />
+                      {TASK_CATEGORY_META[k].label}
+                    </button>
+                  ))}
+                  {taskCategoryOverridden && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTaskCategoryOverridden(false);
+                        setTaskCategory(detectTaskCategory(title));
+                      }}
+                      className="w-full text-left text-[11px] px-2 py-1.5 mt-1 border-t text-muted-foreground hover:bg-accent"
+                    >
+                      Reset to auto-detected
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

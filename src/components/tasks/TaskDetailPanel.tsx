@@ -19,6 +19,7 @@ import {
   STATUS_OPTIONS, assigneeRole, categoryLabel, priorityMeta, statusLabel,
   type Task, type TaskStatus,
 } from "@/lib/tasks";
+import { isClinicalCategory, type TaskCategoryKind } from "@/lib/taskCategory";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useAuth } from "@/hooks/useAuth";
 import foundationClinicLogo from "@/assets/foundation-clinic-logo-cropped.png";
@@ -26,6 +27,9 @@ import foundationClinicLogo from "@/assets/foundation-clinic-logo-cropped.png";
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
 const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
 function isReferralTask(task: Task): boolean {
+  const tc = (task as Task & { task_category?: string | null }).task_category;
+  if (tc === "referral") return true;
+  if (tc && tc !== "administrative") return false; // other clinical kinds aren't referrals
   const isReferralCat = task.category === "referral";
   const hay = `${task.title ?? ""} ${task.created_from ?? ""}`;
   return isReferralCat || REFERRAL_KEYWORDS.test(hay) || /referral/i.test(hay);
@@ -192,10 +196,18 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
   if (!task) return null;
   const meta = priorityMeta(task.priority);
   const role = assigneeRole(task.assignee_name);
+  const storedCategory = (task as Task & { task_category?: string | null }).task_category as
+    | TaskCategoryKind
+    | null
+    | undefined;
   const kind = detectKind(task);
-  const isClinical = kind !== null;
-  const isComm = !isClinical && isCommunicationTask(task);
-  const isReferral = !isClinical && isReferralTask(task);
+  // Stored clinical categories ALWAYS render the clinical panel.
+  const isAdministrative = !storedCategory || storedCategory === "administrative";
+  const isClinical =
+    (kind !== null) ||
+    (!!storedCategory && isClinicalCategory(storedCategory) && storedCategory !== "referral");
+  const isReferral = !isClinical && (storedCategory === "referral" || isReferralTask(task));
+  const isComm = !isClinical && !isReferral && isAdministrative && isCommunicationTask(task);
   const activeOutcomeTags = isReferral ? REFERRAL_OUTCOME_TAGS : OUTCOME_TAGS;
 
   const updateStatus = async (status: TaskStatus) => {
@@ -494,6 +506,28 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
 type PreviewKind = "labs" | "interaction" | "renewal" | "supply" | "risk_review" | "follow_up" | null;
 
 function detectKind(task: Task): PreviewKind {
+  // Prefer the stored task_category (set by classifier at creation / backfill).
+  const stored = (task as Task & { task_category?: string | null }).task_category as
+    | TaskCategoryKind
+    | null
+    | undefined;
+  if (stored) {
+    switch (stored) {
+      case "lab_review":       return "labs";
+      case "medication":       {
+        const hay = `${task.title} ${task.created_from ?? ""} ${task.description ?? ""}`.toLowerCase();
+        if (/interaction|warfarin|ibuprofen/.test(hay)) return "interaction";
+        if (/low supply|out of stock|stock low/.test(hay)) return "supply";
+        if (/renew|prescription|refill/.test(hay)) return "renewal";
+        return "renewal"; // generic medication preview
+      }
+      case "dimension_review": return "risk_review";
+      case "followup":         return "follow_up";
+      case "referral":         return null; // handled by isReferral branch
+      case "administrative":   return null;
+    }
+  }
+  // Legacy fallback for tasks without task_category.
   const hay = `${task.title} ${task.created_from ?? ""} ${task.description ?? ""}`.toLowerCase();
   if (/lab result|new lab|review.*lab/.test(hay)) return "labs";
   if (/interaction|warfarin|ibuprofen/.test(hay)) return "interaction";
