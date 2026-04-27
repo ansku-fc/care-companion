@@ -16,6 +16,7 @@ import {
   categoryLabel, priorityMeta, statusLabel, isOverdue,
   type Task, type TaskStatus, type TaskPriority, type TaskCategory,
 } from "@/lib/tasks";
+import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
 
 const STATUS_GROUPS: TaskStatus[] = ["todo", "in_progress", "done", "deferred"];
 
