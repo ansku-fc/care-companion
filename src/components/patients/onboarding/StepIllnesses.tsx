@@ -204,6 +204,7 @@ function IllnessRowEditor({
           medications={row.medications}
           onChange={(meds) => onChange({ medications: meds })}
           icdCode={row.icd_code}
+          showEndYear={showResolved}
         />
       </div>
 
