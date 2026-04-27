@@ -93,8 +93,12 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
       setAssigneeName(task.assignee_name ?? "Dr. Laine");
       setDueDate(task.due_date ?? DEFAULT_DUE_DATE());
       setCreatedFrom((task as Task & { created_from?: string | null }).created_from ?? null);
+      const existingTC = (task as Task & { task_category?: string | null }).task_category;
+      setTaskCategory((existingTC as TaskCategoryKind) ?? detectTaskCategory(task.title));
+      setTaskCategoryOverridden(true); // editing — keep stored value unless title changes
     } else {
-      setTitle(prefill?.title ?? "");
+      const initialTitle = prefill?.title ?? "";
+      setTitle(initialTitle);
       setDescription(prefill?.description ?? "");
       setPatientId(prefill?.patient_id ?? null);
       setCategory(prefill?.category ?? "clinical");
@@ -103,8 +107,21 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
       setAssigneeName(prefill?.assignee_name ?? "Dr. Laine");
       setDueDate(prefill?.due_date ?? DEFAULT_DUE_DATE());
       setCreatedFrom(prefill?.created_from ?? null);
+      if (prefill?.task_category) {
+        setTaskCategory(prefill.task_category);
+        setTaskCategoryOverridden(true);
+      } else {
+        setTaskCategory(detectTaskCategory(initialTitle));
+        setTaskCategoryOverridden(false);
+      }
     }
   }, [open, task, prefill]);
+
+  // Re-classify as the doctor types the title (unless overridden).
+  useEffect(() => {
+    if (taskCategoryOverridden) return;
+    setTaskCategory(detectTaskCategory(title));
+  }, [title, taskCategoryOverridden]);
 
   const assigneeMeta = ASSIGNEES.find((a) => a.name === assigneeName);
   const patientLabel = patients.find((p) => p.id === patientId)?.full_name;
