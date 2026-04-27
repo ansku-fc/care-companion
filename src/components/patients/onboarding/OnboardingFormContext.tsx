@@ -36,6 +36,7 @@ export type MedicationDetail = {
   frequency: MedicationFrequency;
   route: MedicationRoute;
   start_year: number | null;
+  end_year: number | null;
   notes: string;
 };
 
