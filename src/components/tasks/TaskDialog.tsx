@@ -143,6 +143,7 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
       assignee_type: assigneeMeta?.type ?? "doctor_internal",
       due_date: dueDate,
       created_from: createdFrom,
+      task_category: taskCategory,
     };
 
     if (task) {
