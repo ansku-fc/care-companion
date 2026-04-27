@@ -143,6 +143,7 @@ export function LabResultsBlock({
               selectedMarker.refLow,
               selectedMarker.refHigh,
               patientId,
+              labResults,
             );
             return (
               <div
