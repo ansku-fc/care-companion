@@ -628,11 +628,12 @@ export function CardioLabBiomarkerPanel({
   doctor = "Dr. Laine",
   patientId,
   patientName,
+  labResults,
 }: Props) {
   const { openNewTask } = useTaskActions();
   const [window, setWindow] = useState<Window>("3y");
 
-  const series = usePatientSeries(patientId, biomarkerKey);
+  const series = usePatientSeries(patientId, biomarkerKey, labResults);
   const isBP = !!series?.bp;
   const rawData: Array<{ date: string }> = isBP ? series!.bp! : series?.single ?? [];
   const data = useMemo(() => filterByWindow(rawData, window), [rawData, window]);
