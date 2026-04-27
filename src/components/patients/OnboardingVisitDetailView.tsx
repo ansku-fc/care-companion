@@ -1195,6 +1195,18 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image lightbox */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(o) => { if (!o) setLightboxUrl(null); }}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-normal text-muted-foreground">{lightboxName}</DialogTitle>
+          </DialogHeader>
+          {lightboxUrl && (
+            <img src={lightboxUrl} alt={lightboxName} className="w-full h-auto max-h-[80vh] object-contain rounded" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
