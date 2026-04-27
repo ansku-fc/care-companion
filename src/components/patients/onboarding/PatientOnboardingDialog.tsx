@@ -79,6 +79,7 @@ function normalizeMoles(raw: unknown): MoleEntry[] {
       symptoms: typeof m.symptoms === "string" ? m.symptoms : "",
       image_files: [],
     }));
+}
 
 type Props = {
   patientId: string;
