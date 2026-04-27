@@ -583,27 +583,42 @@ function MedicationsEditor({
           {medications.map((med, idx) => {
             const isOpen = expandedIdx === idx;
             return (
-              <div key={`${med.name}-${idx}`} className="rounded-lg border border-input bg-background">
-                <div className="flex items-center gap-2 px-2 py-1.5">
+              <div
+                key={`${med.name}-${idx}`}
+                className="rounded-lg border border-[hsl(var(--border))] bg-[#F8F8FB] dark:bg-muted/30"
+              >
+                <div className="flex items-center gap-3 px-3 py-2">
                   <button
                     type="button"
                     onClick={() => setExpandedIdx(isOpen ? null : idx)}
-                    className="flex flex-1 items-center gap-2 text-left text-sm hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    aria-label={isOpen ? "Collapse" : "Expand"}
                   >
                     {isOpen ? (
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4" />
                     ) : (
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4" />
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedIdx(isOpen ? null : idx)}
+                    className="flex flex-1 min-w-0 items-baseline gap-3 text-left text-sm hover:text-foreground"
+                  >
                     {med.atc && (
-                      <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                      <span className="font-mono text-[11px] text-muted-foreground shrink-0 w-16">
                         {med.atc}
                       </span>
                     )}
-                    <span className="font-medium truncate">{med.name}</span>
-                    {!isOpen && (med.dose || med.frequency) && (
-                      <span className="text-xs text-muted-foreground truncate">
-                        · {[med.dose, frequencyLabel(med.frequency)].filter(Boolean).join(" · ")}
+                    <span className="font-medium shrink-0">{med.name}</span>
+                    {med.dose && (
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {med.dose}
+                      </span>
+                    )}
+                    {med.frequency && (
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {frequencyLabel(med.frequency)}
                       </span>
                     )}
                   </button>
