@@ -2130,6 +2130,116 @@ function PatientDetailsView({
     if (ok) setEditingBilling(false);
   };
 
+  // ---- Related patients helpers ----
+  const RELATIONSHIP_OPTIONS = [
+    "Spouse / Partner",
+    "Parent",
+    "Child",
+    "Sibling",
+    "Grandparent",
+    "Grandchild",
+    "Other",
+  ];
+  const inverseRelationship = (rel: string): string => {
+    switch (rel) {
+      case "Parent": return "Child";
+      case "Child": return "Parent";
+      case "Grandparent": return "Grandchild";
+      case "Grandchild": return "Grandparent";
+      case "Spouse / Partner": return "Spouse / Partner";
+      case "Sibling": return "Sibling";
+      default: return "Other";
+    }
+  };
+  const formatLastFirst = (full: string) => {
+    const { first, last } = splitName(full);
+    if (!last) return first || full;
+    if (!first) return last;
+    return `${last}, ${first}`;
+  };
+
+  const openAddRelated = async () => {
+    setAddingRelated(true);
+    setPatientSearch("");
+    setSelectedRelatedId(null);
+    setRelationshipType("");
+    if (allPatients.length === 0) {
+      const { data } = await supabase
+        .from("patients")
+        .select("id, full_name")
+        .order("full_name", { ascending: true });
+      setAllPatients((data as any) || []);
+    }
+  };
+
+  const handleAddRelated = async () => {
+    if (!user) { toast.error("Not authenticated"); return; }
+    if (!selectedRelatedId || !relationshipType) {
+      toast.error("Select a patient and relationship");
+      return;
+    }
+    if (selectedRelatedId === patient.id) {
+      toast.error("Cannot link a patient to themselves");
+      return;
+    }
+    if (related.some((r) => r.id === selectedRelatedId)) {
+      toast.error("This patient is already linked");
+      return;
+    }
+    setSavingRelated(true);
+    const inverse = inverseRelationship(relationshipType);
+    const { error } = await supabase.from("patient_relationships").insert([
+      {
+        patient_id: patient.id,
+        related_patient_id: selectedRelatedId,
+        relationship_type: relationshipType,
+        created_by: user.id,
+      },
+      {
+        patient_id: selectedRelatedId,
+        related_patient_id: patient.id,
+        relationship_type: inverse,
+        created_by: user.id,
+      },
+    ] as any);
+    setSavingRelated(false);
+    if (error) {
+      toast.error("Failed to add related patient");
+      console.error(error);
+      return;
+    }
+    toast.success("Related patient added");
+    setAddingRelated(false);
+    await loadRelated();
+  };
+
+  const handleRemoveRelated = async (relatedId: string) => {
+    const { error } = await supabase
+      .from("patient_relationships")
+      .delete()
+      .or(
+        `and(patient_id.eq.${patient.id},related_patient_id.eq.${relatedId}),` +
+        `and(patient_id.eq.${relatedId},related_patient_id.eq.${patient.id})`,
+      );
+    if (error) {
+      toast.error("Failed to remove");
+      console.error(error);
+      return;
+    }
+    toast.success("Removed");
+    await loadRelated();
+  };
+
+  const filteredPatients = allPatients
+    .filter((p) => p.id !== patient.id && !related.some((r) => r.id === p.id))
+    .filter((p) =>
+      patientSearch.trim() === ""
+        ? true
+        : p.full_name.toLowerCase().includes(patientSearch.toLowerCase()),
+    )
+    .slice(0, 8);
+
+
   return (
     <div className="space-y-4">
       <Card>
