@@ -474,7 +474,7 @@ const PatientProfilePage = () => {
               label = dynamicLabel;
               onBack = () => navigate(prevRoute.path);
             } else if (
-              ["details", "medications", "visits", "care_team", "health_overview", "lab_results"].includes(
+              ["details", "medications", "documents", "visits", "care_team", "health_overview", "lab_results"].includes(
                 activeSection,
               )
             ) {
