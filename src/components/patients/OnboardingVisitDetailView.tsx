@@ -241,6 +241,10 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   const [allergies, setAllergies] = useState<Tables<"patient_allergies">[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Mole image files (loaded from patient_health_files); keyed by mole index (1-based) via `source` field
+  const [moleFiles, setMoleFiles] = useState<Tables<"patient_health_files">[]>([]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxName, setLightboxName] = useState<string>("");
 
   const initialDoc: DocState = useMemo(() => {
     const ed = ((visit as any).extra_data ?? {}) as any;
