@@ -26,17 +26,8 @@ import { cn } from "@/lib/utils";
 // ────────────────────────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────────────────────────
-export function scoreColorClass(score: number): string {
-  if (score <= 3) return "text-[hsl(137_25%_39%)]";
-  if (score <= 6) return "text-[hsl(28_63%_44%)]";
-  return "text-[hsl(0_57%_39%)]";
-}
-
-export function scoreBorderColor(score: number): string {
-  if (score <= 3) return "hsl(137 25% 39%)"; // sage
-  if (score <= 6) return "hsl(28 63% 44%)";  // amber
-  return "hsl(0 57% 39%)";                   // red
-}
+export { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
+import { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
 
 // ────────────────────────────────────────────────────────────────────
 // Sub-dimension summary card (used in strip)
