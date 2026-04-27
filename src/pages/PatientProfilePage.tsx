@@ -2743,20 +2743,44 @@ function HealthDimensionView({
       }
       case "nervous_system":
       case "brain_mental": {
+        const stress = onboarding?.stress_perceived;
+        const workload = extra.workload_perceived;
+        const recovery = extra.recovery_perceived;
+        const socialSupport = onboarding?.social_support_perceived;
         return (
           <div className="divide-y border rounded-md">
             {renderCurrentIllnessesRow("Brain & Mental Health", "current_illness")}
+            <ExpandableRow label="Stress (perceived)" value={<>{stress ?? "—"}{stress != null && Number(stress) >= 8 && <Flag tone="pink">High</Flag>}{stress != null && Number(stress) >= 6 && Number(stress) < 8 && <Flag tone="amber">Elevated</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("stress_bm")} onToggle={() => toggleRow("stress_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported stress level (1–10). ≥8 indicates high chronic stress load.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Workload (perceived)" value={<>{workload ?? "—"}{workload != null && Number(workload) >= 8 && <Flag tone="pink">High</Flag>}{workload != null && Number(workload) >= 6 && Number(workload) < 8 && <Flag tone="amber">Elevated</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("workload_bm")} onToggle={() => toggleRow("workload_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported workload intensity (1–10).</p>
+            </ExpandableRow>
+            <ExpandableRow label="Recovery (perceived)" value={<>{recovery ?? "—"}{recovery != null && Number(recovery) <= 4 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("recovery_bm")} onToggle={() => toggleRow("recovery_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported recovery capacity (1–10). ≤4 indicates poor recovery.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Social Support" value={<>{socialSupport ?? "—"}{socialSupport != null && Number(socialSupport) <= 3 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("social_bm")} onToggle={() => toggleRow("social_bm")}>
+              <p className="text-sm text-muted-foreground">Perceived social support (1–10).</p>
+            </ExpandableRow>
+            <ExpandableRow label="GAD-2 Score" value={<>{onboarding?.gad2_score ?? "—"}{onboarding?.gad2_score != null && Number(onboarding.gad2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("gad2_bm")} onToggle={() => toggleRow("gad2_bm")}>
+              <p className="text-sm text-muted-foreground">Anxiety screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="PHQ-2 Score" value={<>{onboarding?.phq2_score ?? "—"}{onboarding?.phq2_score != null && Number(onboarding.phq2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("phq2_bm")} onToggle={() => toggleRow("phq2_bm")}>
+              <p className="text-sm text-muted-foreground">Depression screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sleep Quality" value={<>{onboarding?.sleep_quality ? `${onboarding.sleep_quality}/10` : "—"}</>} recorded={onboardingDate} expanded={expandedRows.has("sleep_q_bm")} onToggle={() => toggleRow("sleep_q_bm")}>
+              <p className="text-sm text-muted-foreground">Bedtime {extra.sleep_bedtime ?? "—"} · Wake {extra.sleep_waking_time ?? "—"} · Deep sleep {onboarding?.deep_sleep_percent != null ? `${onboarding.deep_sleep_percent}%` : "—"}</p>
+            </ExpandableRow>
+            <ExpandableRow label="Daytime Fatigue" value={<>{extra.daytime_fatigue ?? "—"}{extra.daytime_fatigue != null && Number(extra.daytime_fatigue) >= 7 && <Flag tone="amber">High</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("fatigue_bm")} onToggle={() => toggleRow("fatigue_bm")}>
+              <p className="text-sm text-muted-foreground">Self-reported daytime fatigue (1–10).</p>
+            </ExpandableRow>
+            {extra.nicotine_pouches_current && (
+              <ExpandableRow label="Nicotine Pouches" value={<>{`${extra.nicotine_pouches_per_day ?? "?"}/day · ${extra.nicotine_pouches_strength ?? ""}`}<Flag tone="amber">Substance use</Flag></>} recorded={onboardingDate} expanded={expandedRows.has("nico_bm")} onToggle={() => toggleRow("nico_bm")}>
+                <p className="text-sm text-muted-foreground">Active nicotine pouch use — risk factor for cardiovascular and brain health.</p>
+              </ExpandableRow>
+            )}
             <ExpandableRow label="Neurological Illness" value={onboarding?.illness_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_illness")} onToggle={() => toggleRow("neuro_illness")}>
               <p className="text-sm text-muted-foreground">History of neurological conditions.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Neurological Symptoms" value={onboarding?.symptom_neurological ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("neuro_symptoms")} onToggle={() => toggleRow("neuro_symptoms")}>
-              <p className="text-sm text-muted-foreground">Current neurological symptom reporting.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Balance Issues" value={onboarding?.symptom_balance ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("balance")} onToggle={() => toggleRow("balance")}>
-              <p className="text-sm text-muted-foreground">Balance and coordination concerns.</p>
-            </ExpandableRow>
-            <ExpandableRow label="Genetic (Nervous System)" value={onboarding?.genetic_nervous_system ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("genetic")} onToggle={() => toggleRow("genetic")}>
-              <p className="text-sm text-muted-foreground">Family history of neurological conditions.</p>
             </ExpandableRow>
             <ExpandableRow label="Previous Brain Damage" value={onboarding?.prev_brain_damage ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("brain_damage")} onToggle={() => toggleRow("brain_damage")}>
               <p className="text-sm">{onboarding?.prev_brain_damage_notes || "No additional notes recorded."}</p>
