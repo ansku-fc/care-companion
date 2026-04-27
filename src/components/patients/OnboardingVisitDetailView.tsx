@@ -666,7 +666,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
           <DialogHeader>
             <DialogTitle>Re-open document for editing</DialogTitle>
             <DialogDescription>
-              Please provide a reason. The document will return to "Under Review" and the reason will be recorded in the edit history.
+              Please provide a reason. The document will return to "Draft" and the reason will be recorded in the edit history.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
