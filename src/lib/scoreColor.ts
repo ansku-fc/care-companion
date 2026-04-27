@@ -15,19 +15,25 @@
 
 export type ScoreInput = number | null | undefined;
 
-const GREEN_TEXT = "text-[hsl(137_25%_39%)]";
-const AMBER_TEXT = "text-[hsl(28_63%_44%)]";
-const RED_TEXT = "text-[hsl(0_57%_39%)]";
-const MUTED_TEXT = "text-muted-foreground";
+// Brand palette — matches teal/amber/pink used throughout the product.
+//   teal  #0EA5A0  → hsl(178 84% 35%)
+//   amber #D97706  → hsl(28 92% 44%)
+//   pink  #E8446A  → hsl(348 78% 59%)
+//   grey  #9CA3AF  → hsl(218 11% 65%)
+const GREEN_TEXT = "text-[hsl(178_84%_35%)]";
+const AMBER_TEXT = "text-[hsl(28_92%_44%)]";
+const RED_TEXT = "text-[hsl(348_78%_59%)]";
+const MUTED_TEXT = "text-[hsl(218_11%_65%)]";
 
-const GREEN_HSL = "hsl(137 25% 39%)";
-const AMBER_HSL = "hsl(28 63% 44%)";
-const RED_HSL = "hsl(0 57% 39%)";
+const GREEN_HSL = "hsl(178 84% 35%)";
+const AMBER_HSL = "hsl(28 92% 44%)";
+const RED_HSL = "hsl(348 78% 59%)";
+const MUTED_HSL = "hsl(218 11% 65%)";
 
-const GREEN_BADGE = "bg-[hsl(137_25%_39%/0.15)] text-[hsl(137_25%_30%)]";
-const AMBER_BADGE = "bg-[hsl(28_63%_44%/0.15)] text-[hsl(28_63%_38%)]";
-const RED_BADGE = "bg-[hsl(0_57%_39%/0.15)] text-[hsl(0_57%_35%)]";
-const MUTED_BADGE = "bg-muted text-muted-foreground";
+const GREEN_BADGE = "bg-[hsl(178_84%_35%/0.15)] text-[hsl(178_84%_28%)]";
+const AMBER_BADGE = "bg-[hsl(28_92%_44%/0.15)] text-[hsl(28_92%_38%)]";
+const RED_BADGE = "bg-[hsl(348_78%_59%/0.15)] text-[hsl(348_78%_45%)]";
+const MUTED_BADGE = "bg-[hsl(218_11%_65%/0.15)] text-[hsl(218_11%_45%)]";
 
 export type ScoreTone = "green" | "amber" | "red" | "muted";
 
