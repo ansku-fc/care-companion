@@ -2865,14 +2865,39 @@ function HealthDimensionView({
       );
     };
 
-    const renderGroups = (groups: GroupSpec[]) => {
-      // When on a specific sub-dim page, only show the matching group.
-      const filtered = groups.filter((g) => {
-        if (mainDim && mainDim.key === dimensionKey) return true; // main dim → show all
-        // sub-dim page → show the group whose scoreKey matches
-        return (g.scoreKey ?? g.key) === dimensionKey || g.key === dimensionKey;
+    /**
+     * Build subdimension groups from `mainDim.subDimensions` (the source of
+     * truth for the strip cards) so the Risk Factors accordion always uses
+     * exactly the same keys, labels, and order as the strip.
+     *
+     * Pass a content map keyed by sub-dimension `key`. Sub-dims absent from
+     * the map render with no rows (still shown, score still derived).
+     */
+    type GroupContent = { rows?: RowSpec[]; extra?: React.ReactNode };
+    const renderGroups = (contentBySubKey: Record<string, GroupContent | RowSpec[]>) => {
+      const main = mainDim;
+      // Resolve from taxonomy. If we couldn't find a parent, fall back to a
+      // single synthetic group keyed by the dimension itself.
+      const subs = main && main.subDimensions.length > 0
+        ? main.subDimensions
+        : [{ key: dimensionKey, label: dim?.label ?? dimensionKey } as { key: string; label: string }];
+
+      const groups: GroupSpec[] = subs.map((sub) => {
+        const raw = contentBySubKey[sub.key];
+        const content: GroupContent = Array.isArray(raw) ? { rows: raw } : (raw ?? {});
+        return {
+          key: sub.key,
+          title: sub.label,
+          rows: content.rows ?? [],
+          extra: content.extra,
+        };
       });
-      const list = filtered.length > 0 ? filtered : groups;
+
+      // When viewing a specific sub-dim page, only show that one group.
+      const visible = (main && main.key === dimensionKey)
+        ? groups
+        : groups.filter((g) => g.key === dimensionKey);
+      const list = visible.length > 0 ? visible : groups;
       return <div className="space-y-2">{list.map((g) => <Subgroup key={g.key} group={g} />)}</div>;
     };
 
