@@ -38,6 +38,8 @@ import {
   Save,
   History,
   AlertTriangle,
+  Plus,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
