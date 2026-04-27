@@ -308,11 +308,13 @@ export function blankExamFindings(): ExamFindings {
   };
 }
 
-export function blankMole(label = "Mole 1"): MoleEntry {
+export function blankMole(label = "Mole 1", overrides: Partial<MoleEntry> = {}): MoleEntry {
   return {
     id: crypto.randomUUID(),
     label,
     side: "front",
+    pin_x: 50,
+    pin_y: 50,
     location: "",
     asymmetry: "",
     borders: "",
@@ -320,6 +322,8 @@ export function blankMole(label = "Mole 1"): MoleEntry {
     size: "",
     change: "",
     symptoms: "",
+    image_files: [],
+    ...overrides,
   };
 }
 
