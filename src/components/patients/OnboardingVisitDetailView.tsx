@@ -865,6 +865,74 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             const update = (idx: number, patch: any) => setList(list.map((x: any, j: number) => (j === idx ? { ...x, ...patch } : x)));
             const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
             const add = () => setList([...list, { id: `new-${Date.now()}`, label: `Mole ${list.length + 1}`, location: "", asymmetry: "", borders: "", color: "", size: "", change: "", symptoms: "" }]);
+
+            const filesForMole = (idx: number) =>
+              moleFiles.filter((f) => (f.source ?? "") === `Onboarding — Mole ${idx + 1}`);
+
+            const openLightbox = async (f: Tables<"patient_health_files">) => {
+              const { data } = await supabase.storage
+                .from("patient-health-files")
+                .createSignedUrl(f.file_path, 600);
+              if (data?.signedUrl) {
+                setLightboxUrl(data.signedUrl);
+                setLightboxName(f.file_name);
+              }
+            };
+
+            const handleUpload = async (idx: number, fileList: FileList | null) => {
+              if (!fileList || fileList.length === 0) return;
+              const accepted = Array.from(fileList).filter((f) => /image\/(jpe?g|png)/i.test(f.type));
+              if (accepted.length === 0) {
+                toast.error("Only JPG or PNG files allowed");
+                return;
+              }
+              const { data: userData } = await supabase.auth.getUser();
+              const userId = userData.user?.id;
+              if (!userId) {
+                toast.error("Not signed in");
+                return;
+              }
+              const inserted: Tables<"patient_health_files">[] = [];
+              for (const f of accepted) {
+                const path = `${patient.id}/moles/${Date.now()}_${idx + 1}_${f.name}`;
+                const { error: upErr } = await supabase.storage
+                  .from("patient-health-files")
+                  .upload(path, f);
+                if (upErr) {
+                  toast.error(`Upload failed: ${f.name}`);
+                  continue;
+                }
+                const m = list[idx] ?? {};
+                const { data: row, error: insErr } = await supabase
+                  .from("patient_health_files")
+                  .insert({
+                    patient_id: patient.id,
+                    created_by: userId,
+                    file_category: "mole_image",
+                    file_name: f.name,
+                    file_path: path,
+                    file_size: f.size,
+                    health_dimension: "Skin, Oral & Mucosal Health",
+                    source: `Onboarding — Mole ${idx + 1}`,
+                    notes: m.location || m.label || `Mole ${idx + 1}`,
+                  } as any)
+                  .select()
+                  .single();
+                if (!insErr && row) inserted.push(row as any);
+              }
+              if (inserted.length) {
+                setMoleFiles((prev) => [...prev, ...inserted]);
+                toast.success(`${inserted.length} image${inserted.length === 1 ? "" : "s"} attached`);
+              }
+            };
+
+            const handleRemoveImage = async (f: Tables<"patient_health_files">) => {
+              await supabase.storage.from("patient-health-files").remove([f.file_path]);
+              await supabase.from("patient_health_files").delete().eq("id", f.id);
+              setMoleFiles((prev) => prev.filter((x) => x.id !== f.id));
+              toast.success("Image removed");
+            };
+
             return (
               <Section title="Physical Examination / Moles">
                 <div className="flex items-center justify-between">
@@ -882,9 +950,10 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                     const flags = [m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(
                       (v) => v && v !== "Symmetrical" && v !== "Regular" && v !== "Single color" && v !== "No change" && v !== "None"
                     );
+                    const imgs = filesForMole(idx);
                     if (!editing) {
                       return (
-                        <div key={m.id ?? idx} className="text-sm">
+                        <div key={m.id ?? idx} className="text-sm space-y-1">
                           <div className="font-medium flex items-center gap-2">
                             {m.label}: {m.location}
                             {flags.length > 0 && (
@@ -893,9 +962,16 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                               </Badge>
                             )}
                           </div>
-                          <div className="text-muted-foreground text-xs mt-0.5">
+                          <div className="text-muted-foreground text-xs">
                             {[m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(Boolean).join(" · ")}
                           </div>
+                          {imgs.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {imgs.map((f) => (
+                                <MoleThumb key={f.id} file={f} onOpen={() => openLightbox(f)} />
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     }
@@ -909,17 +985,35 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                               <AlertTriangle className="h-3 w-3" /> {flags.length}
                             </Badge>
                           )}
-                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => remove(idx)}>
-                            <X className="h-3.5 w-3.5" />
+                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => remove(idx)} aria-label="Remove mole">
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                         <div className="grid grid-cols-3 gap-1">
-                          <Input value={m.asymmetry ?? ""} onChange={(e) => update(idx, { asymmetry: e.target.value })} placeholder="Asymmetry" className="h-7 text-xs" />
-                          <Input value={m.borders ?? ""} onChange={(e) => update(idx, { borders: e.target.value })} placeholder="Borders" className="h-7 text-xs" />
-                          <Input value={m.color ?? ""} onChange={(e) => update(idx, { color: e.target.value })} placeholder="Color" className="h-7 text-xs" />
-                          <Input value={m.size ?? ""} onChange={(e) => update(idx, { size: e.target.value })} placeholder="Size" className="h-7 text-xs" />
-                          <Input value={m.change ?? ""} onChange={(e) => update(idx, { change: e.target.value })} placeholder="Change" className="h-7 text-xs" />
-                          <Input value={m.symptoms ?? ""} onChange={(e) => update(idx, { symptoms: e.target.value })} placeholder="Symptoms" className="h-7 text-xs" />
+                          <AbcdeSelect field="asymmetry" value={m.asymmetry ?? ""} onChange={(v) => update(idx, { asymmetry: v })} />
+                          <AbcdeSelect field="borders" value={m.borders ?? ""} onChange={(v) => update(idx, { borders: v })} />
+                          <AbcdeSelect field="color" value={m.color ?? ""} onChange={(v) => update(idx, { color: v })} />
+                          <AbcdeSelect field="size" value={m.size ?? ""} onChange={(v) => update(idx, { size: v })} />
+                          <AbcdeSelect field="change" value={m.change ?? ""} onChange={(v) => update(idx, { change: v })} />
+                          <AbcdeSelect field="symptoms" value={m.symptoms ?? ""} onChange={(v) => update(idx, { symptoms: v })} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          {imgs.map((f) => (
+                            <MoleThumb key={f.id} file={f} onOpen={() => openLightbox(f)} onRemove={() => handleRemoveImage(f)} />
+                          ))}
+                          <label className="inline-flex items-center gap-1 px-2 h-7 rounded border border-dashed text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/40 cursor-pointer">
+                            <Plus className="h-3 w-3" /> Attach image
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                handleUpload(idx, e.target.files);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
                         </div>
                       </div>
                     );
