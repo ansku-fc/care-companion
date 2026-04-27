@@ -60,6 +60,26 @@ function normalizeAllergies(raw: unknown): AllergyEntry[] {
     .filter((x): x is AllergyEntry => x !== null);
 }
 
+function normalizeMoles(raw: unknown): MoleEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((m): m is Record<string, unknown> => Boolean(m) && typeof m === "object")
+    .map((m, i) => blankMole(`Mole ${i + 1}`, {
+      id: typeof m.id === "string" ? m.id : crypto.randomUUID(),
+      label: typeof m.label === "string" ? m.label : `Mole ${i + 1}`,
+      side: m.side === "back" ? "back" : "front",
+      pin_x: typeof m.pin_x === "number" ? m.pin_x : 50,
+      pin_y: typeof m.pin_y === "number" ? m.pin_y : 50,
+      location: typeof m.location === "string" ? m.location : "",
+      asymmetry: typeof m.asymmetry === "string" ? m.asymmetry : "",
+      borders: typeof m.borders === "string" ? m.borders : "",
+      color: typeof m.color === "string" ? m.color : "",
+      size: typeof m.size === "string" ? m.size : "",
+      change: typeof m.change === "string" ? m.change : "",
+      symptoms: typeof m.symptoms === "string" ? m.symptoms : "",
+      image_files: [],
+    }));
+
 type Props = {
   patientId: string;
   patientName: string;
