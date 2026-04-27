@@ -2800,9 +2800,10 @@ function HealthDimensionView({
           { date: "2024-06-01", value: 8 },
           { date: "2025-01-01", value: Number(exerciseCurrent) || 8 },
         ];
+        const met = onboarding?.exercise_met_hours;
         return (
           <div className="divide-y border rounded-md">
-            <ExpandableRow label="Exercise (MET hrs/week)" value={exerciseCurrent} recorded={onboardingDate} expanded={expandedRows.has("exercise")} onToggle={() => toggleRow("exercise")}>
+            <ExpandableRow label="Exercise (MET hrs/week)" value={<>{exerciseCurrent}{met != null && Number(met) >= 17.5 && <Flag tone="green">Above WHO rec.</Flag>}{met != null && Number(met) < 8 && <Flag tone="amber">Below rec.</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("exercise")} onToggle={() => toggleRow("exercise")}>
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Exercise history</p>
                 <table className="w-full text-sm">
@@ -2816,6 +2817,21 @@ function HealthDimensionView({
                   </tbody>
                 </table>
               </div>
+            </ExpandableRow>
+            <ExpandableRow label="Cardio Easy" value={onboarding?.cardio_easy_hours_per_week != null ? `${onboarding.cardio_easy_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("cardio_easy")} onToggle={() => toggleRow("cardio_easy")}>
+              <p className="text-sm text-muted-foreground">Low-intensity aerobic activity hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Cardio Moderate" value={onboarding?.cardio_moderate_hours_per_week != null ? `${onboarding.cardio_moderate_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("cardio_mod")} onToggle={() => toggleRow("cardio_mod")}>
+              <p className="text-sm text-muted-foreground">Moderate-intensity aerobic activity hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Cardio Vigorous" value={onboarding?.cardio_vigorous_hours_per_week != null ? `${onboarding.cardio_vigorous_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("cardio_vig")} onToggle={() => toggleRow("cardio_vig")}>
+              <p className="text-sm text-muted-foreground">High-intensity aerobic activity hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Strength Training" value={onboarding?.strength_hours_per_week != null ? `${onboarding.strength_hours_per_week} h/wk` : "—"} recorded={onboardingDate} expanded={expandedRows.has("strength")} onToggle={() => toggleRow("strength")}>
+              <p className="text-sm text-muted-foreground">Resistance training hours per week.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Sedentary Hours" value={onboarding?.sedentary_hours_per_day != null ? `${onboarding.sedentary_hours_per_day} h/day` : "—"} recorded={onboardingDate} expanded={expandedRows.has("sedentary")} onToggle={() => toggleRow("sedentary")}>
+              <p className="text-sm text-muted-foreground">Average sedentary hours per day.</p>
             </ExpandableRow>
             <ExpandableRow label="Mobility Restriction" value={onboarding?.symptom_mobility_restriction ? "Yes" : "No"} recorded={onboardingDate} expanded={expandedRows.has("mobility")} onToggle={() => toggleRow("mobility")}>
               <p className="text-sm text-muted-foreground">Patient-reported mobility limitations.</p>
