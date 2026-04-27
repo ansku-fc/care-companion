@@ -122,8 +122,9 @@ function inferReferralReason(title: string): string {
 }
 
 function buildReferralForm(task: Task, patientName: string | null): ReferralForm {
+  const target = inferReferralTarget(task.title ?? "");
   return {
-    to: "",
+    to: target.to,
     from: "Dr. Laine, Foundation Clinic",
     patient: patientName ?? "",
     dob: "",
