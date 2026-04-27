@@ -775,6 +775,7 @@ function MedicationsEditor({
           </Command>
         </PopoverContent>
       </Popover>
+      )}
     </div>
   );
 }
