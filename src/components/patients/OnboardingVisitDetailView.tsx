@@ -490,66 +490,209 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <Field label="ECG notes" value={ov("ecg_notes", onboarding.ecg_notes)} editing={editing} onChange={(v) => setOverride("ecg_notes", v)} />
           </Section>
 
-          <Section title="Illnesses & Medications">
-            <div className="text-sm font-medium">Current</div>
-            {meaningfulCurrent.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None recorded</p>
-            ) : (
-              <div className="space-y-2">{meaningfulCurrent.map(renderIllness)}</div>
-            )}
-            <Separator className="my-2" />
-            <div className="text-sm font-medium">Previous</div>
-            {meaningfulPrevious.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None recorded</p>
-            ) : (
-              <div className="space-y-2">{meaningfulPrevious.map(renderIllness)}</div>
-            )}
-          </Section>
-
-          <Section title="Allergies">
-            {allergies.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None recorded</p>
-            ) : (
-              <div className="space-y-1">
-                {allergies.map((a) => (
-                  <div key={a.id} className="text-sm">
-                    {a.icd_code ? <span className="text-muted-foreground mr-1">{a.icd_code}</span> : null}
-                    <span className="font-medium">{a.allergen}</span>
-                    {a.severity ? <Badge variant="outline" className="ml-2 text-[11px]">{a.severity}</Badge> : null}
-                    {a.reaction ? <div className="text-xs text-muted-foreground">{a.reaction}</div> : null}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-
-          <Section title="Supplements">
-            {supplements.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None recorded</p>
-            ) : (
-              <div className="flex flex-wrap gap-1">
-                {supplements.map((s: any, idx: number) => (
-                  <Badge key={idx} variant="outline" className="text-[11px] font-normal">
-                    {typeof s === "string" ? s : `${s.name ?? ""}${s.dose ? ` · ${s.dose}` : ""}${s.frequency ? ` · ${s.frequency}` : ""}`}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </Section>
-
-          <Section title="Family History">
-            {family.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None recorded</p>
-            ) : (
-              family.map((f: any) => (
-                <div key={f.id} className="text-sm">
-                  <span className="font-medium">{f.relative}</span>
-                  <span className="text-muted-foreground"> · {f.illness_name}</span>
-                  {f.age_at_diagnosis ? <span className="text-muted-foreground"> · {f.age_at_diagnosis}</span> : null}
+          {(() => {
+            const curList = getCollection<any>("_illnesses_current", currentIllnesses).filter((i: any) => editing || i?.illness_name?.trim());
+            const prevList = getCollection<any>("_illnesses_previous", previousIllnesses).filter((i: any) => editing || i?.illness_name?.trim());
+            const setCur = (next: any[]) => setOverride("_illnesses_current", next);
+            const setPrev = (next: any[]) => setOverride("_illnesses_previous", next);
+            const baseCur = getCollection<any>("_illnesses_current", currentIllnesses);
+            const basePrev = getCollection<any>("_illnesses_previous", previousIllnesses);
+            const updateCur = (idx: number, next: any) => setCur(baseCur.map((x: any, j: number) => (j === idx ? next : x)));
+            const removeCur = (idx: number) => setCur(baseCur.filter((_: any, j: number) => j !== idx));
+            const addCur = () => setCur([...baseCur, { id: `new-${Date.now()}`, illness_name: "", icd_code: "", onset_year: "", medications: [] }]);
+            const updatePrev = (idx: number, next: any) => setPrev(basePrev.map((x: any, j: number) => (j === idx ? next : x)));
+            const removePrev = (idx: number) => setPrev(basePrev.filter((_: any, j: number) => j !== idx));
+            const addPrev = () => setPrev([...basePrev, { id: `new-${Date.now()}`, illness_name: "", icd_code: "", onset_year: "", resolved_year: "", medications: [] }]);
+            return (
+              <Section title="Illnesses & Medications">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">Current</div>
+                  {editing && (
+                    <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-1.5" onClick={addCur}>
+                      <Plus className="h-3 w-3" /> Add illness
+                    </Button>
+                  )}
                 </div>
-              ))
-            )}
-          </Section>
+                {curList.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">None recorded</p>
+                ) : (
+                  <div className="space-y-2">
+                    {baseCur.map((i: any, idx: number) =>
+                      editing || i?.illness_name?.trim()
+                        ? renderIllness(i, (next) => updateCur(idx, next), () => removeCur(idx))
+                        : null
+                    )}
+                  </div>
+                )}
+                <Separator className="my-2" />
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">Previous</div>
+                  {editing && (
+                    <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-1.5" onClick={addPrev}>
+                      <Plus className="h-3 w-3" /> Add illness
+                    </Button>
+                  )}
+                </div>
+                {prevList.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">None recorded</p>
+                ) : (
+                  <div className="space-y-2">
+                    {basePrev.map((i: any, idx: number) =>
+                      editing || i?.illness_name?.trim()
+                        ? renderIllness(i, (next) => updatePrev(idx, next), () => removePrev(idx))
+                        : null
+                    )}
+                  </div>
+                )}
+              </Section>
+            );
+          })()}
+
+          {(() => {
+            const list = getCollection<any>("_allergies", allergies);
+            const setList = (next: any[]) => setOverride("_allergies", next);
+            const update = (idx: number, patch: any) => setList(list.map((x: any, j: number) => (j === idx ? { ...x, ...patch } : x)));
+            const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
+            const add = () => setList([...list, { id: `new-${Date.now()}`, allergen: "", icd_code: "", severity: "moderate", reaction: "" }]);
+            return (
+              <Section title="Allergies">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{list.length} recorded</span>
+                  {editing && (
+                    <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-1.5" onClick={add}>
+                      <Plus className="h-3 w-3" /> Add allergy
+                    </Button>
+                  )}
+                </div>
+                {list.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">None recorded</p>
+                ) : (
+                  <div className="space-y-1">
+                    {list.map((a: any, idx: number) =>
+                      editing ? (
+                        <div key={a.id ?? idx} className="flex items-center gap-1 border rounded-md p-1.5 bg-muted/20">
+                          <Input value={a.icd_code ?? ""} onChange={(e) => update(idx, { icd_code: e.target.value })} placeholder="ICD/Z" className="h-7 text-xs w-20" />
+                          <Input value={a.allergen ?? ""} onChange={(e) => update(idx, { allergen: e.target.value })} placeholder="Allergen" className="h-7 text-xs flex-1" />
+                          <Select value={a.severity ?? "moderate"} onValueChange={(v) => update(idx, { severity: v })}>
+                            <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="mild">Mild</SelectItem>
+                              <SelectItem value="moderate">Moderate</SelectItem>
+                              <SelectItem value="severe">Severe</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => remove(idx)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div key={a.id ?? idx} className="text-sm">
+                          {a.icd_code ? <span className="text-muted-foreground mr-1">{a.icd_code}</span> : null}
+                          <span className="font-medium">{a.allergen}</span>
+                          {a.severity ? <Badge variant="outline" className="ml-2 text-[11px]">{a.severity}</Badge> : null}
+                          {a.reaction ? <div className="text-xs text-muted-foreground">{a.reaction}</div> : null}
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </Section>
+            );
+          })()}
+
+          {(() => {
+            const list = getCollection<any>("_supplements", supplements);
+            const setList = (next: any[]) => setOverride("_supplements", next);
+            const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
+            const [draft, setDraft] = [
+              (overrides._supp_draft as string | undefined) ?? "",
+              (v: string) => setOverride("_supp_draft", v),
+            ];
+            const commitDraft = () => {
+              const v = String(draft).trim();
+              if (!v) return;
+              setList([...list, v]);
+              setDraft("");
+            };
+            return (
+              <Section title="Supplements">
+                {list.length === 0 && !editing ? (
+                  <p className="text-sm text-muted-foreground">None recorded</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {list.map((s: any, idx: number) => (
+                      <Badge key={idx} variant="outline" className="text-[11px] font-normal gap-1 pr-1">
+                        {typeof s === "string" ? s : `${s.name ?? ""}${s.dose ? ` · ${s.dose}` : ""}${s.frequency ? ` · ${s.frequency}` : ""}`}
+                        {editing && (
+                          <button type="button" onClick={() => remove(idx)} className="hover:text-destructive">
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {editing && (
+                  <div className="flex items-center gap-1 pt-1">
+                    <Input
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(); } }}
+                      placeholder="Add supplement (press Enter)"
+                      className="h-7 text-xs"
+                    />
+                    <Button size="sm" variant="ghost" className="h-7 text-[11px] gap-1 px-2" onClick={commitDraft}>
+                      <Plus className="h-3 w-3" /> Add
+                    </Button>
+                  </div>
+                )}
+              </Section>
+            );
+          })()}
+
+          {(() => {
+            const list = getCollection<any>("_family", family);
+            const setList = (next: any[]) => setOverride("_family", next);
+            const update = (idx: number, patch: any) => setList(list.map((x: any, j: number) => (j === idx ? { ...x, ...patch } : x)));
+            const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
+            const add = () => setList([...list, { id: `new-${Date.now()}`, relative: "", illness_name: "", age_at_diagnosis: "" }]);
+            return (
+              <Section title="Family History">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{list.length} recorded</span>
+                  {editing && (
+                    <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-1.5" onClick={add}>
+                      <Plus className="h-3 w-3" /> Add relative
+                    </Button>
+                  )}
+                </div>
+                {list.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">None recorded</p>
+                ) : (
+                  <div className="space-y-1">
+                    {list.map((f: any, idx: number) =>
+                      editing ? (
+                        <div key={f.id ?? idx} className="flex items-center gap-1 border rounded-md p-1.5 bg-muted/20">
+                          <Input value={f.relative ?? ""} onChange={(e) => update(idx, { relative: e.target.value })} placeholder="Relative" className="h-7 text-xs w-32" />
+                          <Input value={f.illness_name ?? ""} onChange={(e) => update(idx, { illness_name: e.target.value })} placeholder="Illness" className="h-7 text-xs flex-1" />
+                          <Input value={f.age_at_diagnosis ?? ""} onChange={(e) => update(idx, { age_at_diagnosis: e.target.value })} placeholder="Age" className="h-7 text-xs w-20" />
+                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => remove(idx)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div key={f.id ?? idx} className="text-sm">
+                          <span className="font-medium">{f.relative}</span>
+                          <span className="text-muted-foreground"> · {f.illness_name}</span>
+                          {f.age_at_diagnosis ? <span className="text-muted-foreground"> · {f.age_at_diagnosis}</span> : null}
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </Section>
+            );
+          })()}
 
           <Section title="Lifestyle">
             <Field
