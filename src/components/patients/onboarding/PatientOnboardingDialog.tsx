@@ -567,12 +567,14 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
               indication: indicationParts.join(" "),
               start_date: startYear ? `${startYear}-01-01` : null,
               end_date:
-                kind === "previous" && ill.resolved_year
-                  ? `${ill.resolved_year}-12-31`
-                  : null,
+                endYear
+                  ? `${endYear}-12-31`
+                  : kind === "previous" && ill.resolved_year
+                    ? `${ill.resolved_year}-12-31`
+                    : null,
               status:
                 kind === "previous"
-                  ? ill.resolved_year
+                  ? endYear || ill.resolved_year
                     ? "discontinued"
                     : "historical"
                   : "active",
