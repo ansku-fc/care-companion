@@ -414,7 +414,7 @@ export function MainDimensionOverview({
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
                 <span className={cn("text-2xl font-bold leading-none", scoreColor)}>
-                  {parentScore.toFixed(1)}
+                  {parentScore != null ? parentScore.toFixed(1) : "—"}
                 </span>
               </div>
               <Button
