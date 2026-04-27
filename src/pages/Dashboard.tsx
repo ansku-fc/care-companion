@@ -48,12 +48,23 @@ const APPT_TYPE_LABEL: Record<string, string> = {
 };
 
 
-const recentActivity = [
-  { time: "Today 09:15", event: "New lab results uploaded", patient: "Korhonen, Elena", actor: "Lab system", section: "health-data" as const },
-  { time: "Today 08:30", event: "Risk index updated: Cardiovascular 8.4 (↑ from 7.1)", patient: "Carter, Jay-Z", actor: "System", section: "overview" as const },
-  { time: "Yesterday", event: "Annotation added to LDL graph", patient: "Carter, Jay-Z", actor: "Dr. Laine", section: "health-data" as const },
-  { time: "Yesterday", event: "Care plan note added", patient: "Mäkinen, Aino", actor: "Nurse Mäkinen", section: "overview" as const },
-  { time: "21 Apr", event: "New onboarding form submitted", patient: "Okafor, David", actor: "Patient", section: "overview" as const },
+type ActivityEntry = {
+  ts: number;            // millis for sorting
+  time: string;          // display label
+  event: string;
+  patient: string;
+  actor: string;
+  section: "overview" | "health-data" | "visits";
+};
+
+// Seed entries shown alongside live derived activity. These represent legacy
+// signals we don't yet capture in DB (lab uploads, risk index updates, etc.).
+const seedActivity: ActivityEntry[] = [
+  { ts: Date.now() - 1000 * 60 * 60 * 6,  time: "Today 09:15",  event: "New lab results uploaded",                            patient: "Korhonen, Elena", actor: "Lab system",     section: "health-data" },
+  { ts: Date.now() - 1000 * 60 * 60 * 7,  time: "Today 08:30",  event: "Risk index updated: Cardiovascular 8.4 (↑ from 7.1)", patient: "Carter, Jay-Z",   actor: "System",         section: "overview"    },
+  { ts: Date.now() - 1000 * 60 * 60 * 26, time: "Yesterday",    event: "Annotation added to LDL graph",                       patient: "Carter, Jay-Z",   actor: "Dr. Laine",      section: "health-data" },
+  { ts: Date.now() - 1000 * 60 * 60 * 28, time: "Yesterday",    event: "Care plan note added",                                patient: "Mäkinen, Aino",   actor: "Nurse Mäkinen",  section: "overview"    },
+  { ts: Date.now() - 1000 * 60 * 60 * 24 * 6, time: "21 Apr",   event: "New onboarding form submitted",                       patient: "Okafor, David",   actor: "Patient",        section: "overview"    },
 ];
 
 const initialsOf = (name: string) => {
@@ -156,6 +167,95 @@ const Dashboard = () => {
       return da - db;
     });
   const completedToday = tasks.filter((t) => isCompletedToday(t));
+
+  // Live recent activity — derived from real DB signals (onboarding completions,
+  // onboarding visit_notes drafts, batches of onboarding-generated tasks) merged
+  // with the legacy seed entries.
+  const { data: liveActivity = [] } = useQuery({
+    queryKey: ["recent-activity"],
+    queryFn: async (): Promise<ActivityEntry[]> => {
+      const [obRes, vnRes, taskRes] = await Promise.all([
+        supabase
+          .from("patient_onboarding")
+          .select("patient_id, updated_at, draft, patients!inner(full_name)" as any)
+          .eq("draft", false)
+          .order("updated_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("visit_notes")
+          .select("patient_id, created_at, extra_data, patients:patient_id(full_name)" as any)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("tasks")
+          .select("patient_id, created_at, created_from")
+          .ilike("created_from", "%nboarding%")
+          .order("created_at", { ascending: false })
+          .limit(200),
+      ]);
+
+      const fmt = (d: Date) =>
+        isSameDay(d, new Date())
+          ? `Today ${format(d, "HH:mm")}`
+          : format(d, "dd MMM");
+
+      const out: ActivityEntry[] = [];
+
+      // Onboarding completed
+      for (const row of (obRes.data ?? []) as any[]) {
+        const name = row.patients?.full_name ? formatLastFirst(row.patients.full_name) : "Patient";
+        const d = new Date(row.updated_at);
+        out.push({ ts: d.getTime(), time: fmt(d), event: "Onboarding completed", patient: name, actor: "Dr. Laine", section: "overview" });
+      }
+
+      // Onboarding document created (Draft) — heuristic: visit_notes whose
+      // extra_data has a status (draft|finalised) AND originated from onboarding.
+      for (const row of (vnRes.data ?? []) as any[]) {
+        const ed = row.extra_data ?? {};
+        if (!ed?.status) continue;
+        const name = row.patients?.full_name ? formatLastFirst(row.patients.full_name) : "Patient";
+        const d = new Date(row.created_at);
+        const label = ed.status === "finalised" ? "Onboarding document finalised" : "Onboarding document created (Draft)";
+        out.push({ ts: d.getTime(), time: fmt(d), event: label, patient: name, actor: "System", section: "visits" });
+      }
+
+      // Group onboarding-generated tasks by patient + 5-minute bucket so a
+      // single onboarding completion shows as one "N tasks created" entry.
+      const buckets = new Map<string, { ts: number; patient_id: string; count: number }>();
+      for (const t of (taskRes.data ?? []) as any[]) {
+        const ts = new Date(t.created_at).getTime();
+        const bucketKey = `${t.patient_id}-${Math.floor(ts / (5 * 60 * 1000))}`;
+        const cur = buckets.get(bucketKey);
+        if (cur) cur.count += 1;
+        else buckets.set(bucketKey, { ts, patient_id: t.patient_id, count: 1 });
+      }
+      // Resolve patient names via a single lookup
+      const ids = Array.from(new Set(Array.from(buckets.values()).map((b) => b.patient_id)));
+      let nameMap: Record<string, string> = {};
+      if (ids.length) {
+        const { data: pdata } = await supabase.from("patients").select("id, full_name").in("id", ids);
+        nameMap = Object.fromEntries((pdata ?? []).map((p: any) => [p.id, formatLastFirst(p.full_name)]));
+      }
+      for (const b of buckets.values()) {
+        const d = new Date(b.ts);
+        out.push({
+          ts: b.ts,
+          time: fmt(d),
+          event: `${b.count} task${b.count === 1 ? "" : "s"} created from onboarding`,
+          patient: nameMap[b.patient_id] ?? "Patient",
+          actor: "System",
+          section: "overview",
+        });
+      }
+
+      return out;
+    },
+  });
+
+  const recentActivity: ActivityEntry[] = useMemo(() => {
+    const merged = [...liveActivity, ...seedActivity];
+    return merged.sort((a, b) => b.ts - a.ts).slice(0, 12);
+  }, [liveActivity]);
 
   // Today's schedule = real appointments from DB + today's dummy appointments
   const todayKey = format(today, "yyyy-MM-dd");
