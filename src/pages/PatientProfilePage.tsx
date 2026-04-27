@@ -3077,6 +3077,8 @@ function HealthDimensionView({
     };
 
 
+    const renderGroups = (contentBySubKey: Record<string, GroupContent | RowSpec[]>) => {
+      const main = mainDim;
       // Resolve from taxonomy. If we couldn't find a parent, fall back to a
       // single synthetic group keyed by the dimension itself.
       const subs = main && main.subDimensions.length > 0
