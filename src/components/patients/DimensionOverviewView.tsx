@@ -583,7 +583,7 @@ export function SubDimensionView({
                 {renderRiskFactors()}
               </TabsContent>
               <TabsContent value="lab_results" className="mt-4">
-                <LabResultsBlock biomarkers={biomarkers} patientId={patient.id} patientName={patient.full_name} />
+                <LabResultsBlock biomarkers={biomarkers} patientId={patient.id} patientName={patient.full_name} labResults={labResults} />
               </TabsContent>
             </Tabs>
           </CardContent>
