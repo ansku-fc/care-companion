@@ -32,6 +32,8 @@ import { StepCancer } from "./StepCancer";
 import { StepStatus } from "./StepStatus";
 import { blankExamFindings, normalizeIllnessRows, type AllergyEntry } from "./OnboardingFormContext";
 import { findAllergen } from "@/lib/allergens";
+import { buildSuggestedTasks, type SuggestedTask } from "./suggestedTasks";
+import { SuggestedTasksDialog } from "./SuggestedTasksDialog";
 
 function normalizeAllergies(raw: unknown): AllergyEntry[] {
   if (!Array.isArray(raw)) return [];
