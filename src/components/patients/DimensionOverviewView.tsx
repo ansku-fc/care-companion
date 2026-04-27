@@ -80,7 +80,7 @@ type SelectedMarker = {
   accentColorVar: string;
 };
 
-function LabResultsBlock({
+export function LabResultsBlock({
   biomarkers,
   filter,
   onFilterChange,

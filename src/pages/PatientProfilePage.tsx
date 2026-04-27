@@ -31,7 +31,8 @@ import { HealthFileUploads, type HealthDataTab } from "@/components/patients/Hea
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
-import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
+import { MainDimensionOverview, SubDimensionView, LabResultsBlock } from "@/components/patients/DimensionOverviewView";
+import { getBiomarkersForMainDimension } from "@/components/patients/dimensionRegistry";
 import { computeSubScores, aggregateMainScore } from "@/lib/subDimensionScoring";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
 import { OnboardingEmptyState } from "@/components/patients/OnboardingEmptyState";
@@ -3653,6 +3654,15 @@ function GenericDimensionView({
   const scoreBg = "";
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
+  const [riskTab, setRiskTab] = useState<"risk_factors" | "lab_results">("risk_factors");
+
+  // Biomarkers for the Lab Results tab — pulled from the central registry
+  // so this view stays in sync with MainDimensionOverview / SubDimensionView.
+  const biomarkers = useMemo(() => {
+    const subKeys = mainDim?.subDimensions.map((s) => s.key) ?? [];
+    const key = mainDim?.key ?? dimensionKey;
+    return getBiomarkersForMainDimension(key, subKeys);
+  }, [mainDim?.key, dimensionKey, mainDim?.subDimensions.map((s) => s.key).join(",")]);
 
   // ─── Doctor's Summary & Recommendations ───
   const categoryKey = (mainDim?.label || dim.label).toLowerCase();
@@ -3733,7 +3743,24 @@ function GenericDimensionView({
           <p className="text-xs text-muted-foreground">What is driving the current risk index</p>
         </div>
         <Card>
-          <CardContent className="pt-6">{renderRiskPicture()}</CardContent>
+          <CardContent className="pt-6">
+            <Tabs value={riskTab} onValueChange={(v) => setRiskTab(v as "risk_factors" | "lab_results")}>
+              <TabsList>
+                <TabsTrigger value="risk_factors">Risk Factors</TabsTrigger>
+                <TabsTrigger value="lab_results">Lab Results</TabsTrigger>
+              </TabsList>
+              <TabsContent value="risk_factors" className="mt-4">
+                {renderRiskPicture()}
+              </TabsContent>
+              <TabsContent value="lab_results" className="mt-4">
+                <LabResultsBlock
+                  biomarkers={biomarkers}
+                  patientId={patient.id}
+                  patientName={patient.full_name}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
         </Card>
       </section>
 

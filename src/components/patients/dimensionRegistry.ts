@@ -21,6 +21,9 @@ export type BiomarkerDef = {
 export const ALL_BIOMARKERS: BiomarkerDef[] = [
   // ── Cardiovascular (no subs, parent key) ─────────────────────
   { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refHigh: 3.0, subDimension: "cardiovascular" },
+  { key: "total_cholesterol_mmol_l", label: "Total cholesterol", unit: "mmol/L", refHigh: 5.0, subDimension: "cardiovascular" },
+  { key: "hdl_mmol_l", label: "HDL", unit: "mmol/L", refLow: 1.0, subDimension: "cardiovascular" },
+  { key: "triglycerides_mmol_l", label: "Triglycerides", unit: "mmol/L", refHigh: 1.7, subDimension: "cardiovascular" },
   { key: "blood_pressure_systolic", label: "Blood Pressure", sidebarLabel: "Blood Pressure (Systolic / Diastolic)", unit: "mmHg", refLow: 60, refHigh: 140, subDimension: "cardiovascular" },
   { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refHigh: 42, subDimension: "cardiovascular" },
 
