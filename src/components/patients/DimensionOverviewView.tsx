@@ -20,6 +20,13 @@ import {
   getBiomarkersForSubDimension,
   type BiomarkerDef,
 } from "@/components/patients/dimensionRegistry";
+import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
+import {
+  getLabCategoriesForMainDimension,
+  getLabCategoriesForSubDimension,
+  type LabMarkerCategory,
+  type LabMarkerRow,
+} from "@/lib/labMarkerRegistry";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { cn } from "@/lib/utils";
 
