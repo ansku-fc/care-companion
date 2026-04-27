@@ -9,6 +9,7 @@ import { ChevronDown, ChevronRight, ListTodo, Layers, Plus } from "lucide-react"
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/hooks/useTasks";
+import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import {
@@ -17,6 +18,38 @@ import {
   type Task, type TaskStatus, type TaskPriority, type TaskCategory,
 } from "@/lib/tasks";
 import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
+
+// Initials + tone for assignee avatar chip
+function assigneeInitials(name: string): string {
+  const cleaned = name.replace(/^(dr\.?|doctor|nurse)\s+/i, "").trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function assigneeAvatarTone(name: string | null | undefined): string {
+  if (!name) return "bg-muted text-muted-foreground";
+  if (/nurse/i.test(name)) return "bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30";
+  if (/dr\.?|doctor/i.test(name)) return "bg-primary/15 text-primary border border-primary/30";
+  return "bg-muted text-muted-foreground border border-border";
+}
+
+function AssigneeAvatar({ name, size = "sm" }: { name: string; size?: "xs" | "sm" }) {
+  const dims = size === "xs" ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-[10px]";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center justify-center rounded-full font-semibold tracking-wide shrink-0",
+        dims,
+        assigneeAvatarTone(name),
+      )}
+      title={name}
+    >
+      {assigneeInitials(name)}
+    </span>
+  );
+}
 
 const STATUS_GROUPS: TaskStatus[] = ["todo", "in_progress", "done", "deferred"];
 
