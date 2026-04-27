@@ -1146,6 +1146,33 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
         </div>
       )}
 
+      {/* Finalise confirmation dialog */}
+      <Dialog open={finaliseConfirmOpen} onOpenChange={setFinaliseConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finalise this document?</DialogTitle>
+            <DialogDescription>
+              Once finalised, this document becomes part of the permanent patient record and can no longer be freely edited. Any future changes will require a documented reason and will be logged.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinaliseConfirmOpen(false)} disabled={saving}>
+              Return to Draft
+            </Button>
+            <Button
+              onClick={async () => {
+                await handleFinalise();
+                setFinaliseConfirmOpen(false);
+              }}
+              disabled={saving}
+              className="gap-1.5"
+            >
+              <Lock className="h-3.5 w-3.5" /> Finalise
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Re-open dialog */}
       <Dialog open={reopenOpen} onOpenChange={setReopenOpen}>
         <DialogContent>
