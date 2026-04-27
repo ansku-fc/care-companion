@@ -571,16 +571,6 @@ function rowsFromSeries(
   refLow?: number,
   refHigh?: number,
 ): LabSidebarRow[] {
-  const cacheKey = `${patientId}|${key}`;
-  const series = seriesCache.get(cacheKey);
-  if (!series) {
-    // Fire-and-forget so subsequent renders pick it up.
-    void loadSeries(patientId, key).then((s) => {
-      seriesCache.set(cacheKey, s);
-      notifySeries();
-    });
-    return [];
-  }
   if (series.bp) {
     const filtered = filterByWindow(series.bp, windowKey);
     return filtered.map((p) => {
