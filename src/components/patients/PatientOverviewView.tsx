@@ -199,8 +199,10 @@ export function PatientOverviewView({
 
   // ── Alerts ───────────────────────────────────────────────
   const openTasks = tasks.filter((t) => t.status !== "done");
+  const anaphylacticAllergies = allergies.filter((a: any) => a.severity === "anaphylactic");
   const severeAllergies = allergies.filter((a: any) => a.severity === "severe");
   const moderateAllergies = allergies.filter((a: any) => a.severity === "moderate");
+  const mildAllergies = allergies.filter((a: any) => a.severity === "mild");
 
   const overdueTasksCount = openTasks.filter(
     (t) => t.due_date && new Date(t.due_date).getTime() < Date.now(),
