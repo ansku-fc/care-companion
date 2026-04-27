@@ -640,7 +640,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
         <p className="text-sm text-muted-foreground">No onboarding data found for this patient.</p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          <Section title="Basic Information">
+          <Section name="basic" title="Basic Information" editable={canEdit} isActive={activeSection === "basic"} onEnter={() => enterSection("basic")} onDone={doneSection}>{(editing) => (<>
             <Field label="Age" value={ov("age", onboarding.age)} editing={editing} onChange={(v) => setOverride("age", v)} />
             <Field label="Height" value={ov("height_cm", onboarding.height_cm ? `${onboarding.height_cm} cm` : "")} editing={editing} onChange={(v) => setOverride("height_cm", v)} />
             <Field label="Weight" value={ov("weight_kg", onboarding.weight_kg ? `${onboarding.weight_kg} kg` : "")} editing={editing} onChange={(v) => setOverride("weight_kg", v)} />
@@ -652,9 +652,9 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <SelectField label="Occupation" value={ov("occupation", onboarding.occupation)} editing={editing} onChange={(v) => setOverride("occupation", v)} options={OCCUPATIONS} />
             <SelectField label="Education" value={ov("education", onboarding.education_level)} editing={editing} onChange={(v) => setOverride("education", v)} options={EDUCATION_LEVELS} />
             <Field label="Shift work" value={ov("shift_work", onboarding.shift_work === true ? "Yes" : onboarding.shift_work === false ? "No" : "")} editing={editing} onChange={(v) => setOverride("shift_work", v)} />
-          </Section>
+          </>)}</Section>
 
-          <Section title="Diagnostics">
+          <Section name="diagnostics" title="Diagnostics" editable={canEdit} isActive={activeSection === "diagnostics"} onEnter={() => enterSection("diagnostics")} onDone={doneSection}>{(editing) => (<>
             <Field
               label="BP 1st"
               value={ov("bp1", onboarding.bp1_systolic && onboarding.bp1_diastolic ? `${onboarding.bp1_systolic}/${onboarding.bp1_diastolic} mmHg` : "")}
@@ -668,7 +668,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
               onChange={(v) => setOverride("bp2", v)}
             />
             <Field label="ECG notes" value={ov("ecg_notes", onboarding.ecg_notes)} editing={editing} onChange={(v) => setOverride("ecg_notes", v)} />
-          </Section>
+          </>)}</Section>
 
           {(() => {
             const curList = getCollection<any>("_illnesses_current", currentIllnesses).filter((i: any) => editing || i?.illness_name?.trim());
@@ -684,7 +684,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             const removePrev = (idx: number) => setPrev(basePrev.filter((_: any, j: number) => j !== idx));
             const addPrev = () => setPrev([...basePrev, { id: `new-${Date.now()}`, illness_name: "", icd_code: "", onset_year: "", resolved_year: "", medications: [] }]);
             return (
-              <Section title="Illnesses & Medications">
+              <Section name="illnesses" title="Illnesses & Medications" editable={canEdit} isActive={activeSection === "illnesses"} onEnter={() => enterSection("illnesses")} onDone={doneSection}>{(editing) => (<>
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-medium">Current</div>
                   {editing && (
@@ -724,7 +724,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                     )}
                   </div>
                 )}
-              </Section>
+              </>)}</Section>
             );
           })()}
 
@@ -735,7 +735,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
             const add = () => setList([...list, { id: `new-${Date.now()}`, allergen: "", icd_code: "", severity: "moderate", reaction: "" }]);
             return (
-              <Section title="Allergies">
+              <Section name="allergies" title="Allergies" editable={canEdit} isActive={activeSection === "allergies"} onEnter={() => enterSection("allergies")} onDone={doneSection}>{(editing) => (<>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">{list.length} recorded</span>
                   {editing && (
@@ -776,7 +776,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                     )}
                   </div>
                 )}
-              </Section>
+              </>)}</Section>
             );
           })()}
 
@@ -795,7 +795,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
               setDraft("");
             };
             return (
-              <Section title="Supplements">
+              <Section name="supplements" title="Supplements" editable={canEdit} isActive={activeSection === "supplements"} onEnter={() => enterSection("supplements")} onDone={doneSection}>{(editing) => (<>
                 {list.length === 0 && !editing ? (
                   <p className="text-sm text-muted-foreground">None recorded</p>
                 ) : (
@@ -826,7 +826,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                     </Button>
                   </div>
                 )}
-              </Section>
+              </>)}</Section>
             );
           })()}
 
@@ -837,7 +837,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
             const add = () => setList([...list, { id: `new-${Date.now()}`, relative: "", illness_name: "", age_at_diagnosis: "" }]);
             return (
-              <Section title="Family History">
+              <Section name="family" title="Family History" editable={canEdit} isActive={activeSection === "family"} onEnter={() => enterSection("family")} onDone={doneSection}>{(editing) => (<>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">{list.length} recorded</span>
                   {editing && (
@@ -870,11 +870,11 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                     )}
                   </div>
                 )}
-              </Section>
+              </>)}</Section>
             );
           })()}
 
-          <Section title="Lifestyle">
+          <Section name="lifestyle" title="Lifestyle" editable={canEdit} isActive={activeSection === "lifestyle"} onEnter={() => enterSection("lifestyle")} onDone={doneSection}>{(editing) => (<>
             <Field
               label="Nicotine pouches"
               value={ov("nic", ex.nicotine_pouches_current ? `${ex.nicotine_pouches_per_day ?? "—"}/day · ${ex.nicotine_pouches_strength ?? ""}`.trim() : "")}
@@ -909,27 +909,27 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <Field label="Alcohol" value={ov("alcohol", ex.alcohol_current ? `${onboarding.alcohol_units_per_week ?? ""} units/week` : "No")} editing={editing} onChange={(v) => setOverride("alcohol", v)} />
             <Field label="Caffeine" value={ov("caffeine", ex.caffeine_current ? `${ex.caffeine_cups_per_day ?? ""} cups/day` : "No")} editing={editing} onChange={(v) => setOverride("caffeine", v)} />
             <Field label="Drugs" value={ov("drugs", ex.drugs_current ? "Yes" : "No")} editing={editing} onChange={(v) => setOverride("drugs", v)} />
-          </Section>
+          </>)}</Section>
 
-          <Section title="Physical Activity">
+          <Section name="activity" title="Physical Activity" editable={canEdit} isActive={activeSection === "activity"} onEnter={() => enterSection("activity")} onDone={doneSection}>{(editing) => (<>
             <Field label="Cardio easy" value={ov("ce", onboarding.cardio_easy_hours_per_week ? `${onboarding.cardio_easy_hours_per_week} h/week` : "")} editing={editing} onChange={(v) => setOverride("ce", v)} />
             <Field label="Cardio moderate" value={ov("cm", onboarding.cardio_moderate_hours_per_week ? `${onboarding.cardio_moderate_hours_per_week} h/week` : "")} editing={editing} onChange={(v) => setOverride("cm", v)} />
             <Field label="Cardio vigorous" value={ov("cv", onboarding.cardio_vigorous_hours_per_week ? `${onboarding.cardio_vigorous_hours_per_week} h/week` : "")} editing={editing} onChange={(v) => setOverride("cv", v)} />
             <Field label="Strength" value={ov("str", onboarding.strength_hours_per_week ? `${onboarding.strength_hours_per_week} h/week` : "")} editing={editing} onChange={(v) => setOverride("str", v)} />
             <Field label="MET" value={ov("met", onboarding.exercise_met_hours ? `${onboarding.exercise_met_hours} h/week` : "")} editing={editing} onChange={(v) => setOverride("met", v)} />
             <Field label="Sedentary" value={ov("sed", onboarding.sedentary_hours_per_day ? `${onboarding.sedentary_hours_per_day} h/day` : "")} editing={editing} onChange={(v) => setOverride("sed", v)} />
-          </Section>
+          </>)}</Section>
 
-          <Section title="Nutrition">
+          <Section name="nutrition" title="Nutrition" editable={canEdit} isActive={activeSection === "nutrition"} onEnter={() => enterSection("nutrition")} onDone={doneSection}>{(editing) => (<>
             <Field label="Diet" value={ov("diet", ex.diet_type)} editing={editing} onChange={(v) => setOverride("diet", v)} />
             <Field label="Water" value={ov("water", ex.water_litres_per_day ? `${ex.water_litres_per_day} L/day` : "")} editing={editing} onChange={(v) => setOverride("water", v)} />
             <Field label="Fruit & veg" value={ov("fv", onboarding.fruits_vegetables_g_per_day ? `${onboarding.fruits_vegetables_g_per_day} g` : "")} editing={editing} onChange={(v) => setOverride("fv", v)} />
             <Field label="Red meat" value={ov("rm", onboarding.red_meat_g_per_day ? `${onboarding.red_meat_g_per_day} g` : "")} editing={editing} onChange={(v) => setOverride("rm", v)} />
             <Field label="Sugar" value={ov("sugar", onboarding.sugar_g_per_day ? `${onboarding.sugar_g_per_day} g` : "")} editing={editing} onChange={(v) => setOverride("sugar", v)} />
             <Field label="Fiber" value={ov("fiber", onboarding.fiber_g_per_day ? `${onboarding.fiber_g_per_day} g` : "")} editing={editing} onChange={(v) => setOverride("fiber", v)} />
-          </Section>
+          </>)}</Section>
 
-          <Section title="Sleep">
+          <Section name="sleep" title="Sleep" editable={canEdit} isActive={activeSection === "sleep"} onEnter={() => enterSection("sleep")} onDone={doneSection}>{(editing) => (<>
             <Field label="Quality" value={ov("sq", onboarding.sleep_quality ? `${onboarding.sleep_quality}/10` : "")} editing={editing} onChange={(v) => setOverride("sq", v)} />
             <Field label="Daytime fatigue" value={ov("df", ex.daytime_fatigue ? `${ex.daytime_fatigue}/10` : "")} editing={editing} onChange={(v) => setOverride("df", v)} />
             <Field label="Bedtime" value={ov("bed", ex.sleep_bedtime)} editing={editing} onChange={(v) => setOverride("bed", v)} />
@@ -941,25 +941,25 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
               editing={editing}
               onChange={(v) => setOverride("sd", v)}
             />
-          </Section>
+          </>)}</Section>
 
-          <Section title="Mental Health">
+          <Section name="mental" title="Mental Health" editable={canEdit} isActive={activeSection === "mental"} onEnter={() => enterSection("mental")} onDone={doneSection}>{(editing) => (<>
             <Field label="Stress" value={ov("stress", onboarding.stress_perceived ? `${onboarding.stress_perceived}/10` : "")} editing={editing} onChange={(v) => setOverride("stress", v)} />
             <Field label="Workload" value={ov("workload", ex.workload_perceived ? `${ex.workload_perceived}/10` : "")} editing={editing} onChange={(v) => setOverride("workload", v)} />
             <Field label="Recovery" value={ov("recovery", ex.recovery_perceived ? `${ex.recovery_perceived}/10` : "")} editing={editing} onChange={(v) => setOverride("recovery", v)} />
             <Field label="Social support" value={ov("ss", onboarding.social_support_perceived ? `${onboarding.social_support_perceived}/10` : "")} editing={editing} onChange={(v) => setOverride("ss", v)} />
             <Field label="GAD-2" value={ov("gad2", onboarding.gad2_score)} editing={editing} onChange={(v) => setOverride("gad2", v)} />
             <Field label="PHQ-2" value={ov("phq2", onboarding.phq2_score)} editing={editing} onChange={(v) => setOverride("phq2", v)} />
-          </Section>
+          </>)}</Section>
 
-          <Section title="Cancer Screenings">
+          <Section name="screenings" title="Cancer Screenings" editable={canEdit} isActive={activeSection === "screenings"} onEnter={() => enterSection("screenings")} onDone={doneSection}>{(editing) => (<>
             <Field label="Breast" value={ov("scr_b", ex.screen_breast_year)} editing={editing} onChange={(v) => setOverride("scr_b", v)} />
             <Field label="Cervix" value={ov("scr_c", ex.screen_cervix_year)} editing={editing} onChange={(v) => setOverride("scr_c", v)} />
             <Field label="Colorectum" value={ov("scr_co", ex.screen_colorectum_year)} editing={editing} onChange={(v) => setOverride("scr_co", v)} />
             <Field label="Skin" value={ov("scr_s", ex.screen_skin_year)} editing={editing} onChange={(v) => setOverride("scr_s", v)} />
             <Field label="Sun exposure" value={ov("sun", onboarding.sun_exposure === true ? "Yes" : onboarding.sun_exposure === false ? "No" : "")} editing={editing} onChange={(v) => setOverride("sun", v)} />
             <Field label="Protection" value={ov("sun_p", ex.sun_protection_method)} editing={editing} onChange={(v) => setOverride("sun_p", v)} />
-          </Section>
+          </>)}</Section>
 
           {(() => {
             const list = getCollection<any>("_moles", moles);
@@ -1036,7 +1036,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             };
 
             return (
-              <Section title="Physical Examination / Moles">
+              <Section name="moles" title="Physical Examination / Moles" editable={canEdit} isActive={activeSection === "moles"} onEnter={() => enterSection("moles")} onDone={doneSection}>{(editing) => (<>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">{list.length} recorded</span>
                   {editing && (
@@ -1121,7 +1121,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                     );
                   })
                 )}
-              </Section>
+              </>)}</Section>
             );
           })()}
 
