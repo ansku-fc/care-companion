@@ -3601,6 +3601,7 @@ function HealthDimensionView({
         subScore={subScores[dimensionKey] ?? null}
         patient={patient}
         healthCategories={healthCategories}
+        labResults={labResults}
         onNavigateToParent={() => onNavigateDimension(mainDim.key)}
         onNavigateToMedications={() => onNavigateDimension("medications")}
         renderRiskFactors={renderContent}
@@ -3618,6 +3619,7 @@ function HealthDimensionView({
         subScores={subScores}
         patient={patient}
         healthCategories={healthCategories}
+        labResults={labResults}
         onNavigateToSub={(k) => onNavigateDimension(k)}
         onNavigateToMedications={() => onNavigateDimension("medications")}
         renderRiskFactors={renderContent}
