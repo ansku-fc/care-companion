@@ -522,7 +522,14 @@ const PatientProfilePage = () => {
               onDataChanged={fetchData}
             />
           ) : (
-            <OnboardingEmptyState patientName={patient.full_name} patientId={patient.id} onCompleted={fetchData} />
+            <OnboardingEmptyState
+              patientName={patient.full_name}
+              patientId={patient.id}
+              onCompleted={() => {
+                fetchData();
+                setActiveSection("visits");
+              }}
+            />
           )
         ) : activeSection === "details" ? (
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} onPatientUpdate={(updated) => setPatient(updated)} />
