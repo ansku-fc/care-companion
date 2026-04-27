@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Plus, Play, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope } from "lucide-react";
+import { Calendar, Clock, Plus, Play, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope, CheckCircle2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { VisitConsultationView } from "./VisitConsultationView";
+import { OnboardingVisitDetailView } from "./OnboardingVisitDetailView";
 
 interface Props {
   patient: Tables<"patients">;
@@ -22,8 +23,16 @@ const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
   urgent: "Urgent",
 };
 
+function isOnboardingVisit(vn: Tables<"visit_notes">): boolean {
+  if (vn.chief_complaint === "Initial Consultation / Onboarding") return true;
+  const v = (vn.vitals as any) ?? {};
+  return v?.visit_type === "onboarding";
+}
+
 export function PatientVisitsView({ patient, appointments, visitNotes, onDataChanged }: Props) {
   const [activeVisit, setActiveVisit] = useState<{ mode: "new" | "appointment"; appointment?: Tables<"appointments"> } | null>(null);
+  const [openVisitNote, setOpenVisitNote] = useState<Tables<"visit_notes"> | null>(null);
+
 
   const now = new Date();
   const upcomingAppointments = appointments
