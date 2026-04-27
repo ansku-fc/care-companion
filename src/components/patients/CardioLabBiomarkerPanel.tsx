@@ -610,6 +610,10 @@ type Props = {
   accentColorVar?: string;
   patientId?: string;
   patientName?: string;
+  /** Authoritative lab data fetched at the page level. When provided, the
+   *  chart and sidebar derive from this array instead of the per-marker
+   *  Supabase cache — guarantees Graphs and Table never disagree. */
+  labResults?: Array<Record<string, any>> | null;
 };
 
 export function CardioLabBiomarkerPanel({
