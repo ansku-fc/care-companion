@@ -381,6 +381,11 @@ export function PatientOverviewView({
                     )}
                   </button>
                 )}
+                {anaphylacticAllergies.length > 0 && (
+                  <span className="text-[hsl(0_57%_39%)] font-bold">
+                    {anaphylacticAllergies.length} anaphylactic allerg{anaphylacticAllergies.length === 1 ? "y" : "ies"}
+                  </span>
+                )}
                 {severeAllergies.length > 0 && (
                   <span className="text-[hsl(0_57%_39%)] font-medium">
                     {severeAllergies.length} severe allerg{severeAllergies.length === 1 ? "y" : "ies"}
@@ -389,6 +394,11 @@ export function PatientOverviewView({
                 {moderateAllergies.length > 0 && (
                   <span className="text-[hsl(28_63%_44%)]">
                     {moderateAllergies.length} moderate allerg{moderateAllergies.length === 1 ? "y" : "ies"}
+                  </span>
+                )}
+                {mildAllergies.length > 0 && (
+                  <span className="text-muted-foreground">
+                    {mildAllergies.length} mild allerg{mildAllergies.length === 1 ? "y" : "ies"}
                   </span>
                 )}
                 {severeInteractions.length > 0 && (
