@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { HealthDataView } from "./HealthDataView";
 import { DiagnosesView } from "./DiagnosesView";
+import { OnboardingEmptyState } from "./OnboardingEmptyState";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Tab = "dimensions" | "labs" | "diagnoses";
@@ -9,6 +10,7 @@ type Tab = "dimensions" | "labs" | "diagnoses";
 interface Props {
   patientId: string;
   patientName?: string;
+  patientStatus?: string | null;
   labResults: Tables<"patient_lab_results">[];
   onboarding: Tables<"patient_onboarding"> | null;
   healthCategories: Tables<"patient_health_categories">[];
@@ -18,6 +20,7 @@ interface Props {
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   labResultsSlot: React.ReactNode;
   initialTab?: Tab;
+  onOnboardingCompleted?: () => void;
 }
 
 const TABS: { key: Tab; label: string }[] = [
@@ -29,14 +32,19 @@ const TABS: { key: Tab; label: string }[] = [
 export function HealthDataHub({
   patientId,
   patientName,
+  patientStatus,
   labResults,
   onboarding,
   healthCategories,
   onSelectDimension,
   labResultsSlot,
   initialTab = "dimensions",
+  onOnboardingCompleted,
 }: Props) {
   const [tab, setTab] = useState<Tab>(initialTab);
+
+  // A patient is not yet onboarded when status is pending and no onboarding row exists.
+  const notOnboarded = !onboarding && (patientStatus === "pending" || !patientStatus);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -70,25 +78,44 @@ export function HealthDataHub({
 
       <div className="flex-1 min-h-0 overflow-auto">
         {tab === "dimensions" && (
-          <div className="[&>div>div:first-child]:hidden">
-            <HealthDataView
+          notOnboarded ? (
+            <OnboardingEmptyState
+              patientName={patientName || ""}
               patientId={patientId}
-              onboarding={onboarding}
-              labResults={labResults}
-              healthCategories={healthCategories}
+              onCompleted={onOnboardingCompleted}
+            />
+          ) : (
+            <div className="[&>div>div:first-child]:hidden">
+              <HealthDataView
+                patientId={patientId}
+                onboarding={onboarding}
+                labResults={labResults}
+                healthCategories={healthCategories}
+                onSelectDimension={onSelectDimension}
+              />
+            </div>
+          )
+        )}
+        {tab === "labs" && (
+          notOnboarded ? (
+            <p className="text-sm text-muted-foreground py-12 text-center">No lab results yet.</p>
+          ) : (
+            labResultsSlot
+          )
+        )}
+        {tab === "diagnoses" && (
+          notOnboarded ? (
+            <p className="text-sm text-muted-foreground py-12 text-center">No diagnoses recorded.</p>
+          ) : (
+            <DiagnosesView
+              patientId={patientId}
+              patientName={patientName}
               onSelectDimension={onSelectDimension}
             />
-          </div>
-        )}
-        {tab === "labs" && labResultsSlot}
-        {tab === "diagnoses" && (
-          <DiagnosesView
-            patientId={patientId}
-            patientName={patientName}
-            onSelectDimension={onSelectDimension}
-          />
+          )
         )}
       </div>
     </div>
   );
 }
+
