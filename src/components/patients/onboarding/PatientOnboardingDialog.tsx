@@ -88,6 +88,8 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   /** Called once after the doctor finishes the final step. */
   onCompleted?: () => void;
+  /** Optional step number (1-based) to open the dialog directly at, e.g. 2 for Illnesses. */
+  initialStep?: number;
 };
 
 const STEP_LABELS = [
