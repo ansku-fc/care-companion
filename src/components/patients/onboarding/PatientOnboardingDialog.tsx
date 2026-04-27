@@ -713,8 +713,18 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       if (!isLast) setStep(nextStep);
       toast.success(isLast ? "Onboarding complete" : "Step saved");
       if (isLast) {
-        onOpenChange(false);
-        onCompleted?.();
+        // Build & show suggested follow-up tasks before navigating away.
+        const { count } = await supabase
+          .from("patient_lab_results")
+          .select("id", { count: "exact", head: true })
+          .eq("patient_id", patientId);
+        const built = buildSuggestedTasks({
+          form: nextForm,
+          patientName,
+          hasLabResults: (count ?? 0) > 0,
+        });
+        setSuggestions(built);
+        setSuggestionsOpen(true);
       }
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save");
