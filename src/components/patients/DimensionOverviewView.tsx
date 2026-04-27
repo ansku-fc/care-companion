@@ -699,7 +699,8 @@ export function SubDimensionView({
 }) {
   const sub = parent.subDimensions.find((s) => s.key === subKey);
   const [tab, setTab] = useState<"risk_factors" | "lab_results">("risk_factors");
-  const biomarkers = useMemo(() => getBiomarkersForSubDimension(subKey), [subKey]);
+  const [labViewMode, setLabViewMode] = useState<"graphs" | "table">("graphs");
+  const labCategories = useMemo(() => getLabCategoriesForSubDimension(subKey), [subKey]);
   if (!sub) return null;
   const Icon = sub.icon;
 
