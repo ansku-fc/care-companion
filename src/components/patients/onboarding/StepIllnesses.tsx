@@ -497,7 +497,7 @@ function DimensionChipsRow({
               "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] border",
               confirmed
                 ? "bg-secondary text-secondary-foreground border-border"
-                : "bg-transparent text-muted-foreground border-dashed border-border",
+                : "bg-pink-50 text-pink-700 border-pink-300 border-dashed dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-700",
             )}
           >
             {tag.label}
