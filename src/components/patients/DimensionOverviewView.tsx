@@ -429,21 +429,6 @@ export function MainDimensionOverview({
         )}
       </Card>
 
-      {/* SUB-DIMENSION STRIP */}
-      {main.subDimensions.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {main.subDimensions.map((sub) => (
-            <SubDimensionStripCard
-              key={sub.key}
-              label={sub.label}
-              score={subScores[sub.key] ?? null}
-              Icon={sub.icon}
-              onClick={() => onNavigateToSub(sub.key)}
-            />
-          ))}
-        </div>
-      )}
-
       {/* RISK PICTURE */}
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
