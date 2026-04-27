@@ -2571,7 +2571,7 @@ function HealthDimensionView({
 }) {
   const dim = findDimension(dimensionKey);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
@@ -2810,11 +2810,11 @@ function HealthDimensionView({
     const subScoresLocal = computeSubScores({ onboarding, labResults, diagnoses, medications, allergies });
 
     const Subgroup = ({ group }: { group: GroupSpec }) => {
-      const collapsed = collapsedGroups.has(group.key);
+      const expanded = expandedGroups.has(group.key);
       const flagged = group.rows.some((row) => row.flagged);
       const score = subScoresLocal[group.scoreKey ?? group.key];
       const scoreLabel = score == null ? "—" : score.toFixed(1);
-      const toggle = () => setCollapsedGroups((prev) => {
+      const toggle = () => setExpandedGroups((prev) => {
         const next = new Set(prev);
         if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
         return next;
@@ -2822,17 +2822,21 @@ function HealthDimensionView({
       return (
         <div className={cn(
           "rounded-md border overflow-hidden",
-          flagged && "border-l-4 border-l-[hsl(330_81%_60%/0.5)]",
+          flagged && "border-l-4 border-l-[hsl(348_78%_59%/0.5)]",
         )}>
           <button
             type="button"
             onClick={toggle}
+            aria-expanded={expanded}
             className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
           >
             <div className="flex items-center gap-2">
-              {collapsed
-                ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              <ChevronRight
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform duration-150",
+                  expanded && "rotate-90",
+                )}
+              />
               <span className="font-semibold text-sm">{group.title}</span>
             </div>
             <span className={cn(
@@ -2842,7 +2846,7 @@ function HealthDimensionView({
               {scoreLabel}
             </span>
           </button>
-          {!collapsed && (
+          {expanded && (
             <div className="pl-4">
               {group.extra}
               {group.rows.length > 0 ? (
