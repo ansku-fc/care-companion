@@ -420,6 +420,7 @@ const PatientProfilePage = () => {
             if (key === "overview") return "Overview";
             if (key === "details") return "Patient Details";
             if (key === "medications") return "Medications";
+            if (key === "documents") return "Documents & Images";
             if (key === "visits") return "Visits";
             if (key === "care_team") return "Care Team";
             if (key === "health_overview") return "Health Overview";
