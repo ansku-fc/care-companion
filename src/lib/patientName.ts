@@ -23,3 +23,10 @@ export function formatLastFirst(full?: string | null): string {
   if (!first) return last;
   return `${last}, ${first}`;
 }
+
+// Sort an array of patient-like objects alphabetically by "Last, First".
+export function sortByLastFirst<T extends { full_name?: string | null }>(items: T[]): T[] {
+  return [...items].sort((a, b) =>
+    formatLastFirst(a.full_name).localeCompare(formatLastFirst(b.full_name), undefined, { sensitivity: "base" })
+  );
+}
