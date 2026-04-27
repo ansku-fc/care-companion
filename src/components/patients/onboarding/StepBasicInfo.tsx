@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
@@ -255,6 +255,31 @@ function AllergiesPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointer = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (triggerRef.current?.contains(target)) return;
+      if (contentRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointer, true);
+    document.addEventListener("keydown", handleKey, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointer, true);
+      document.removeEventListener("keydown", handleKey, true);
+    };
+  }, [open]);
 
   const grouped = useMemo(() => {
     const map: Record<AllergenCategory, typeof COMMON_ALLERGENS> = {
@@ -302,8 +327,10 @@ function AllergiesPicker({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            ref={triggerRef}
             variant="outline"
             role="combobox"
+            onClick={() => setOpen((o) => !o)}
             className="w-full h-11 rounded-xl justify-between font-normal text-muted-foreground"
           >
             Search allergens by category…
@@ -311,12 +338,11 @@ function AllergiesPicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent
+          ref={contentRef}
           className="p-0 w-[var(--radix-popover-trigger-width)]"
           align="start"
           onWheel={(e) => e.stopPropagation()}
-          onEscapeKeyDown={() => setOpen(false)}
-          onInteractOutside={() => setOpen(false)}
-          onPointerDownOutside={() => setOpen(false)}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <Command shouldFilter>
             <CommandInput
