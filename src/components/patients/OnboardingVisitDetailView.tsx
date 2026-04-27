@@ -139,6 +139,47 @@ function Field({
   );
 }
 
+function SelectField({
+  label,
+  value,
+  editing,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: any;
+  editing: boolean;
+  onChange?: (v: string) => void;
+  options: readonly string[];
+  placeholder?: string;
+}) {
+  if (editing) {
+    return (
+      <div className="text-sm grid grid-cols-[140px_1fr] items-center gap-2">
+        <span className="text-muted-foreground">{label}</span>
+        <Select value={value ?? ""} onValueChange={(v) => onChange?.(v)}>
+          <SelectTrigger className="h-8">
+            <SelectValue placeholder={placeholder ?? "Select…"} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((opt) => (
+              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+  if (value === null || value === undefined || value === "") return null;
+  return (
+    <div className="text-sm">
+      <span className="text-muted-foreground">{label}: </span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card>
