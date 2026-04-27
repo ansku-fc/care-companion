@@ -60,7 +60,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { scoreColorClass, scoreBadgeClass } from "@/lib/scoreColor";
+import { scoreColorClass, scoreBadgeClass, scoreBorderColor, scoreTone } from "@/lib/scoreColor";
 import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useNavHistory } from "@/hooks/useNavHistory";
@@ -2811,19 +2811,24 @@ function HealthDimensionView({
 
     const Subgroup = ({ group }: { group: GroupSpec }) => {
       const expanded = expandedGroups.has(group.key);
-      const flagged = group.rows.some((row) => row.flagged);
       const score = subScoresLocal[group.scoreKey ?? group.key];
       const scoreLabel = score == null ? "—" : score.toFixed(1);
+      // Left-border accent is derived from the same score tone as the badge.
+      // Teal scores (low risk) and "no data" get no accent; amber/red show a coloured strip.
+      const tone = scoreTone(score);
+      const borderStyle: React.CSSProperties = (tone === "amber" || tone === "red")
+        ? { borderLeftColor: scoreBorderColor(score), borderLeftWidth: 4 }
+        : {};
       const toggle = () => setExpandedGroups((prev) => {
         const next = new Set(prev);
         if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
         return next;
       });
       return (
-        <div className={cn(
-          "rounded-md border overflow-hidden",
-          flagged && "border-l-4 border-l-[hsl(348_78%_59%/0.5)]",
-        )}>
+        <div
+          className="rounded-md border overflow-hidden"
+          style={borderStyle}
+        >
           <button
             type="button"
             onClick={toggle}
