@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { formatLastFirst } from "@/lib/patientName";
+import { formatLastFirst, sortByLastFirst } from "@/lib/patientName";
 import {
   Dialog,
   DialogContent,
@@ -213,7 +213,7 @@ export function AddAppointmentDialog({ open, onOpenChange, selectedDate, editing
             <Select value={patientId} onValueChange={setPatientId}>
               <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
               <SelectContent>
-                {patients.map((p) => (
+                {sortByLastFirst(patients).map((p) => (
                   <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>
                 ))}
               </SelectContent>
