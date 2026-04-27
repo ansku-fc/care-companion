@@ -24,6 +24,14 @@ export function formatLastFirst(full?: string | null): string {
   return `${last}, ${first}`;
 }
 
+// Avatar initials in "Last initial + First initial" order, e.g. "Bergström Thomas" → "BT".
+export function initialsLastFirst(full?: string | null): string {
+  const { first, last } = splitName(full);
+  const li = (last[0] ?? "").toUpperCase();
+  const fi = (first[0] ?? "").toUpperCase();
+  return (li + fi) || (full?.[0]?.toUpperCase() ?? "");
+}
+
 // Sort an array of patient-like objects alphabetically by "Last, First".
 export function sortByLastFirst<T extends { full_name?: string | null }>(items: T[]): T[] {
   return [...items].sort((a, b) =>
