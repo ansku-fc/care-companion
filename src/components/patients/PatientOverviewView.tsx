@@ -418,72 +418,13 @@ export function PatientOverviewView({
       {/* TASKS for this patient — visually merged with alert bar above */}
       <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
 
-      {/* 3. ROW 1 — Illnesses & Medications | Active Medications */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Illnesses & Medications (rich onboarding-sourced view) */}
-        <IllnessesMedicationsCard
-          patient={patient}
-          onboarding={onboarding}
-          onSelectSection={onSelectSection}
-          onDataChanged={onDataChanged}
-        />
-
-        {/* Active Medications */}
-        <Card className="shadow-card">
-          <CardContent className="py-3 px-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <Pill className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[13px] font-semibold">Active Medications</h3>
-              <div className="ml-auto flex items-center gap-2">
-                <Button
-                  variant="ghost" size="sm"
-                  className="h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowMedForm((v) => !v)}
-                >
-                  <Plus className="h-3 w-3" /> Add
-                </Button>
-                <button
-                  onClick={() => onSelectSection("medications")}
-                  className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  See all ({displayMedications.length}) →
-                </button>
-              </div>
-            </div>
-
-            {showMedForm && (
-              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-                <Input placeholder="Medication name *" value={newMed.medication_name} onChange={(e) => setNewMed((p) => ({ ...p, medication_name: e.target.value }))} className="h-8 text-sm" />
-                <div className="grid grid-cols-2 gap-2">
-                  <Input placeholder="Dose" value={newMed.dose} onChange={(e) => setNewMed((p) => ({ ...p, dose: e.target.value }))} className="h-8 text-sm" />
-                  <Input placeholder="Frequency" value={newMed.frequency} onChange={(e) => setNewMed((p) => ({ ...p, frequency: e.target.value }))} className="h-8 text-sm" />
-                </div>
-                <Input placeholder="Indication" value={newMed.indication} onChange={(e) => setNewMed((p) => ({ ...p, indication: e.target.value }))} className="h-8 text-sm" />
-                <div className="flex gap-2">
-                  <Button size="sm" className="h-7 text-xs" onClick={handleAddMedication} disabled={!newMed.medication_name.trim()}>Add</Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowMedForm(false)}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {displayMedications.length === 0 && !showMedForm ? (
-              <p className="text-[11px] text-muted-foreground">No active medications recorded.</p>
-            ) : (
-              <ul className="space-y-1">
-                {displayMedications.slice(0, 3).map((m: any) => (
-                  <li key={m.id} className="flex items-baseline justify-between gap-3 text-[12px]">
-                    <div className="min-w-0">
-                      <span className="font-medium">{m.medication_name}</span>
-                      {m.dose && <span className="text-muted-foreground ml-1.5">{m.dose}</span>}
-                    </div>
-                    {m.frequency && <span className="text-[11px] text-muted-foreground whitespace-nowrap">{m.frequency}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {/* 3. ROW 1 — Illnesses & Medications (full width; medications shown inline) */}
+      <IllnessesMedicationsCard
+        patient={patient}
+        onboarding={onboarding}
+        onSelectSection={onSelectSection}
+        onDataChanged={onDataChanged}
+      />
 
       {/* ROW 2 — Allergies | Considerations | Biometrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
