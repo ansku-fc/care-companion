@@ -524,6 +524,8 @@ export function MetabolicDimensionView({
           dimensionKey="metabolic"
           dimensionLabel="Metabolic Health"
           onNavigateToMedications={() => onNavigateDimension("medications")}
+          patientId={patient.id}
+          patientName={patient.full_name}
         />
       </section>
 

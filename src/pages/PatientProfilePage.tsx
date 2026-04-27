@@ -3396,6 +3396,8 @@ function GenericDimensionView({
           dimensionKey={dimensionKey}
           dimensionLabel={dim.label}
           onNavigateToMedications={() => onNavigateDimension("medications")}
+          patientId={patient.id}
+          patientName={patient.full_name}
         />
       </section>
 
@@ -3694,6 +3696,8 @@ function SkinMucousDimensionView({
             dimensionKey="skin_mucous"
             dimensionLabel="Skin & Mucous Health"
             onNavigateToMedications={() => onNavigateDimension?.("medications")}
+            patientId={patient.id}
+            patientName={patient.full_name}
           />
 
           <div className="flex justify-end">
@@ -4828,6 +4832,8 @@ function CardiovascularDimensionView({
           dimensionKey="cardiovascular"
           dimensionLabel="Cardiovascular Health"
           onNavigateToMedications={() => onNavigateDimension("medications")}
+          patientId={patient.id}
+          patientName={patient.full_name}
         />
       </section>
 
