@@ -2970,14 +2970,15 @@ function HealthDimensionView({
 
   // Determine whether this is a main dimension (with subs) or a sub-dimension
   const mainDim = findMainDimension(dimensionKey);
-  const radarData = computeRadarData(onboarding, labResults, healthCategories);
-  const parentScore = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
 
-  // Build sub-scores: simple heuristic — share parent's score across subs (placeholder).
-  const subScores: Record<string, number> = {};
-  if (mainDim) {
-    for (const s of mainDim.subDimensions) subScores[s.key] = parentScore;
-  }
+  // Compute real, signal-driven sub-scores. Parent score = average of subs that have data.
+  const subScores = computeSubScores({ onboarding, labResults, diagnoses, medications, allergies });
+  const aggregatedParent = mainDim ? aggregateMainScore(mainDim.key, subScores) : null;
+  // Fallback: if no sub has data, fall back to the radar/category-derived score for the main dim.
+  const radarData = computeRadarData(onboarding, labResults, healthCategories);
+  const radarMain = mainDim ? radarData.find((d) => d.key === mainDim.key)?.score ?? null : null;
+  const parentScore: number | null =
+    aggregatedParent != null ? aggregatedParent : (onboarding ? radarMain : null);
 
   // Sub-dimension page
   if (mainDim && mainDim.key !== dimensionKey) {
@@ -2986,7 +2987,7 @@ function HealthDimensionView({
         parent={mainDim}
         subKey={dimensionKey}
         parentScore={parentScore}
-        subScore={subScores[dimensionKey] ?? parentScore}
+        subScore={subScores[dimensionKey] ?? null}
         patient={patient}
         healthCategories={healthCategories}
         onNavigateToParent={() => onNavigateDimension(mainDim.key)}
