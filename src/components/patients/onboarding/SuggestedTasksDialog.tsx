@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { categoryLabel, priorityMeta, ASSIGNEES } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { dueDateFromDays, type SuggestedTask } from "./suggestedTasks";
+import { useTaskActions } from "@/components/tasks/TaskProvider";
 
 type Props = {
   open: boolean;
@@ -23,6 +24,7 @@ type Props = {
 
 export function SuggestedTasksDialog({ open, onOpenChange, patientId, suggestions, onDone }: Props) {
   const { user } = useAuth();
+  const { notifyChanged } = useTaskActions();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
@@ -79,6 +81,7 @@ export function SuggestedTasksDialog({ open, onOpenChange, patientId, suggestion
       return;
     }
     toast.success(`${chosen.length} task${chosen.length === 1 ? "" : "s"} created`);
+    notifyChanged();
     onOpenChange(false);
     onDone();
   };

@@ -136,13 +136,25 @@ const Dashboard = () => {
     });
   };
 
-  // Live task buckets
+  // Live task buckets — every open task across all patients is surfaced.
+  // Urgent: anything explicitly urgent priority OR overdue OR due today (high+).
+  const isOpen = (t: Task) => t.status !== "done" && t.status !== "deferred";
   const urgentTasks = tasks.filter(
-    (t) => (t.priority === "urgent" || t.priority === "high") && (isDueToday(t) || isOverdue(t)) && t.status !== "done",
+    (t) =>
+      isOpen(t) &&
+      (t.priority === "urgent" ||
+        isOverdue(t) ||
+        (t.priority === "high" && isDueToday(t))),
   );
-  const pendingTasks = tasks.filter(
-    (t) => (t.status === "in_progress" || (dueWithinDays(t, 7) && !urgentTasks.includes(t))) && t.status !== "done" && t.status !== "deferred",
-  );
+  const urgentIds = new Set(urgentTasks.map((t) => t.id));
+  // Pending: every other open task (not already urgent), sorted by due date soonest first.
+  const pendingTasks = tasks
+    .filter((t) => isOpen(t) && !urgentIds.has(t.id))
+    .sort((a, b) => {
+      const da = a.due_date ? new Date(a.due_date).getTime() : Number.POSITIVE_INFINITY;
+      const db = b.due_date ? new Date(b.due_date).getTime() : Number.POSITIVE_INFINITY;
+      return da - db;
+    });
   const completedToday = tasks.filter((t) => isCompletedToday(t));
 
   // Today's schedule = real appointments from DB + today's dummy appointments
@@ -327,14 +339,14 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              <Section icon={<AlertTriangle className="h-3 w-3" />} label="Urgent" tone="destructive">
-                {urgentTasks.length === 0 ? <Empty text="No urgent tasks" /> : urgentTasks.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="destructive" />)}
+              <Section icon={<AlertTriangle className="h-3 w-3" />} label="Urgent" tone="destructive" count={urgentTasks.length}>
+                {urgentTasks.length === 0 ? <Empty text="No urgent tasks" /> : urgentTasks.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="destructive" />)}
               </Section>
-              <Section icon={<Clock className="h-3 w-3" />} label="Pending" tone="warning">
-                {pendingTasks.length === 0 ? <Empty text="No pending tasks" /> : pendingTasks.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="warning" />)}
+              <Section icon={<Clock className="h-3 w-3" />} label="Pending" tone="warning" count={pendingTasks.length}>
+                {pendingTasks.length === 0 ? <Empty text="No pending tasks" /> : pendingTasks.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="warning" />)}
               </Section>
-              <Section icon={<CheckCircle2 className="h-3 w-3" />} label="Completed today" tone="success">
-                {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
+              <Section icon={<CheckCircle2 className="h-3 w-3" />} label="Completed today" tone="success" count={completedToday.length}>
+                {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
               </Section>
               <Button variant="ghost" size="sm" className="w-full gap-1 text-primary" onClick={() => navigate("/tasks")}>
                 Open all tasks <ArrowRight className="h-3.5 w-3.5" />
@@ -385,7 +397,7 @@ const Dashboard = () => {
   );
 };
 
-function Section({ icon, label, tone, children }: { icon: React.ReactNode; label: string; tone: "destructive" | "warning" | "success"; children: React.ReactNode }) {
+function Section({ icon, label, tone, count, children }: { icon: React.ReactNode; label: string; tone: "destructive" | "warning" | "success"; count?: number; children: React.ReactNode }) {
   return (
     <div>
       <p className={cn(
@@ -393,7 +405,14 @@ function Section({ icon, label, tone, children }: { icon: React.ReactNode; label
         tone === "destructive" && "text-destructive",
         tone === "warning" && "text-warning",
         tone === "success" && "text-success",
-      )}>{icon} {label}</p>
+      )}>
+        {icon} {label}
+        {typeof count === "number" && count > 0 && (
+          <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-muted text-[10px] font-semibold text-foreground/80">
+            {count}
+          </span>
+        )}
+      </p>
       <div className="space-y-2">{children}</div>
     </div>
   );
