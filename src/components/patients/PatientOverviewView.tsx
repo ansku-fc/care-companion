@@ -47,8 +47,7 @@ const TIER_LABELS: Record<string, string> = {
   children: "Child", onboarding: "Onboarding", acute: "Acute", case_management: "Case Management",
 };
 
-// Risk colour helpers — single source of truth in @/lib/scoreColor
-import { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
+// Risk colour helpers — see imports above (single source: @/lib/scoreColor)
 
 interface Props {
   patient: Tables<"patients">;
