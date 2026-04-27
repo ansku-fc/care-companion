@@ -339,14 +339,14 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              <Section icon={<AlertTriangle className="h-3 w-3" />} label="Urgent" tone="destructive">
-                {urgentTasks.length === 0 ? <Empty text="No urgent tasks" /> : urgentTasks.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="destructive" />)}
+              <Section icon={<AlertTriangle className="h-3 w-3" />} label="Urgent" tone="destructive" count={urgentTasks.length}>
+                {urgentTasks.length === 0 ? <Empty text="No urgent tasks" /> : urgentTasks.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="destructive" />)}
               </Section>
-              <Section icon={<Clock className="h-3 w-3" />} label="Pending" tone="warning">
-                {pendingTasks.length === 0 ? <Empty text="No pending tasks" /> : pendingTasks.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="warning" />)}
+              <Section icon={<Clock className="h-3 w-3" />} label="Pending" tone="warning" count={pendingTasks.length}>
+                {pendingTasks.length === 0 ? <Empty text="No pending tasks" /> : pendingTasks.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="warning" />)}
               </Section>
-              <Section icon={<CheckCircle2 className="h-3 w-3" />} label="Completed today" tone="success">
-                {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.slice(0, 4).map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
+              <Section icon={<CheckCircle2 className="h-3 w-3" />} label="Completed today" tone="success" count={completedToday.length}>
+                {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
               </Section>
               <Button variant="ghost" size="sm" className="w-full gap-1 text-primary" onClick={() => navigate("/tasks")}>
                 Open all tasks <ArrowRight className="h-3.5 w-3.5" />
