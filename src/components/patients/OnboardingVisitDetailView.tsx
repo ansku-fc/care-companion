@@ -738,6 +738,30 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
               onChange={(v) => setOverride("nic", v)}
             />
             <Field label="Smoking" value={ov("smoking", ex.smoking_current ? "Yes" : ex.smoking_previous ? "Previously" : "No")} editing={editing} onChange={(v) => setOverride("smoking", v)} />
+            {(() => {
+              const prevVal = ov("prev_smoke", ex.smoking_previous ? "Yes" : "No");
+              const yearsSrc = ex.smoking_previous_years ?? ex.previously_smoked_years ?? "";
+              const yearsVal = ov("prev_smoke_years", yearsSrc ? `${yearsSrc} years` : "");
+              return (
+                <>
+                  <SelectField
+                    label="Previously smoked"
+                    value={prevVal}
+                    editing={editing}
+                    onChange={(v) => setOverride("prev_smoke", v)}
+                    options={["Yes", "No"]}
+                  />
+                  {prevVal === "Yes" && (
+                    <Field
+                      label="Years smoked"
+                      value={yearsVal}
+                      editing={editing}
+                      onChange={(v) => setOverride("prev_smoke_years", v)}
+                    />
+                  )}
+                </>
+              );
+            })()}
             <Field label="Alcohol" value={ov("alcohol", ex.alcohol_current ? `${onboarding.alcohol_units_per_week ?? ""} units/week` : "No")} editing={editing} onChange={(v) => setOverride("alcohol", v)} />
             <Field label="Caffeine" value={ov("caffeine", ex.caffeine_current ? `${ex.caffeine_cups_per_day ?? ""} cups/day` : "No")} editing={editing} onChange={(v) => setOverride("caffeine", v)} />
             <Field label="Drugs" value={ov("drugs", ex.drugs_current ? "Yes" : "No")} editing={editing} onChange={(v) => setOverride("drugs", v)} />
