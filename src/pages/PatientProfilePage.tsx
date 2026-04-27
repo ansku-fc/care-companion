@@ -113,7 +113,13 @@ const PatientProfilePage = () => {
   const setActiveSection = React.useCallback(
     (next: SidebarSection) => {
       setActiveSectionRaw((cur) => {
-        if (cur !== next) navHistory.pushScope(scopeKey, next);
+        if (cur !== next) {
+          navHistory.pushScope(scopeKey, next);
+          // Reset manual sidebar expansion on navigation so the tree
+          // always reflects the current depth — no stale open branches.
+          setDimensionsSectionOpen(null);
+          setExpandedGroups({});
+        }
         return next;
       });
     },
