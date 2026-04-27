@@ -2,6 +2,14 @@ import { createContext, useContext, useState, useCallback, useMemo, type ReactNo
 
 /* ---------------- Types ---------------- */
 
+import type { AllergySeverity } from "@/lib/allergens";
+
+export type AllergyEntry = {
+  name: string;
+  icd_code: string | null;
+  severity: AllergySeverity | null;
+};
+
 export type IllnessRow = {
   id: string;
   icd_code: string;
@@ -69,7 +77,7 @@ export type OnboardingForm = {
   bp2_systolic: number | null;
   bp2_diastolic: number | null;
   ecg_notes: string;
-  allergies: string[];
+  allergies: AllergyEntry[];
   supplements: string[];
 
   /* Step 2 — Illnesses & medications */

@@ -10,10 +10,12 @@ import { cn } from "@/lib/utils";
 
 import {
   ICD10_ILLNESSES,
+  ICD_DIMENSIONS,
   MEDICATION_LIST,
   DIMENSION_TAGS,
   findDimensionTag,
   yearOptions,
+  type IcdDimension,
 } from "@/lib/onboardingTaxonomy";
 import { useOnboardingForm, type IllnessRow } from "./OnboardingFormContext";
 import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
@@ -200,25 +202,31 @@ export function IcdPicker({
       <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
         <Command>
           <CommandInput placeholder="ICD-10 code or name…" />
-          <CommandList>
+          <CommandList className="max-h-80">
             <CommandEmpty>No matches.</CommandEmpty>
-            <CommandGroup>
-              {ICD10_ILLNESSES.map((entry) => (
-                <CommandItem
-                  key={entry.code}
-                  value={`${entry.code} ${entry.name}`}
-                  onSelect={() => {
-                    onChange({ code: entry.code, name: entry.name });
-                    setOpen(false);
-                  }}
-                >
-                  <span className="font-mono text-xs text-muted-foreground mr-3 w-16 shrink-0">
-                    {entry.code}
-                  </span>
-                  <span className="truncate">{entry.name}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {ICD_DIMENSIONS.map((dim) => {
+              const items = ICD10_ILLNESSES.filter((i) => i.dimension === dim);
+              if (items.length === 0) return null;
+              return (
+                <CommandGroup key={dim} heading={dim.toUpperCase()}>
+                  {items.map((entry) => (
+                    <CommandItem
+                      key={entry.code}
+                      value={`${entry.code} ${entry.name} ${dim}`}
+                      onSelect={() => {
+                        onChange({ code: entry.code, name: entry.name });
+                        setOpen(false);
+                      }}
+                    >
+                      <span className="font-mono text-xs text-muted-foreground mr-3 w-14 shrink-0">
+                        {entry.code}
+                      </span>
+                      <span className="truncate">{entry.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              );
+            })}
           </CommandList>
         </Command>
       </PopoverContent>

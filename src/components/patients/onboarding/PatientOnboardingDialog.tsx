@@ -30,7 +30,32 @@ import { StepSleep } from "./StepSleep";
 import { StepMentalHealth } from "./StepMentalHealth";
 import { StepCancer } from "./StepCancer";
 import { StepStatus } from "./StepStatus";
-import { blankExamFindings } from "./OnboardingFormContext";
+import { blankExamFindings, type AllergyEntry } from "./OnboardingFormContext";
+import { findAllergen } from "@/lib/allergens";
+
+function normalizeAllergies(raw: unknown): AllergyEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): AllergyEntry | null => {
+      if (typeof item === "string") {
+        // Legacy string[] format
+        const trimmed = item.trim();
+        if (!trimmed) return null;
+        return { name: trimmed, icd_code: findAllergen(trimmed)?.icd10 ?? null, severity: null };
+      }
+      if (item && typeof item === "object" && typeof (item as any).name === "string") {
+        const name = (item as any).name.trim();
+        if (!name) return null;
+        return {
+          name,
+          icd_code: (item as any).icd_code ?? findAllergen(name)?.icd10 ?? null,
+          severity: ((item as any).severity ?? null) as AllergyEntry["severity"],
+        };
+      }
+      return null;
+    })
+    .filter((x): x is AllergyEntry => x !== null);
+}
 
 type Props = {
   patientId: string;
@@ -103,7 +128,7 @@ export function PatientOnboardingDialog(props: Props) {
           bp2_systolic: (data as any).bp2_systolic ?? null,
           bp2_diastolic: (data as any).bp2_diastolic ?? null,
           ecg_notes: ((data as any).ecg_notes as string) ?? "",
-          allergies: (extra.allergies as string[]) ?? [],
+          allergies: normalizeAllergies(extra.allergies),
           supplements: (extra.supplements as string[]) ?? [],
           current_illnesses: (extra.current_illnesses as any[]) ?? [],
           previous_illnesses: (extra.previous_illnesses as any[]) ?? [],
@@ -441,6 +466,32 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       .from("patients")
       .update({ onboarding_status: newStatus } as any)
       .eq("id", patientId);
+
+    // Sync allergies to patient_allergies (tag + replace).
+    // Idempotent: rows tagged with notes='from_onboarding' are replaced each save.
+    try {
+      await supabase
+        .from("patient_allergies")
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("notes", "from_onboarding");
+      if (nextForm.allergies.length > 0) {
+        await supabase.from("patient_allergies").insert(
+          nextForm.allergies.map((a) => ({
+            patient_id: patientId,
+            created_by: user.id,
+            allergen: a.name,
+            icd_code: a.icd_code ?? null,
+            severity: a.severity ?? "moderate",
+            status: "active",
+            notes: "from_onboarding",
+          })) as any,
+        );
+      }
+    } catch (e) {
+      // Non-fatal: onboarding save already succeeded
+      console.warn("Allergy sync failed", e);
+    }
 
     // On completion, auto-create a review task (skip silently if it fails)
     if (options.isComplete) {

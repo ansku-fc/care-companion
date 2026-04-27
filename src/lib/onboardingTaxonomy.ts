@@ -38,70 +38,139 @@ export const FAMILY_RELATIONS = [
 ] as const;
 
 /** Compact ICD-10 list scoped to the conditions onboarding asks about. */
-export type IcdEntry = { code: string; name: string };
+export type IcdDimension =
+  | "Cardiovascular"
+  | "Metabolic"
+  | "Digestive"
+  | "Respiratory & Immune"
+  | "Brain & Mental Health"
+  | "Cancer"
+  | "Musculoskeletal"
+  | "Reproductive & Sexual"
+  | "Skin";
+
+export type IcdEntry = { code: string; name: string; dimension: IcdDimension };
 
 export const ICD10_ILLNESSES: IcdEntry[] = [
-  // Cardiovascular
-  { code: "I10", name: "Essential hypertension" },
-  { code: "I11.9", name: "Hypertensive heart disease" },
-  { code: "I20.9", name: "Angina pectoris" },
-  { code: "I21.9", name: "Acute myocardial infarction" },
-  { code: "I25.10", name: "Coronary artery disease" },
-  { code: "I48.91", name: "Atrial fibrillation" },
-  { code: "I50.9", name: "Heart failure" },
-  { code: "I63.9", name: "Cerebral infarction (stroke)" },
-  { code: "I73.9", name: "Peripheral vascular disease" },
-  { code: "E78.5", name: "Hyperlipidaemia" },
-  // Metabolic / endocrine
-  { code: "E11.9", name: "Type 2 diabetes mellitus" },
-  { code: "E10.9", name: "Type 1 diabetes mellitus" },
-  { code: "E03.9", name: "Hypothyroidism" },
-  { code: "E05.9", name: "Hyperthyroidism" },
-  { code: "E66.9", name: "Obesity" },
-  // Respiratory
-  { code: "J45.20", name: "Asthma" },
-  { code: "J44.9", name: "COPD" },
-  { code: "J30.9", name: "Allergic rhinitis" },
-  { code: "G47.33", name: "Obstructive sleep apnoea" },
-  // GI / liver / kidney
-  { code: "K21.9", name: "Gastro-oesophageal reflux disease" },
-  { code: "K58.9", name: "Irritable bowel syndrome" },
-  { code: "K50.90", name: "Crohn's disease" },
-  { code: "K51.90", name: "Ulcerative colitis" },
-  { code: "K76.0", name: "Fatty liver" },
-  { code: "N18.9", name: "Chronic kidney disease" },
-  // Mental health
-  { code: "F32.9", name: "Depressive episode" },
-  { code: "F41.1", name: "Generalised anxiety disorder" },
-  { code: "F31.9", name: "Bipolar disorder" },
-  { code: "F33.9", name: "Recurrent depressive disorder" },
-  { code: "F90.0", name: "ADHD" },
-  // Neurological
-  { code: "G43.909", name: "Migraine" },
-  { code: "G40.909", name: "Epilepsy" },
-  { code: "G20", name: "Parkinson's disease" },
-  { code: "G30.9", name: "Alzheimer's disease" },
-  // Musculoskeletal
-  { code: "M19.90", name: "Osteoarthritis" },
-  { code: "M06.9", name: "Rheumatoid arthritis" },
-  { code: "M81.0", name: "Osteoporosis" },
-  { code: "M54.5", name: "Low back pain" },
-  // Cancer
-  { code: "C50.9", name: "Breast cancer" },
-  { code: "C61", name: "Prostate cancer" },
-  { code: "C18.9", name: "Colon cancer" },
-  { code: "C34.9", name: "Lung cancer" },
-  { code: "C43.9", name: "Melanoma" },
-  // Reproductive
-  { code: "E28.2", name: "Polycystic ovary syndrome" },
-  { code: "N80.9", name: "Endometriosis" },
-  { code: "N40.0", name: "Benign prostatic hyperplasia" },
-  // Skin
-  { code: "L40.9", name: "Psoriasis" },
-  { code: "L20.9", name: "Atopic dermatitis" },
-  // Other
-  { code: "M10.9", name: "Gout" },
-  { code: "D50.9", name: "Iron deficiency anaemia" },
+  // ===== Cardiovascular =====
+  { code: "I10", name: "Essential hypertension", dimension: "Cardiovascular" },
+  { code: "I11", name: "Hypertensive heart disease", dimension: "Cardiovascular" },
+  { code: "I20", name: "Angina pectoris", dimension: "Cardiovascular" },
+  { code: "I21", name: "Acute myocardial infarction", dimension: "Cardiovascular" },
+  { code: "I25", name: "Chronic ischaemic heart disease", dimension: "Cardiovascular" },
+  { code: "I48", name: "Atrial fibrillation", dimension: "Cardiovascular" },
+  { code: "I50", name: "Heart failure", dimension: "Cardiovascular" },
+  { code: "I63", name: "Cerebral infarction", dimension: "Cardiovascular" },
+  { code: "I65", name: "Occlusion of precerebral arteries", dimension: "Cardiovascular" },
+  { code: "I70", name: "Atherosclerosis", dimension: "Cardiovascular" },
+  { code: "I83", name: "Varicose veins", dimension: "Cardiovascular" },
+
+  // ===== Metabolic =====
+  { code: "E11", name: "Type 2 diabetes", dimension: "Metabolic" },
+  { code: "E10", name: "Type 1 diabetes", dimension: "Metabolic" },
+  { code: "E14", name: "Unspecified diabetes", dimension: "Metabolic" },
+  { code: "E03", name: "Hypothyroidism", dimension: "Metabolic" },
+  { code: "E05", name: "Hyperthyroidism", dimension: "Metabolic" },
+  { code: "E06", name: "Thyroiditis", dimension: "Metabolic" },
+  { code: "E55", name: "Vitamin D deficiency", dimension: "Metabolic" },
+  { code: "E61", name: "Zinc deficiency", dimension: "Metabolic" },
+  { code: "E66", name: "Obesity", dimension: "Metabolic" },
+  { code: "E78", name: "Disorders of lipoprotein metabolism (hypercholesterolaemia)", dimension: "Metabolic" },
+  { code: "E88", name: "Metabolic syndrome", dimension: "Metabolic" },
+
+  // ===== Digestive =====
+  { code: "K21", name: "GERD", dimension: "Digestive" },
+  { code: "K25", name: "Gastric ulcer", dimension: "Digestive" },
+  { code: "K26", name: "Duodenal ulcer", dimension: "Digestive" },
+  { code: "K29", name: "Gastritis", dimension: "Digestive" },
+  { code: "K50", name: "Crohn's disease", dimension: "Digestive" },
+  { code: "K51", name: "Ulcerative colitis", dimension: "Digestive" },
+  { code: "K57", name: "Diverticular disease", dimension: "Digestive" },
+  { code: "K58", name: "Irritable bowel syndrome", dimension: "Digestive" },
+  { code: "K70", name: "Alcoholic liver disease", dimension: "Digestive" },
+  { code: "K76", name: "Non-alcoholic fatty liver disease", dimension: "Digestive" },
+  { code: "K80", name: "Cholelithiasis", dimension: "Digestive" },
+
+  // ===== Respiratory & Immune =====
+  { code: "J06", name: "Acute upper respiratory infection", dimension: "Respiratory & Immune" },
+  { code: "J18", name: "Pneumonia", dimension: "Respiratory & Immune" },
+  { code: "J30", name: "Allergic rhinitis", dimension: "Respiratory & Immune" },
+  { code: "J45", name: "Asthma", dimension: "Respiratory & Immune" },
+  { code: "J44", name: "COPD", dimension: "Respiratory & Immune" },
+  { code: "J96", name: "Respiratory failure", dimension: "Respiratory & Immune" },
+  { code: "M05", name: "Rheumatoid arthritis", dimension: "Respiratory & Immune" },
+  { code: "M32", name: "Systemic lupus erythematosus", dimension: "Respiratory & Immune" },
+  { code: "D50", name: "Iron deficiency anaemia", dimension: "Respiratory & Immune" },
+  { code: "D80", name: "Immunodeficiency", dimension: "Respiratory & Immune" },
+
+  // ===== Brain & Mental Health =====
+  { code: "F10", name: "Alcohol use disorder", dimension: "Brain & Mental Health" },
+  { code: "F17", name: "Nicotine dependence", dimension: "Brain & Mental Health" },
+  { code: "F32", name: "Depressive episode", dimension: "Brain & Mental Health" },
+  { code: "F33", name: "Recurrent depressive disorder", dimension: "Brain & Mental Health" },
+  { code: "F40", name: "Phobic anxiety", dimension: "Brain & Mental Health" },
+  { code: "F41", name: "Other anxiety disorders", dimension: "Brain & Mental Health" },
+  { code: "F43", name: "Adjustment disorder / PTSD", dimension: "Brain & Mental Health" },
+  { code: "F51", name: "Sleep disorders", dimension: "Brain & Mental Health" },
+  { code: "G35", name: "Multiple sclerosis", dimension: "Brain & Mental Health" },
+  { code: "G43", name: "Migraine", dimension: "Brain & Mental Health" },
+  { code: "G47", name: "Sleep apnoea", dimension: "Brain & Mental Health" },
+  { code: "G20", name: "Parkinson's disease", dimension: "Brain & Mental Health" },
+  { code: "G30", name: "Alzheimer's disease", dimension: "Brain & Mental Health" },
+  { code: "F20", name: "Schizophrenia", dimension: "Brain & Mental Health" },
+  { code: "F31", name: "Bipolar disorder", dimension: "Brain & Mental Health" },
+
+  // ===== Cancer =====
+  { code: "C18", name: "Colon cancer", dimension: "Cancer" },
+  { code: "C34", name: "Lung cancer", dimension: "Cancer" },
+  { code: "C50", name: "Breast cancer", dimension: "Cancer" },
+  { code: "C53", name: "Cervical cancer", dimension: "Cancer" },
+  { code: "C61", name: "Prostate cancer", dimension: "Cancer" },
+  { code: "C43", name: "Melanoma", dimension: "Cancer" },
+  { code: "C73", name: "Thyroid cancer", dimension: "Cancer" },
+  { code: "C90", name: "Multiple myeloma", dimension: "Cancer" },
+  { code: "D05", name: "Carcinoma in situ of breast", dimension: "Cancer" },
+  { code: "Z80", name: "Family history of cancer", dimension: "Cancer" },
+
+  // ===== Musculoskeletal =====
+  { code: "M10", name: "Gout", dimension: "Musculoskeletal" },
+  { code: "M15", name: "Polyarthrosis", dimension: "Musculoskeletal" },
+  { code: "M16", name: "Hip arthrosis", dimension: "Musculoskeletal" },
+  { code: "M17", name: "Knee arthrosis", dimension: "Musculoskeletal" },
+  { code: "M40", name: "Kyphosis/lordosis", dimension: "Musculoskeletal" },
+  { code: "M54", name: "Back pain", dimension: "Musculoskeletal" },
+  { code: "M79", name: "Fibromyalgia", dimension: "Musculoskeletal" },
+  { code: "M81", name: "Osteoporosis", dimension: "Musculoskeletal" },
+
+  // ===== Reproductive & Sexual =====
+  { code: "N18", name: "Chronic kidney disease", dimension: "Reproductive & Sexual" },
+  { code: "N39", name: "Urinary tract infection", dimension: "Reproductive & Sexual" },
+  { code: "N40", name: "Prostate hyperplasia", dimension: "Reproductive & Sexual" },
+  { code: "N80", name: "Endometriosis", dimension: "Reproductive & Sexual" },
+  { code: "N83", name: "Ovarian cyst", dimension: "Reproductive & Sexual" },
+  { code: "N91", name: "Absent menstruation", dimension: "Reproductive & Sexual" },
+  { code: "O24", name: "Gestational diabetes", dimension: "Reproductive & Sexual" },
+  { code: "O26", name: "Pregnancy complications", dimension: "Reproductive & Sexual" },
+
+  // ===== Skin =====
+  { code: "L20", name: "Atopic dermatitis", dimension: "Skin" },
+  { code: "L40", name: "Psoriasis", dimension: "Skin" },
+  { code: "L50", name: "Urticaria", dimension: "Skin" },
+  { code: "L57", name: "Actinic keratosis", dimension: "Skin" },
+  { code: "L70", name: "Acne", dimension: "Skin" },
+  { code: "L90", name: "Scleroderma", dimension: "Skin" },
+];
+
+export const ICD_DIMENSIONS: IcdDimension[] = [
+  "Cardiovascular",
+  "Metabolic",
+  "Digestive",
+  "Respiratory & Immune",
+  "Brain & Mental Health",
+  "Cancer",
+  "Musculoskeletal",
+  "Reproductive & Sexual",
+  "Skin",
 ];
 
 /** Common medications pulled from the prompt brief. */

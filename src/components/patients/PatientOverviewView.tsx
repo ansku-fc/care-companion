@@ -199,8 +199,10 @@ export function PatientOverviewView({
 
   // ── Alerts ───────────────────────────────────────────────
   const openTasks = tasks.filter((t) => t.status !== "done");
+  const anaphylacticAllergies = allergies.filter((a: any) => a.severity === "anaphylactic");
   const severeAllergies = allergies.filter((a: any) => a.severity === "severe");
   const moderateAllergies = allergies.filter((a: any) => a.severity === "moderate");
+  const mildAllergies = allergies.filter((a: any) => a.severity === "mild");
 
   const overdueTasksCount = openTasks.filter(
     (t) => t.due_date && new Date(t.due_date).getTime() < Date.now(),
@@ -208,11 +210,13 @@ export function PatientOverviewView({
 
   const hasAlerts =
     openTasks.length > 0 ||
+    anaphylacticAllergies.length > 0 ||
     severeAllergies.length > 0 ||
     moderateAllergies.length > 0 ||
+    mildAllergies.length > 0 ||
     activeInteractions.length > 0;
   const alertSeverity: "high" | "medium" | "none" =
-    severeAllergies.length > 0 || overdueTasksCount > 0 || severeInteractions.length > 0 ? "high"
+    anaphylacticAllergies.length > 0 || severeAllergies.length > 0 || overdueTasksCount > 0 || severeInteractions.length > 0 ? "high"
       : (openTasks.length > 0 || moderateAllergies.length > 0 || moderateInteractions.length > 0) ? "medium"
         : "none";
 
@@ -377,6 +381,11 @@ export function PatientOverviewView({
                     )}
                   </button>
                 )}
+                {anaphylacticAllergies.length > 0 && (
+                  <span className="text-[hsl(0_57%_39%)] font-bold">
+                    {anaphylacticAllergies.length} anaphylactic allerg{anaphylacticAllergies.length === 1 ? "y" : "ies"}
+                  </span>
+                )}
                 {severeAllergies.length > 0 && (
                   <span className="text-[hsl(0_57%_39%)] font-medium">
                     {severeAllergies.length} severe allerg{severeAllergies.length === 1 ? "y" : "ies"}
@@ -385,6 +394,11 @@ export function PatientOverviewView({
                 {moderateAllergies.length > 0 && (
                   <span className="text-[hsl(28_63%_44%)]">
                     {moderateAllergies.length} moderate allerg{moderateAllergies.length === 1 ? "y" : "ies"}
+                  </span>
+                )}
+                {mildAllergies.length > 0 && (
+                  <span className="text-muted-foreground">
+                    {mildAllergies.length} mild allerg{mildAllergies.length === 1 ? "y" : "ies"}
                   </span>
                 )}
                 {severeInteractions.length > 0 && (
@@ -623,11 +637,22 @@ export function PatientOverviewView({
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border cursor-default",
-                              a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)]",
+                              a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%/0.15)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.45)] font-bold",
+                              a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)] font-medium",
                               a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
-                              a.severity === "mild" && "bg-muted text-muted-foreground border-border",
+                              (a.severity === "mild" || !a.severity) && "bg-muted text-muted-foreground border-border",
                             )}
                           >
+                            <span
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%)] ring-1 ring-[hsl(0_57%_39%/0.4)]",
+                                a.severity === "severe" && "bg-[hsl(0_57%_39%)]",
+                                a.severity === "moderate" && "bg-[hsl(28_63%_44%)]",
+                                (a.severity === "mild" || !a.severity) && "bg-muted-foreground/40",
+                              )}
+                              aria-hidden
+                            />
                             {icd && (
                               <span className="text-[10px] tabular-nums opacity-60">{icd}</span>
                             )}
