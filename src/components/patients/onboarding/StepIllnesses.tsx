@@ -713,11 +713,11 @@ function MedicationsEditor({
         <PopoverTrigger asChild>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-9 gap-1.5 rounded-lg"
+            className="h-7 px-2 -ml-2 gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3 w-3" />
             Add medication
           </Button>
         </PopoverTrigger>
