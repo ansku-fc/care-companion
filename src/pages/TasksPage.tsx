@@ -72,7 +72,7 @@ const TasksPage = () => {
   const [filterPatient, setFilterPatient]     = useState<string>(searchParams.get("patient") ?? "all");
   const [dateFrom, setDateFrom]               = useState<string>("");
   const [dateTo, setDateTo]                   = useState<string>("");
-  const [view, setView]                       = useState<"grouped" | "flat">("grouped");
+  const [view, setView]                       = useState<"grouped" | "flat" | "patient">("grouped");
   const [openSections, setOpenSections]       = useState<Record<TaskStatus, boolean>>({
     todo: true, in_progress: true, done: false, deferred: false,
   });
