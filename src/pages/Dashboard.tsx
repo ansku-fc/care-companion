@@ -136,13 +136,25 @@ const Dashboard = () => {
     });
   };
 
-  // Live task buckets
+  // Live task buckets — every open task across all patients is surfaced.
+  // Urgent: anything explicitly urgent priority OR overdue OR due today (high+).
+  const isOpen = (t: Task) => t.status !== "done" && t.status !== "deferred";
   const urgentTasks = tasks.filter(
-    (t) => (t.priority === "urgent" || t.priority === "high") && (isDueToday(t) || isOverdue(t)) && t.status !== "done",
+    (t) =>
+      isOpen(t) &&
+      (t.priority === "urgent" ||
+        isOverdue(t) ||
+        (t.priority === "high" && isDueToday(t))),
   );
-  const pendingTasks = tasks.filter(
-    (t) => (t.status === "in_progress" || (dueWithinDays(t, 7) && !urgentTasks.includes(t))) && t.status !== "done" && t.status !== "deferred",
-  );
+  const urgentIds = new Set(urgentTasks.map((t) => t.id));
+  // Pending: every other open task (not already urgent), sorted by due date soonest first.
+  const pendingTasks = tasks
+    .filter((t) => isOpen(t) && !urgentIds.has(t.id))
+    .sort((a, b) => {
+      const da = a.due_date ? new Date(a.due_date).getTime() : Number.POSITIVE_INFINITY;
+      const db = b.due_date ? new Date(b.due_date).getTime() : Number.POSITIVE_INFINITY;
+      return da - db;
+    });
   const completedToday = tasks.filter((t) => isCompletedToday(t));
 
   // Today's schedule = real appointments from DB + today's dummy appointments
