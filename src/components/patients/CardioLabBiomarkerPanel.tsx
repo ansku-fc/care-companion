@@ -380,6 +380,38 @@ const seriesCache = new Map<string, Series>();
 const seriesListeners = new Set<() => void>();
 const notifySeries = () => seriesListeners.forEach((l) => l());
 
+/**
+ * Single source of truth: build a Series for a biomarker directly from
+ * the parent-fetched `patient_lab_results` array. Both the chart panel
+ * and the table sidebar derive their data from this so the two views
+ * can never disagree.
+ */
+export function buildSeriesFromLabs(
+  labResults: Array<Record<string, any>> | null | undefined,
+  biomarkerKey: string,
+): Series {
+  if (!labResults || labResults.length === 0) return {};
+  const sorted = [...labResults].sort((a, b) =>
+    String(a.result_date).localeCompare(String(b.result_date)),
+  );
+  if (biomarkerKey === "blood_pressure_systolic" || biomarkerKey === "blood_pressure_diastolic") {
+    const bp: BPPoint[] = sorted
+      .filter((r) => r.blood_pressure_systolic != null && r.blood_pressure_diastolic != null)
+      .map((r) => ({
+        date: r.result_date,
+        systolic: Number(r.blood_pressure_systolic),
+        diastolic: Number(r.blood_pressure_diastolic),
+      }));
+    return { bp };
+  }
+  const col = BIOMARKER_COLUMN[biomarkerKey];
+  if (!col) return {};
+  const single: Point[] = sorted
+    .filter((r) => r[col] != null && typeof r[col] !== "boolean")
+    .map((r) => ({ date: r.result_date, value: Number(r[col]) }));
+  return { single };
+}
+
 async function loadSeries(patientId: string, biomarkerKey: string): Promise<Series> {
   // Blood pressure is a special case (two columns).
   if (biomarkerKey === "blood_pressure_systolic" || biomarkerKey === "blood_pressure_diastolic") {
@@ -419,7 +451,11 @@ async function loadSeries(patientId: string, biomarkerKey: string): Promise<Seri
   return { single };
 }
 
-function usePatientSeries(patientId: string | undefined, biomarkerKey: string): Series {
+function usePatientSeries(
+  patientId: string | undefined,
+  biomarkerKey: string,
+  labResults?: Array<Record<string, any>> | null,
+): Series {
   const cacheKey = patientId ? `${patientId}|${biomarkerKey}` : "";
   const [, setV] = useState(0);
 
@@ -431,8 +467,24 @@ function usePatientSeries(patientId: string | undefined, biomarkerKey: string): 
     };
   }, []);
 
+  // When the parent supplies the canonical labResults array, derive the
+  // series directly from it (single source of truth) and refresh the
+  // shared cache so the sidebar/getSeriesRowsForBiomarker stays in sync.
+  const derived = useMemo(
+    () => (labResults ? buildSeriesFromLabs(labResults, biomarkerKey) : null),
+    [labResults, biomarkerKey],
+  );
+
+  useEffect(() => {
+    if (derived && patientId) {
+      seriesCache.set(cacheKey, derived);
+      notifySeries();
+    }
+  }, [derived, cacheKey, patientId]);
+
   useEffect(() => {
     if (!patientId) return;
+    if (derived) return; // parent provided fresh data — skip the redundant fetch
     if (seriesCache.has(cacheKey)) return;
     let cancelled = false;
     void loadSeries(patientId, biomarkerKey).then((s) => {
@@ -443,10 +495,12 @@ function usePatientSeries(patientId: string | undefined, biomarkerKey: string): 
     return () => {
       cancelled = true;
     };
-  }, [patientId, biomarkerKey, cacheKey]);
+  }, [patientId, biomarkerKey, cacheKey, derived]);
 
+  if (derived) return derived;
   return seriesCache.get(cacheKey) ?? {};
 }
+
 
 // ──────────────────────────────────────────────────────────────────────
 // Time window
