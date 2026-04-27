@@ -543,7 +543,7 @@ function clinicalActionPath(kind: NonNullable<PreviewKind>, task: Task): string 
   switch (kind) {
     case "labs":        return `${base}?tab=lab_results&review=1`;
     case "interaction": return `${base}?tab=medications&focus=interaction`;
-    case "renewal":     return `${base}?tab=medications&focus=renewal`;
+    case "renewal":     return `${base}?tab=medications`;
     case "supply":      return `${base}?tab=medications&focus=supply`;
     case "risk_review": return `${base}?tab=health_data`;
     case "follow_up":   return `${base}?tab=visits`;
@@ -554,7 +554,7 @@ function clinicalActionLabel(kind: NonNullable<PreviewKind>): string {
   switch (kind) {
     case "labs":        return "Go to full lab view";
     case "interaction": return "Review interaction in Medications";
-    case "renewal":     return "Renew in Medications";
+    case "renewal":     return "Go to Medications";
     case "supply":      return "Update supply in Medications";
     case "risk_review": return "Review risk factors";
     case "follow_up":   return "Open patient record";
@@ -565,7 +565,7 @@ function clinicalAutoCompleteHint(kind: NonNullable<PreviewKind>): string {
   switch (kind) {
     case "labs":        return "Completes automatically once all new results are verified.";
     case "interaction": return "Completes when you Resolve, Override, or Defer the alert.";
-    case "renewal":     return "Completes once the prescription is renewed.";
+    case "renewal":     return "Completes once the medication review is recorded.";
     case "supply":      return "Completes when supply is renewed above 25%.";
     case "risk_review": return "Completes when the Doctor's Summary is saved.";
     case "follow_up":   return "Completes when marked done from the patient record.";
@@ -640,33 +640,7 @@ function ContextualPreview({
   }
 
   if (kind === "renewal") {
-    return (
-      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          <Pill className="h-3.5 w-3.5" /> Prescription renewal
-        </div>
-        <div className="space-y-1">
-          <p className="text-xs font-semibold">Metformin 500 mg · twice daily</p>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Current supply</span>
-            <span className="font-semibold text-destructive">6 / 180 (3%)</span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-destructive" style={{ width: "3%" }} />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-            <span>Last dispensed</span>
-            <span>14 Jan 2026</span>
-          </div>
-        </div>
-        <button
-          onClick={() => onNavigate(`${base}?tab=medications&focus=metformin`)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
-        >
-          Renew prescription <ArrowRight className="h-3 w-3" />
-        </button>
-      </div>
-    );
+    return <MedicationPreview task={task} onNavigate={onNavigate} />;
   }
 
   if (kind === "supply") {
@@ -712,6 +686,85 @@ function ContextualPreview({
   }
 
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Medication preview — fetches the patient's active medications and renders
+// them inline so the doctor sees what the task is actually about. Highlights
+// medications mentioned in the task title when possible. CTA routes to the
+// patient's Medications tab.
+// ---------------------------------------------------------------------------
+function MedicationPreview({
+  task,
+  onNavigate,
+}: {
+  task: Task;
+  onNavigate: (path: string) => void;
+}) {
+  const [meds, setMeds] = useState<Array<{ medication_name: string; dose: string | null; frequency: string | null; indication: string | null }> | null>(null);
+  const patientId = task.patient_id;
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!patientId) { setMeds([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("patient_medications")
+        .select("medication_name, dose, frequency, indication")
+        .eq("patient_id", patientId)
+        .eq("status", "active")
+        .order("medication_name");
+      if (!cancelled) setMeds(data ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [patientId]);
+
+  const title = (task.title ?? "").toLowerCase();
+  const highlighted = (meds ?? []).filter((m) => {
+    const name = (m.medication_name ?? "").toLowerCase();
+    const indication = (m.indication ?? "").toLowerCase();
+    if (name && title.includes(name)) return true;
+    if (/blood pressure|hypertension/.test(title) && /(hypertension|blood pressure|\bbp\b)/.test(indication)) return true;
+    return false;
+  });
+  const display = highlighted.length > 0 ? highlighted : (meds ?? []);
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <Pill className="h-3.5 w-3.5" /> Medication review
+      </div>
+      {meds === null ? (
+        <p className="text-xs text-muted-foreground italic">Loading medications…</p>
+      ) : display.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">No active medications recorded.</p>
+      ) : (
+        <ul className="space-y-1">
+          {display.slice(0, 5).map((m, i) => (
+            <li key={i} className="text-xs">
+              <span className="font-semibold">{m.medication_name}</span>
+              {m.dose && <span className="text-muted-foreground"> · {m.dose}</span>}
+              {m.frequency && <span className="text-muted-foreground"> · {m.frequency}</span>}
+              {m.indication && (
+                <span className="block text-[11px] text-muted-foreground italic">for {m.indication}</span>
+              )}
+            </li>
+          ))}
+          {display.length > 5 && (
+            <li className="text-[11px] text-muted-foreground italic">+ {display.length - 5} more…</li>
+          )}
+        </ul>
+      )}
+      {patientId && (
+        <button
+          onClick={() => onNavigate(`/patients/${patientId}?tab=medications`)}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
+        >
+          Go to Medications <ArrowRight className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
