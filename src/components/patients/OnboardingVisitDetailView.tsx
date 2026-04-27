@@ -229,6 +229,7 @@ function AbcdeSelect({
   );
 }
 
+const REOPEN_REASONS = [
   "Correction of error",
   "New clinical information",
   "Patient request",
