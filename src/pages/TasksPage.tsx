@@ -68,8 +68,13 @@ const TasksPage = () => {
   const { profile } = useAuth();
   const currentUserName = profile?.full_name ?? "Dr. Laine";
 
-  // Scope: My Tasks (default) vs All Tasks (incl. team FYI rows)
-  const [scope, setScope] = useState<"mine" | "all">("mine");
+  // Scope: My Tasks (default) vs All Tasks (incl. team FYI rows).
+  // When the page is opened pre-filtered to a single patient (deep link from
+  // a patient profile), default to "all" so team-assigned tasks for that
+  // patient are visible too.
+  const [scope, setScope] = useState<"mine" | "all">(
+    searchParams.get("patient") ? "all" : "mine",
+  );
 
   // Filter state — patient & priority can be deep-linked.
   const [filterStatus, setFilterStatus]       = useState<string>("all");
