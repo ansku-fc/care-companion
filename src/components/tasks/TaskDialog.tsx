@@ -18,6 +18,9 @@ import {
   ASSIGNEES, PRIORITY_OPTIONS, STATUS_OPTIONS, TASK_CATEGORIES,
   type Task, type TaskCategory, type TaskPriority, type TaskStatus,
 } from "@/lib/tasks";
+import {
+  detectTaskCategory, TASK_CATEGORY_META, type TaskCategoryKind,
+} from "@/lib/taskCategory";
 
 export interface TaskPrefill {
   title?: string;
@@ -29,7 +32,10 @@ export interface TaskPrefill {
   assignee_type?: string;
   due_date?: string;          // YYYY-MM-DD
   created_from?: string | null;
+  task_category?: TaskCategoryKind;
 }
+
+const TASK_CATEGORY_KINDS = Object.keys(TASK_CATEGORY_META) as TaskCategoryKind[];
 
 interface Props {
   open: boolean;
