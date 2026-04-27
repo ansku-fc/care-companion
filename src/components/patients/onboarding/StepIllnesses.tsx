@@ -605,6 +605,7 @@ function MedicationsEditor({
   layout = "full",
   expandedIdx: controlledIdx,
   onExpandedIdxChange,
+  showEndYear = false,
 }: {
   medications: MedicationDetail[];
   onChange: (next: MedicationDetail[]) => void;
@@ -613,6 +614,8 @@ function MedicationsEditor({
   layout?: "full" | "trigger" | "list";
   expandedIdx?: number | null;
   onExpandedIdxChange?: (idx: number | null) => void;
+  /** Show the End year field on each expanded med row (used by Previous Illnesses). */
+  showEndYear?: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
