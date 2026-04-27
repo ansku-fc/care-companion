@@ -3043,10 +3043,54 @@ function HealthDimensionView({
         icon: Users,
       };
 
+      // ── Append Current Illnesses + Previous Illnesses accordions ──
+      // Filtered to illnesses whose confirmed `dimensions` tag maps to this
+      // page's main dimension. Tag-key → main-dim-key mapping mirrors the
+      // onboarding DIMENSION_TAGS list.
+      const TAG_TO_MAIN_DIM: Record<string, string> = {
+        cardiovascular: "cardiovascular",
+        metabolic: "metabolic",
+        "brain-mental": "brain_mental",
+        cancer: "cancer_risk",
+        respiratory: "respiratory_immune",
+        exercise: "exercise_functional",
+        digestion: "digestion",
+        skin: "skin_oral_mucosal",
+        oral: "skin_oral_mucosal",
+        reproductive: "reproductive_sexual",
+      };
+      const allCurrentIllnesses: any[] = Array.isArray(extra.current_illnesses) ? extra.current_illnesses : [];
+      const allPreviousIllnesses: any[] = Array.isArray(extra.previous_illnesses) ? extra.previous_illnesses : [];
+      const matchesThisDim = (row: any): boolean => {
+        if (!row?.dimensions_confirmed) return false;
+        const tags: string[] = Array.isArray(row.dimensions) ? row.dimensions : [];
+        return tags.some((t) => TAG_TO_MAIN_DIM[t] === famKey);
+      };
+      const currentForDim = allCurrentIllnesses.filter(matchesThisDim);
+      const previousForDim = allPreviousIllnesses.filter(matchesThisDim);
+      const currentIllnessGroup: GroupSpec = {
+        key: `${famKey}__current_illnesses`,
+        title: "Current Illnesses",
+        rows: [],
+        hideScore: true,
+        extra: <IllnessRowsBlock rows={currentForDim} kind="current" />,
+        icon: Activity,
+      };
+      const previousIllnessGroup: GroupSpec = {
+        key: `${famKey}__previous_illnesses`,
+        title: "Previous Illnesses",
+        rows: [],
+        hideScore: true,
+        extra: <IllnessRowsBlock rows={previousForDim} kind="previous" />,
+        icon: Activity,
+      };
+
       return (
         <div className="space-y-2">
           {list.map((g) => <Subgroup key={g.key} group={g} />)}
           {matcher && <Subgroup key={familyGroup.key} group={familyGroup} />}
+          <Subgroup key={currentIllnessGroup.key} group={currentIllnessGroup} />
+          <Subgroup key={previousIllnessGroup.key} group={previousIllnessGroup} />
         </div>
       );
     };
