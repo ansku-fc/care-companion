@@ -363,7 +363,7 @@ export function PatientOverviewView({
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm flex-1">
                 {openTasks.length > 0 && (
                   <button
-                    onClick={() => navigate("/tasks")}
+                    onClick={() => navigate(`/tasks?patient=${patient.id}`)}
                     className="hover:underline text-foreground font-medium"
                   >
                     {openTasks.length} open task{openTasks.length === 1 ? "" : "s"}
