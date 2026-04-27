@@ -139,6 +139,7 @@ export function LabResultsBlock({
               sidebarWindow,
               selectedMarker.refLow,
               selectedMarker.refHigh,
+              patientId,
             );
             return (
               <div
