@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Trash2, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
