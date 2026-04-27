@@ -123,12 +123,26 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
     setTaskCategory(detectTaskCategory(title));
   }, [title, taskCategoryOverridden]);
 
+  // Medication tasks must always be assigned to a doctor.
+  const isMedicationTask = taskCategory === "medication";
+  const isNurse = (name: string) => /nurse/i.test(name);
+  useEffect(() => {
+    if (isMedicationTask && isNurse(assigneeName)) {
+      const doctor = ASSIGNEES.find((a) => a.role === "doctor");
+      if (doctor) setAssigneeName(doctor.name);
+    }
+  }, [isMedicationTask, assigneeName]);
+
   const assigneeMeta = ASSIGNEES.find((a) => a.name === assigneeName);
   const patientLabel = patients.find((p) => p.id === patientId)?.full_name;
 
   const handleSave = async () => {
     if (!user || !title.trim() || !dueDate) {
       toast.error("Title and due date are required");
+      return;
+    }
+    if (isMedicationTask && isNurse(assigneeName)) {
+      toast.error("Prescription and medication tasks must be assigned to a doctor.");
       return;
     }
     setSaving(true);
