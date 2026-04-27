@@ -18,7 +18,7 @@ import {
   type Task, type TaskStatus, type TaskPriority, type TaskCategory,
 } from "@/lib/tasks";
 import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
-import { formatLastFirst } from "@/lib/patientName";
+import { formatLastFirst, sortByLastFirst } from "@/lib/patientName";
 
 // Initials + tone for assignee avatar chip
 function assigneeInitials(name: string): string {
@@ -203,7 +203,7 @@ const TasksPage = () => {
             {assignees.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
           </FilterSelect>
           <FilterSelect label="Patient" value={filterPatient} onChange={setFilterPatient} all="All patients">
-            {patients.map((p) => <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>)}
+            {sortByLastFirst(patients).map((p) => <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>)}
           </FilterSelect>
           <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Due from</label>

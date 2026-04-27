@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { formatLastFirst } from "@/lib/patientName";
+import { formatLastFirst, sortByLastFirst } from "@/lib/patientName";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -428,7 +428,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                     <Select value={patientId} onValueChange={setPatientId}>
                       <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
                       <SelectContent>
-                        {patients.map((p) => (
+                        {sortByLastFirst(patients).map((p) => (
                           <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>
                         ))}
                       </SelectContent>
@@ -539,7 +539,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                     <Select value={linkedPatientId} onValueChange={setLinkedPatientId}>
                       <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                       <SelectContent>
-                        {patients.map((p) => (
+                        {sortByLastFirst(patients).map((p) => (
                           <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>
                         ))}
                       </SelectContent>
@@ -587,7 +587,7 @@ export function AppointmentFormPanel({ selectedDate, editingAppointment, prefill
                     <Select value={patientId} onValueChange={setPatientId}>
                       <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
                       <SelectContent>
-                        {patients.map((p) => (
+                        {sortByLastFirst(patients).map((p) => (
                           <SelectItem key={p.id} value={p.id}>{formatLastFirst(p.full_name)}</SelectItem>
                         ))}
                       </SelectContent>
