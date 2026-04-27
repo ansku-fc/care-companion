@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,10 @@ type Props = {
   tone?: ChipTone;
   /** Allow free-text entries that are not in `options`. */
   allowCustom?: boolean;
+  /** Values to surface in a "suggested" group above the full list. */
+  suggested?: string[];
+  /** Heading shown above the suggestions group. */
+  suggestedLabel?: string;
 };
 
 const TONE_CLASSES: Record<ChipTone, string> = {
@@ -44,6 +48,8 @@ export function MultiSelectChips({
   emptyText = "No matches.",
   tone = "neutral",
   allowCustom = false,
+  suggested,
+  suggestedLabel = "Suggested",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -151,7 +157,32 @@ export function MultiSelectChips({
                   emptyText
                 )}
               </CommandEmpty>
-              <CommandGroup>
+              {suggested && suggested.length > 0 && (
+                <>
+                  <CommandGroup heading={suggestedLabel}>
+                    {suggested
+                      .map((s) => optionMap.get(s) ?? { value: s, label: s })
+                      .map((opt) => {
+                        const isSelected = selected.includes(opt.value);
+                        return (
+                          <CommandItem
+                            key={`suggested-${opt.value}`}
+                            value={`__suggested__ ${opt.label} ${opt.prefix ?? ""}`}
+                            onSelect={() => toggle(opt.value)}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                            {opt.prefix && (
+                              <span className="mr-2 font-mono text-xs text-muted-foreground">{opt.prefix}</span>
+                            )}
+                            {opt.label}
+                          </CommandItem>
+                        );
+                      })}
+                  </CommandGroup>
+                  <CommandSeparator />
+                </>
+              )}
+              <CommandGroup heading={suggested && suggested.length > 0 ? "All medications" : undefined}>
                 {options.map((opt) => {
                   const isSelected = selected.includes(opt.value);
                   return (
