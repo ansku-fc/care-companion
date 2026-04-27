@@ -195,7 +195,40 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-const REOPEN_REASONS = [
+const ABCDE_OPTIONS: Record<string, string[]> = {
+  asymmetry: ["Symmetrical", "Asymmetrical"],
+  borders: ["Regular", "Irregular", "Notched"],
+  color: ["Single color", "Multi-colored", "Mixed"],
+  size: ["<5mm", "5–10mm", ">10mm"],
+  change: ["No change", "Growing", "Color change", "Shape change"],
+  symptoms: ["None", "Itching", "Bleeding", "Crusting"],
+};
+
+function AbcdeSelect({
+  value,
+  onChange,
+  field,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  field: keyof typeof ABCDE_OPTIONS;
+  disabled?: boolean;
+}) {
+  return (
+    <Select value={value || undefined} onValueChange={(v) => onChange(v)} disabled={disabled}>
+      <SelectTrigger className="h-7 text-xs">
+        <SelectValue placeholder={field[0].toUpperCase() + field.slice(1)} />
+      </SelectTrigger>
+      <SelectContent>
+        {ABCDE_OPTIONS[field].map((o) => (
+          <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
   "Correction of error",
   "New clinical information",
   "Patient request",
