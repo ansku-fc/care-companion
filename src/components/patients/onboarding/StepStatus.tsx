@@ -81,10 +81,7 @@ export function StepStatus() {
     </div>
   );
 }
-      </div>
-    </div>
-  );
-}
+
 
 function FindingRow({
   label,
