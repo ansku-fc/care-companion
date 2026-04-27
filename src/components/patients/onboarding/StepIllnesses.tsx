@@ -166,19 +166,18 @@ function IllnessRowEditor({
           </div>
         )}
 
-        <div className={cn("col-span-12", showResolved ? "md:col-span-3" : "md:col-span-5")}>
-          <FieldLabel>Medications</FieldLabel>
-          <MultiSelectChips
-            options={MED_OPTIONS}
-            selected={row.medications}
-            onChange={(meds) => onChange({ medications: meds })}
-            placeholder="Add medication…"
-            tone="neutral"
-            allowCustom
-            suggested={getSuggestedMedications(row.icd_code)}
-            suggestedLabel="Commonly used"
-          />
+        <div className={cn("col-span-12", showResolved ? "md:col-span-7" : "md:col-span-12")}>
+          {/* spacer/placeholder for grid balance — medications below */}
         </div>
+      </div>
+
+      <div>
+        <FieldLabel>Medications</FieldLabel>
+        <MedicationsEditor
+          medications={row.medications}
+          onChange={(meds) => onChange({ medications: meds })}
+          icdCode={row.icd_code}
+        />
       </div>
 
       <div>
