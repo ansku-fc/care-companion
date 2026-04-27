@@ -72,6 +72,29 @@ export function OnboardingEmptyState({ patientName, patientId, onCompleted }: On
 
   const hasDraft = draftStep !== null;
 
+  const handleRestart = async () => {
+    setRestarting(true);
+    try {
+      const { error: delErr } = await supabase
+        .from("patient_onboarding")
+        .delete()
+        .eq("patient_id", patientId);
+      if (delErr) throw delErr;
+      const { error: updErr } = await supabase
+        .from("patients")
+        .update({ onboarding_status: "pending" } as any)
+        .eq("id", patientId);
+      if (updErr) throw updErr;
+      toast.success("Onboarding reset");
+      setConfirmRestart(false);
+      await refresh();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to reset onboarding");
+    } finally {
+      setRestarting(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-center py-20">
       <div className="w-full max-w-md rounded-xl border border-dashed border-border bg-muted/20 px-8 py-12 text-center">
@@ -83,18 +106,24 @@ export function OnboardingEmptyState({ patientName, patientId, onCompleted }: On
         </h3>
         <p className="mt-2 text-sm text-muted-foreground">
           {hasDraft
-            ? `Continue where you left off to complete ${firstName}'s clinical baseline.`
+            ? `Step ${completedCount} of ${TOTAL_STEPS} completed — pick up where you left off`
             : `Complete onboarding for ${firstName} to populate their clinical dashboard.`}
         </p>
-        {hasDraft && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Step {completedCount} of {TOTAL_STEPS} completed
-          </p>
-        )}
         <Button className="mt-6 gap-2" onClick={() => setOpen(true)} disabled={!loaded}>
           {hasDraft ? "Continue Onboarding" : "Start Onboarding"}
           <ArrowRight className="h-4 w-4" />
         </Button>
+        {hasDraft && (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setConfirmRestart(true)}
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Restart onboarding
+            </button>
+          </div>
+        )}
       </div>
 
       <PatientOnboardingDialog
@@ -109,6 +138,24 @@ export function OnboardingEmptyState({ patientName, patientId, onCompleted }: On
         }}
         onCompleted={onCompleted}
       />
+
+      <AlertDialog open={confirmRestart} onOpenChange={setConfirmRestart}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restart onboarding?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently discard {firstName}'s saved draft and reset
+              onboarding to step 1. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={restarting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestart} disabled={restarting}>
+              {restarting ? "Resetting…" : "Restart"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
