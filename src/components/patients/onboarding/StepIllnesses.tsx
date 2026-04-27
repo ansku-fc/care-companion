@@ -185,11 +185,16 @@ export function IcdPicker({
     : "Search ICD-10…";
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
+          onClick={(e) => {
+            // Ensure the click only opens THIS popover instance and doesn't
+            // bubble up to a sibling section's still-open popover.
+            e.stopPropagation();
+          }}
           className="w-full h-11 rounded-xl justify-start font-normal text-left truncate"
         >
           {value.code && <span className="font-mono text-xs text-muted-foreground mr-2">{value.code}</span>}
@@ -199,10 +204,17 @@ export function IcdPicker({
           {!value.code && <span className="sr-only">{triggerLabel}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
+      <PopoverContent
+        className="p-0 w-[var(--radix-popover-trigger-width)]"
+        align="start"
+        onWheel={(e) => e.stopPropagation()}
+      >
         <Command>
           <CommandInput placeholder="ICD-10 code or name…" />
-          <CommandList className="max-h-80">
+          <CommandList
+            className="max-h-80 overflow-y-auto overscroll-contain"
+            onWheel={(e) => e.stopPropagation()}
+          >
             <CommandEmpty>No matches.</CommandEmpty>
             {ICD_DIMENSIONS.map((dim) => {
               const items = ICD10_ILLNESSES.filter((i) => i.dimension === dim);
