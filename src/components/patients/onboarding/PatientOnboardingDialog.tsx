@@ -462,7 +462,8 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         // Status
         exam_findings: nextForm.exam_findings,
         moles_enabled: nextForm.moles_enabled,
-        moles: nextForm.moles,
+        // Strip transient File[] from moles before persisting to JSON.
+        moles: nextForm.moles.map(({ image_files: _img, ...rest }) => rest),
 
         completed_steps: nextForm.completed_steps,
         skipped_steps: nextForm.skipped_steps,
