@@ -1949,6 +1949,13 @@ const TIER_OPTIONS = [
 function splitName(full: string): { first: string; last: string } {
   const trimmed = (full || "").trim();
   if (!trimmed) return { first: "", last: "" };
+  // Handle "Last, First" format (comma-separated) — common in clinical lists.
+  if (trimmed.includes(",")) {
+    const [lastPart, ...rest] = trimmed.split(",");
+    const last = lastPart.trim();
+    const first = rest.join(",").trim();
+    if (first || last) return { first, last };
+  }
   const parts = trimmed.split(/\s+/);
   if (parts.length === 1) return { first: parts[0], last: "" };
   return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
