@@ -5098,6 +5098,7 @@ function CardiovascularDimensionView({
                       sidebarWindow,
                       selectedMarker.refLow,
                       selectedMarker.refHigh,
+                      patient?.id,
                     );
                     return (
                       <div
