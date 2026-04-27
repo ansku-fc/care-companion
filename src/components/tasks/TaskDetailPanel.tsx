@@ -19,6 +19,7 @@ import {
   STATUS_OPTIONS, assigneeRole, categoryLabel, priorityMeta, statusLabel,
   type Task, type TaskStatus,
 } from "@/lib/tasks";
+import { isClinicalCategory, type TaskCategoryKind } from "@/lib/taskCategory";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useAuth } from "@/hooks/useAuth";
 import foundationClinicLogo from "@/assets/foundation-clinic-logo-cropped.png";
