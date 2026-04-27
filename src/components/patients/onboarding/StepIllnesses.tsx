@@ -10,10 +10,12 @@ import { cn } from "@/lib/utils";
 
 import {
   ICD10_ILLNESSES,
+  ICD_DIMENSIONS,
   MEDICATION_LIST,
   DIMENSION_TAGS,
   findDimensionTag,
   yearOptions,
+  type IcdDimension,
 } from "@/lib/onboardingTaxonomy";
 import { useOnboardingForm, type IllnessRow } from "./OnboardingFormContext";
 import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
