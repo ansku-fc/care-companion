@@ -21,7 +21,7 @@ type OnboardingEmptyStateProps = {
   onCompleted?: () => void;
 };
 
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 11;
 
 /**
  * Shown on the patient overview when onboarding has not yet been completed.
