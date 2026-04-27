@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -23,9 +24,13 @@ const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "musculoskeletal", label: "Musculoskeletal" },
 ];
 
-// Note: ADP / ATP / AFEM sub-toggles previously lived under "Peripheral
-// circulation" but only duplicated the parent. They have been replaced with a
-// single free-text notes field shown when the parent toggle is on.
+// Sub-rows shown under "Peripheral circulation" when the parent is ON.
+// Each sub-row is a labeled inline notes/measurement input — no toggle.
+const PERIPHERAL_SUBS: { key: keyof ExamFindings; label: string }[] = [
+  { key: "peripheral_adp", label: "ADP" },
+  { key: "peripheral_atp", label: "ATP" },
+  { key: "peripheral_afem", label: "AFEM" },
+];
 
 /** Step 10 — Status (Physical Examination). */
 export function StepStatus() {
@@ -41,18 +46,42 @@ export function StepStatus() {
         <SectionHeading>Clinical Findings</SectionHeading>
         <div className="mt-4 space-y-2">
           {FINDINGS.map((f) => (
-            <FindingRow
-              key={f.key}
-              label={f.label}
-              finding={form.exam_findings[f.key]}
-              onChange={(p) => updateFinding(f.key, p)}
-            />
+            <div key={f.key} className="space-y-2">
+              <FindingRow
+                label={f.label}
+                finding={form.exam_findings[f.key]}
+                onChange={(p) => updateFinding(f.key, p)}
+              />
+              {f.key === "peripheral_circulation" && form.exam_findings.peripheral_circulation.present && (
+                <div className="ml-4 space-y-1.5 border-l-2 border-border/60 pl-3">
+                  {PERIPHERAL_SUBS.map((sub) => (
+                    <div
+                      key={sub.key}
+                      className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/30 px-3 py-2"
+                    >
+                      <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">
+                        {sub.label}
+                      </span>
+                      <Input
+                        value={form.exam_findings[sub.key].notes}
+                        onChange={(e) =>
+                          updateFinding(sub.key, { present: true, notes: e.target.value })
+                        }
+                        placeholder="Findings / measurements…"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
     </div>
   );
 }
+
 
 function FindingRow({
   label,
