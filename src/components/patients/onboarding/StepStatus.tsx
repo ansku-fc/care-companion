@@ -29,31 +29,12 @@ const PERIPHERAL_SUBS: { key: keyof ExamFindings; label: string }[] = [
   { key: "peripheral_afem", label: "AFEM (arteria femoralis)" },
 ];
 
-const ABCDE_OPTIONS = {
-  asymmetry: ["Symmetrical", "Asymmetrical"],
-  borders: ["Regular", "Irregular", "Notched"],
-  color: ["Uniform", "Multi-colored", "Mixed"],
-  size: ["<5mm", "5–10mm", ">10mm"],
-  change: ["None", "Growing", "Color change", "Shape change"],
-  symptoms: ["None", "Itching", "Bleeding", "Crusting"],
-};
-
-/** Step 10 — Status (Physical Examination) + simple mole list. */
+/** Step 10 — Status (Physical Examination). */
 export function StepStatus() {
   const { form, set } = useOnboardingForm();
 
   const updateFinding = (key: keyof ExamFindings, partial: Partial<ExamFinding>) => {
     set("exam_findings", { ...form.exam_findings, [key]: { ...form.exam_findings[key], ...partial } });
-  };
-
-  const addMole = () => {
-    set("moles", [...form.moles, blankMole(`Mole ${form.moles.length + 1}`)]);
-  };
-  const updateMole = (id: string, partial: Partial<MoleEntry>) => {
-    set("moles", form.moles.map((m) => (m.id === id ? { ...m, ...partial } : m)));
-  };
-  const removeMole = (id: string) => {
-    set("moles", form.moles.filter((m) => m.id !== id));
   };
 
   return (
@@ -83,48 +64,6 @@ export function StepStatus() {
               )}
             </FindingRow>
           ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between">
-          <SectionHeading>Moles</SectionHeading>
-          <Switch
-            checked={form.moles_enabled}
-            onCheckedChange={(v) => set("moles_enabled", v)}
-          />
-        </div>
-        <div
-          className={cn(
-            "grid transition-all duration-200",
-            form.moles_enabled ? "mt-4 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-          )}
-        >
-          <div className="overflow-hidden space-y-3">
-            {form.moles.length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                No moles recorded. Add one to begin documenting ABCDE assessment.
-              </p>
-            )}
-            {form.moles.map((mole) => (
-              <MoleCard
-                key={mole.id}
-                mole={mole}
-                onChange={(p) => updateMole(mole.id, p)}
-                onRemove={() => removeMole(mole.id)}
-              />
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addMole}
-              className="gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add mole
-            </Button>
-          </div>
         </div>
       </div>
     </div>
