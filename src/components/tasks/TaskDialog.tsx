@@ -181,6 +181,55 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
               placeholder="Short description of the action required"
               autoFocus
             />
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              <span className="text-[11px] text-muted-foreground">Detected category:</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-input bg-background hover:bg-accent transition-colors"
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${TASK_CATEGORY_META[taskCategory].isClinical ? "bg-primary" : "bg-muted-foreground"}`} />
+                    {TASK_CATEGORY_META[taskCategory].label}
+                    {taskCategoryOverridden && (
+                      <span className="text-muted-foreground">· override</span>
+                    )}
+                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-1" align="start">
+                  {TASK_CATEGORY_KINDS.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        setTaskCategory(k);
+                        setTaskCategoryOverridden(true);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 text-left text-xs px-2 py-1.5 rounded hover:bg-accent",
+                        taskCategory === k && "bg-accent",
+                      )}
+                    >
+                      <Check className={cn("h-3.5 w-3.5", taskCategory === k ? "opacity-100" : "opacity-0")} />
+                      {TASK_CATEGORY_META[k].label}
+                    </button>
+                  ))}
+                  {taskCategoryOverridden && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTaskCategoryOverridden(false);
+                        setTaskCategory(detectTaskCategory(title));
+                      }}
+                      className="w-full text-left text-[11px] px-2 py-1.5 mt-1 border-t text-muted-foreground hover:bg-accent"
+                    >
+                      Reset to auto-detected
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
