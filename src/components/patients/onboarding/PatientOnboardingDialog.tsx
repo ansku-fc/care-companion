@@ -852,6 +852,8 @@ function StepRenderer({ step }: { step: number }) {
       return <StepCancer />;
     case 10:
       return <StepStatus />;
+    case 11:
+      return <StepMoles />;
     default:
       return null;
   }
