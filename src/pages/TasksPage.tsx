@@ -53,6 +53,12 @@ function AssigneeAvatar({ name, size = "sm" }: { name: string; size?: "xs" | "sm
 
 const STATUS_GROUPS: TaskStatus[] = ["todo", "in_progress", "done", "deferred"];
 
+const TIER_LABELS: Record<string, string> = {
+  tier_1: "Tier 1", tier_2: "Tier 2", tier_3: "Tier 3", tier_4: "Tier 4",
+  children: "Children", onboarding: "Onboarding", acute: "Acute", case_management: "Case Mgmt",
+};
+const tierLabel = (t: string | null) => (t ? TIER_LABELS[t] ?? t : "");
+
 const TasksPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
