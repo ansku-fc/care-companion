@@ -196,17 +196,11 @@ function IllnessRowEditor({
         />
       </div>
 
-      <div>
-        <FieldLabel>Notes</FieldLabel>
-        <Textarea
+      <div className="flex items-center justify-between">
+        <NotePopover
           value={row.notes}
-          onChange={(e) => onChange({ notes: e.target.value })}
-          placeholder="Notes…"
-          className="min-h-[80px]"
+          onChange={(v) => onChange({ notes: v })}
         />
-      </div>
-
-      <div className="flex justify-end">
         <Button
           size="sm"
           variant="ghost"
@@ -218,6 +212,88 @@ function IllnessRowEditor({
         </Button>
       </div>
     </div>
+  );
+}
+
+function NotePopover({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+  const hasNote = !!(value && value.trim().length > 0);
+
+  useEffect(() => {
+    if (open) setDraft(value ?? "");
+  }, [open, value]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2"
+        >
+          {hasNote ? (
+            <>
+              <span aria-hidden>📝</span>
+              <span>Edit note</span>
+            </>
+          ) : (
+            <>
+              <Plus className="h-3.5 w-3.5" />
+              Add note
+            </>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 p-3 space-y-2">
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Add a note…"
+          className="min-h-[100px]"
+          autoFocus
+        />
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              onChange(draft);
+              setOpen(false);
+            }}
+          >
+            Save
+          </Button>
+        </div>
+        {hasNote && (
+          <div className="pt-1 border-t border-border">
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-destructive"
+              onClick={() => {
+                onChange("");
+                setDraft("");
+                setOpen(false);
+              }}
+            >
+              Remove note
+            </button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
