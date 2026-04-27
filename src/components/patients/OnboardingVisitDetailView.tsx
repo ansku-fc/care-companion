@@ -555,9 +555,9 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             {doc.status === "draft" && (
               <>
                 <Button size="sm" variant="outline" onClick={handleSaveEdits} disabled={saving} className="gap-1.5">
-                  <Save className="h-3.5 w-3.5" /> Save
+                  <Save className="h-3.5 w-3.5" /> Save Draft
                 </Button>
-                <Button size="sm" onClick={handleFinalise} disabled={saving} className="gap-1.5">
+                <Button size="sm" onClick={() => setFinaliseConfirmOpen(true)} disabled={saving} className="gap-1.5">
                   <Lock className="h-3.5 w-3.5" /> Finalise Document
                 </Button>
               </>
