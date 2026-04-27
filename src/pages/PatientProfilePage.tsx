@@ -3001,8 +3001,82 @@ function HealthDimensionView({
       );
     };
 
-    const renderGroups = (contentBySubKey: Record<string, GroupContent | RowSpec[]>) => {
-      const main = mainDim;
+    // Renders the rows inside a Current/Previous Illnesses accordion.
+    // Accepts the rich onboarding rows: { icd_code, illness_name, onset_year,
+    // resolved_year, medications: [{atc, name, dose, frequency}],
+    // dimensions: string[] }.
+    const FREQ_LABELS_INL: Record<string, string> = {
+      once_daily: "Once daily",
+      twice_daily: "Twice daily",
+      three_times_daily: "Three times daily",
+      as_needed: "As needed",
+      weekly: "Weekly",
+      other: "Other",
+    };
+    const IllnessRowsBlock = ({ rows, kind }: { rows: any[]; kind: "current" | "previous" }) => {
+      if (rows.length === 0) {
+        return <p className="px-4 py-3 text-sm text-muted-foreground">None recorded</p>;
+      }
+      return (
+        <ul className="divide-y">
+          {rows.map((row, i) => {
+            const meds: any[] = Array.isArray(row.medications) ? row.medications : [];
+            const tags: string[] = Array.isArray(row.dimensions) ? row.dimensions : [];
+            return (
+              <li key={row.id ?? i} className="px-4 py-3 space-y-1.5">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  {row.icd_code && (
+                    <Badge variant="outline" className="font-mono text-[10px]">{row.icd_code}</Badge>
+                  )}
+                  <span className="font-medium text-sm">{row.illness_name ?? "—"}</span>
+                  {row.onset_year && (
+                    <span className="text-xs text-muted-foreground">· onset {row.onset_year}</span>
+                  )}
+                  {kind === "previous" && row.resolved_year && (
+                    <span className="text-xs text-muted-foreground">· resolved {row.resolved_year}</span>
+                  )}
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {tags.map((t) => {
+                      const tag = findDimensionTag(t);
+                      if (!tag) return null;
+                      return (
+                        <Badge key={t} variant="secondary" className="text-[10px] py-0 px-1.5">
+                          {tag.label}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+                {meds.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {meds.map((m, j) => (
+                      <span
+                        key={`${m?.name ?? "med"}-${j}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10.5px] text-foreground/90"
+                      >
+                        {m?.atc && <span className="font-mono text-muted-foreground">{m.atc}</span>}
+                        <span className="font-medium">{m?.name ?? "—"}</span>
+                        {m?.dose && <span className="text-muted-foreground">· {m.dose}</span>}
+                        {m?.frequency && (
+                          <span className="text-muted-foreground">· {FREQ_LABELS_INL[m.frequency] ?? m.frequency}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {row.notes && (
+                  <p className="text-xs text-muted-foreground italic">{row.notes}</p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      );
+    };
+
+
       // Resolve from taxonomy. If we couldn't find a parent, fall back to a
       // single synthetic group keyed by the dimension itself.
       const subs = main && main.subDimensions.length > 0
