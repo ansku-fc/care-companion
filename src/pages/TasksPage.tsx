@@ -235,6 +235,10 @@ function TaskRow({
 }: { task: Task; patientName: string | null; onClick: () => void }) {
   const meta = priorityMeta(task.priority);
   const overdue = isOverdue(task);
+  const isReferral = (task as Task & { task_category?: string | null }).task_category === "referral";
+  const refProgress = (task as Task & { referral_progress?: ReferralProgress | null }).referral_progress;
+  const stepCount = isReferral ? completedCount(refProgress) : 0;
+  const showRefProgress = isReferral && task.status !== "done";
   return (
     <button
       onClick={onClick}
@@ -246,10 +250,23 @@ function TaskRow({
       <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", meta.dot)} />
       <div className="flex-1 min-w-0">
         <p className={cn(
-          "text-sm font-medium truncate",
+          "text-sm font-medium truncate flex items-center gap-2",
           task.status === "done" && "line-through text-muted-foreground",
         )}>
-          {task.title}
+          <span className="truncate">{task.title}</span>
+          {showRefProgress && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] tabular-nums shrink-0",
+                stepCount === 0 && "text-muted-foreground",
+                stepCount > 0 && stepCount < TOTAL_REFERRAL_STEPS && "border-primary/40 text-primary",
+              )}
+              title={`Referral coordination: ${stepCount}/${TOTAL_REFERRAL_STEPS} steps complete`}
+            >
+              {stepCount}/{TOTAL_REFERRAL_STEPS}
+            </Badge>
+          )}
         </p>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
           {patientName && <span className="text-foreground/80 font-medium">{patientName}</span>}
