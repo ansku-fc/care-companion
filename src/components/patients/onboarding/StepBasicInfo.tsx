@@ -461,3 +461,77 @@ function AllergiesPicker({
     </div>
   );
 }
+
+/* ---------- ECG file uploader ---------- */
+
+function EcgFileUploader({
+  files,
+  onChange,
+}: {
+  files: File[];
+  onChange: (files: File[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length === 0) return;
+    onChange([...files, ...picked]);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const removeAt = (idx: number) => {
+    onChange(files.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div className="mt-2 space-y-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        multiple
+        onChange={handleAdd}
+        className="hidden"
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => inputRef.current?.click()}
+        className="gap-1.5 h-8"
+      >
+        <Upload className="h-3.5 w-3.5" />
+        Attach ECG file
+      </Button>
+      {files.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {files.map((f, idx) => {
+            const isImg = /\.(jpe?g|png)$/i.test(f.name);
+            const Icon = isImg ? ImageIcon : FileText;
+            return (
+              <span
+                key={`${f.name}-${idx}`}
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs bg-muted text-muted-foreground border border-border"
+              >
+                <Icon className="h-3 w-3" />
+                <span className="max-w-[180px] truncate" title={f.name}>{f.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeAt(idx)}
+                  className="opacity-60 hover:opacity-100"
+                  aria-label={`Remove ${f.name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <p className="text-[11px] text-muted-foreground">
+        PDF, JPG, or PNG. Files will appear in Documents & Images under Cardiovascular Health.
+      </p>
+    </div>
+  );
+}
