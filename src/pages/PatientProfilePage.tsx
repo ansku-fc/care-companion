@@ -5807,8 +5807,12 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
           <Card className="rounded-[20px]">
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No lab results yet. Click "Add Lab Results" to add the first entry.
+            <CardContent className="py-16 flex flex-col items-center justify-center text-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <FlaskConical className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="text-sm font-medium text-foreground">No laboratory results yet</div>
+              <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
             </CardContent>
           </Card>
         ) : viewMode === "graphs" ? (
