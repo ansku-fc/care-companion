@@ -157,7 +157,32 @@ export function MultiSelectChips({
                   emptyText
                 )}
               </CommandEmpty>
-              <CommandGroup>
+              {suggested && suggested.length > 0 && (
+                <>
+                  <CommandGroup heading={suggestedLabel}>
+                    {suggested
+                      .map((s) => optionMap.get(s) ?? { value: s, label: s })
+                      .map((opt) => {
+                        const isSelected = selected.includes(opt.value);
+                        return (
+                          <CommandItem
+                            key={`suggested-${opt.value}`}
+                            value={`__suggested__ ${opt.label} ${opt.prefix ?? ""}`}
+                            onSelect={() => toggle(opt.value)}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                            {opt.prefix && (
+                              <span className="mr-2 font-mono text-xs text-muted-foreground">{opt.prefix}</span>
+                            )}
+                            {opt.label}
+                          </CommandItem>
+                        );
+                      })}
+                  </CommandGroup>
+                  <CommandSeparator />
+                </>
+              )}
+              <CommandGroup heading={suggested && suggested.length > 0 ? "All medications" : undefined}>
                 {options.map((opt) => {
                   const isSelected = selected.includes(opt.value);
                   return (
