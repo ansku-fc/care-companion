@@ -131,6 +131,9 @@ export type MoleEntry = {
   id: string;
   label: string;
   side: "front" | "back";
+  /** Pin position on the silhouette, as a percentage (0–100) of the SVG's viewBox. */
+  pin_x: number;
+  pin_y: number;
   location: string;
   asymmetry: string;
   borders: string;
@@ -138,6 +141,8 @@ export type MoleEntry = {
   size: string;
   change: string;
   symptoms: string;
+  /** Transient: chosen during onboarding, uploaded on save. */
+  image_files: File[];
 };
 
 export type OnboardingForm = {
@@ -303,11 +308,13 @@ export function blankExamFindings(): ExamFindings {
   };
 }
 
-export function blankMole(label = "Mole 1"): MoleEntry {
+export function blankMole(label = "Mole 1", overrides: Partial<MoleEntry> = {}): MoleEntry {
   return {
     id: crypto.randomUUID(),
     label,
     side: "front",
+    pin_x: 50,
+    pin_y: 50,
     location: "",
     asymmetry: "",
     borders: "",
@@ -315,6 +322,8 @@ export function blankMole(label = "Mole 1"): MoleEntry {
     size: "",
     change: "",
     symptoms: "",
+    image_files: [],
+    ...overrides,
   };
 }
 
