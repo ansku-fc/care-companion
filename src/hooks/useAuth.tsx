@@ -56,16 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    // Pick up the real Supabase session if one exists, so writes pass RLS.
+    // Pick up the real Supabase session if one exists, so writes pass RLS —
+    // but the displayed clinician identity is always "Dr. Laine" (the mocked
+    // doctor the entire UI is built around). Only `user.id` switches to the
+    // real session id so RLS `auth.uid() = created_by` checks pass.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         setSession(data.session);
         setUser(data.session.user);
-        const meta = data.session.user.user_metadata as { full_name?: string; avatar_url?: string | null } | null;
-        setProfile({
-          full_name: meta?.full_name || "Dr. Laine",
-          avatar_url: meta?.avatar_url ?? null,
-        });
       }
     });
 
@@ -73,15 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (s?.user) {
         setSession(s);
         setUser(s.user);
-        const meta = s.user.user_metadata as { full_name?: string; avatar_url?: string | null } | null;
-        setProfile({
-          full_name: meta?.full_name || "Dr. Laine",
-          avatar_url: meta?.avatar_url ?? null,
-        });
       } else {
         setSession(MOCK_SESSION);
         setUser(MOCK_USER);
-        setProfile(DEFAULT_CONTEXT.profile);
       }
     });
     return () => sub.subscription.unsubscribe();
