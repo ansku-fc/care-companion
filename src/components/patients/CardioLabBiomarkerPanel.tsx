@@ -542,8 +542,35 @@ export function getSeriesRowsForBiomarker(
   refLow?: number,
   refHigh?: number,
   patientId?: string,
+  labResults?: Array<Record<string, any>> | null,
 ): LabSidebarRow[] {
   if (!patientId) return [];
+  // Prefer the canonical labResults array when supplied — guarantees the
+  // sidebar table shows the same data as the chart.
+  if (labResults) {
+    const fresh = buildSeriesFromLabs(labResults, key);
+    const cacheKey = `${patientId}|${key}`;
+    seriesCache.set(cacheKey, fresh);
+    return rowsFromSeries(fresh, windowKey, refLow, refHigh);
+  }
+  const cacheKey = `${patientId}|${key}`;
+  const series = seriesCache.get(cacheKey);
+  if (!series) {
+    void loadSeries(patientId, key).then((s) => {
+      seriesCache.set(cacheKey, s);
+      notifySeries();
+    });
+    return [];
+  }
+  return rowsFromSeries(series, windowKey, refLow, refHigh);
+}
+
+function rowsFromSeries(
+  series: Series,
+  windowKey: "6m" | "1y" | "3y" | "all",
+  refLow?: number,
+  refHigh?: number,
+): LabSidebarRow[] {
   const cacheKey = `${patientId}|${key}`;
   const series = seriesCache.get(cacheKey);
   if (!series) {
