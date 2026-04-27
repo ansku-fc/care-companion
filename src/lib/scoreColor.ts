@@ -61,7 +61,7 @@ export function scoreBorderColor(score: ScoreInput): string {
     case "green": return GREEN_HSL;
     case "amber": return AMBER_HSL;
     case "red": return RED_HSL;
-    default: return "hsl(var(--muted-foreground))";
+    default: return MUTED_HSL;
   }
 }
 
