@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,21 +17,22 @@ import {
 import { MessageSquarePlus, StickyNote, Pencil, Trash2, Flag, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // ──────────────────────────────────────────────────────────────────────
-// In-memory annotation store (module-scoped). Resets on full reload.
+// Annotations — patient-scoped, persisted in `marker_annotations` table.
+// All reads/writes are scoped by (patient_id, marker_key).
 // ──────────────────────────────────────────────────────────────────────
 export type LabAnnotation = {
   id: string;
-  biomarkerKey: string; // e.g. "ldl_mmol_l"
-  biomarkerLabel: string; // e.g. "LDL"
+  biomarkerKey: string;
+  biomarkerLabel: string;
   date: string; // ISO yyyy-mm-dd
   text: string;
   doctor: string;
-  createdAt: string; // ISO timestamp
+  createdAt: string;
   updatedAt?: string;
-  includedInSummary?: boolean;
-  includedInRecommendations?: boolean;
 };
 
 export type AnnotationDeletionLog = {
@@ -47,349 +48,238 @@ export type AnnotationDeletionLog = {
   reason: string;
 };
 
-const annotationStore: LabAnnotation[] = [
-  {
-    id: "ann-seed-1",
-    biomarkerKey: "ldl_mmol_l",
-    biomarkerLabel: "LDL",
-    date: "2024-02-10",
-    text: "Started Atorvastatin 20mg — monitoring response",
-    doctor: "Dr. Laine",
-    createdAt: "2024-02-10T09:15:00Z",
-  },
-  {
-    id: "ann-seed-2",
-    biomarkerKey: "ldl_mmol_l",
-    biomarkerLabel: "LDL",
-    date: "2024-08-15",
-    text: "LDL responding well, continue current dose",
-    doctor: "Dr. Laine",
-    createdAt: "2024-08-15T10:30:00Z",
-  },
-];
-
+// In-memory deletion log (audit only, not persisted yet).
 const annotationDeletionLog: AnnotationDeletionLog[] = [];
-
-const listeners = new Set<() => void>();
-const notify = () => listeners.forEach((l) => l());
-
-export function getAnnotations(): LabAnnotation[] {
-  return [...annotationStore];
-}
-
-export function getAnnotationsForBiomarker(key: string): LabAnnotation[] {
-  return annotationStore.filter((a) => a.biomarkerKey === key);
-}
 
 export function getAnnotationDeletionLog(): AnnotationDeletionLog[] {
   return [...annotationDeletionLog];
 }
 
-export function addAnnotation(a: Omit<LabAnnotation, "id" | "createdAt">): LabAnnotation {
-  const ann: LabAnnotation = {
-    ...a,
-    id: `ann-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    createdAt: new Date().toISOString(),
-  };
-  annotationStore.push(ann);
-  notify();
-  return ann;
-}
+function useAnnotations(patientId: string | undefined, biomarkerKey: string, label: string) {
+  const [annotations, setAnnotations] = useState<LabAnnotation[]>([]);
+  const [loading, setLoading] = useState(false);
 
-export function updateAnnotation(id: string, patch: Partial<Pick<LabAnnotation, "text" | "date">>) {
-  const a = annotationStore.find((x) => x.id === id);
-  if (!a) return;
-  if (patch.text !== undefined) a.text = patch.text;
-  if (patch.date !== undefined) a.date = patch.date;
-  a.updatedAt = new Date().toISOString();
-  notify();
-}
-
-export function deleteAnnotation(id: string, reason: string, deletedBy: string) {
-  const idx = annotationStore.findIndex((x) => x.id === id);
-  if (idx === -1) return;
-  const a = annotationStore[idx];
-  annotationDeletionLog.push({
-    id: `del-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    annotationId: a.id,
-    biomarkerKey: a.biomarkerKey,
-    biomarkerLabel: a.biomarkerLabel,
-    date: a.date,
-    text: a.text,
-    doctor: a.doctor,
-    deletedBy,
-    deletedAt: new Date().toISOString(),
-    reason,
-  });
-  annotationStore.splice(idx, 1);
-  notify();
-}
-
-export function markIncluded(ids: string[], target: "summary" | "recommendations") {
-  for (const a of annotationStore) {
-    if (ids.includes(a.id)) {
-      if (target === "summary") a.includedInSummary = true;
-      else a.includedInRecommendations = true;
+  const refresh = useCallback(async () => {
+    if (!patientId) {
+      setAnnotations([]);
+      return;
     }
-  }
-  notify();
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("marker_annotations")
+      .select("*")
+      .eq("patient_id", patientId)
+      .eq("marker_key", biomarkerKey)
+      .order("annotation_date", { ascending: true });
+    setLoading(false);
+    if (error) {
+      console.error("[marker_annotations] load failed", error);
+      setAnnotations([]);
+      return;
+    }
+    setAnnotations(
+      (data ?? []).map((r: any) => ({
+        id: r.id,
+        biomarkerKey: r.marker_key,
+        biomarkerLabel: label,
+        date: r.annotation_date,
+        text: r.text,
+        doctor: r.author_name ?? "Dr. Laine",
+        createdAt: r.created_at,
+        updatedAt: r.updated_at !== r.created_at ? r.updated_at : undefined,
+      })),
+    );
+  }, [patientId, biomarkerKey, label]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const add = useCallback(
+    async (date: string, text: string, doctor: string) => {
+      if (!patientId) return;
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) {
+        toast.error("Not signed in");
+        return;
+      }
+      const { error } = await supabase.from("marker_annotations").insert({
+        patient_id: patientId,
+        marker_key: biomarkerKey,
+        annotation_date: date,
+        text,
+        author_name: doctor,
+        created_by: uid,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      await refresh();
+    },
+    [patientId, biomarkerKey, refresh],
+  );
+
+  const update = useCallback(
+    async (id: string, patch: { text?: string; date?: string }) => {
+      const upd: Record<string, unknown> = {};
+      if (patch.text !== undefined) upd.text = patch.text;
+      if (patch.date !== undefined) upd.annotation_date = patch.date;
+      const { error } = await supabase.from("marker_annotations").update(upd).eq("id", id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const remove = useCallback(
+    async (id: string, reason: string, deletedBy: string) => {
+      const target = annotations.find((a) => a.id === id);
+      const { error } = await supabase.from("marker_annotations").delete().eq("id", id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (target) {
+        annotationDeletionLog.push({
+          id: `del-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          annotationId: target.id,
+          biomarkerKey: target.biomarkerKey,
+          biomarkerLabel: target.biomarkerLabel,
+          date: target.date,
+          text: target.text,
+          doctor: target.doctor,
+          deletedBy,
+          deletedAt: new Date().toISOString(),
+          reason,
+        });
+      }
+      await refresh();
+    },
+    [annotations, refresh],
+  );
+
+  return { annotations, loading, add, update, remove };
 }
 
-export function useAnnotationsVersion() {
+// ──────────────────────────────────────────────────────────────────────
+// Patient-scoped lab series — reads from `patient_lab_results`.
+// ──────────────────────────────────────────────────────────────────────
+type Point = { date: string; value: number };
+type BPPoint = { date: string; systolic: number; diastolic: number };
+type Series = { single?: Point[]; bp?: BPPoint[] };
+
+// Map biomarker key → column in `patient_lab_results`.
+const BIOMARKER_COLUMN: Record<string, string> = {
+  ldl_mmol_l: "ldl_mmol_l",
+  hba1c_mmol_mol: "hba1c_mmol_mol",
+  hba1c_metabolic: "hba1c_mmol_mol",
+  alat_u_l: "alat_u_l",
+  afos_alp_u_l: "afos_alp_u_l",
+  gt_u_l: "gt_u_l",
+  alat_asat_ratio: "alat_asat_ratio",
+  egfr: "egfr",
+  creatinine_umol_l: "creatinine_umol_l",
+  tsh_mu_l: "tsh_mu_l",
+  free_t4_pmol_l: "free_t4_pmol_l",
+  vitamin_d_25oh_nmol_l: "vitamin_d_25oh_nmol_l",
+  vitamin_b12_total_ng_l: "vitamin_b12_total_ng_l",
+  ferritin_ug_l: "ferritin_ug_l",
+  folate_ug_l: "folate_ug_l",
+  potassium_mmol_l: "potassium_mmol_l",
+  sodium_mmol_l: "sodium_mmol_l",
+  calcium_mmol_l: "calcium_mmol_l",
+  cystatin_c: "cystatin_c",
+  magnesium_mmol_l: "magnesium_mmol_l",
+  phosphate_mmol_l: "phosphate_mmol_l",
+  iron_serum_umol_l: "iron_serum_umol_l",
+  transferrin_g_l: "transferrin_g_l",
+  transferrin_saturation_pct: "transferrin_saturation_pct",
+  total_protein_g_l: "total_protein_g_l",
+  prealbumin_g_l: "prealbumin_g_l",
+  fev1_percent: "fev1_percent",
+  fvc_percent: "fvc_percent",
+  pef_percent: "pef_percent",
+  urine_acr_mg_mmol: "urine_acr_mg_mmol",
+};
+
+// Module-scope cache so the (panel, sidebar) can share a single fetch
+// per (patientId, biomarkerKey). Cache key: `${patientId}|${biomarkerKey}`.
+const seriesCache = new Map<string, Series>();
+const seriesListeners = new Set<() => void>();
+const notifySeries = () => seriesListeners.forEach((l) => l());
+
+async function loadSeries(patientId: string, biomarkerKey: string): Promise<Series> {
+  // Blood pressure is a special case (two columns).
+  if (biomarkerKey === "blood_pressure_systolic" || biomarkerKey === "blood_pressure_diastolic") {
+    const { data, error } = await supabase
+      .from("patient_lab_results")
+      .select("result_date, blood_pressure_systolic, blood_pressure_diastolic")
+      .eq("patient_id", patientId)
+      .order("result_date", { ascending: true });
+    if (error) {
+      console.error("[patient_lab_results] BP load failed", error);
+      return {};
+    }
+    const bp: BPPoint[] = (data ?? [])
+      .filter((r: any) => r.blood_pressure_systolic != null && r.blood_pressure_diastolic != null)
+      .map((r: any) => ({
+        date: r.result_date,
+        systolic: Number(r.blood_pressure_systolic),
+        diastolic: Number(r.blood_pressure_diastolic),
+      }));
+    return { bp };
+  }
+
+  const col = BIOMARKER_COLUMN[biomarkerKey];
+  if (!col) return {};
+  const { data, error } = await supabase
+    .from("patient_lab_results")
+    .select(`result_date, ${col}`)
+    .eq("patient_id", patientId)
+    .order("result_date", { ascending: true });
+  if (error) {
+    console.error(`[patient_lab_results] ${biomarkerKey} load failed`, error);
+    return {};
+  }
+  const single: Point[] = (data ?? [])
+    .filter((r: any) => r[col] != null)
+    .map((r: any) => ({ date: r.result_date, value: Number(r[col]) }));
+  return { single };
+}
+
+function usePatientSeries(patientId: string | undefined, biomarkerKey: string): Series {
+  const cacheKey = patientId ? `${patientId}|${biomarkerKey}` : "";
   const [, setV] = useState(0);
+
   useEffect(() => {
     const fn = () => setV((x) => x + 1);
-    listeners.add(fn);
+    seriesListeners.add(fn);
     return () => {
-      listeners.delete(fn);
+      seriesListeners.delete(fn);
     };
   }, []);
-  return null;
+
+  useEffect(() => {
+    if (!patientId) return;
+    if (seriesCache.has(cacheKey)) return;
+    let cancelled = false;
+    void loadSeries(patientId, biomarkerKey).then((s) => {
+      if (cancelled) return;
+      seriesCache.set(cacheKey, s);
+      notifySeries();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [patientId, biomarkerKey, cacheKey]);
+
+  return seriesCache.get(cacheKey) ?? {};
 }
-
-// ──────────────────────────────────────────────────────────────────────
-// Dummy longitudinal data per biomarker (≈ every 3-6 months over ~4 yrs)
-// ──────────────────────────────────────────────────────────────────────
-type Point = { date: string; value: number; label?: string };
-type BPPoint = { date: string; systolic: number; diastolic: number };
-
-const LDL_DATA: Point[] = [
-  { date: "2022-03-12", value: 4.8 },
-  { date: "2022-09-04", value: 4.7 },
-  { date: "2023-02-18", value: 4.9 },
-  { date: "2023-08-22", value: 4.6 },
-  { date: "2024-02-10", value: 4.5 },
-  { date: "2024-05-14", value: 3.4 },
-  { date: "2024-08-15", value: 2.9 },
-  { date: "2024-12-03", value: 2.8 },
-  { date: "2025-04-19", value: 2.7 },
-  { date: "2025-10-08", value: 2.6 },
-  { date: "2026-03-12", value: 2.7 },
-];
-
-const BP_DATA: BPPoint[] = [
-  { date: "2022-04-10", systolic: 138, diastolic: 88 },
-  { date: "2022-10-15", systolic: 142, diastolic: 90 },
-  { date: "2023-03-20", systolic: 148, diastolic: 92 },
-  { date: "2023-07-08", systolic: 145, diastolic: 91 },
-  { date: "2023-11-12", systolic: 132, diastolic: 84 },
-  { date: "2024-04-22", systolic: 128, diastolic: 82 },
-  { date: "2024-10-05", systolic: 124, diastolic: 80 },
-  { date: "2025-03-18", systolic: 122, diastolic: 80 },
-  { date: "2025-09-10", systolic: 126, diastolic: 82 },
-  { date: "2026-02-14", systolic: 124, diastolic: 80 },
-];
-
-const ALAT_DATA: Point[] = [
-  { date: "2022-04-10", value: 24 },
-  { date: "2022-10-15", value: 28 },
-  { date: "2023-04-22", value: 22 },
-  { date: "2023-10-08", value: 30 },
-  { date: "2024-04-12", value: 32 },
-  { date: "2024-10-22", value: 28 },
-  { date: "2025-04-09", value: 26 },
-  { date: "2025-11-04", value: 38 },
-  { date: "2026-03-15", value: 30 },
-];
-
-const AFOS_DATA: Point[] = [
-  { date: "2022-04-10", value: 68 },
-  { date: "2022-10-15", value: 72 },
-  { date: "2023-04-22", value: 66 },
-  { date: "2023-10-08", value: 70 },
-  { date: "2024-04-12", value: 78 },
-  { date: "2024-10-22", value: 74 },
-  { date: "2025-04-09", value: 80 },
-  { date: "2025-11-04", value: 76 },
-  { date: "2026-03-15", value: 72 },
-];
-
-const GT_DATA: Point[] = [
-  { date: "2022-04-10", value: 28 },
-  { date: "2023-04-22", value: 32 },
-  { date: "2024-04-12", value: 30 },
-  { date: "2024-10-22", value: 35 },
-  { date: "2025-04-09", value: 33 },
-  { date: "2025-11-04", value: 36 },
-  { date: "2026-03-15", value: 32 },
-];
-
-const ALAT_ASAT_DATA: Point[] = [
-  { date: "2022-04-10", value: 0.85 },
-  { date: "2023-04-22", value: 0.78 },
-  { date: "2024-04-12", value: 0.82 },
-  { date: "2024-10-22", value: 0.88 },
-  { date: "2025-04-09", value: 0.84 },
-  { date: "2025-11-04", value: 0.92 },
-  { date: "2026-03-15", value: 0.86 },
-];
-
-const HBA1C_DATA: Point[] = [
-  { date: "2022-04-10", value: 38 },
-  { date: "2022-10-15", value: 39 },
-  { date: "2023-04-22", value: 40 },
-  { date: "2023-10-08", value: 38 },
-  { date: "2024-04-12", value: 39 },
-  { date: "2024-10-22", value: 37 },
-  { date: "2025-04-09", value: 38 },
-  { date: "2025-11-04", value: 39 },
-  { date: "2026-03-15", value: 38 },
-];
-
-// ── Metabolic biomarker dummy series ─────────────────────────────
-const EGFR_DATA: Point[] = [
-  { date: "2022-04-10", value: 92 },
-  { date: "2022-10-15", value: 90 },
-  { date: "2023-04-22", value: 91 },
-  { date: "2023-10-08", value: 89 },
-  { date: "2024-04-12", value: 90 },
-  { date: "2024-10-22", value: 88 },
-  { date: "2025-04-09", value: 89 },
-  { date: "2025-11-04", value: 90 },
-  { date: "2026-03-15", value: 91 },
-];
-
-const CREATININE_DATA: Point[] = [
-  { date: "2022-04-10", value: 80 },
-  { date: "2022-10-15", value: 82 },
-  { date: "2023-04-22", value: 78 },
-  { date: "2023-10-08", value: 84 },
-  { date: "2024-04-12", value: 81 },
-  { date: "2024-10-22", value: 83 },
-  { date: "2025-04-09", value: 80 },
-  { date: "2025-11-04", value: 85 },
-  { date: "2026-03-15", value: 82 },
-];
-
-const FASTING_GLUCOSE_DATA: Point[] = [
-  { date: "2022-04-10", value: 5.8 },
-  { date: "2022-10-15", value: 5.9 },
-  { date: "2023-04-22", value: 5.9 },
-  { date: "2023-10-08", value: 6.0 },
-  { date: "2024-04-12", value: 6.1 },
-  { date: "2024-10-22", value: 6.0 },
-  { date: "2025-04-09", value: 6.0 },
-  { date: "2025-11-04", value: 6.0 },
-  { date: "2026-03-15", value: 6.0 },
-];
-
-const HBA1C_METABOLIC_DATA: Point[] = [
-  { date: "2022-04-10", value: 38 },
-  { date: "2022-10-15", value: 39 },
-  { date: "2023-04-22", value: 40 },
-  { date: "2023-10-08", value: 41 },
-  { date: "2024-04-12", value: 42 },
-  { date: "2024-10-22", value: 42 },
-  { date: "2025-04-09", value: 42 },
-  { date: "2025-11-04", value: 41 },
-  { date: "2026-03-15", value: 42 },
-];
-
-const TSH_DATA: Point[] = [
-  { date: "2022-04-10", value: 2.2 },
-  { date: "2022-10-15", value: 2.4 },
-  { date: "2023-04-22", value: 2.1 },
-  { date: "2023-10-08", value: 2.5 },
-  { date: "2024-04-12", value: 2.3 },
-  { date: "2024-10-22", value: 2.6 },
-  { date: "2025-04-09", value: 2.2 },
-  { date: "2025-11-04", value: 2.4 },
-  { date: "2026-03-15", value: 2.3 },
-];
-
-const FREE_T4_DATA: Point[] = [
-  { date: "2022-04-10", value: 15 },
-  { date: "2023-04-22", value: 16 },
-  { date: "2024-04-12", value: 15 },
-  { date: "2024-10-22", value: 17 },
-  { date: "2025-04-09", value: 16 },
-  { date: "2025-11-04", value: 15 },
-  { date: "2026-03-15", value: 16 },
-];
-
-const VITAMIN_D_DATA: Point[] = [
-  { date: "2022-04-10", value: 82 },
-  { date: "2022-10-15", value: 78 },
-  { date: "2023-04-22", value: 88 },
-  { date: "2023-10-08", value: 80 },
-  { date: "2024-04-12", value: 86 },
-  { date: "2024-10-22", value: 79 },
-  { date: "2025-04-09", value: 90 },
-  { date: "2025-11-04", value: 82 },
-  { date: "2026-03-15", value: 87 },
-];
-
-const VITAMIN_B12_DATA: Point[] = [
-  { date: "2022-04-10", value: 480 },
-  { date: "2023-04-22", value: 510 },
-  { date: "2024-04-12", value: 495 },
-  { date: "2025-04-09", value: 520 },
-  { date: "2026-03-15", value: 500 },
-];
-
-const FERRITIN_DATA: Point[] = [
-  { date: "2022-04-10", value: 110 },
-  { date: "2023-04-22", value: 125 },
-  { date: "2024-04-12", value: 118 },
-  { date: "2025-04-09", value: 130 },
-  { date: "2026-03-15", value: 120 },
-];
-
-const FOLATE_DATA: Point[] = [
-  { date: "2022-04-10", value: 12 },
-  { date: "2023-04-22", value: 14 },
-  { date: "2024-04-12", value: 11 },
-  { date: "2025-04-09", value: 13 },
-  { date: "2026-03-15", value: 12 },
-];
-
-const POTASSIUM_DATA: Point[] = [
-  { date: "2022-04-10", value: 4.2 },
-  { date: "2023-04-22", value: 4.4 },
-  { date: "2024-04-12", value: 4.1 },
-  { date: "2025-04-09", value: 4.3 },
-  { date: "2026-03-15", value: 4.2 },
-];
-
-const SODIUM_DATA: Point[] = [
-  { date: "2022-04-10", value: 140 },
-  { date: "2023-04-22", value: 141 },
-  { date: "2024-04-12", value: 139 },
-  { date: "2025-04-09", value: 140 },
-  { date: "2026-03-15", value: 140 },
-];
-
-const CALCIUM_DATA: Point[] = [
-  { date: "2022-04-10", value: 2.35 },
-  { date: "2023-04-22", value: 2.40 },
-  { date: "2024-04-12", value: 2.32 },
-  { date: "2025-04-09", value: 2.38 },
-  { date: "2026-03-15", value: 2.36 },
-];
-
-export const CARDIO_DUMMY_SERIES: Record<string, { single?: Point[]; bp?: BPPoint[] }> = {
-  ldl_mmol_l: { single: LDL_DATA },
-  blood_pressure_systolic: { bp: BP_DATA },
-  alat_u_l: { single: ALAT_DATA },
-  afos_alp_u_l: { single: AFOS_DATA },
-  gt_u_l: { single: GT_DATA },
-  alat_asat_ratio: { single: ALAT_ASAT_DATA },
-  hba1c_mmol_mol: { single: HBA1C_DATA },
-  // Metabolic
-  egfr: { single: EGFR_DATA },
-  creatinine_umol_l: { single: CREATININE_DATA },
-  fasting_glucose_mmol_l: { single: FASTING_GLUCOSE_DATA },
-  hba1c_metabolic: { single: HBA1C_METABOLIC_DATA },
-  tsh_mu_l: { single: TSH_DATA },
-  free_t4_pmol_l: { single: FREE_T4_DATA },
-  vitamin_d_25oh_nmol_l: { single: VITAMIN_D_DATA },
-  vitamin_b12_total_ng_l: { single: VITAMIN_B12_DATA },
-  ferritin_ug_l: { single: FERRITIN_DATA },
-  folate_ug_l: { single: FOLATE_DATA },
-  potassium_mmol_l: { single: POTASSIUM_DATA },
-  sodium_mmol_l: { single: SODIUM_DATA },
-  calcium_mmol_l: { single: CALCIUM_DATA },
-};
 
 // ──────────────────────────────────────────────────────────────────────
 // Time window
@@ -416,14 +306,33 @@ export type LabSidebarRow = {
   inRange: boolean | null;
 };
 
+/**
+ * Patient-scoped sidebar series. Returns [] when no patientId is provided
+ * or when the patient has no rows for this biomarker.
+ *
+ * Note: this reads from the same module-scope cache that the panel
+ * populates. If the cache is empty (panel hasn't mounted yet for this
+ * patient/marker), it kicks off a fetch and returns [] — the caller will
+ * re-render via `usePatientSeries` once the data arrives.
+ */
 export function getSeriesRowsForBiomarker(
   key: string,
   windowKey: "6m" | "1y" | "3y" | "all",
   refLow?: number,
   refHigh?: number,
+  patientId?: string,
 ): LabSidebarRow[] {
-  const series = CARDIO_DUMMY_SERIES[key];
-  if (!series) return [];
+  if (!patientId) return [];
+  const cacheKey = `${patientId}|${key}`;
+  const series = seriesCache.get(cacheKey);
+  if (!series) {
+    // Fire-and-forget so subsequent renders pick it up.
+    void loadSeries(patientId, key).then((s) => {
+      seriesCache.set(cacheKey, s);
+      notifySeries();
+    });
+    return [];
+  }
   if (series.bp) {
     const filtered = filterByWindow(series.bp, windowKey);
     return filtered.map((p) => {
@@ -478,12 +387,17 @@ export function CardioLabBiomarkerPanel({
   patientId,
   patientName,
 }: Props) {
-  useAnnotationsVersion();
   const { openNewTask } = useTaskActions();
   const [window, setWindow] = useState<Window>("3y");
 
+  const series = usePatientSeries(patientId, biomarkerKey);
+  const isBP = !!series?.bp;
+  const rawData: Array<{ date: string }> = isBP ? series!.bp! : series?.single ?? [];
+  const data = useMemo(() => filterByWindow(rawData, window), [rawData, window]);
+
+  const { annotations, add, update, remove } = useAnnotations(patientId, biomarkerKey, label);
+
   // Active popover for adding/viewing/editing annotations.
-  // type "add" → fresh annotation at a date; "view" → existing annotation by id
   type ActivePopover =
     | { kind: "add"; date: string }
     | { kind: "view"; id: string }
@@ -496,17 +410,6 @@ export function CardioLabBiomarkerPanel({
   const [editText, setEditText] = useState("");
   const [deleteReason, setDeleteReason] = useState("");
 
-  const series = CARDIO_DUMMY_SERIES[biomarkerKey];
-  const isBP = !!series?.bp;
-  const rawData: Array<{ date: string }> = isBP ? series!.bp! : series?.single ?? [];
-  const data = useMemo(() => filterByWindow(rawData, window), [rawData, window]);
-
-  const annotations = useMemo(
-    () => getAnnotationsForBiomarker(biomarkerKey),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [biomarkerKey, annotationStore.length, annotationStore.map((a) => a.text + a.date).join("|")],
-  );
-
   // Map annotation date → annotation list (multiple per date possible)
   const annByDate = useMemo(() => {
     const m = new Map<string, LabAnnotation[]>();
@@ -517,15 +420,6 @@ export function CardioLabBiomarkerPanel({
     }
     return m;
   }, [annotations]);
-
-  // Y position for annotation dots (chart's lower bound)
-  const yMin = useMemo(() => {
-    if (data.length === 0) return 0;
-    if (isBP) {
-      return Math.min(...(data as unknown as BPPoint[]).map((d) => d.diastolic));
-    }
-    return Math.min(...(data as unknown as Point[]).map((d) => d.value));
-  }, [data, isBP]);
 
   const closestDateTo = (targetDate: string): string => {
     if (data.length === 0) return targetDate;
@@ -548,40 +442,32 @@ export function CardioLabBiomarkerPanel({
     setActivePopover({ kind: "add", date });
   };
 
-  const handleSaveAdd = () => {
+  const handleSaveAdd = async () => {
     if (!draftText.trim()) return;
     const date = draftDate || new Date().toISOString().slice(0, 10);
-    addAnnotation({
-      biomarkerKey,
-      biomarkerLabel: label,
-      date,
-      text: draftText.trim(),
-      doctor,
-    });
+    await add(date, draftText.trim(), doctor);
     setDraftText("");
     setDraftDate("");
     setActivePopover(null);
   };
 
-  const handleSaveEdit = (id: string) => {
+  const handleSaveEdit = async (id: string) => {
     if (!editText.trim()) return;
-    updateAnnotation(id, { text: editText.trim() });
+    await update(id, { text: editText.trim() });
     setEditText("");
     setActivePopover({ kind: "view", id });
   };
 
-  const handleConfirmDelete = (id: string) => {
+  const handleConfirmDelete = async (id: string) => {
     if (!deleteReason.trim()) return;
-    deleteAnnotation(id, deleteReason.trim(), doctor);
+    await remove(id, deleteReason.trim(), doctor);
     setDeleteReason("");
     setActivePopover(null);
   };
 
-  // Recharts onClick handler for the chart background / data points.
-  // Recharts passes { activeLabel, activePayload, ... } when a data point is clicked.
+  // Recharts onClick handler.
   const handleChartClick = (e: any) => {
     if (!e) return;
-    // Clicked data point
     if (e.activeLabel) {
       const date = e.activeLabel as string;
       const existing = annByDate.get(date);
@@ -592,9 +478,7 @@ export function CardioLabBiomarkerPanel({
       }
       return;
     }
-    // Clicked time period (no exact data point) — pick closest date
     if (e.chartX !== undefined && data.length > 0) {
-      // We don't have direct x-scale access; fall back to today's date marker
       openAddAt(closestDateTo(new Date().toISOString().slice(0, 10)));
     }
   };
@@ -633,13 +517,11 @@ export function CardioLabBiomarkerPanel({
     );
   };
 
-  // Find the active annotation for popovers
   const activeAnn =
     activePopover && (activePopover.kind === "view" || activePopover.kind === "edit" || activePopover.kind === "delete")
       ? annotations.find((a) => a.id === activePopover.id)
       : null;
 
-  // Annotation dates that fall within the visible window
   const annotationDates = useMemo(() => {
     const visibleDates = new Set(data.map((d) => d.date));
     return annotations
@@ -648,11 +530,9 @@ export function CardioLabBiomarkerPanel({
       .filter((a) => a.idx !== -1);
   }, [annotations, data]);
 
-  // Warm brand palette for all lines (no blue, no per-marker tint)
   const PRIMARY_LINE = "#2C1A0E";
   const SECONDARY_LINE = "#7A5C3A";
 
-  // Custom dot renderer: paint out-of-range points red
   const renderDot = (props: any) => {
     const { cx, cy, payload, index } = props;
     if (cx == null || cy == null) return null;
@@ -682,7 +562,6 @@ export function CardioLabBiomarkerPanel({
       )}
       onClick={onSelect}
     >
-      {/* Active highlight strip — matches biomarker line colour */}
       {selected && (
         <div
           className="absolute left-0 top-0 bottom-0 w-1"
@@ -719,6 +598,7 @@ export function CardioLabBiomarkerPanel({
             className="h-7 w-7"
             title="Add annotation"
             onClick={() => openAddAt(new Date().toISOString().slice(0, 10))}
+            disabled={!patientId}
           >
             <MessageSquarePlus className="h-3.5 w-3.5" />
           </Button>
@@ -759,7 +639,6 @@ export function CardioLabBiomarkerPanel({
                   <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
                   <Tooltip content={renderTooltip} />
 
-                  {/* Reference range — green band with dashed boundary lines + edge labels */}
                   {(refLow !== undefined || refHigh !== undefined) && (
                     <ReferenceArea
                       y1={refLow ?? 0}
@@ -829,15 +708,10 @@ export function CardioLabBiomarkerPanel({
               </ResponsiveContainer>
             </div>
 
-            {/* X-axis annotation flags row — outside chart area, below dates */}
             {annotationDates.length > 0 && (
               <div
                 className="relative mt-1 h-5"
-                style={{
-                  // Match LineChart left/right margins (left ~50 for YAxis ticks, right 56)
-                  marginLeft: 50,
-                  marginRight: 56,
-                }}
+                style={{ marginLeft: 50, marginRight: 56 }}
               >
                 {annotationDates.map((a) => {
                   const left = data.length === 1 ? 50 : (a.idx / (data.length - 1)) * 100;
@@ -890,7 +764,6 @@ export function CardioLabBiomarkerPanel({
           )}
         </div>
 
-        {/* ─── Popovers (anchored invisibly, opened by chart/dot/list clicks) ─── */}
         <Popover
           open={activePopover !== null}
           onOpenChange={(o) => {
@@ -919,7 +792,7 @@ export function CardioLabBiomarkerPanel({
                 <Textarea
                   value={draftText}
                   onChange={(e) => setDraftText(e.target.value)}
-                  placeholder="e.g. started Atorvastatin Feb 2024 — monitoring response"
+                  placeholder="Add a clinical note for this biomarker"
                   className="min-h-[70px] text-xs resize-none"
                   autoFocus
                 />
