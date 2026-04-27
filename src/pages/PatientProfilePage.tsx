@@ -2988,6 +2988,7 @@ function HealthDimensionView({
         rows: [],
         hideScore: true,
         extra: <FamilyHistoryRows rows={famRows} />,
+        icon: Users,
       };
 
       return (
