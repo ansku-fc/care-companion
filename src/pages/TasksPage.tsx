@@ -188,7 +188,7 @@ const TasksPage = () => {
               onClick={() => setView("grouped")}
               className="gap-1.5"
             >
-              <Layers className="h-3.5 w-3.5" /> Grouped
+              <Layers className="h-3.5 w-3.5" /> By Status
             </Button>
             <Button
               variant={view === "flat" ? "secondary" : "ghost"}
@@ -196,7 +196,15 @@ const TasksPage = () => {
               onClick={() => setView("flat")}
               className="gap-1.5"
             >
-              <ListTodo className="h-3.5 w-3.5" /> By due date
+              <ListTodo className="h-3.5 w-3.5" /> By Due Date
+            </Button>
+            <Button
+              variant={view === "patient" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView("patient")}
+              className="gap-1.5"
+            >
+              <Users className="h-3.5 w-3.5" /> By Patient
             </Button>
           </div>
         </CardContent>
