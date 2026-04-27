@@ -546,6 +546,9 @@ const PatientProfilePage = () => {
             onboarding={onboarding}
             labResults={labResults}
             healthCategories={healthCategories}
+            diagnoses={diagnoses}
+            medications={medications}
+            allergies={allergies}
             markerNotes={markerNotes}
             setMarkerNotes={setMarkerNotes}
             onNavigateDimension={setActiveSection}
