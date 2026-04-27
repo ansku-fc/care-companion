@@ -135,10 +135,19 @@ function IllnessRowEditor({
   onDelete: () => void;
   showResolved: boolean;
 }) {
+  const [expandedMedIdx, setExpandedMedIdx] = useState<number | null>(null);
+
+  // Top-row column widths: Illness ~50%, Onset ~15% (+ Resolved ~15% for previous), Medications ~remaining.
+  const onsetCol = "col-span-6 md:col-span-2";
+  const resolvedCol = "col-span-6 md:col-span-2";
+  const illnessCol = "col-span-12 md:col-span-6";
+  const medsCol = showResolved ? "col-span-12 md:col-span-2" : "col-span-12 md:col-span-4";
+
   return (
     <div className="rounded-xl border border-input bg-card/50 p-4 space-y-3">
-      <div className="grid grid-cols-12 gap-3">
-        <div className="col-span-12 md:col-span-8">
+      {/* Top row: Illness · Onset · (Resolved) · Add medication trigger */}
+      <div className="grid grid-cols-12 gap-3 items-end">
+        <div className={illnessCol}>
           <FieldLabel>Illness</FieldLabel>
           <IcdPicker
             value={{ code: row.icd_code, name: row.illness_name }}
@@ -148,7 +157,7 @@ function IllnessRowEditor({
           />
         </div>
 
-        <div className={cn("col-span-6", showResolved ? "md:col-span-2" : "md:col-span-4")}>
+        <div className={onsetCol}>
           <FieldLabel>Onset</FieldLabel>
           <YearSelect
             value={row.onset_year}
@@ -157,7 +166,7 @@ function IllnessRowEditor({
         </div>
 
         {showResolved && (
-          <div className="col-span-6 md:col-span-2">
+          <div className={resolvedCol}>
             <FieldLabel>Resolved</FieldLabel>
             <YearSelect
               value={row.resolved_year}
@@ -165,6 +174,18 @@ function IllnessRowEditor({
             />
           </div>
         )}
+
+        <div className={medsCol}>
+          <FieldLabel>Medications</FieldLabel>
+          <MedicationsEditor
+            medications={row.medications}
+            onChange={(meds) => onChange({ medications: meds })}
+            icdCode={row.icd_code}
+            layout="trigger"
+            expandedIdx={expandedMedIdx}
+            onExpandedIdxChange={setExpandedMedIdx}
+          />
+        </div>
       </div>
 
       {/* Dimensions sit immediately under the illness field for visual grouping */}
@@ -179,14 +200,17 @@ function IllnessRowEditor({
         />
       </div>
 
-      <div>
-        <FieldLabel>Medications</FieldLabel>
+      {/* Medication chips + expanded details, full width */}
+      {row.medications.length > 0 && (
         <MedicationsEditor
           medications={row.medications}
           onChange={(meds) => onChange({ medications: meds })}
           icdCode={row.icd_code}
+          layout="list"
+          expandedIdx={expandedMedIdx}
+          onExpandedIdxChange={setExpandedMedIdx}
         />
-      </div>
+      )}
 
       <div>
         <FieldLabel>Notes</FieldLabel>
