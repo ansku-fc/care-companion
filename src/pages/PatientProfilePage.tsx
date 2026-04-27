@@ -32,6 +32,7 @@ import { MetabolicDimensionView } from "@/components/patients/MetabolicDimension
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
+import { computeSubScores, aggregateMainScore } from "@/lib/subDimensionScoring";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
 import { OnboardingEmptyState } from "@/components/patients/OnboardingEmptyState";
 import { PatientCareTeamView } from "@/components/patients/PatientCareTeamView";
