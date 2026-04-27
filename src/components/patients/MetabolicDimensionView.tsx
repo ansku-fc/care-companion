@@ -125,8 +125,7 @@ export function computeCompositeScore(subs: SubDimScore[]): number {
   return Math.max(1, Math.min(10, Math.round(avg)));
 }
 
-const scoreColorFn = (s: number) =>
-  s <= 3 ? "text-[hsl(137_25%_39%)]" : s <= 6 ? "text-[hsl(28_63%_44%)]" : "text-[hsl(0_57%_39%)]";
+// scoreColorFn is the shared scoreColorClass from @/lib/scoreColor (imported above)
 
 interface Props {
   patient: Tables<"patients">;
