@@ -13,6 +13,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isToday, isSameMonth } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { formatLastFirst } from "@/lib/patientName";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -111,7 +112,7 @@ const CalendarPage = () => {
       if (error) throw error;
       return data.map((a: any) => ({
         ...a,
-        patient_name: a.patients?.full_name ?? "Unknown",
+        patient_name: a.patients?.full_name ? formatLastFirst(a.patients.full_name) : "Unknown",
         isDummy: false,
       }));
     },
