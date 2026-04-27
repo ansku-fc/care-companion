@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, ChevronDown, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
 import {
@@ -14,20 +15,45 @@ import {
   MEDICATION_LIST,
   DIMENSION_TAGS,
   findDimensionTag,
+  findMedication,
   getSuggestedDimensionsForIcd,
   getSuggestedMedications,
   yearOptions,
   type IcdDimension,
 } from "@/lib/onboardingTaxonomy";
-import { useOnboardingForm, type IllnessRow } from "./OnboardingFormContext";
+import {
+  useOnboardingForm,
+  type IllnessRow,
+  type MedicationDetail,
+  type MedicationFrequency,
+  type MedicationRoute,
+} from "./OnboardingFormContext";
 import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
 import { SectionHeading, FieldLabel } from "./shared";
 
-const MED_OPTIONS: MultiSelectOption[] = MEDICATION_LIST.map((m) => ({
-  value: m.name,
-  label: m.name,
-  prefix: m.atc || undefined,
-}));
+const FREQUENCY_OPTIONS: { value: MedicationFrequency; label: string }[] = [
+  { value: "once_daily", label: "Once daily" },
+  { value: "twice_daily", label: "Twice daily" },
+  { value: "three_times_daily", label: "Three times daily" },
+  { value: "as_needed", label: "As needed" },
+  { value: "weekly", label: "Weekly" },
+  { value: "other", label: "Other" },
+];
+
+const ROUTE_OPTIONS: { value: MedicationRoute; label: string }[] = [
+  { value: "oral", label: "Oral" },
+  { value: "topical", label: "Topical" },
+  { value: "inhaled", label: "Inhaled" },
+  { value: "injection", label: "Injection" },
+  { value: "other", label: "Other" },
+];
+
+export function frequencyLabel(v: MedicationFrequency | string | undefined | null): string {
+  return FREQUENCY_OPTIONS.find((o) => o.value === v)?.label ?? "";
+}
+export function routeLabel(v: MedicationRoute | string | undefined | null): string {
+  return ROUTE_OPTIONS.find((o) => o.value === v)?.label ?? "";
+}
 
 export function StepIllnesses() {
   const { form, addIllness, removeIllness, updateIllness } = useOnboardingForm();
