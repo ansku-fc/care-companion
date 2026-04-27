@@ -2989,7 +2989,9 @@ function HealthDimensionView({
         });
       }
 
-      // ── Cardiovascular Health (no sub-dimensions in taxonomy) ─────
+      // ── Cardiovascular Health (no sub-dimensions) ─────────────────
+      // Renders a FLAT list of risk-factor rows — no accordion groups,
+      // no section headers. Order matches the canonical CV row spec.
       case "cardiovascular": {
         const bp1 = (onboarding?.bp1_systolic != null && onboarding?.bp1_diastolic != null)
           ? `${onboarding.bp1_systolic}/${onboarding.bp1_diastolic}` : dash;
@@ -2998,28 +3000,42 @@ function HealthDimensionView({
           ? `${onboarding.bp2_systolic}/${onboarding.bp2_diastolic}` : dash;
         const bp2Flag = onboarding?.bp2_systolic != null && (Number(onboarding.bp2_systolic) >= 140 || Number(onboarding?.bp2_diastolic) >= 90);
         const cardioFamily = familyByPrefix(isCardioIcd);
-        const arrhythmiaDx = diagByPrefix((c) => /^I4[78]/.test(c) || /^I49/.test(c));
-        return renderGroups({
-          cardiovascular: [
-            r("cv_bp1", "Blood pressure 1st (SYS/DIA)", <>{bp1}{bp1Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp1Flag),
-            r("cv_bp2", "Blood pressure 2nd (SYS/DIA)", <>{bp2}{bp2Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp2Flag),
-            r("cv_smoking", "Smoking (current)",
-              <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>,
-              undefined, !!(onboarding?.smoking && onboarding.smoking !== "never")),
-            r("cv_smoked", "Previously smoked · years", previouslySmokedYearsVal()),
-            r("cv_nicotine", "Nicotine pouches", nicotinePouchesVal(), undefined, extra.nicotine_pouches_current === true),
-            r("cv_alcohol", "Alcohol use", alcoholVal()),
-            r("cv_family", "Family history — cardiovascular", familyRowValue(cardioFamily), familyRowDetail(cardioFamily), cardioFamily.length > 0),
-            r("cv_adp", "ADP exam finding", examVal("adp")),
-            r("cv_atp", "ATP exam finding", examVal("atp")),
-            r("cv_afem", "AFEM exam finding", examVal("afem")),
-            r("cv_heart", "Heart exam finding", examVal("heart"), undefined, examFindings.heart?.present === true),
-            r("cv_ecg", "ECG notes", valOrDash(onboarding?.ecg_notes)),
-            r("cv_arr_dx", "Arrhythmia diagnoses", diagRowValue(arrhythmiaDx), diagRowDetail(arrhythmiaDx), arrhythmiaDx.length > 0),
-            r("cv_sedentary", "Sedentary hours/day", numOrDash(onboarding?.sedentary_hours_per_day, " h/day"),
-              undefined, onboarding?.sedentary_hours_per_day != null && Number(onboarding.sedentary_hours_per_day) >= 8),
-          ],
-        });
+        const ldlVal = lab?.ldl_mmol_l;
+        const ldlFlag = ldlVal != null && Number(ldlVal) > 3.0;
+        const totalChol = (lab as any)?.total_cholesterol_mmol_l;
+        const hdl = (lab as any)?.hdl_mmol_l;
+        const trig = (lab as any)?.triglycerides_mmol_l;
+        const bmi = onboarding?.bmi;
+        const flatRows: RowSpec[] = [
+          r("cv_bp1", "Blood pressure 1st — SYS/DIA", <>{bp1}{bp1Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp1Flag),
+          r("cv_bp2", "Blood pressure 2nd — SYS/DIA", <>{bp2}{bp2Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp2Flag),
+          r("cv_heart", "Heart exam finding", examVal("heart"), undefined, examFindings.heart?.present === true),
+          r("cv_ecg", "ECG notes", valOrDash(onboarding?.ecg_notes)),
+          r("cv_ldl", "LDL (lab)",
+            <>{numOrDash(ldlVal, " mmol/L")}{ldlFlag && <Flag tone="amber">High</Flag>}</>,
+            undefined, !!ldlFlag),
+          r("cv_total_chol", "Total cholesterol (lab)", numOrDash(totalChol, " mmol/L")),
+          r("cv_hdl", "HDL (lab)", numOrDash(hdl, " mmol/L")),
+          r("cv_trig", "Triglycerides (lab)", numOrDash(trig, " mmol/L")),
+          r("cv_smoking", "Smoking",
+            <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>,
+            undefined, !!(onboarding?.smoking && onboarding.smoking !== "never")),
+          r("cv_smoked", "Previously smoked — years", previouslySmokedYearsVal()),
+          r("cv_nicotine", "Nicotine pouches", nicotinePouchesVal(), undefined, extra.nicotine_pouches_current === true),
+          r("cv_alcohol", "Alcohol use", alcoholVal()),
+          r("cv_bmi", "BMI",
+            <>{numOrDash(bmi)}{bmi != null && Number(bmi) >= 30 && <Flag tone="pink">Obese</Flag>}{bmi != null && Number(bmi) >= 25 && Number(bmi) < 30 && <Flag tone="amber">Overweight</Flag>}</>,
+            undefined, bmi != null && Number(bmi) >= 25),
+          r("cv_family", "Family history — cardiovascular", familyRowValue(cardioFamily), familyRowDetail(cardioFamily), cardioFamily.length > 0),
+          r("cv_adp", "ADP exam finding", examVal("adp")),
+          r("cv_atp", "ATP exam finding", examVal("atp")),
+          r("cv_afem", "AFEM exam finding", examVal("afem")),
+        ];
+        return (
+          <div className="rounded-md border overflow-hidden">
+            <div className="divide-y">{flatRows.map(renderRowSpec)}</div>
+          </div>
+        );
       }
 
       // ── Metabolic Health ──────────────────────────────────────────
