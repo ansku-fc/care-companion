@@ -14,6 +14,7 @@ import {
   MEDICATION_LIST,
   DIMENSION_TAGS,
   findDimensionTag,
+  getSuggestedMedications,
   yearOptions,
   type IcdDimension,
 } from "@/lib/onboardingTaxonomy";
@@ -21,7 +22,11 @@ import { useOnboardingForm, type IllnessRow } from "./OnboardingFormContext";
 import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
 import { SectionHeading, FieldLabel } from "./shared";
 
-const MED_OPTIONS: MultiSelectOption[] = MEDICATION_LIST.map((m) => ({ value: m, label: m }));
+const MED_OPTIONS: MultiSelectOption[] = MEDICATION_LIST.map((m) => ({
+  value: m.name,
+  label: m.name,
+  prefix: m.atc || undefined,
+}));
 
 export function StepIllnesses() {
   const { form, addIllness, removeIllness, updateIllness } = useOnboardingForm();
