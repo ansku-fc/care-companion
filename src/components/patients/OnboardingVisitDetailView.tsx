@@ -182,15 +182,57 @@ function SelectField({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  editable = false,
+  isActive = false,
+  onEnter,
+  onDone,
+}: {
+  title: string;
+  children: React.ReactNode | ((editing: boolean) => React.ReactNode);
+  editable?: boolean;
+  isActive?: boolean;
+  onEnter?: () => void;
+  onDone?: () => void;
+}) {
+  const editing = editable && isActive;
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {title}
+          </CardTitle>
+          {editable && (
+            editing ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onDone}
+                className="h-6 px-2 text-[11px] gap-1 text-primary"
+                aria-label="Done editing"
+              >
+                <Check className="h-3.5 w-3.5" /> Done
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onEnter}
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                aria-label="Edit section"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="space-y-2">{children}</CardContent>
+      <CardContent className="space-y-2">
+        {typeof children === "function" ? children(editing) : children}
+      </CardContent>
     </Card>
   );
 }
