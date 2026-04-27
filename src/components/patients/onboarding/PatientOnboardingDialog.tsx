@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { X } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -507,16 +507,8 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
           <DialogTitle className="text-lg font-semibold">
             {patientName}: Onboarding
           </DialogTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pr-8">
             <span className="text-xs text-muted-foreground">{today}</span>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
         </div>
 
