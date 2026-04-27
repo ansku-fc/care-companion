@@ -12,6 +12,8 @@ import { useState } from "react";
 import {
   priorityMeta, statusLabel, isOverdue, type Task,
 } from "@/lib/tasks";
+import { Badge } from "@/components/ui/badge";
+import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
 
 export function PatientTasksCard({ patientId, patientName }: { patientId: string; patientName: string }) {
   const navigate = useNavigate();
