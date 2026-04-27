@@ -162,6 +162,10 @@ export function StepBasicInfo() {
             placeholder="Sinus rhythm, no acute changes…"
             className="min-h-[88px]"
           />
+          <EcgFileUploader
+            files={form.ecg_files}
+            onChange={(files) => set("ecg_files", files)}
+          />
         </div>
       </section>
 
