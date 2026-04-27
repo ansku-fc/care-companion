@@ -26,6 +26,7 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as Rechar
 import { MarkerDetailChart } from "@/components/patients/MarkerDetailChart";
 import type { Tables } from "@/integrations/supabase/types";
 import { AddLabResultsDialog } from "@/components/patients/AddLabResultsDialog";
+import { LAB_MARKER_CATEGORIES } from "@/lib/labMarkerRegistry";
 import { PatientVisitsView } from "@/components/patients/PatientVisitsView";
 import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
@@ -5484,54 +5485,12 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   // The most-recent real lab result (used to drive the AWAITING REVIEW flow).
   const newestLab = sorted.length > 0 ? sorted[sorted.length - 1] : null;
 
-  const categories = [
-    {
-      title: "Cardiovascular & Metabolic Health",
-      rows: [
-        { label: "LDL", unit: "mmol/l", key: "ldl_mmol_l" as const },
-        { label: "HbA1c", unit: "mmol/mol", key: "hba1c_mmol_mol" as const },
-        
-      ],
-    },
-    {
-      title: "Liver Function",
-      rows: [
-        { label: "ALAT", unit: "U/l", key: "alat_u_l" as const },
-        { label: "AFOS / ALP", unit: "U/l", key: "afos_alp_u_l" as const },
-        { label: "GT", unit: "U/l", key: "gt_u_l" as const },
-        { label: "ALAT / ASAT ratio", unit: "", key: "alat_asat_ratio" as const },
-      ],
-    },
-    {
-      title: "Kidney Function",
-      rows: [
-        { label: "eGFR", unit: "ml/min/1.73 m²", key: "egfr" as const },
-        { label: "Cystatin C", unit: "mg/l", key: "cystatin_c" as const },
-        { label: "U-Alb/Krea, abnormal", unit: "0/1", key: "u_alb_krea_abnormal" as const },
-      ],
-    },
-    {
-      title: "Endocrine & Hormonal Health",
-      rows: [
-        { label: "TSH", unit: "mU/l", key: "tsh_mu_l" as const },
-        { label: "Testosterone / Estrogen, abnormal", unit: "0/1", key: "testosterone_estrogen_abnormal" as const },
-      ],
-    },
-    {
-      title: "Genetics & Risk Markers",
-      rows: [
-        { label: "APOE ε4", unit: "0/1", key: "apoe_e4" as const },
-      ],
-    },
-    {
-      title: "Spirometry",
-      rows: [
-        { label: "PEF", unit: "%", key: "pef_percent" as const },
-        { label: "FEV1", unit: "%", key: "fev1_percent" as const },
-        { label: "FVC", unit: "%", key: "fvc_percent" as const },
-      ],
-    },
-  ];
+  // Categories come from the shared registry so the main lab table and every
+  // dimension drill-down render the same markers in the same order.
+  const categories = LAB_MARKER_CATEGORIES.map((c) => ({
+    title: c.title,
+    rows: c.rows.map((r) => ({ label: r.label, unit: r.unit, key: r.key as any })),
+  }));
 
   const getCellValue = (lab: Tables<"patient_lab_results">, key: string): string => {
     if (key === "_bp") {
