@@ -3373,9 +3373,9 @@ function HealthDimensionView({
           gynaecological_cancer: [
             r("can_breast", "Breast screening · year", screeningVal(extra.screen_breast_year)),
             r("can_cervix", "Cervix screening · year", screeningVal(extra.screen_cervix_year)),
-            r("can_gyn_family", "Family history — gynaecological cancer",
-              familyRowValue(cancerFamily.filter((f) => /^C5[0-8]/.test(String(f.icd_code ?? "").toUpperCase()))),
-              familyRowDetail(cancerFamily.filter((f) => /^C5[0-8]/.test(String(f.icd_code ?? "").toUpperCase())))),
+            // Gyn-cancer family history row removed — full cancer family
+            // history is auto-appended below by renderGroups.
+
           ],
           prostate_other_cancer: {
             extra: moleAlert,
