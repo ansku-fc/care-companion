@@ -366,9 +366,15 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg font-semibold">Initial Consultation / Onboarding</h2>
               <StatusBadge status={doc.status} />
-              <Badge variant="secondary" className="gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Visit Completed
-              </Badge>
+              {doc.status === "finalised" ? (
+                <Badge className="gap-1 bg-green-100 text-green-900 hover:bg-green-100 border border-green-300">
+                  <CheckCircle2 className="h-3 w-3" /> Visit Completed
+                </Badge>
+              ) : (
+                <Badge className="gap-1 bg-yellow-100 text-yellow-900 hover:bg-yellow-100 border border-yellow-300">
+                  <CheckCircle2 className="h-3 w-3" /> Awaiting Review
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1.5">
