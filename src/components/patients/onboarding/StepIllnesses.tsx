@@ -135,17 +135,14 @@ function IllnessRowEditor({
   onDelete: () => void;
   showResolved: boolean;
 }) {
-  const [expandedMedIdx, setExpandedMedIdx] = useState<number | null>(null);
-
-  // Top-row column widths: Illness ~50%, Onset ~15% (+ Resolved ~15% for previous), Medications ~remaining.
-  const onsetCol = "col-span-6 md:col-span-2";
-  const resolvedCol = "col-span-6 md:col-span-2";
-  const illnessCol = "col-span-12 md:col-span-6";
-  const medsCol = showResolved ? "col-span-12 md:col-span-2" : "col-span-12 md:col-span-4";
+  // Top-row column widths: Illness · Onset (· Resolved).
+  const onsetCol = "col-span-6 md:col-span-3";
+  const resolvedCol = "col-span-6 md:col-span-3";
+  const illnessCol = showResolved ? "col-span-12 md:col-span-6" : "col-span-12 md:col-span-9";
 
   return (
     <div className="rounded-xl border border-input bg-card/50 p-4 space-y-3">
-      {/* Top row: Illness · Onset · (Resolved) · Add medication trigger */}
+      {/* Top row: Illness · Onset · (Resolved) */}
       <div className="grid grid-cols-12 gap-3 items-end">
         <div className={illnessCol}>
           <FieldLabel>Illness</FieldLabel>
@@ -174,18 +171,6 @@ function IllnessRowEditor({
             />
           </div>
         )}
-
-        <div className={medsCol}>
-          <FieldLabel>Medications</FieldLabel>
-          <MedicationsEditor
-            medications={row.medications}
-            onChange={(meds) => onChange({ medications: meds })}
-            icdCode={row.icd_code}
-            layout="trigger"
-            expandedIdx={expandedMedIdx}
-            onExpandedIdxChange={setExpandedMedIdx}
-          />
-        </div>
       </div>
 
       {/* Dimensions sit immediately under the illness field for visual grouping */}
@@ -200,17 +185,15 @@ function IllnessRowEditor({
         />
       </div>
 
-      {/* Medication chips + expanded details, full width */}
-      {row.medications.length > 0 && (
+      {/* Medications: list of nested rows + small Add button below */}
+      <div>
+        <FieldLabel>Medications</FieldLabel>
         <MedicationsEditor
           medications={row.medications}
           onChange={(meds) => onChange({ medications: meds })}
           icdCode={row.icd_code}
-          layout="list"
-          expandedIdx={expandedMedIdx}
-          onExpandedIdxChange={setExpandedMedIdx}
         />
-      )}
+      </div>
 
       <div>
         <FieldLabel>Notes</FieldLabel>
@@ -600,27 +583,42 @@ function MedicationsEditor({
           {medications.map((med, idx) => {
             const isOpen = expandedIdx === idx;
             return (
-              <div key={`${med.name}-${idx}`} className="rounded-lg border border-input bg-background">
-                <div className="flex items-center gap-2 px-2 py-1.5">
+              <div
+                key={`${med.name}-${idx}`}
+                className="rounded-lg border border-[hsl(var(--border))] bg-[#F8F8FB] dark:bg-muted/30"
+              >
+                <div className="flex items-center gap-3 px-3 py-2">
                   <button
                     type="button"
                     onClick={() => setExpandedIdx(isOpen ? null : idx)}
-                    className="flex flex-1 items-center gap-2 text-left text-sm hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    aria-label={isOpen ? "Collapse" : "Expand"}
                   >
                     {isOpen ? (
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4" />
                     ) : (
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4" />
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedIdx(isOpen ? null : idx)}
+                    className="flex flex-1 min-w-0 items-baseline gap-3 text-left text-sm hover:text-foreground"
+                  >
                     {med.atc && (
-                      <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                      <span className="font-mono text-[11px] text-muted-foreground shrink-0 w-16">
                         {med.atc}
                       </span>
                     )}
-                    <span className="font-medium truncate">{med.name}</span>
-                    {!isOpen && (med.dose || med.frequency) && (
-                      <span className="text-xs text-muted-foreground truncate">
-                        · {[med.dose, frequencyLabel(med.frequency)].filter(Boolean).join(" · ")}
+                    <span className="font-medium shrink-0">{med.name}</span>
+                    {med.dose && (
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {med.dose}
+                      </span>
+                    )}
+                    {med.frequency && (
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {frequencyLabel(med.frequency)}
                       </span>
                     )}
                   </button>
@@ -715,11 +713,11 @@ function MedicationsEditor({
         <PopoverTrigger asChild>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-9 gap-1.5 rounded-lg"
+            className="h-7 px-2 -ml-2 gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3 w-3" />
             Add medication
           </Button>
         </PopoverTrigger>
