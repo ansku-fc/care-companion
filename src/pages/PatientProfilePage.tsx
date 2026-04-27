@@ -2894,7 +2894,56 @@ function HealthDimensionView({
      * Pass a content map keyed by sub-dimension `key`. Sub-dims absent from
      * the map render with no rows (still shown, score still derived).
      */
-    type GroupContent = { rows?: RowSpec[]; extra?: React.ReactNode };
+    type GroupContent = {
+      rows?: RowSpec[];
+      extra?: React.ReactNode;
+      internalSections?: { label: string; rows: RowSpec[] }[];
+      hideScore?: boolean;
+      explicitScore?: number | null;
+      title?: string; // override the auto-derived sub-dim label
+    };
+
+    // ── Family-history matchers per main dimension ──────────────────
+    // Used to build the auto-appended "Family History" accordion at the
+    // bottom of every dimension's risk-factors list. The matcher is
+    // resolved from the *main* dimension key, so sub-dim pages get the
+    // same family-history slice as the parent dimension page.
+    const FAMILY_ICD_MATCHERS: Record<string, (icd: string) => boolean> = {
+      cardiovascular: (c) => /^I\d/.test(c),
+      metabolic: (c) => /^E\d/.test(c),
+      brain_mental: (c) => /^[FG]\d/.test(c),
+      cancer_risk: (c) => (/^C\d/.test(c) || /^D[0-4]\d/.test(c) || /^Z80/.test(c)),
+      respiratory_immune: (c) => (/^J\d/.test(c) || /^D8/.test(c)),
+      digestion: (c) => /^K\d/.test(c),
+      exercise_functional: (c) => /^M\d/.test(c),
+      reproductive_sexual: (c) => (/^N\d/.test(c) || /^O\d/.test(c)),
+      skin_oral_mucosal: (c) => /^L\d/.test(c),
+    };
+
+    const FamilyHistoryRows = ({ rows }: { rows: FH[] }) => {
+      if (rows.length === 0) {
+        return <p className="px-4 py-3 text-sm text-muted-foreground">No relevant family history recorded.</p>;
+      }
+      return (
+        <ul className="divide-y">
+          {rows.map((r, i) => (
+            <li key={i} className="px-4 py-3 text-sm flex items-center justify-between gap-2">
+              <span>
+                <span className="font-medium">{r.relative ?? "Relative"}</span>
+                <span className="text-muted-foreground"> · {r.illness_name ?? r.icd_code ?? "—"}</span>
+                {r.age_at_diagnosis != null && (
+                  <span className="text-muted-foreground"> · {r.age_at_diagnosis}</span>
+                )}
+              </span>
+              {r.icd_code && (
+                <Badge variant="outline" className="text-[10px]">{r.icd_code}</Badge>
+              )}
+            </li>
+          ))}
+        </ul>
+      );
+    };
+
     const renderGroups = (contentBySubKey: Record<string, GroupContent | RowSpec[]>) => {
       const main = mainDim;
       // Resolve from taxonomy. If we couldn't find a parent, fall back to a
@@ -2908,9 +2957,12 @@ function HealthDimensionView({
         const content: GroupContent = Array.isArray(raw) ? { rows: raw } : (raw ?? {});
         return {
           key: sub.key,
-          title: sub.label,
+          title: content.title ?? sub.label,
           rows: content.rows ?? [],
           extra: content.extra,
+          internalSections: content.internalSections,
+          hideScore: content.hideScore,
+          explicitScore: content.explicitScore,
         };
       });
 
@@ -2919,7 +2971,26 @@ function HealthDimensionView({
         ? groups
         : groups.filter((g) => g.key === dimensionKey);
       const list = visible.length > 0 ? visible : groups;
-      return <div className="space-y-2">{list.map((g) => <Subgroup key={g.key} group={g} />)}</div>;
+
+      // Append Family History accordion (last) — scoped to this dimension's
+      // ICD range. Always present, even when no entries match.
+      const famKey = main?.key ?? dimensionKey;
+      const matcher = FAMILY_ICD_MATCHERS[famKey];
+      const famRows: FH[] = matcher ? familyByPrefix(matcher) : [];
+      const familyGroup: GroupSpec = {
+        key: `${famKey}__family_history`,
+        title: "Family History",
+        rows: [],
+        hideScore: true,
+        extra: <FamilyHistoryRows rows={famRows} />,
+      };
+
+      return (
+        <div className="space-y-2">
+          {list.map((g) => <Subgroup key={g.key} group={g} />)}
+          {matcher && <Subgroup key={familyGroup.key} group={familyGroup} />}
+        </div>
+      );
     };
 
     // ── Diagnoses helpers ────────────────────────────────────────────
