@@ -5592,7 +5592,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     for (const cat of categories) {
       for (const row of cat.rows) {
         if (isOutOfRange(row.key, newestLab)) {
-          const key = row.key === "_bp" ? "blood_pressure_systolic" : row.key;
+          const key = (row.key as string) === "_bp" ? "blood_pressure_systolic" : row.key;
           markers.push({ key, label: row.label, unit: row.unit });
         }
       }
@@ -5815,7 +5815,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
             {categories.map((cat) => {
               const rowsWithData = cat.rows.filter((row) => {
-                if (row.key === "_bp") {
+                if ((row.key as string) === "_bp") {
                   return sorted.some((lab) => lab.blood_pressure_systolic != null);
                 }
                 return sorted.some((lab) => {
@@ -5831,21 +5831,21 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {rowsWithData.map((row) => {
-                      const dataKey = row.key === "_bp" ? "blood_pressure_systolic" : row.key;
+                      const dataKey = (row.key as string) === "_bp" ? "blood_pressure_systolic" : row.key;
                       const refForRow = {
                         ...REFERENCE_VALUES[dataKey],
                         ...customRefs[dataKey],
                       };
                       const series = sorted
                         .map((lab) => {
-                          const v = row.key === "_bp"
+                          const v = (row.key as string) === "_bp"
                             ? lab.blood_pressure_systolic
                             : (lab as any)[row.key];
                           if (v === null || v === undefined || typeof v === "boolean") return null;
                           return { date: lab.result_date, value: Number(v) };
                         })
                         .filter(Boolean) as { date: string; value: number }[];
-                      const isBp = row.key === "_bp";
+                      const isBp = (row.key as string) === "_bp";
                       const diastolicSeries = isBp
                         ? (sorted
                             .map((lab) => {
@@ -5908,7 +5908,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                             </td>
                           </tr>
                           {cat.rows.map((row) => {
-                            const isSel = selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
+                            const isSel = selectedMarker?.key === row.key || ((row.key as string) === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
                             return (
                               <tr
                                 key={row.key}
@@ -5959,7 +5959,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                             </td>
                           </tr>
                           {cat.rows.map((row) => {
-                            const isSel = selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
+                            const isSel = selectedMarker?.key === row.key || ((row.key as string) === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
                             return (
                               <tr
                                 key={row.key}
