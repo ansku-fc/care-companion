@@ -138,7 +138,8 @@ function IllnessRowEditor({
   // Top-row column widths: Illness · Onset (· Resolved).
   const onsetCol = "col-span-6 md:col-span-3";
   const resolvedCol = "col-span-6 md:col-span-3";
-  const illnessCol = showResolved ? "col-span-12 md:col-span-6" : "col-span-12 md:col-span-9";
+  // Keep Illness column width identical across Current and Previous so the Onset column aligns.
+  const illnessCol = "col-span-12 md:col-span-6";
 
   return (
     <div className="rounded-xl border border-input bg-card/50 p-4 space-y-3">
