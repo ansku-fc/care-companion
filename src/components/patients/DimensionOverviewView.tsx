@@ -271,6 +271,47 @@ function rowToBiomarkerDef(r: LabMarkerRow): BiomarkerDef {
   };
 }
 
+/** Top-right controls for the dimension Lab Results tab — mirrors the main lab page. */
+function LabResultsControls({
+  viewMode,
+  onViewModeChange,
+  patientId,
+}: {
+  viewMode: "graphs" | "table";
+  onViewModeChange: (m: "graphs" | "table") => void;
+  patientId: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="inline-flex rounded-md border bg-muted/50 p-0.5 text-[11px]">
+        <button
+          onClick={() => onViewModeChange("graphs")}
+          className={cn(
+            "px-2 py-1 rounded-sm transition-colors",
+            viewMode === "graphs"
+              ? "bg-background text-foreground shadow-sm font-medium"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          📊 Graphs
+        </button>
+        <button
+          onClick={() => onViewModeChange("table")}
+          className={cn(
+            "px-2 py-1 rounded-sm transition-colors",
+            viewMode === "table"
+              ? "bg-background text-foreground shadow-sm font-medium"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          📋 Table
+        </button>
+      </div>
+      <AddLabResultsDialog patientId={patientId} />
+    </div>
+  );
+}
+
 /** Compact per-dimension table — same shape as the main lab table. */
 function DimensionLabTable({
   sections,
