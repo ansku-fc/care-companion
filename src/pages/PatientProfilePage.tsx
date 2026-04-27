@@ -1975,11 +1975,20 @@ function PatientDetailsView({
   appointments: Tables<"appointments">[];
   onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
+  const { user } = useAuth();
   const [related, setRelated] = useState<Array<{ id: string; full_name: string; relationship_type: string; rel_row_id: string }>>([]);
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [editingContact, setEditingContact] = useState(false);
   const [editingBilling, setEditingBilling] = useState(false);
   const [savingSection, setSavingSection] = useState<null | "personal" | "contact" | "billing">(null);
+
+  // Related patients editor state
+  const [addingRelated, setAddingRelated] = useState(false);
+  const [allPatients, setAllPatients] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [selectedRelatedId, setSelectedRelatedId] = useState<string | null>(null);
+  const [relationshipType, setRelationshipType] = useState<string>("");
+  const [savingRelated, setSavingRelated] = useState(false);
 
   const initialName = useMemo(() => splitName(patient.full_name), [patient.full_name]);
   const [personalForm, setPersonalForm] = useState({
