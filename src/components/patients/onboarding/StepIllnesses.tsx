@@ -592,6 +592,7 @@ function blankMedication(name: string, atc?: string): MedicationDetail {
     frequency: "",
     route: "",
     start_year: null,
+    end_year: null,
     notes: "",
   };
 }
