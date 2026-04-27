@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil,
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil, FolderOpen,
   AlertTriangle, ClipboardList, Plus, ChevronDown, ChevronRight, StickyNote,
 } from "lucide-react";
 import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension } from "@/lib/healthDimensions";
