@@ -40,6 +40,7 @@ import {
   AlertTriangle,
   Plus,
   X,
+  Check,
   Image as ImageIcon,
   Trash2,
 } from "lucide-react";
