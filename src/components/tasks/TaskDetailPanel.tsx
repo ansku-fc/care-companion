@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import foundationClinicLogo from "@/assets/foundation-clinic-logo-cropped.png";
 import { ReferralWorkflowPanel } from "@/components/tasks/ReferralWorkflowPanel";
 import { inferReferralTarget } from "@/lib/referralWorkflow";
+import { LabOrderTaskPanel } from "@/components/tasks/LabOrderTaskPanel";
 
 const COMM_KEYWORDS = /\b(call|contact|reach out|reach-out|debrief|discuss|phone|email|message)\b/i;
 const REFERRAL_KEYWORDS = /\b(referral|refer|send\s+(?:cardiology|neurology|dermatology|hepatology|orthopaedic|orthopedic|specialist|gastro|psych|endocrin))\b/i;
@@ -355,6 +356,18 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
             task={task}
             onNavigate={(path) => { onOpenChange(false); navigate(path); }}
           />
+
+          {(() => {
+            const labOrderId = (task.referral_progress as any)?.lab_order_id as string | undefined;
+            return labOrderId ? (
+              <LabOrderTaskPanel
+                labOrderId={labOrderId}
+                doctorName="Dr. Laine"
+                onChanged={notifyChanged}
+                onClose={() => onOpenChange(false)}
+              />
+            ) : null;
+          })()}
 
           {isClinical ? (
             <>
