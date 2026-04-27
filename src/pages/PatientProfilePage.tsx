@@ -491,7 +491,7 @@ const PatientProfilePage = () => {
             <OnboardingEmptyState patientName={patient.full_name} patientId={patient.id} />
           )
         ) : activeSection === "details" ? (
-          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
+          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} onPatientUpdate={(updated) => setPatient(updated)} />
         ) : activeSection === "medications" ? (
           <PatientMedicationsView patientName={patient.full_name} patientId={patient.id} />
         ) : activeSection === "visits" ? (
@@ -1931,8 +1931,40 @@ function FamilyHistoryView() {
 }
 
 
+const TIER_OPTIONS = [
+  { value: "tier_1", label: "Tier 1" },
+  { value: "tier_2", label: "Tier 2" },
+  { value: "tier_3", label: "Tier 3" },
+  { value: "tier_4", label: "Tier 4" },
+  { value: "children", label: "Child" },
+  { value: "onboarding", label: "Onboarding" },
+  { value: "acute", label: "Acute" },
+  { value: "case_management", label: "Case Management" },
+];
+
+function splitName(full: string): { first: string; last: string } {
+  const trimmed = (full || "").trim();
+  if (!trimmed) return { first: "", last: "" };
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return { first: parts[0], last: "" };
+  return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
+}
+
+function SectionEditButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onClick}
+      className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground"
+    >
+      <Pencil className="h-3.5 w-3.5" /> Edit
+    </Button>
+  );
+}
+
 function PatientDetailsView({
-  patient, onboarding, age, labResults, onLabResultsAdded, visitNotes, appointments,
+  patient, onboarding, age, labResults, onLabResultsAdded, visitNotes, appointments, onPatientUpdate,
 }: {
   patient: Tables<"patients">;
   onboarding: Tables<"patient_onboarding"> | null;
@@ -1941,8 +1973,66 @@ function PatientDetailsView({
   onLabResultsAdded: () => void;
   visitNotes: Tables<"visit_notes">[];
   appointments: Tables<"appointments">[];
+  onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
   const [related, setRelated] = useState<Array<{ id: string; full_name: string; relationship_type: string }>>([]);
+  const [editingPersonal, setEditingPersonal] = useState(false);
+  const [editingContact, setEditingContact] = useState(false);
+  const [editingBilling, setEditingBilling] = useState(false);
+  const [savingSection, setSavingSection] = useState<null | "personal" | "contact" | "billing">(null);
+
+  const initialName = useMemo(() => splitName(patient.full_name), [patient.full_name]);
+  const [personalForm, setPersonalForm] = useState({
+    first_name: initialName.first,
+    last_name: initialName.last,
+    date_of_birth: patient.date_of_birth || "",
+    gender: patient.gender || "",
+    tier: (patient.tier as string) || "tier_1",
+    insurance_provider: patient.insurance_provider || "",
+    insurance_number: patient.insurance_number || "",
+  });
+  const [contactForm, setContactForm] = useState({
+    address: patient.address || "",
+    city: patient.city || "",
+    post_code: patient.post_code || "",
+    email: patient.email || "",
+    phone: patient.phone || "",
+    emergency_contact_name: patient.emergency_contact_name || "",
+    emergency_contact_phone: patient.emergency_contact_phone || "",
+  });
+  const [billingForm, setBillingForm] = useState({
+    payer_same_as_patient: (patient as any).payer_same_as_patient !== false,
+    payer_name: (patient as any).payer_name || "",
+    billing_email: (patient as any).billing_email || "",
+  });
+
+  // Reset forms when patient changes externally
+  useEffect(() => {
+    const n = splitName(patient.full_name);
+    setPersonalForm({
+      first_name: n.first,
+      last_name: n.last,
+      date_of_birth: patient.date_of_birth || "",
+      gender: patient.gender || "",
+      tier: (patient.tier as string) || "tier_1",
+      insurance_provider: patient.insurance_provider || "",
+      insurance_number: patient.insurance_number || "",
+    });
+    setContactForm({
+      address: patient.address || "",
+      city: patient.city || "",
+      post_code: patient.post_code || "",
+      email: patient.email || "",
+      phone: patient.phone || "",
+      emergency_contact_name: patient.emergency_contact_name || "",
+      emergency_contact_phone: patient.emergency_contact_phone || "",
+    });
+    setBillingForm({
+      payer_same_as_patient: (patient as any).payer_same_as_patient !== false,
+      payer_name: (patient as any).payer_name || "",
+      billing_email: (patient as any).billing_email || "",
+    });
+  }, [patient]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1976,54 +2066,260 @@ function PatientDetailsView({
     d ? new Date(d).toLocaleDateString("en-GB") : "—";
   const addressLine = [patient.address, patient.post_code, patient.city, patient.country].filter(Boolean).join(", ") || "—";
 
+  const computedAge = personalForm.date_of_birth
+    ? Math.floor((Date.now() - new Date(personalForm.date_of_birth).getTime()) / 31557600000)
+    : age;
+
+  const savePatient = async (updates: Partial<Tables<"patients">>, section: "personal" | "contact" | "billing") => {
+    setSavingSection(section);
+    const { data, error } = await supabase
+      .from("patients")
+      .update(updates as any)
+      .eq("id", patient.id)
+      .select("*")
+      .single();
+    setSavingSection(null);
+    if (error || !data) {
+      toast.error("Failed to save changes");
+      console.error(error);
+      return false;
+    }
+    onPatientUpdate(data as Tables<"patients">);
+    toast.success("Saved");
+    return true;
+  };
+
+  const handleSavePersonal = async () => {
+    const full_name = `${personalForm.first_name.trim()} ${personalForm.last_name.trim()}`.trim();
+    if (!full_name) { toast.error("Name is required"); return; }
+    const ok = await savePatient({
+      full_name,
+      date_of_birth: personalForm.date_of_birth || null,
+      gender: personalForm.gender || null,
+      tier: (personalForm.tier as any) || null,
+      insurance_provider: personalForm.insurance_provider || null,
+      insurance_number: personalForm.insurance_number || null,
+    }, "personal");
+    if (ok) setEditingPersonal(false);
+  };
+  const handleSaveContact = async () => {
+    const ok = await savePatient({
+      address: contactForm.address || null,
+      city: contactForm.city || null,
+      post_code: contactForm.post_code || null,
+      email: contactForm.email || null,
+      phone: contactForm.phone || null,
+      emergency_contact_name: contactForm.emergency_contact_name || null,
+      emergency_contact_phone: contactForm.emergency_contact_phone || null,
+    }, "contact");
+    if (ok) setEditingContact(false);
+  };
+  const handleSaveBilling = async () => {
+    const ok = await savePatient({
+      payer_same_as_patient: billingForm.payer_same_as_patient,
+      payer_name: billingForm.payer_same_as_patient ? null : (billingForm.payer_name || null),
+      billing_email: billingForm.billing_email || null,
+    } as any, "billing");
+    if (ok) setEditingBilling(false);
+  };
+
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg">Personal Information</CardTitle>
+          {!editingPersonal && <SectionEditButton onClick={() => setEditingPersonal(true)} />}
+        </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt className="text-muted-foreground">Full Name</dt><dd className="font-medium">{patient.full_name}</dd></div>
-            <div><dt className="text-muted-foreground">Date of Birth</dt><dd>{fmt(patient.date_of_birth)}</dd></div>
-            <div><dt className="text-muted-foreground">Gender</dt><dd>{patient.gender || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Age</dt><dd>{age ?? "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Tier</dt><dd>{patient.tier ? (TIER_LABELS[patient.tier] || patient.tier) : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Date Joined</dt><dd>{fmt(patient.created_at)}</dd></div>
-            <div><dt className="text-muted-foreground">Insurance</dt><dd>{patient.insurance_provider || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Insurance #</dt><dd>{patient.insurance_number || "—"}</dd></div>
-          </dl>
+          {!editingPersonal ? (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div><dt className="text-muted-foreground">Full Name</dt><dd className="font-medium">{patient.full_name}</dd></div>
+              <div><dt className="text-muted-foreground">Date of Birth</dt><dd>{fmt(patient.date_of_birth)}</dd></div>
+              <div><dt className="text-muted-foreground">Sex at birth</dt><dd>{patient.gender || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Age</dt><dd>{age ?? "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Tier</dt><dd>{patient.tier ? (TIER_LABELS[patient.tier] || patient.tier) : "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Date Joined</dt><dd>{fmt(patient.created_at)}</dd></div>
+              <div><dt className="text-muted-foreground">Insurance</dt><dd>{patient.insurance_provider || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Insurance #</dt><dd>{patient.insurance_number || "—"}</dd></div>
+            </dl>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">First Name</Label>
+                  <Input value={personalForm.first_name} onChange={(e) => setPersonalForm(f => ({ ...f, first_name: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Last Name</Label>
+                  <Input value={personalForm.last_name} onChange={(e) => setPersonalForm(f => ({ ...f, last_name: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Date of Birth</Label>
+                  <Input type="date" value={personalForm.date_of_birth} onChange={(e) => setPersonalForm(f => ({ ...f, date_of_birth: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Sex at birth</Label>
+                  <Select value={personalForm.gender || undefined} onValueChange={(v) => setPersonalForm(f => ({ ...f, gender: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Age</Label>
+                  <Input value={computedAge ?? ""} readOnly className="bg-muted/40" />
+                </div>
+                <div>
+                  <Label className="text-xs">Tier</Label>
+                  <Select value={personalForm.tier} onValueChange={(v) => setPersonalForm(f => ({ ...f, tier: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TIER_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Date Joined</Label>
+                  <Input value={fmt(patient.created_at)} readOnly className="bg-muted/40" />
+                </div>
+                <div />
+                <div>
+                  <Label className="text-xs">Insurance</Label>
+                  <Input value={personalForm.insurance_provider} onChange={(e) => setPersonalForm(f => ({ ...f, insurance_provider: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Insurance #</Label>
+                  <Input value={personalForm.insurance_number} onChange={(e) => setPersonalForm(f => ({ ...f, insurance_number: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setEditingPersonal(false)} disabled={savingSection === "personal"}>Cancel</Button>
+                <Button size="sm" onClick={handleSavePersonal} disabled={savingSection === "personal"}>
+                  {savingSection === "personal" ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Contact Details</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg">Contact Details</CardTitle>
+          {!editingContact && <SectionEditButton onClick={() => setEditingContact(true)} />}
+        </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div className="col-span-2"><dt className="text-muted-foreground">Address</dt><dd>{addressLine}</dd></div>
-            <div><dt className="text-muted-foreground">Email</dt><dd>{patient.email || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Phone</dt><dd>{patient.phone || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Emergency Contact Name</dt><dd>{patient.emergency_contact_name || "—"}</dd></div>
-            <div><dt className="text-muted-foreground">Emergency Contact Phone</dt><dd>{patient.emergency_contact_phone || "—"}</dd></div>
-          </dl>
+          {!editingContact ? (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="col-span-2"><dt className="text-muted-foreground">Address</dt><dd>{addressLine}</dd></div>
+              <div><dt className="text-muted-foreground">Email</dt><dd>{patient.email || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Phone</dt><dd>{patient.phone || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Emergency Contact Name</dt><dd>{patient.emergency_contact_name || "—"}</dd></div>
+              <div><dt className="text-muted-foreground">Emergency Contact Phone</dt><dd>{patient.emergency_contact_phone || "—"}</dd></div>
+            </dl>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs">Street Address</Label>
+                  <Input value={contactForm.address} onChange={(e) => setContactForm(f => ({ ...f, address: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">City</Label>
+                  <Input value={contactForm.city} onChange={(e) => setContactForm(f => ({ ...f, city: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Postal Code</Label>
+                  <Input value={contactForm.post_code} onChange={(e) => setContactForm(f => ({ ...f, post_code: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={contactForm.email} onChange={(e) => setContactForm(f => ({ ...f, email: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Phone</Label>
+                  <Input value={contactForm.phone} onChange={(e) => setContactForm(f => ({ ...f, phone: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Emergency Contact Name</Label>
+                  <Input value={contactForm.emergency_contact_name} onChange={(e) => setContactForm(f => ({ ...f, emergency_contact_name: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Emergency Contact Phone</Label>
+                  <Input value={contactForm.emergency_contact_phone} onChange={(e) => setContactForm(f => ({ ...f, emergency_contact_phone: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setEditingContact(false)} disabled={savingSection === "contact"}>Cancel</Button>
+                <Button size="sm" onClick={handleSaveContact} disabled={savingSection === "contact"}>
+                  {savingSection === "contact" ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Billing</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg">Billing</CardTitle>
+          {!editingBilling && <SectionEditButton onClick={() => setEditingBilling(true)} />}
+        </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div>
-              <dt className="text-muted-foreground">Payer</dt>
-              <dd>{(patient as any).payer_same_as_patient === false
-                ? ((patient as any).payer_name || "Different payer")
-                : "Same as patient"}</dd>
+          {!editingBilling ? (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div>
+                <dt className="text-muted-foreground">Payer</dt>
+                <dd>{(patient as any).payer_same_as_patient === false
+                  ? ((patient as any).payer_name || "Different payer")
+                  : "Same as patient"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Billing Email Address</dt>
+                <dd>{(patient as any).billing_email || "—"}</dd>
+              </div>
+            </dl>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Payer</Label>
+                  <Select
+                    value={billingForm.payer_same_as_patient ? "same" : "other"}
+                    onValueChange={(v) => setBillingForm(f => ({ ...f, payer_same_as_patient: v === "same" }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="same">Same as patient</SelectItem>
+                      <SelectItem value="other">Different payer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {!billingForm.payer_same_as_patient && (
+                  <div>
+                    <Label className="text-xs">Payer Name</Label>
+                    <Input value={billingForm.payer_name} onChange={(e) => setBillingForm(f => ({ ...f, payer_name: e.target.value }))} />
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <Label className="text-xs">Billing Email Address</Label>
+                  <Input type="email" value={billingForm.billing_email} onChange={(e) => setBillingForm(f => ({ ...f, billing_email: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setEditingBilling(false)} disabled={savingSection === "billing"}>Cancel</Button>
+                <Button size="sm" onClick={handleSaveBilling} disabled={savingSection === "billing"}>
+                  {savingSection === "billing" ? "Saving…" : "Save"}
+                </Button>
+              </div>
             </div>
-            <div>
-              <dt className="text-muted-foreground">Billing Email Address</dt>
-              <dd>{(patient as any).billing_email || "—"}</dd>
-            </div>
-          </dl>
+          )}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader><CardTitle className="text-lg">Related Patients</CardTitle></CardHeader>

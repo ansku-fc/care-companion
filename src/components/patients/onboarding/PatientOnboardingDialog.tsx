@@ -71,16 +71,26 @@ export function PatientOnboardingDialog(props: Props) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("patient_onboarding")
-        .select("*")
-        .eq("patient_id", props.patientId)
-        .maybeSingle();
+      const [{ data }, { data: patientRow }] = await Promise.all([
+        supabase
+          .from("patient_onboarding")
+          .select("*")
+          .eq("patient_id", props.patientId)
+          .maybeSingle(),
+        supabase
+          .from("patients")
+          .select("date_of_birth")
+          .eq("id", props.patientId)
+          .maybeSingle(),
+      ]);
       if (cancelled) return;
+      const dobAge = patientRow?.date_of_birth
+        ? Math.floor((Date.now() - new Date(patientRow.date_of_birth).getTime()) / 31557600000)
+        : null;
       if (data) {
         const extra = ((data as any).extra_data ?? {}) as Record<string, unknown>;
         setInitial({
-          age: data.age,
+          age: data.age ?? dobAge,
           height_cm: data.height_cm,
           weight_kg: data.weight_kg,
           waist_circumference_cm: data.waist_circumference_cm,
@@ -192,7 +202,7 @@ export function PatientOnboardingDialog(props: Props) {
           skipped_steps: (extra.skipped_steps as number[]) ?? [],
         });
       } else {
-        setInitial({});
+        setInitial(dobAge != null ? { age: dobAge } : {});
       }
       setLoading(false);
     })();
