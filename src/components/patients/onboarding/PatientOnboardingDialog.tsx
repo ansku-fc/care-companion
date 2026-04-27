@@ -252,7 +252,7 @@ export function PatientOnboardingDialog(props: Props) {
           moles_enabled: Boolean(extra.moles_enabled),
           moles: normalizeMoles(extra.moles),
 
-          current_step: ((data as any).current_step as number) ?? 1,
+          current_step: props.initialStep ?? ((data as any).current_step as number) ?? 1,
           completed_steps: (extra.completed_steps as number[]) ?? [],
           skipped_steps: (extra.skipped_steps as number[]) ?? [],
         });
