@@ -94,13 +94,6 @@ function StatusBadge({ status }: { status: DocStatus }) {
       </Badge>
     );
   }
-  if (status === "under_review") {
-    return (
-      <Badge className="gap-1 bg-blue-100 text-blue-900 hover:bg-blue-100 border border-blue-300">
-        <Pencil className="h-3 w-3" /> Under Review
-      </Badge>
-    );
-  }
   return (
     <Badge className="gap-1 bg-green-100 text-green-900 hover:bg-green-100 border border-green-300">
       <Lock className="h-3 w-3" /> Finalised
