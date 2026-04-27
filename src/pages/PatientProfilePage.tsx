@@ -3774,6 +3774,7 @@ function GenericDimensionView({
                   biomarkers={biomarkers}
                   patientId={patient.id}
                   patientName={patient.full_name}
+                  labResults={labResults}
                 />
               </TabsContent>
             </Tabs>
