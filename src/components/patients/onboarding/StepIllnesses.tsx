@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Trash2, Plus, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Trash2, Plus, X, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
