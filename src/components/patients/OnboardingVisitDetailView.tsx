@@ -401,7 +401,21 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   const supplements: any[] = Array.isArray(ex.supplements) ? ex.supplements : [];
 
   const isFinalised = doc.status === "finalised";
-  const editing = !isFinalised; // editable in draft & under_review
+  const canEdit = !isFinalised; // document-level editability
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const enterSection = (name: string) => {
+    if (activeSection && activeSection !== name) {
+      void handleSaveEdits();
+    }
+    setActiveSection(name);
+  };
+  const doneSection = () => {
+    if (activeSection) void handleSaveEdits();
+    setActiveSection(null);
+  };
+  // Backwards-compat: any code outside Section render-props that still reads `editing`
+  // gets a conservative false (read-only). All true editing happens inside the per-section render prop.
+  const editing = false;
 
   const overrides = doc.overrides ?? {};
   const ov = (key: string, fallback: any) =>
