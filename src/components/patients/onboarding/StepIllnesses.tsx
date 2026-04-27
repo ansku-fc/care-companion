@@ -142,9 +142,20 @@ function IllnessRowEditor({
   const illnessCol = "col-span-12 md:col-span-6";
 
   return (
-    <div className="rounded-xl border border-input bg-card/50 p-4 space-y-3">
+    <div className="relative rounded-xl border border-input bg-card/50 p-4 space-y-3">
+      {/* Remove button — top right, aligned with the Illness label */}
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={onDelete}
+        aria-label="Remove illness"
+        className="absolute top-3 right-3 h-7 w-7 text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+
       {/* Top row: Illness · Onset · (Resolved) */}
-      <div className="grid grid-cols-12 gap-3 items-end">
+      <div className="grid grid-cols-12 gap-3 items-end pr-9">
         <div className={illnessCol}>
           <FieldLabel>Illness</FieldLabel>
           <IcdPicker
@@ -196,30 +207,19 @@ function IllnessRowEditor({
         />
       </div>
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col items-start min-w-0 flex-1">
-          <NotePopover
-            value={row.notes}
-            onChange={(v) => onChange({ notes: v })}
-          />
-          {row.notes && row.notes.trim().length > 0 && (
-            <p
-              className="text-xs text-muted-foreground mt-0.5 ml-2 max-w-full line-clamp-2"
-              title={row.notes}
-            >
-              {row.notes}
-            </p>
-          )}
-        </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onDelete}
-          className="gap-1.5 text-muted-foreground hover:text-destructive shrink-0"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          Remove
-        </Button>
+      <div className="flex flex-col items-start min-w-0">
+        <NotePopover
+          value={row.notes}
+          onChange={(v) => onChange({ notes: v })}
+        />
+        {row.notes && row.notes.trim().length > 0 && (
+          <p
+            className="text-xs text-muted-foreground mt-0.5 ml-2 max-w-full line-clamp-2"
+            title={row.notes}
+          >
+            {row.notes}
+          </p>
+        )}
       </div>
     </div>
   );
