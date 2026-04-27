@@ -2954,14 +2954,26 @@ function HealthDimensionView({
                 <p className="text-xs text-muted-foreground">Score ≥15 indicates severe anxiety</p>
               </div>
             </ExpandableRow>
-            <ExpandableRow label="Stress (perceived)" value={onboarding?.stress_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("stress")} onToggle={() => toggleRow("stress")}>
+            <ExpandableRow label="GAD-2 Score" value={<>{onboarding?.gad2_score ?? "—"}{onboarding?.gad2_score != null && Number(onboarding.gad2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("gad2")} onToggle={() => toggleRow("gad2")}>
+              <p className="text-sm text-muted-foreground">Anxiety screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="PHQ-2 Score" value={<>{onboarding?.phq2_score ?? "—"}{onboarding?.phq2_score != null && Number(onboarding.phq2_score) >= 3 && <Flag tone="amber">Screen positive</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("phq2")} onToggle={() => toggleRow("phq2")}>
+              <p className="text-sm text-muted-foreground">Depression screen (0–6). ≥3 suggests further evaluation.</p>
+            </ExpandableRow>
+            <ExpandableRow label="Stress (perceived)" value={<>{onboarding?.stress_perceived ?? "—"}{onboarding?.stress_perceived != null && Number(onboarding.stress_perceived) >= 8 && <Flag tone="pink">High</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("stress")} onToggle={() => toggleRow("stress")}>
               <p className="text-sm text-muted-foreground">Self-reported stress level (1-10 scale).</p>
+            </ExpandableRow>
+            <ExpandableRow label="Workload (perceived)" value={<>{extra.workload_perceived ?? "—"}{extra.workload_perceived != null && Number(extra.workload_perceived) >= 6 && <Flag tone="amber">Elevated</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("workload_mw")} onToggle={() => toggleRow("workload_mw")}>
+              <p className="text-sm text-muted-foreground">Self-reported workload intensity (1–10).</p>
+            </ExpandableRow>
+            <ExpandableRow label="Recovery (perceived)" value={<>{extra.recovery_perceived ?? "—"}{extra.recovery_perceived != null && Number(extra.recovery_perceived) <= 4 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("recovery_mw")} onToggle={() => toggleRow("recovery_mw")}>
+              <p className="text-sm text-muted-foreground">Self-reported recovery capacity (1–10).</p>
             </ExpandableRow>
             <ExpandableRow label="Job Strain" value={onboarding?.job_strain_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("job_strain")} onToggle={() => toggleRow("job_strain")}>
               <p className="text-sm text-muted-foreground">Perceived job strain level.</p>
             </ExpandableRow>
-            <ExpandableRow label="Social Support" value={onboarding?.social_support_perceived ?? "—"} recorded={onboardingDate} expanded={expandedRows.has("social")} onToggle={() => toggleRow("social")}>
-              <p className="text-sm text-muted-foreground">Perceived social support level.</p>
+            <ExpandableRow label="Social Support" value={<>{onboarding?.social_support_perceived ?? "—"}{onboarding?.social_support_perceived != null && Number(onboarding.social_support_perceived) <= 3 && <Flag tone="amber">Low</Flag>}</>} recorded={onboardingDate} expanded={expandedRows.has("social")} onToggle={() => toggleRow("social")}>
+              <p className="text-sm text-muted-foreground">Perceived social support level (1–10).</p>
             </ExpandableRow>
           </div>
         );
