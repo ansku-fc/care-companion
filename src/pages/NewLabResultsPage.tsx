@@ -241,7 +241,7 @@ export default function NewLabResultsPage() {
         if (!isNaN(n)) payload[m.field] = n;
       }
     }
-    const { error } = await supabase.from("patient_lab_results").insert(payload);
+    const { error } = await supabase.from("patient_lab_results").insert(payload as any);
     setSaving(false);
     if (error) {
       console.error(error);
