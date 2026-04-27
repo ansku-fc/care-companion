@@ -137,6 +137,7 @@ const PatientProfilePage = () => {
     const initial: SidebarSection =
       tab === "lab_results" ? "lab_results" :
       tab === "medications" ? "medications" :
+      tab === "documents" ? "documents" :
       tab === "visits" ? "visits" :
       "overview";
     setActiveSectionRaw(initial);
