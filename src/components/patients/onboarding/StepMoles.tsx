@@ -164,77 +164,55 @@ function BodySilhouette({
     .map((m, i) => ({ mole: m, number: i + 1 }))
     .filter((p) => p.mole.side === side);
 
-  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     onAdd(Math.round(x * 10) / 10, Math.round(y * 10) / 10);
   };
+
+  const src = side === "front" ? silhouetteFront : silhouetteBack;
 
   return (
     <div className="rounded-xl border border-border bg-card/40 p-3 flex flex-col items-center">
       <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
         {side === "front" ? "Front" : "Back"}
       </div>
-      <svg
-        viewBox="0 0 100 300"
-        className="w-full max-w-[200px] h-auto cursor-crosshair select-none"
+      <div
         onClick={handleClick}
         role="img"
         aria-label={`${side} body silhouette — click to add a mole pin`}
+        className="relative w-full max-w-[200px] cursor-crosshair select-none"
+        style={{ aspectRatio: "145 / 330" }}
       >
-        {/* Gender-neutral schematic silhouette */}
-        <BodyOutline side={side} />
-
-        {/* Pins */}
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+        />
         {sidePins.map(({ mole, number }) => (
-          <g
+          <button
             key={mole.id}
-            transform={`translate(${mole.pin_x}, ${(mole.pin_y / 100) * 300})`}
-            className="cursor-pointer"
+            type="button"
             onClick={(ev) => {
               ev.stopPropagation();
               onPinClick(mole.id);
             }}
+            aria-label={`Mole ${number}`}
+            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold flex items-center justify-center shadow-sm ring-2 ring-background hover:scale-110 transition-transform"
+            style={{
+              left: `${mole.pin_x}%`,
+              top: `${mole.pin_y}%`,
+              width: 18,
+              height: 18,
+            }}
           >
-            <circle r="4.5" className="fill-primary stroke-background" strokeWidth="1" />
-            <text
-              y="1.5"
-              textAnchor="middle"
-              className="fill-primary-foreground"
-              style={{ fontSize: "5px", fontWeight: 600 }}
-            >
-              {number}
-            </text>
-          </g>
+            {number}
+          </button>
         ))}
-      </svg>
+      </div>
     </div>
-  );
-}
-
-function BodyOutline({ side: _side }: { side: "front" | "base" | "back" | string }) {
-  // Simple, gender-neutral outline. ViewBox 100 × 300.
-  // Head, neck, torso, arms, legs.
-  return (
-    <g className="fill-muted/40 stroke-foreground/40" strokeWidth="0.8">
-      {/* Head */}
-      <ellipse cx="50" cy="18" rx="11" ry="14" />
-      {/* Neck */}
-      <rect x="46" y="30" width="8" height="8" />
-      {/* Torso */}
-      <path d="M 34 38 Q 28 44 28 60 L 30 130 Q 32 140 38 142 L 62 142 Q 68 140 70 130 L 72 60 Q 72 44 66 38 Z" />
-      {/* Arms */}
-      <path d="M 28 44 Q 18 46 16 70 L 14 120 Q 13 135 18 138 L 24 138 Q 27 130 26 118 L 28 80 Z" />
-      <path d="M 72 44 Q 82 46 84 70 L 86 120 Q 87 135 82 138 L 76 138 Q 73 130 74 118 L 72 80 Z" />
-      {/* Hips/legs */}
-      <path d="M 36 142 L 32 230 Q 32 260 36 285 L 46 285 Q 50 260 50 230 L 50 142 Z" />
-      <path d="M 64 142 L 68 230 Q 68 260 64 285 L 54 285 Q 50 260 50 230 L 50 142 Z" />
-      {/* Feet */}
-      <ellipse cx="41" cy="290" rx="6" ry="4" />
-      <ellipse cx="59" cy="290" rx="6" ry="4" />
-    </g>
   );
 }
 
