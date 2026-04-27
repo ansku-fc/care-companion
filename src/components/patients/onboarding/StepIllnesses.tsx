@@ -14,6 +14,7 @@ import {
   MEDICATION_LIST,
   DIMENSION_TAGS,
   findDimensionTag,
+  getSuggestedDimensionsForIcd,
   getSuggestedMedications,
   yearOptions,
   type IcdDimension,
