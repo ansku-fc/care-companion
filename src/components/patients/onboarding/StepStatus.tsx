@@ -30,11 +30,9 @@ const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "musculoskeletal", label: "Musculoskeletal" },
 ];
 
-const PERIPHERAL_SUBS: { key: keyof ExamFindings; label: string }[] = [
-  { key: "peripheral_adp", label: "ADP (arteria dorsalis pedis)" },
-  { key: "peripheral_atp", label: "ATP (arteria tibialis posterior)" },
-  { key: "peripheral_afem", label: "AFEM (arteria femoralis)" },
-];
+// Note: ADP / ATP / AFEM sub-toggles previously lived under "Peripheral
+// circulation" but only duplicated the parent. They have been replaced with a
+// single free-text notes field shown when the parent toggle is on.
 
 const ABCDE_OPTIONS = {
   asymmetry: ["Symmetrical", "Asymmetrical"],
