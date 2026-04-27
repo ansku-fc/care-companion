@@ -732,8 +732,8 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         </div>
 
         {/* Step pills */}
-        <div className="px-6 py-3 border-b overflow-x-auto">
-          <div className="flex items-center gap-2 min-w-max">
+        <div className="px-6 py-3 border-b">
+          <div className="flex flex-wrap items-center gap-1.5">
             {STEP_LABELS.map((label, i) => {
               const stepNum = i + 1;
               const isActive = stepNum === form.current_step;
@@ -745,7 +745,7 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
                   type="button"
                   onClick={() => setStep(stepNum)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors",
+                    "inline-flex items-center gap-1 text-[11px] leading-none px-2.5 py-1.5 rounded-full border whitespace-nowrap transition-colors",
                     isActive
                       ? "bg-foreground text-background border-foreground"
                       : isCompleted
