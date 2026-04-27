@@ -75,7 +75,7 @@ const STEP_LABELS = [
   "Nutrition",
   "Sleep",
   "Mental Health",
-  "Cancer",
+  "Cancer Risks",
   "Status",
 ];
 const TOTAL_STEPS = STEP_LABELS.length;
