@@ -131,6 +131,7 @@ export function LabResultsBlock({
                 onSelect={() => selectMarker(b)}
                 patientId={patientId}
                 patientName={patientName}
+                labResults={labResults}
               />
             ))}
           </div>
