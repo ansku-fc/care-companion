@@ -174,6 +174,66 @@ export type Database = {
           },
         ]
       }
+      lab_orders: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          created_by: string
+          destination: string | null
+          id: string
+          internal_note: string | null
+          markers: string[]
+          packages: string[]
+          patient_id: string
+          requisition_file_path: string | null
+          results_file_path: string | null
+          results_received_at: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          updated_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          created_by: string
+          destination?: string | null
+          id?: string
+          internal_note?: string | null
+          markers?: string[]
+          packages?: string[]
+          patient_id: string
+          requisition_file_path?: string | null
+          results_file_path?: string | null
+          results_received_at?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          created_by?: string
+          destination?: string | null
+          id?: string
+          internal_note?: string | null
+          markers?: string[]
+          packages?: string[]
+          patient_id?: string
+          requisition_file_path?: string | null
+          results_file_path?: string | null
+          results_received_at?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Relationships: []
+      }
       marker_annotations: {
         Row: {
           annotation_date: string
@@ -521,6 +581,7 @@ export type Database = {
           holotranscobalamin_pmol_l: number | null
           id: string
           iron_serum_umol_l: number | null
+          lab_order_id: string | null
           ldl_mmol_l: number | null
           magnesium_mmol_l: number | null
           patient_id: string
@@ -541,6 +602,7 @@ export type Database = {
           u_alb_krea_abnormal: boolean | null
           updated_at: string
           urine_acr_mg_mmol: number | null
+          visit_id: string | null
           vitamin_b12_total_ng_l: number | null
           vitamin_d_25oh_nmol_l: number | null
         }
@@ -569,6 +631,7 @@ export type Database = {
           holotranscobalamin_pmol_l?: number | null
           id?: string
           iron_serum_umol_l?: number | null
+          lab_order_id?: string | null
           ldl_mmol_l?: number | null
           magnesium_mmol_l?: number | null
           patient_id: string
@@ -589,6 +652,7 @@ export type Database = {
           u_alb_krea_abnormal?: boolean | null
           updated_at?: string
           urine_acr_mg_mmol?: number | null
+          visit_id?: string | null
           vitamin_b12_total_ng_l?: number | null
           vitamin_d_25oh_nmol_l?: number | null
         }
@@ -617,6 +681,7 @@ export type Database = {
           holotranscobalamin_pmol_l?: number | null
           id?: string
           iron_serum_umol_l?: number | null
+          lab_order_id?: string | null
           ldl_mmol_l?: number | null
           magnesium_mmol_l?: number | null
           patient_id?: string
@@ -637,6 +702,7 @@ export type Database = {
           u_alb_krea_abnormal?: boolean | null
           updated_at?: string
           urine_acr_mg_mmol?: number | null
+          visit_id?: string | null
           vitamin_b12_total_ng_l?: number | null
           vitamin_d_25oh_nmol_l?: number | null
         }
@@ -1359,6 +1425,42 @@ export type Database = {
           },
         ]
       }
+      user_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          patient_id: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          patient_id?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          patient_id?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1379,33 +1481,60 @@ export type Database = {
       }
       visit_notes: {
         Row: {
+          attending_doctor: string | null
+          attending_nurse: string | null
           chief_complaint: string | null
+          clinical_notes: string | null
           created_at: string
           id: string
+          internal_note_to_nurse: string | null
+          lab_order_id: string | null
           notes: string | null
+          outcomes: string | null
           patient_id: string
           provider_id: string
           visit_date: string
+          visit_mode: string | null
+          visit_time: string | null
+          visit_type: string | null
           vitals: Json | null
         }
         Insert: {
+          attending_doctor?: string | null
+          attending_nurse?: string | null
           chief_complaint?: string | null
+          clinical_notes?: string | null
           created_at?: string
           id?: string
+          internal_note_to_nurse?: string | null
+          lab_order_id?: string | null
           notes?: string | null
+          outcomes?: string | null
           patient_id: string
           provider_id: string
           visit_date?: string
+          visit_mode?: string | null
+          visit_time?: string | null
+          visit_type?: string | null
           vitals?: Json | null
         }
         Update: {
+          attending_doctor?: string | null
+          attending_nurse?: string | null
           chief_complaint?: string | null
+          clinical_notes?: string | null
           created_at?: string
           id?: string
+          internal_note_to_nurse?: string | null
+          lab_order_id?: string | null
           notes?: string | null
+          outcomes?: string | null
           patient_id?: string
           provider_id?: string
           visit_date?: string
+          visit_mode?: string | null
+          visit_time?: string | null
+          visit_type?: string | null
           vitals?: Json | null
         }
         Relationships: [
