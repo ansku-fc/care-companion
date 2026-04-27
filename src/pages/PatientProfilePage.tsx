@@ -20,6 +20,7 @@ import {
   AlertTriangle, ClipboardList, Plus, ChevronDown, ChevronRight, StickyNote,
 } from "lucide-react";
 import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension } from "@/lib/healthDimensions";
+import { findDimensionTag } from "@/lib/onboardingTaxonomy";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea } from "recharts";
@@ -3000,6 +3001,82 @@ function HealthDimensionView({
       );
     };
 
+    // Renders the rows inside a Current/Previous Illnesses accordion.
+    // Accepts the rich onboarding rows: { icd_code, illness_name, onset_year,
+    // resolved_year, medications: [{atc, name, dose, frequency}],
+    // dimensions: string[] }.
+    const FREQ_LABELS_INL: Record<string, string> = {
+      once_daily: "Once daily",
+      twice_daily: "Twice daily",
+      three_times_daily: "Three times daily",
+      as_needed: "As needed",
+      weekly: "Weekly",
+      other: "Other",
+    };
+    const IllnessRowsBlock = ({ rows, kind }: { rows: any[]; kind: "current" | "previous" }) => {
+      if (rows.length === 0) {
+        return <p className="px-4 py-3 text-sm text-muted-foreground">None recorded</p>;
+      }
+      return (
+        <ul className="divide-y">
+          {rows.map((row, i) => {
+            const meds: any[] = Array.isArray(row.medications) ? row.medications : [];
+            const tags: string[] = Array.isArray(row.dimensions) ? row.dimensions : [];
+            return (
+              <li key={row.id ?? i} className="px-4 py-3 space-y-1.5">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  {row.icd_code && (
+                    <Badge variant="outline" className="font-mono text-[10px]">{row.icd_code}</Badge>
+                  )}
+                  <span className="font-medium text-sm">{row.illness_name ?? "—"}</span>
+                  {row.onset_year && (
+                    <span className="text-xs text-muted-foreground">· onset {row.onset_year}</span>
+                  )}
+                  {kind === "previous" && row.resolved_year && (
+                    <span className="text-xs text-muted-foreground">· resolved {row.resolved_year}</span>
+                  )}
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {tags.map((t) => {
+                      const tag = findDimensionTag(t);
+                      if (!tag) return null;
+                      return (
+                        <Badge key={t} variant="secondary" className="text-[10px] py-0 px-1.5">
+                          {tag.label}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+                {meds.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {meds.map((m, j) => (
+                      <span
+                        key={`${m?.name ?? "med"}-${j}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10.5px] text-foreground/90"
+                      >
+                        {m?.atc && <span className="font-mono text-muted-foreground">{m.atc}</span>}
+                        <span className="font-medium">{m?.name ?? "—"}</span>
+                        {m?.dose && <span className="text-muted-foreground">· {m.dose}</span>}
+                        {m?.frequency && (
+                          <span className="text-muted-foreground">· {FREQ_LABELS_INL[m.frequency] ?? m.frequency}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {row.notes && (
+                  <p className="text-xs text-muted-foreground italic">{row.notes}</p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      );
+    };
+
+
     const renderGroups = (contentBySubKey: Record<string, GroupContent | RowSpec[]>) => {
       const main = mainDim;
       // Resolve from taxonomy. If we couldn't find a parent, fall back to a
@@ -3043,10 +3120,54 @@ function HealthDimensionView({
         icon: Users,
       };
 
+      // ── Append Current Illnesses + Previous Illnesses accordions ──
+      // Filtered to illnesses whose confirmed `dimensions` tag maps to this
+      // page's main dimension. Tag-key → main-dim-key mapping mirrors the
+      // onboarding DIMENSION_TAGS list.
+      const TAG_TO_MAIN_DIM: Record<string, string> = {
+        cardiovascular: "cardiovascular",
+        metabolic: "metabolic",
+        "brain-mental": "brain_mental",
+        cancer: "cancer_risk",
+        respiratory: "respiratory_immune",
+        exercise: "exercise_functional",
+        digestion: "digestion",
+        skin: "skin_oral_mucosal",
+        oral: "skin_oral_mucosal",
+        reproductive: "reproductive_sexual",
+      };
+      const allCurrentIllnesses: any[] = Array.isArray(extra.current_illnesses) ? extra.current_illnesses : [];
+      const allPreviousIllnesses: any[] = Array.isArray(extra.previous_illnesses) ? extra.previous_illnesses : [];
+      const matchesThisDim = (row: any): boolean => {
+        if (!row?.dimensions_confirmed) return false;
+        const tags: string[] = Array.isArray(row.dimensions) ? row.dimensions : [];
+        return tags.some((t) => TAG_TO_MAIN_DIM[t] === famKey);
+      };
+      const currentForDim = allCurrentIllnesses.filter(matchesThisDim);
+      const previousForDim = allPreviousIllnesses.filter(matchesThisDim);
+      const currentIllnessGroup: GroupSpec = {
+        key: `${famKey}__current_illnesses`,
+        title: "Current Illnesses",
+        rows: [],
+        hideScore: true,
+        extra: <IllnessRowsBlock rows={currentForDim} kind="current" />,
+        icon: Activity,
+      };
+      const previousIllnessGroup: GroupSpec = {
+        key: `${famKey}__previous_illnesses`,
+        title: "Previous Illnesses",
+        rows: [],
+        hideScore: true,
+        extra: <IllnessRowsBlock rows={previousForDim} kind="previous" />,
+        icon: Activity,
+      };
+
       return (
         <div className="space-y-2">
           {list.map((g) => <Subgroup key={g.key} group={g} />)}
           {matcher && <Subgroup key={familyGroup.key} group={familyGroup} />}
+          <Subgroup key={currentIllnessGroup.key} group={currentIllnessGroup} />
+          <Subgroup key={previousIllnessGroup.key} group={previousIllnessGroup} />
         </div>
       );
     };
