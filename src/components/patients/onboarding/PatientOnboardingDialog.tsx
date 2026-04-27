@@ -655,6 +655,39 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       console.warn("ECG file sync failed", e);
     }
 
+    // Sync mole images attached in onboarding to patient_health_files (Skin).
+    try {
+      const moles = Array.isArray(nextForm.moles) ? nextForm.moles : [];
+      for (let i = 0; i < moles.length; i++) {
+        const mole = moles[i];
+        const imgs = Array.isArray(mole.image_files) ? mole.image_files : [];
+        for (const f of imgs) {
+          if (!(f instanceof File)) continue;
+          const path = `${patientId}/moles/${Date.now()}_${i + 1}_${f.name}`;
+          const { error: upErr } = await supabase.storage
+            .from("patient-health-files")
+            .upload(path, f);
+          if (upErr) {
+            console.warn("Mole image upload failed", upErr);
+            continue;
+          }
+          await supabase.from("patient_health_files").insert({
+            patient_id: patientId,
+            created_by: user.id,
+            file_category: "mole_image",
+            file_name: f.name,
+            file_path: path,
+            file_size: f.size,
+            health_dimension: "Skin, Oral & Mucosal Health",
+            source: `Onboarding — Mole ${i + 1}`,
+            notes: mole.location || mole.label || `Mole ${i + 1}`,
+          } as any);
+        }
+      }
+    } catch (e) {
+      console.warn("Mole image sync failed", e);
+    }
+
     // On completion, auto-create a review task (skip silently if it fails)
     if (options.isComplete) {
       const due = new Date();
