@@ -52,12 +52,11 @@ export function StepStatus() {
               {f.key === "peripheral_circulation" && form.exam_findings.peripheral_circulation.present && (
                 <div className="mt-3 space-y-2 pl-3 border-l-2 border-border/60">
                   {PERIPHERAL_SUBS.map((s) => (
-                    <FindingRow
+                    <PeripheralSubRow
                       key={String(s.key)}
                       label={s.label}
                       finding={form.exam_findings[s.key]}
                       onChange={(p) => updateFinding(s.key, p)}
-                      compact
                     />
                   ))}
                 </div>
@@ -100,6 +99,30 @@ function FindingRow({
         </div>
       </div>
       {children}
+    </div>
+  );
+}
+
+function PeripheralSubRow({
+  label,
+  finding,
+  onChange,
+}: {
+  label: string;
+  finding: ExamFinding;
+  onChange: (p: Partial<ExamFinding>) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card/40 px-3 py-2">
+      <span className="text-xs font-medium text-foreground">{label}</span>
+      <Input
+        value={finding.notes}
+        onChange={(e) =>
+          onChange({ notes: e.target.value, present: e.target.value.trim().length > 0 })
+        }
+        placeholder="Findings / measurements…"
+        className="h-8 max-w-[260px] text-xs"
+      />
     </div>
   );
 }
