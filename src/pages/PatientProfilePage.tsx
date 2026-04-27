@@ -2800,13 +2800,24 @@ function HealthDimensionView({
       scoreKey?: string;    // which sub-score to show (defaults to `key`)
       rows: RowSpec[];
       extra?: React.ReactNode; // optional content above rows (e.g. mole cards)
+      // Optional: render a flat list of category-grouped subsections inside
+      // the expanded body (used by Cardiovascular for grey category labels).
+      internalSections?: { label: string; rows: RowSpec[] }[];
+      // Optional: skip the right-aligned score badge entirely.
+      hideScore?: boolean;
+      // Optional: explicit score override (used when there is no entry in
+      // `subScoresLocal` for this group's key — e.g. Cardiovascular which
+      // has no sub-dimensions).
+      explicitScore?: number | null;
     };
 
     const subScoresLocal = computeSubScores({ onboarding, labResults, diagnoses, medications, allergies });
 
     const Subgroup = ({ group }: { group: GroupSpec }) => {
       const expanded = expandedGroups.has(group.key);
-      const score = subScoresLocal[group.scoreKey ?? group.key];
+      const score = group.explicitScore !== undefined
+        ? group.explicitScore
+        : subScoresLocal[group.scoreKey ?? group.key];
       const scoreLabel = score == null ? "—" : score.toFixed(1);
       // Left-border accent is derived from the same score tone as the badge.
       // Teal scores (low risk) and "no data" get no accent; amber/red show a coloured strip.
@@ -2819,6 +2830,8 @@ function HealthDimensionView({
         if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
         return next;
       });
+      const hasInternal = !!(group.internalSections && group.internalSections.length > 0);
+      const hasRows = group.rows.length > 0;
       return (
         <div
           className="rounded-md border overflow-hidden"
@@ -2839,21 +2852,34 @@ function HealthDimensionView({
               />
               <span className="font-semibold text-sm">{group.title}</span>
             </div>
-            <span className={cn(
-              "inline-flex items-center justify-center min-w-[2.25rem] h-7 px-2 rounded-full text-xs font-semibold",
-              scoreColor(score),
-            )}>
-              {scoreLabel}
-            </span>
+            {!group.hideScore && (
+              <span className={cn(
+                "inline-flex items-center justify-center min-w-[2.25rem] h-7 px-2 rounded-full text-xs font-semibold",
+                scoreColor(score),
+              )}>
+                {scoreLabel}
+              </span>
+            )}
           </button>
           {expanded && (
             <div className="pl-4">
               {group.extra}
-              {group.rows.length > 0 ? (
+              {hasInternal ? (
+                <div>
+                  {group.internalSections!.map((sec, i) => (
+                    <div key={`${group.key}-sec-${i}`}>
+                      <div className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {sec.label}
+                      </div>
+                      <div className="divide-y">{sec.rows.map(renderRowSpec)}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : hasRows ? (
                 <div className="divide-y">{group.rows.map(renderRowSpec)}</div>
-              ) : (
+              ) : !group.extra ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">No rows for this subdimension.</p>
-              )}
+              ) : null}
             </div>
           )}
         </div>
@@ -2868,7 +2894,56 @@ function HealthDimensionView({
      * Pass a content map keyed by sub-dimension `key`. Sub-dims absent from
      * the map render with no rows (still shown, score still derived).
      */
-    type GroupContent = { rows?: RowSpec[]; extra?: React.ReactNode };
+    type GroupContent = {
+      rows?: RowSpec[];
+      extra?: React.ReactNode;
+      internalSections?: { label: string; rows: RowSpec[] }[];
+      hideScore?: boolean;
+      explicitScore?: number | null;
+      title?: string; // override the auto-derived sub-dim label
+    };
+
+    // ── Family-history matchers per main dimension ──────────────────
+    // Used to build the auto-appended "Family History" accordion at the
+    // bottom of every dimension's risk-factors list. The matcher is
+    // resolved from the *main* dimension key, so sub-dim pages get the
+    // same family-history slice as the parent dimension page.
+    const FAMILY_ICD_MATCHERS: Record<string, (icd: string) => boolean> = {
+      cardiovascular: (c) => /^I\d/.test(c),
+      metabolic: (c) => /^E\d/.test(c),
+      brain_mental: (c) => /^[FG]\d/.test(c),
+      cancer_risk: (c) => (/^C\d/.test(c) || /^D[0-4]\d/.test(c) || /^Z80/.test(c)),
+      respiratory_immune: (c) => (/^J\d/.test(c) || /^D8/.test(c)),
+      digestion: (c) => /^K\d/.test(c),
+      exercise_functional: (c) => /^M\d/.test(c),
+      reproductive_sexual: (c) => (/^N\d/.test(c) || /^O\d/.test(c)),
+      skin_oral_mucosal: (c) => /^L\d/.test(c),
+    };
+
+    const FamilyHistoryRows = ({ rows }: { rows: FH[] }) => {
+      if (rows.length === 0) {
+        return <p className="px-4 py-3 text-sm text-muted-foreground">No relevant family history recorded.</p>;
+      }
+      return (
+        <ul className="divide-y">
+          {rows.map((r, i) => (
+            <li key={i} className="px-4 py-3 text-sm flex items-center justify-between gap-2">
+              <span>
+                <span className="font-medium">{r.relative ?? "Relative"}</span>
+                <span className="text-muted-foreground"> · {r.illness_name ?? r.icd_code ?? "—"}</span>
+                {r.age_at_diagnosis != null && (
+                  <span className="text-muted-foreground"> · {r.age_at_diagnosis}</span>
+                )}
+              </span>
+              {r.icd_code && (
+                <Badge variant="outline" className="text-[10px]">{r.icd_code}</Badge>
+              )}
+            </li>
+          ))}
+        </ul>
+      );
+    };
+
     const renderGroups = (contentBySubKey: Record<string, GroupContent | RowSpec[]>) => {
       const main = mainDim;
       // Resolve from taxonomy. If we couldn't find a parent, fall back to a
@@ -2882,9 +2957,12 @@ function HealthDimensionView({
         const content: GroupContent = Array.isArray(raw) ? { rows: raw } : (raw ?? {});
         return {
           key: sub.key,
-          title: sub.label,
+          title: content.title ?? sub.label,
           rows: content.rows ?? [],
           extra: content.extra,
+          internalSections: content.internalSections,
+          hideScore: content.hideScore,
+          explicitScore: content.explicitScore,
         };
       });
 
@@ -2893,7 +2971,26 @@ function HealthDimensionView({
         ? groups
         : groups.filter((g) => g.key === dimensionKey);
       const list = visible.length > 0 ? visible : groups;
-      return <div className="space-y-2">{list.map((g) => <Subgroup key={g.key} group={g} />)}</div>;
+
+      // Append Family History accordion (last) — scoped to this dimension's
+      // ICD range. Always present, even when no entries match.
+      const famKey = main?.key ?? dimensionKey;
+      const matcher = FAMILY_ICD_MATCHERS[famKey];
+      const famRows: FH[] = matcher ? familyByPrefix(matcher) : [];
+      const familyGroup: GroupSpec = {
+        key: `${famKey}__family_history`,
+        title: "Family History",
+        rows: [],
+        hideScore: true,
+        extra: <FamilyHistoryRows rows={famRows} />,
+      };
+
+      return (
+        <div className="space-y-2">
+          {list.map((g) => <Subgroup key={g.key} group={g} />)}
+          {matcher && <Subgroup key={familyGroup.key} group={familyGroup} />}
+        </div>
+      );
     };
 
     // ── Diagnoses helpers ────────────────────────────────────────────
@@ -2998,8 +3095,11 @@ function HealthDimensionView({
       }
 
       // ── Cardiovascular Health (no sub-dimensions) ─────────────────
-      // Renders a FLAT list of risk-factor rows — no accordion groups,
-      // no section headers. Order matches the canonical CV row spec.
+      // Renders TWO accordion sections via renderGroups:
+      //   I.  Cardiovascular Health (collapsed) — rows split into grey
+      //       category labels (Blood Pressure, Heart & Rhythm, Lipids,
+      //       Lifestyle Risk, Peripheral Circulation).
+      //   II. Family History (auto-appended by renderGroups).
       case "cardiovascular": {
         const bp1 = (onboarding?.bp1_systolic != null && onboarding?.bp1_diastolic != null)
           ? `${onboarding.bp1_systolic}/${onboarding.bp1_diastolic}` : dash;
@@ -3007,43 +3107,69 @@ function HealthDimensionView({
         const bp2 = (onboarding?.bp2_systolic != null && onboarding?.bp2_diastolic != null)
           ? `${onboarding.bp2_systolic}/${onboarding.bp2_diastolic}` : dash;
         const bp2Flag = onboarding?.bp2_systolic != null && (Number(onboarding.bp2_systolic) >= 140 || Number(onboarding?.bp2_diastolic) >= 90);
-        const cardioFamily = familyByPrefix(isCardioIcd);
         const ldlVal = lab?.ldl_mmol_l;
         const ldlFlag = ldlVal != null && Number(ldlVal) > 3.0;
         const totalChol = (lab as any)?.total_cholesterol_mmol_l;
         const hdl = (lab as any)?.hdl_mmol_l;
         const trig = (lab as any)?.triglycerides_mmol_l;
         const bmi = onboarding?.bmi;
-        const flatRows: RowSpec[] = [
-          r("cv_bp1", "Blood pressure 1st — SYS/DIA", <>{bp1}{bp1Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp1Flag),
-          r("cv_bp2", "Blood pressure 2nd — SYS/DIA", <>{bp2}{bp2Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp2Flag),
-          r("cv_heart", "Heart exam finding", examVal("heart"), undefined, examFindings.heart?.present === true),
-          r("cv_ecg", "ECG notes", valOrDash(onboarding?.ecg_notes)),
-          r("cv_ldl", "LDL (lab)",
-            <>{numOrDash(ldlVal, " mmol/L")}{ldlFlag && <Flag tone="amber">High</Flag>}</>,
-            undefined, !!ldlFlag),
-          r("cv_total_chol", "Total cholesterol (lab)", numOrDash(totalChol, " mmol/L")),
-          r("cv_hdl", "HDL (lab)", numOrDash(hdl, " mmol/L")),
-          r("cv_trig", "Triglycerides (lab)", numOrDash(trig, " mmol/L")),
-          r("cv_smoking", "Smoking",
-            <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>,
-            undefined, !!(onboarding?.smoking && onboarding.smoking !== "never")),
-          r("cv_smoked", "Previously smoked — years", previouslySmokedYearsVal()),
-          r("cv_nicotine", "Nicotine pouches", nicotinePouchesVal(), undefined, extra.nicotine_pouches_current === true),
-          r("cv_alcohol", "Alcohol use", alcoholVal()),
-          r("cv_bmi", "BMI",
-            <>{numOrDash(bmi)}{bmi != null && Number(bmi) >= 30 && <Flag tone="pink">Obese</Flag>}{bmi != null && Number(bmi) >= 25 && Number(bmi) < 30 && <Flag tone="amber">Overweight</Flag>}</>,
-            undefined, bmi != null && Number(bmi) >= 25),
-          r("cv_family", "Family history — cardiovascular", familyRowValue(cardioFamily), familyRowDetail(cardioFamily), cardioFamily.length > 0),
-          r("cv_adp", "ADP exam finding", examVal("adp")),
-          r("cv_atp", "ATP exam finding", examVal("atp")),
-          r("cv_afem", "AFEM exam finding", examVal("afem")),
-        ];
-        return (
-          <div className="rounded-md border overflow-hidden">
-            <div className="divide-y">{flatRows.map(renderRowSpec)}</div>
-          </div>
-        );
+        // Cardiovascular has no entry in subScoresLocal — pass parentScore
+        // (computed in the enclosing component) so the Subgroup header still
+        // shows the dimension's overall risk index.
+        return renderGroups({
+          cardiovascular: {
+            explicitScore: parentScore,
+            internalSections: [
+              {
+                label: "Blood Pressure",
+                rows: [
+                  r("cv_bp1", "Blood pressure 1st — SYS/DIA", <>{bp1}{bp1Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp1Flag),
+                  r("cv_bp2", "Blood pressure 2nd — SYS/DIA", <>{bp2}{bp2Flag && <Flag tone="amber">High</Flag>}</>, undefined, !!bp2Flag),
+                ],
+              },
+              {
+                label: "Heart & Rhythm",
+                rows: [
+                  r("cv_heart", "Heart exam finding", examVal("heart"), undefined, examFindings.heart?.present === true),
+                  r("cv_ecg", "ECG notes", valOrDash(onboarding?.ecg_notes)),
+                ],
+              },
+              {
+                label: "Lipids (Lab)",
+                rows: [
+                  r("cv_ldl", "LDL (lab)",
+                    <>{numOrDash(ldlVal, " mmol/L")}{ldlFlag && <Flag tone="amber">High</Flag>}</>,
+                    undefined, !!ldlFlag),
+                  r("cv_total_chol", "Total cholesterol (lab)", numOrDash(totalChol, " mmol/L")),
+                  r("cv_hdl", "HDL (lab)", numOrDash(hdl, " mmol/L")),
+                  r("cv_trig", "Triglycerides (lab)", numOrDash(trig, " mmol/L")),
+                ],
+              },
+              {
+                label: "Lifestyle Risk",
+                rows: [
+                  r("cv_smoking", "Smoking",
+                    <>{smokingCurrentVal()}{onboarding?.smoking && onboarding.smoking !== "never" && <Flag tone="pink">Risk</Flag>}</>,
+                    undefined, !!(onboarding?.smoking && onboarding.smoking !== "never")),
+                  r("cv_smoked", "Previously smoked — years", previouslySmokedYearsVal()),
+                  r("cv_nicotine", "Nicotine pouches", nicotinePouchesVal(), undefined, extra.nicotine_pouches_current === true),
+                  r("cv_alcohol", "Alcohol use", alcoholVal()),
+                  r("cv_bmi", "BMI",
+                    <>{numOrDash(bmi)}{bmi != null && Number(bmi) >= 30 && <Flag tone="pink">Obese</Flag>}{bmi != null && Number(bmi) >= 25 && Number(bmi) < 30 && <Flag tone="amber">Overweight</Flag>}</>,
+                    undefined, bmi != null && Number(bmi) >= 25),
+                ],
+              },
+              {
+                label: "Peripheral Circulation",
+                rows: [
+                  r("cv_adp", "ADP exam finding", examVal("adp")),
+                  r("cv_atp", "ATP exam finding", examVal("atp")),
+                  r("cv_afem", "AFEM exam finding", examVal("afem")),
+                ],
+              },
+            ],
+          },
+        });
       }
 
       // ── Metabolic Health ──────────────────────────────────────────
@@ -3096,7 +3222,7 @@ function HealthDimensionView({
           ],
           metabolism: [
             r("met_diabetes_dx", "Diabetes / metabolic diagnoses", diagRowValue(diabetesDx), diagRowDetail(diabetesDx), diabetesDx.length > 0),
-            r("met_family", "Family history — metabolic/diabetes", familyRowValue(metabolicFamily), familyRowDetail(metabolicFamily), metabolicFamily.length > 0),
+            // Family history row removed — auto-appended by renderGroups.
           ],
         });
       }
@@ -3200,7 +3326,7 @@ function HealthDimensionView({
           immune_defence: [
             r("ri_lymph", "Lymph node finding", examVal("lymph_nodes"), undefined, examFindings.lymph_nodes?.present === true),
             r("ri_autoimmune", "Autoimmune diagnoses", diagRowValue(autoimmuneDx), diagRowDetail(autoimmuneDx), autoimmuneDx.length > 0),
-            r("ri_family", "Family history — respiratory/immune", familyRowValue(respFamily), familyRowDetail(respFamily), respFamily.length > 0),
+            // Family history row removed — auto-appended by renderGroups.
           ],
           allergies: [
             r("ri_allergies", "Allergies", allergyValue, allergyDetail, allergiesList.length > 0),
@@ -3247,9 +3373,9 @@ function HealthDimensionView({
           gynaecological_cancer: [
             r("can_breast", "Breast screening · year", screeningVal(extra.screen_breast_year)),
             r("can_cervix", "Cervix screening · year", screeningVal(extra.screen_cervix_year)),
-            r("can_gyn_family", "Family history — gynaecological cancer",
-              familyRowValue(cancerFamily.filter((f) => /^C5[0-8]/.test(String(f.icd_code ?? "").toUpperCase()))),
-              familyRowDetail(cancerFamily.filter((f) => /^C5[0-8]/.test(String(f.icd_code ?? "").toUpperCase())))),
+            // Gyn-cancer family history row removed — full cancer family
+            // history is auto-appended below by renderGroups.
+
           ],
           prostate_other_cancer: {
             extra: moleAlert,
@@ -3268,7 +3394,7 @@ function HealthDimensionView({
               r("can_sun", "Regular sun exposure", yesOrDash(onboarding?.sun_exposure)),
               r("can_sun_protection", "Sun protection method", valOrDash(extra.sun_protection_method)),
               r("can_sunburns", "History of severe sunburns", yesOrDash(extra.severe_sunburns_history), undefined, extra.severe_sunburns_history === true),
-              r("can_family", "Family history — cancer", familyRowValue(cancerFamily), familyRowDetail(cancerFamily), cancerFamily.length > 0),
+              // Family history row removed — auto-appended by renderGroups.
               ...(moles.length === 0
                 ? [r("can_moles_empty", "Moles", dash)]
                 : moles.map((m) => r(
