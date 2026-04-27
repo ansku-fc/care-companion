@@ -204,6 +204,7 @@ function IllnessRowEditor({
           medications={row.medications}
           onChange={(meds) => onChange({ medications: meds })}
           icdCode={row.icd_code}
+          showEndYear={showResolved}
         />
       </div>
 
@@ -592,6 +593,7 @@ function blankMedication(name: string, atc?: string): MedicationDetail {
     frequency: "",
     route: "",
     start_year: null,
+    end_year: null,
     notes: "",
   };
 }
@@ -603,6 +605,7 @@ function MedicationsEditor({
   layout = "full",
   expandedIdx: controlledIdx,
   onExpandedIdxChange,
+  showEndYear = false,
 }: {
   medications: MedicationDetail[];
   onChange: (next: MedicationDetail[]) => void;
@@ -611,6 +614,8 @@ function MedicationsEditor({
   layout?: "full" | "trigger" | "list";
   expandedIdx?: number | null;
   onExpandedIdxChange?: (idx: number | null) => void;
+  /** Show the End year field on each expanded med row (used by Previous Illnesses). */
+  showEndYear?: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -778,7 +783,16 @@ function MedicationsEditor({
                         value={med.start_year}
                         onChange={(y) => updateAt(idx, { start_year: y })}
                       />
-                    </div>
+                    {showEndYear && (
+                      <div className="col-span-6 md:col-span-3">
+                        <FieldLabel>End year</FieldLabel>
+                        <YearSelect
+                          value={med.end_year}
+                          onChange={(y) => updateAt(idx, { end_year: y })}
+                        />
+                      </div>
+                    )}
+                  </div>
                   </div>
                 )}
               </div>

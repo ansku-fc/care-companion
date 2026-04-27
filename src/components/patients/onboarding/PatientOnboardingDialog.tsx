@@ -545,6 +545,7 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
             const freqKey = ((m as any)?.frequency as string) || "";
             const routeKey = ((m as any)?.route as string) || "";
             const startYear = ((m as any)?.start_year as number | null) ?? null;
+            const endYear = ((m as any)?.end_year as number | null) ?? null;
             const notes = ((m as any)?.notes as string) || "";
             const freqLabel = FREQ_LABELS[freqKey] || "";
             const routeLabel = ROUTE_LABELS[routeKey] || "";
@@ -566,12 +567,14 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
               indication: indicationParts.join(" "),
               start_date: startYear ? `${startYear}-01-01` : null,
               end_date:
-                kind === "previous" && ill.resolved_year
-                  ? `${ill.resolved_year}-12-31`
-                  : null,
+                endYear
+                  ? `${endYear}-12-31`
+                  : kind === "previous" && ill.resolved_year
+                    ? `${ill.resolved_year}-12-31`
+                    : null,
               status:
                 kind === "previous"
-                  ? ill.resolved_year
+                  ? endYear || ill.resolved_year
                     ? "discontinued"
                     : "historical"
                   : "active",
