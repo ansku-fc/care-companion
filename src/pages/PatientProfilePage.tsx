@@ -113,7 +113,13 @@ const PatientProfilePage = () => {
   const setActiveSection = React.useCallback(
     (next: SidebarSection) => {
       setActiveSectionRaw((cur) => {
-        if (cur !== next) navHistory.pushScope(scopeKey, next);
+        if (cur !== next) {
+          navHistory.pushScope(scopeKey, next);
+          // Reset manual sidebar expansion on navigation so the tree
+          // always reflects the current depth — no stale open branches.
+          setDimensionsSectionOpen(null);
+          setExpandedGroups({});
+        }
         return next;
       });
     },
@@ -232,8 +238,10 @@ const PatientProfilePage = () => {
               const isInDimension = HEALTH_TAXONOMY.some(
                 (m) => m.key === activeSection || m.subDimensions.some((s) => s.key === activeSection),
               );
-              // Auto-expand when on Health Data page or inside any dimension
-              const defaultOpen = isOnHealthData || isInDimension;
+              // Only auto-expand the dimension list when the user is actually
+              // inside a dimension page. Clicking "Health Data" navigates to
+              // the overview but does NOT pop open the full taxonomy tree.
+              const defaultOpen = isInDimension;
               const sectionOpen = dimensionsSectionOpen ?? defaultOpen;
 
               return (
