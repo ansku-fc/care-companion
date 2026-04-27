@@ -32,6 +32,7 @@ import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
+import { PatientDocumentsView } from "@/components/patients/PatientDocumentsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView, LabResultsBlock } from "@/components/patients/DimensionOverviewView";
 import { getBiomarkersForMainDimension } from "@/components/patients/dimensionRegistry";
