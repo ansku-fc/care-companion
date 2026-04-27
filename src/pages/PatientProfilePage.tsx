@@ -3394,7 +3394,7 @@ function HealthDimensionView({
               r("can_sun", "Regular sun exposure", yesOrDash(onboarding?.sun_exposure)),
               r("can_sun_protection", "Sun protection method", valOrDash(extra.sun_protection_method)),
               r("can_sunburns", "History of severe sunburns", yesOrDash(extra.severe_sunburns_history), undefined, extra.severe_sunburns_history === true),
-              r("can_family", "Family history — cancer", familyRowValue(cancerFamily), familyRowDetail(cancerFamily), cancerFamily.length > 0),
+              // Family history row removed — auto-appended by renderGroups.
               ...(moles.length === 0
                 ? [r("can_moles_empty", "Moles", dash)]
                 : moles.map((m) => r(
