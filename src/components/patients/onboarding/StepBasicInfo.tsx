@@ -171,13 +171,9 @@ export function StepBasicInfo() {
 
         <div>
           <FieldLabel>Allergies</FieldLabel>
-          <MultiSelectChips
-            options={ALLERGY_OPTIONS}
-            selected={form.allergies}
+          <AllergiesPicker
+            value={form.allergies}
             onChange={(v) => set("allergies", v)}
-            placeholder="Search allergens…"
-            tone="neutral"
-            allowCustom
           />
         </div>
 
