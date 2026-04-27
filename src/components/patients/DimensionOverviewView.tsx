@@ -53,6 +53,7 @@ export function LabResultsBlock({
   filterOptions,
   patientId,
   patientName,
+  labResults,
 }: {
   biomarkers: BiomarkerDef[];
   filter?: string;
@@ -60,6 +61,7 @@ export function LabResultsBlock({
   filterOptions?: { key: string; label: string }[];
   patientId?: string;
   patientName?: string;
+  labResults?: Array<Record<string, any>> | null;
 }) {
   const [selectedMarker, setSelectedMarker] = useState<SelectedMarker | null>(null);
   const [sidebarWindow, setSidebarWindow] = useState<"6m" | "1y" | "3y" | "all">("3y");
