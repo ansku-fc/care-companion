@@ -2966,7 +2966,7 @@ function HealthDimensionView({
           { key: "pain", title: "Pain", rows: [
             r("bm_pain_dx", "Pain-related diagnoses", diagRowValue(painDx), diagRowDetail(painDx), painDx.length > 0),
           ]},
-          ...(age != null && Number(age) >= 50 ? [{
+          ...(patientAge != null && Number(patientAge) >= 50 ? [{
             key: "memory", title: "Memory (50+)", rows: [
               r("bm_memory", "Memory concerns", dash, <p className="text-sm text-muted-foreground">No structured memory screen captured during onboarding.</p>),
             ],
