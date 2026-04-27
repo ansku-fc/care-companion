@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { formatLastFirst } from "@/lib/patientName";
 import {
   ASSIGNEES, PRIORITY_OPTIONS, STATUS_OPTIONS, TASK_CATEGORIES,
   type Task, type TaskCategory, type TaskPriority, type TaskStatus,
@@ -276,16 +277,19 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
                           <Check className={cn("mr-2 h-4 w-4", !patientId ? "opacity-100" : "opacity-0")} />
                           No patient (administrative)
                         </CommandItem>
-                        {patients.map((p) => (
-                          <CommandItem
-                            key={p.id}
-                            value={p.full_name}
-                            onSelect={() => { setPatientId(p.id); setPatientPickerOpen(false); }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", patientId === p.id ? "opacity-100" : "opacity-0")} />
-                            {p.full_name}
-                          </CommandItem>
-                        ))}
+                        {patients.map((p) => {
+                          const display = formatLastFirst(p.full_name);
+                          return (
+                            <CommandItem
+                              key={p.id}
+                              value={display}
+                              onSelect={() => { setPatientId(p.id); setPatientPickerOpen(false); }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", patientId === p.id ? "opacity-100" : "opacity-0")} />
+                              {display}
+                            </CommandItem>
+                          );
+                        })}
                       </CommandGroup>
                     </CommandList>
                   </Command>
