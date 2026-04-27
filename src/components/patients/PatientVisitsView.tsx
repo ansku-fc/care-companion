@@ -42,6 +42,16 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
     .filter((a) => new Date(a.start_time) < now)
     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
+  if (openVisitNote) {
+    return (
+      <OnboardingVisitDetailView
+        patient={patient}
+        visit={openVisitNote}
+        onBack={() => setOpenVisitNote(null)}
+      />
+    );
+  }
+
   if (activeVisit) {
     return (
       <VisitConsultationView
