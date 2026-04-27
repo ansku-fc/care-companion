@@ -58,6 +58,11 @@ const TasksPage = () => {
   const navigate = useNavigate();
   const { tasks, patients, patientName, loading } = useTasks();
   const { openNewTask } = useTaskActions();
+  const { profile } = useAuth();
+  const currentUserName = profile?.full_name ?? "Dr. Laine";
+
+  // Scope: My Tasks (default) vs All Tasks (incl. team FYI rows)
+  const [scope, setScope] = useState<"mine" | "all">("mine");
 
   // Filter state — patient & priority can be deep-linked.
   const [filterStatus, setFilterStatus]       = useState<string>("all");
@@ -77,7 +82,10 @@ const TasksPage = () => {
 
   const openDetail = (t: Task) => { setDetailTask(t); setDetailOpen(true); };
 
-  const filtered = useMemo(() => {
+  const isMine = (t: Task) => (t.assignee_name ?? "") === currentUserName;
+
+  // Apply non-scope filters first so My/All counts reflect current filters.
+  const baseFiltered = useMemo(() => {
     return tasks.filter((t) => {
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterAssignee !== "all" && (t.assignee_name ?? "") !== filterAssignee) return false;
@@ -89,6 +97,14 @@ const TasksPage = () => {
       return true;
     });
   }, [tasks, filterStatus, filterAssignee, filterCategory, filterPriority, filterPatient, dateFrom, dateTo]);
+
+  const myCount = useMemo(() => baseFiltered.filter(isMine).length, [baseFiltered, currentUserName]);
+  const allCount = baseFiltered.length;
+
+  const filtered = useMemo(
+    () => (scope === "mine" ? baseFiltered.filter(isMine) : baseFiltered),
+    [baseFiltered, scope, currentUserName],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<TaskStatus, Task[]>();
