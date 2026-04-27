@@ -40,6 +40,8 @@ import {
   AlertTriangle,
   Plus,
   X,
+  Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -193,6 +195,93 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const ABCDE_OPTIONS: Record<string, string[]> = {
+  asymmetry: ["Symmetrical", "Asymmetrical"],
+  borders: ["Regular", "Irregular", "Notched"],
+  color: ["Single color", "Multi-colored", "Mixed"],
+  size: ["<5mm", "5–10mm", ">10mm"],
+  change: ["No change", "Growing", "Color change", "Shape change"],
+  symptoms: ["None", "Itching", "Bleeding", "Crusting"],
+};
+
+function AbcdeSelect({
+  value,
+  onChange,
+  field,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  field: keyof typeof ABCDE_OPTIONS;
+  disabled?: boolean;
+}) {
+  return (
+    <Select value={value || undefined} onValueChange={(v) => onChange(v)} disabled={disabled}>
+      <SelectTrigger className="h-7 text-xs">
+        <SelectValue placeholder={field[0].toUpperCase() + field.slice(1)} />
+      </SelectTrigger>
+      <SelectContent>
+        {ABCDE_OPTIONS[field].map((o) => (
+          <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function MoleThumb({
+  file,
+  onOpen,
+  onRemove,
+}: {
+  file: Tables<"patient_health_files">;
+  onOpen: () => void;
+  onRemove?: () => void;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.storage
+        .from("patient-health-files")
+        .createSignedUrl(file.file_path, 600);
+      if (!cancelled) setUrl(data?.signedUrl ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [file.file_path]);
+  return (
+    <div className="relative group">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block h-14 w-14 rounded border border-border bg-muted overflow-hidden hover:border-primary/40"
+        title={file.file_name}
+      >
+        {url ? (
+          <img src={url} alt={file.file_name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+            <ImageIcon className="h-4 w-4" />
+          </div>
+        )}
+      </button>
+      <div className="text-[10px] text-muted-foreground truncate max-w-[56px] mt-0.5" title={file.file_name}>
+        {file.file_name}
+      </div>
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remove image"
+          className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive flex items-center justify-center"
+        >
+          <X className="h-2.5 w-2.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 const REOPEN_REASONS = [
   "Correction of error",
   "New clinical information",
@@ -205,6 +294,10 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   const [allergies, setAllergies] = useState<Tables<"patient_allergies">[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Mole image files (loaded from patient_health_files); keyed by mole index (1-based) via `source` field
+  const [moleFiles, setMoleFiles] = useState<Tables<"patient_health_files">[]>([]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxName, setLightboxName] = useState<string>("");
 
   const initialDoc: DocState = useMemo(() => {
     const ed = ((visit as any).extra_data ?? {}) as any;
@@ -229,13 +322,15 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [obRes, alRes] = await Promise.all([
+      const [obRes, alRes, mfRes] = await Promise.all([
         supabase.from("patient_onboarding").select("*").eq("patient_id", patient.id).maybeSingle(),
         supabase.from("patient_allergies").select("*").eq("patient_id", patient.id),
+        supabase.from("patient_health_files").select("*").eq("patient_id", patient.id).eq("file_category", "mole_image"),
       ]);
       if (cancelled) return;
       setOnboarding(obRes.data);
       setAllergies(alRes.data || []);
+      setMoleFiles(mfRes.data || []);
       setLoading(false);
       // Seed creation log entry once
       if ((initialDoc.edit_log ?? []).length === 0) {
@@ -823,6 +918,74 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             const update = (idx: number, patch: any) => setList(list.map((x: any, j: number) => (j === idx ? { ...x, ...patch } : x)));
             const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
             const add = () => setList([...list, { id: `new-${Date.now()}`, label: `Mole ${list.length + 1}`, location: "", asymmetry: "", borders: "", color: "", size: "", change: "", symptoms: "" }]);
+
+            const filesForMole = (idx: number) =>
+              moleFiles.filter((f) => (f.source ?? "") === `Onboarding — Mole ${idx + 1}`);
+
+            const openLightbox = async (f: Tables<"patient_health_files">) => {
+              const { data } = await supabase.storage
+                .from("patient-health-files")
+                .createSignedUrl(f.file_path, 600);
+              if (data?.signedUrl) {
+                setLightboxUrl(data.signedUrl);
+                setLightboxName(f.file_name);
+              }
+            };
+
+            const handleUpload = async (idx: number, fileList: FileList | null) => {
+              if (!fileList || fileList.length === 0) return;
+              const accepted = Array.from(fileList).filter((f) => /image\/(jpe?g|png)/i.test(f.type));
+              if (accepted.length === 0) {
+                toast.error("Only JPG or PNG files allowed");
+                return;
+              }
+              const { data: userData } = await supabase.auth.getUser();
+              const userId = userData.user?.id;
+              if (!userId) {
+                toast.error("Not signed in");
+                return;
+              }
+              const inserted: Tables<"patient_health_files">[] = [];
+              for (const f of accepted) {
+                const path = `${patient.id}/moles/${Date.now()}_${idx + 1}_${f.name}`;
+                const { error: upErr } = await supabase.storage
+                  .from("patient-health-files")
+                  .upload(path, f);
+                if (upErr) {
+                  toast.error(`Upload failed: ${f.name}`);
+                  continue;
+                }
+                const m = list[idx] ?? {};
+                const { data: row, error: insErr } = await supabase
+                  .from("patient_health_files")
+                  .insert({
+                    patient_id: patient.id,
+                    created_by: userId,
+                    file_category: "mole_image",
+                    file_name: f.name,
+                    file_path: path,
+                    file_size: f.size,
+                    health_dimension: "Skin, Oral & Mucosal Health",
+                    source: `Onboarding — Mole ${idx + 1}`,
+                    notes: m.location || m.label || `Mole ${idx + 1}`,
+                  } as any)
+                  .select()
+                  .single();
+                if (!insErr && row) inserted.push(row as any);
+              }
+              if (inserted.length) {
+                setMoleFiles((prev) => [...prev, ...inserted]);
+                toast.success(`${inserted.length} image${inserted.length === 1 ? "" : "s"} attached`);
+              }
+            };
+
+            const handleRemoveImage = async (f: Tables<"patient_health_files">) => {
+              await supabase.storage.from("patient-health-files").remove([f.file_path]);
+              await supabase.from("patient_health_files").delete().eq("id", f.id);
+              setMoleFiles((prev) => prev.filter((x) => x.id !== f.id));
+              toast.success("Image removed");
+            };
+
             return (
               <Section title="Physical Examination / Moles">
                 <div className="flex items-center justify-between">
@@ -840,9 +1003,10 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                     const flags = [m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(
                       (v) => v && v !== "Symmetrical" && v !== "Regular" && v !== "Single color" && v !== "No change" && v !== "None"
                     );
+                    const imgs = filesForMole(idx);
                     if (!editing) {
                       return (
-                        <div key={m.id ?? idx} className="text-sm">
+                        <div key={m.id ?? idx} className="text-sm space-y-1">
                           <div className="font-medium flex items-center gap-2">
                             {m.label}: {m.location}
                             {flags.length > 0 && (
@@ -851,9 +1015,16 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                               </Badge>
                             )}
                           </div>
-                          <div className="text-muted-foreground text-xs mt-0.5">
+                          <div className="text-muted-foreground text-xs">
                             {[m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(Boolean).join(" · ")}
                           </div>
+                          {imgs.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {imgs.map((f) => (
+                                <MoleThumb key={f.id} file={f} onOpen={() => openLightbox(f)} />
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     }
@@ -867,17 +1038,35 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
                               <AlertTriangle className="h-3 w-3" /> {flags.length}
                             </Badge>
                           )}
-                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => remove(idx)}>
-                            <X className="h-3.5 w-3.5" />
+                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => remove(idx)} aria-label="Remove mole">
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                         <div className="grid grid-cols-3 gap-1">
-                          <Input value={m.asymmetry ?? ""} onChange={(e) => update(idx, { asymmetry: e.target.value })} placeholder="Asymmetry" className="h-7 text-xs" />
-                          <Input value={m.borders ?? ""} onChange={(e) => update(idx, { borders: e.target.value })} placeholder="Borders" className="h-7 text-xs" />
-                          <Input value={m.color ?? ""} onChange={(e) => update(idx, { color: e.target.value })} placeholder="Color" className="h-7 text-xs" />
-                          <Input value={m.size ?? ""} onChange={(e) => update(idx, { size: e.target.value })} placeholder="Size" className="h-7 text-xs" />
-                          <Input value={m.change ?? ""} onChange={(e) => update(idx, { change: e.target.value })} placeholder="Change" className="h-7 text-xs" />
-                          <Input value={m.symptoms ?? ""} onChange={(e) => update(idx, { symptoms: e.target.value })} placeholder="Symptoms" className="h-7 text-xs" />
+                          <AbcdeSelect field="asymmetry" value={m.asymmetry ?? ""} onChange={(v) => update(idx, { asymmetry: v })} />
+                          <AbcdeSelect field="borders" value={m.borders ?? ""} onChange={(v) => update(idx, { borders: v })} />
+                          <AbcdeSelect field="color" value={m.color ?? ""} onChange={(v) => update(idx, { color: v })} />
+                          <AbcdeSelect field="size" value={m.size ?? ""} onChange={(v) => update(idx, { size: v })} />
+                          <AbcdeSelect field="change" value={m.change ?? ""} onChange={(v) => update(idx, { change: v })} />
+                          <AbcdeSelect field="symptoms" value={m.symptoms ?? ""} onChange={(v) => update(idx, { symptoms: v })} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          {imgs.map((f) => (
+                            <MoleThumb key={f.id} file={f} onOpen={() => openLightbox(f)} onRemove={() => handleRemoveImage(f)} />
+                          ))}
+                          <label className="inline-flex items-center gap-1 px-2 h-7 rounded border border-dashed text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/40 cursor-pointer">
+                            <Plus className="h-3 w-3" /> Attach image
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                handleUpload(idx, e.target.files);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
                         </div>
                       </div>
                     );
@@ -1004,6 +1193,18 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <Button variant="outline" onClick={() => setReopenOpen(false)}>Cancel</Button>
             <Button onClick={handleConfirmReopen} disabled={saving}>Confirm & Re-open</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image lightbox */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(o) => { if (!o) setLightboxUrl(null); }}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-normal text-muted-foreground">{lightboxName}</DialogTitle>
+          </DialogHeader>
+          {lightboxUrl && (
+            <img src={lightboxUrl} alt={lightboxName} className="w-full h-auto max-h-[80vh] object-contain rounded" />
+          )}
         </DialogContent>
       </Dialog>
     </div>
