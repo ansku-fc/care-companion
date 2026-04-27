@@ -104,7 +104,7 @@ export function buildSuggestedTasks(opts: {
       title: `Review family history risk factors — ${patientName}`,
       description: "First-degree relative with cardiovascular or cancer diagnosis.",
       category: "clinical",
-      task_category: "clinical_review",
+      task_category: "dimension_review",
       priority: "medium",
       due_in_days: 30,
       assignee_name: "Dr. Laine",
