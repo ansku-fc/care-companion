@@ -316,6 +316,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
 
   // Re-open dialog
   const [reopenOpen, setReopenOpen] = useState(false);
+  const [finaliseConfirmOpen, setFinaliseConfirmOpen] = useState(false);
   const [reopenReason, setReopenReason] = useState<string>(REOPEN_REASONS[0]);
   const [reopenOther, setReopenOther] = useState("");
 
@@ -534,15 +535,6 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg font-semibold">Initial Consultation / Onboarding</h2>
               <StatusBadge status={doc.status} />
-              {doc.status === "finalised" ? (
-                <Badge className="gap-1 bg-green-100 text-green-900 hover:bg-green-100 border border-green-300">
-                  <CheckCircle2 className="h-3 w-3" /> Visit Completed
-                </Badge>
-              ) : (
-                <Badge className="gap-1 bg-yellow-100 text-yellow-900 hover:bg-yellow-100 border border-yellow-300">
-                  <CheckCircle2 className="h-3 w-3" /> Awaiting Review
-                </Badge>
-              )}
             </div>
             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1.5">
@@ -563,9 +555,9 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             {doc.status === "draft" && (
               <>
                 <Button size="sm" variant="outline" onClick={handleSaveEdits} disabled={saving} className="gap-1.5">
-                  <Save className="h-3.5 w-3.5" /> Save
+                  <Save className="h-3.5 w-3.5" /> Save Draft
                 </Button>
-                <Button size="sm" onClick={handleFinalise} disabled={saving} className="gap-1.5">
+                <Button size="sm" onClick={() => setFinaliseConfirmOpen(true)} disabled={saving} className="gap-1.5">
                   <Lock className="h-3.5 w-3.5" /> Finalise Document
                 </Button>
               </>
@@ -1153,6 +1145,33 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
           </Card>
         </div>
       )}
+
+      {/* Finalise confirmation dialog */}
+      <Dialog open={finaliseConfirmOpen} onOpenChange={setFinaliseConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finalise this document?</DialogTitle>
+            <DialogDescription>
+              Once finalised, this document becomes part of the permanent patient record and can no longer be freely edited. Any future changes will require a documented reason and will be logged.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinaliseConfirmOpen(false)} disabled={saving}>
+              Return to Draft
+            </Button>
+            <Button
+              onClick={async () => {
+                await handleFinalise();
+                setFinaliseConfirmOpen(false);
+              }}
+              disabled={saving}
+              className="gap-1.5"
+            >
+              <Lock className="h-3.5 w-3.5" /> Finalise
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Re-open dialog */}
       <Dialog open={reopenOpen} onOpenChange={setReopenOpen}>
