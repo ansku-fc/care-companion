@@ -508,6 +508,7 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
     i: any,
     onChange: (next: any) => void,
     onRemove: () => void,
+    editing: boolean,
   ) {
     const meds: any[] = Array.isArray(i.medications) ? i.medications : [];
     if (!editing) {
