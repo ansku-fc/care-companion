@@ -229,6 +229,59 @@ function AbcdeSelect({
   );
 }
 
+function MoleThumb({
+  file,
+  onOpen,
+  onRemove,
+}: {
+  file: Tables<"patient_health_files">;
+  onOpen: () => void;
+  onRemove?: () => void;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.storage
+        .from("patient-health-files")
+        .createSignedUrl(file.file_path, 600);
+      if (!cancelled) setUrl(data?.signedUrl ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [file.file_path]);
+  return (
+    <div className="relative group">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block h-14 w-14 rounded border border-border bg-muted overflow-hidden hover:border-primary/40"
+        title={file.file_name}
+      >
+        {url ? (
+          <img src={url} alt={file.file_name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+            <ImageIcon className="h-4 w-4" />
+          </div>
+        )}
+      </button>
+      <div className="text-[10px] text-muted-foreground truncate max-w-[56px] mt-0.5" title={file.file_name}>
+        {file.file_name}
+      </div>
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remove image"
+          className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive flex items-center justify-center"
+        >
+          <X className="h-2.5 w-2.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 const REOPEN_REASONS = [
   "Correction of error",
   "New clinical information",
