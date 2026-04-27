@@ -527,6 +527,8 @@ const PatientProfilePage = () => {
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} onPatientUpdate={(updated) => setPatient(updated)} />
         ) : activeSection === "medications" ? (
           <PatientMedicationsView patientName={patient.full_name} patientId={patient.id} />
+        ) : activeSection === "documents" ? (
+          <PatientDocumentsView patientId={patient.id} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
         ) : activeSection === "care_team" ? (
