@@ -131,6 +131,17 @@ const PatientProfilePage = () => {
     [navHistory, scopeKey],
   );
 
+  // Mark Health Data as "reviewed" when the doctor opens that view, so the
+  // sidebar new-labs badge clears.
+  useEffect(() => {
+    if (activeSection !== "lab_results" || !id) return;
+    try {
+      window.localStorage.setItem(`labReviewedAt:${id}`, new Date().toISOString());
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [activeSection, id]);
+
   // Honour deep-links like /patients/:id?tab=lab_results&review=1
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -243,11 +254,18 @@ const PatientProfilePage = () => {
             </button>
 
             {(() => {
-              const thirtyDaysAgo = new Date();
-              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-              const hasNewLabs = labResults.some(l => new Date(l.result_date) >= thirtyDaysAgo);
-              const hasLabReviewTasks = patientTasks.some(t => t.category === "clinical_review" && ["todo", "in_progress"].includes(t.status));
-              const labNotification = hasNewLabs || hasLabReviewTasks;
+              // Badge fires only for new, unreviewed lab results.
+              // "Reviewed" = doctor opened the Health Data view; we persist a
+              // per-patient timestamp in localStorage and compare it to the
+              // newest lab row's created_at/result_date.
+              const reviewKey = `labReviewedAt:${patient.id}`;
+              const reviewedAtRaw = typeof window !== "undefined" ? window.localStorage.getItem(reviewKey) : null;
+              const reviewedAt = reviewedAtRaw ? new Date(reviewedAtRaw).getTime() : 0;
+              const newestLabAt = labResults.reduce((max, l) => {
+                const t = new Date((l as any).created_at ?? l.result_date).getTime();
+                return t > max ? t : max;
+              }, 0);
+              const labNotification = newestLabAt > 0 && newestLabAt > reviewedAt;
               const isOnHealthData = activeSection === "lab_results";
               const isInDimension = HEALTH_TAXONOMY.some(
                 (m) => m.key === activeSection || m.subDimensions.some((s) => s.key === activeSection),
@@ -257,6 +275,7 @@ const PatientProfilePage = () => {
               // the overview but does NOT pop open the full taxonomy tree.
               const defaultOpen = isInDimension;
               const sectionOpen = dimensionsSectionOpen ?? defaultOpen;
+
 
               return (
                 <>
