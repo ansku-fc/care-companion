@@ -155,12 +155,23 @@ function IllnessRowEditor({
       </div>
 
       <div>
-        <FieldLabel hint="type @ to tag a health dimension">Notes</FieldLabel>
-        <DimensionTagTextarea
+        <FieldLabel>Notes</FieldLabel>
+        <Textarea
           value={row.notes}
-          onChange={(notes) => onChange({ notes })}
+          onChange={(e) => onChange({ notes: e.target.value })}
+          placeholder="Notes…"
+          className="min-h-[80px]"
         />
       </div>
+
+      <DimensionChipsRow
+        icdCode={row.icd_code}
+        dimensions={row.dimensions ?? []}
+        confirmed={row.dimensions_confirmed ?? false}
+        onChange={(dims, confirmed) =>
+          onChange({ dimensions: dims, dimensions_confirmed: confirmed })
+        }
+      />
 
       <div className="flex justify-end">
         <Button
