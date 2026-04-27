@@ -2810,6 +2810,8 @@ function HealthDimensionView({
       // `subScoresLocal` for this group's key — e.g. Cardiovascular which
       // has no sub-dimensions).
       explicitScore?: number | null;
+      // Optional: icon shown to the left of the title in the header.
+      icon?: React.ComponentType<{ className?: string }>;
     };
 
     const subScoresLocal = computeSubScores({ onboarding, labResults, diagnoses, medications, allergies });
@@ -2851,6 +2853,7 @@ function HealthDimensionView({
                   expanded && "rotate-90",
                 )}
               />
+              {group.icon && <group.icon className="h-4 w-4 text-muted-foreground" />}
               <span className="font-semibold text-sm">{group.title}</span>
             </div>
             {!group.hideScore && (
@@ -2964,6 +2967,7 @@ function HealthDimensionView({
           internalSections: content.internalSections,
           hideScore: content.hideScore,
           explicitScore: content.explicitScore,
+          icon: (sub as { icon?: React.ComponentType<{ className?: string }> }).icon,
         };
       });
 
@@ -2984,6 +2988,7 @@ function HealthDimensionView({
         rows: [],
         hideScore: true,
         extra: <FamilyHistoryRows rows={famRows} />,
+        icon: Users,
       };
 
       return (
