@@ -505,14 +505,26 @@ function MedicationsEditor({
   medications,
   onChange,
   icdCode,
+  layout = "full",
+  expandedIdx: controlledIdx,
+  onExpandedIdxChange,
 }: {
   medications: MedicationDetail[];
   onChange: (next: MedicationDetail[]) => void;
   icdCode: string;
+  /** "trigger" → only the Add button. "list" → only the chip list. "full" → both. */
+  layout?: "full" | "trigger" | "list";
+  expandedIdx?: number | null;
+  onExpandedIdxChange?: (idx: number | null) => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [uncontrolledIdx, setUncontrolledIdx] = useState<number | null>(null);
+  const expandedIdx = controlledIdx !== undefined ? controlledIdx : uncontrolledIdx;
+  const setExpandedIdx = (v: number | null) => {
+    if (onExpandedIdxChange) onExpandedIdxChange(v);
+    else setUncontrolledIdx(v);
+  };
 
   const selectedNames = useMemo(
     () => new Set(medications.map((m) => m.name.toLowerCase())),
