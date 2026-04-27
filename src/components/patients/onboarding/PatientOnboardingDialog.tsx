@@ -202,7 +202,7 @@ export function PatientOnboardingDialog(props: Props) {
           skipped_steps: (extra.skipped_steps as number[]) ?? [],
         });
       } else {
-        setInitial({});
+        setInitial(dobAge != null ? { age: dobAge } : {});
       }
       setLoading(false);
     })();
