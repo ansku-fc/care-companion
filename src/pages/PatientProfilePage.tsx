@@ -2800,13 +2800,24 @@ function HealthDimensionView({
       scoreKey?: string;    // which sub-score to show (defaults to `key`)
       rows: RowSpec[];
       extra?: React.ReactNode; // optional content above rows (e.g. mole cards)
+      // Optional: render a flat list of category-grouped subsections inside
+      // the expanded body (used by Cardiovascular for grey category labels).
+      internalSections?: { label: string; rows: RowSpec[] }[];
+      // Optional: skip the right-aligned score badge entirely.
+      hideScore?: boolean;
+      // Optional: explicit score override (used when there is no entry in
+      // `subScoresLocal` for this group's key — e.g. Cardiovascular which
+      // has no sub-dimensions).
+      explicitScore?: number | null;
     };
 
     const subScoresLocal = computeSubScores({ onboarding, labResults, diagnoses, medications, allergies });
 
     const Subgroup = ({ group }: { group: GroupSpec }) => {
       const expanded = expandedGroups.has(group.key);
-      const score = subScoresLocal[group.scoreKey ?? group.key];
+      const score = group.explicitScore !== undefined
+        ? group.explicitScore
+        : subScoresLocal[group.scoreKey ?? group.key];
       const scoreLabel = score == null ? "—" : score.toFixed(1);
       // Left-border accent is derived from the same score tone as the badge.
       // Teal scores (low risk) and "no data" get no accent; amber/red show a coloured strip.
@@ -2819,6 +2830,8 @@ function HealthDimensionView({
         if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
         return next;
       });
+      const hasInternal = !!(group.internalSections && group.internalSections.length > 0);
+      const hasRows = group.rows.length > 0;
       return (
         <div
           className="rounded-md border overflow-hidden"
@@ -2839,21 +2852,34 @@ function HealthDimensionView({
               />
               <span className="font-semibold text-sm">{group.title}</span>
             </div>
-            <span className={cn(
-              "inline-flex items-center justify-center min-w-[2.25rem] h-7 px-2 rounded-full text-xs font-semibold",
-              scoreColor(score),
-            )}>
-              {scoreLabel}
-            </span>
+            {!group.hideScore && (
+              <span className={cn(
+                "inline-flex items-center justify-center min-w-[2.25rem] h-7 px-2 rounded-full text-xs font-semibold",
+                scoreColor(score),
+              )}>
+                {scoreLabel}
+              </span>
+            )}
           </button>
           {expanded && (
             <div className="pl-4">
               {group.extra}
-              {group.rows.length > 0 ? (
+              {hasInternal ? (
+                <div>
+                  {group.internalSections!.map((sec, i) => (
+                    <div key={`${group.key}-sec-${i}`}>
+                      <div className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {sec.label}
+                      </div>
+                      <div className="divide-y">{sec.rows.map(renderRowSpec)}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : hasRows ? (
                 <div className="divide-y">{group.rows.map(renderRowSpec)}</div>
-              ) : (
+              ) : !group.extra ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">No rows for this subdimension.</p>
-              )}
+              ) : null}
             </div>
           )}
         </div>
