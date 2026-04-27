@@ -81,6 +81,7 @@ export function SuggestedTasksDialog({ open, onOpenChange, patientId, suggestion
       return;
     }
     toast.success(`${chosen.length} task${chosen.length === 1 ? "" : "s"} created`);
+    notifyChanged();
     onOpenChange(false);
     onDone();
   };
