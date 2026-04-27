@@ -306,8 +306,6 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
     ? (Number(onboarding.waist_circumference_cm) / Number(onboarding.hip_circumference_cm)).toFixed(2)
     : null;
 
-  const meaningfulCurrent = currentIllnesses.filter((i: any) => i?.illness_name?.trim());
-  const meaningfulPrevious = previousIllnesses.filter((i: any) => i?.illness_name?.trim());
 
   function renderIllness(
     i: any,
