@@ -2853,6 +2853,7 @@ function HealthDimensionView({
                   expanded && "rotate-90",
                 )}
               />
+              {group.icon && <group.icon className="h-4 w-4 text-muted-foreground" />}
               <span className="font-semibold text-sm">{group.title}</span>
             </div>
             {!group.hideScore && (
