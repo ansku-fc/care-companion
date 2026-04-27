@@ -24,6 +24,10 @@ type Props = {
   tone?: ChipTone;
   /** Allow free-text entries that are not in `options`. */
   allowCustom?: boolean;
+  /** Values to surface in a "suggested" group above the full list. */
+  suggested?: string[];
+  /** Heading shown above the suggestions group. */
+  suggestedLabel?: string;
 };
 
 const TONE_CLASSES: Record<ChipTone, string> = {
@@ -44,6 +48,8 @@ export function MultiSelectChips({
   emptyText = "No matches.",
   tone = "neutral",
   allowCustom = false,
+  suggested,
+  suggestedLabel = "Suggested",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
