@@ -836,91 +836,12 @@ export function PatientOverviewView({
                 };
 
                 const items: Item[] = [
-                  {
-                    label: "Height",
-                    unit: "cm",
-                    current: height,
-                    decimals: 0,
-                    lowerIsBetter: false,
-                    staticValue: true,
-                    history: [
-                      { date: "12 Aug 2025", value: 188 },
-                      { date: "03 Feb 2025", value: 188 },
-                      { date: "15 Jul 2024", value: 188 },
-                      { date: "20 Jan 2024", value: 188 },
-                      { date: "10 Jun 2023", value: 188 },
-                    ],
-                  },
-                  {
-                    label: "Weight",
-                    unit: "kg",
-                    current: weight,
-                    decimals: 1,
-                    lowerIsBetter: true,
-                    history: [
-                      { date: "12 Aug 2025", value: 86.1 },
-                      { date: "03 Feb 2025", value: 87.5 },
-                      { date: "15 Jul 2024", value: 88.3 },
-                      { date: "20 Jan 2024", value: 89.5 },
-                      { date: "10 Jun 2023", value: 89.5 },
-                    ],
-                  },
-                  {
-                    label: "BMI",
-                    unit: "",
-                    current: bmi,
-                    decimals: 1,
-                    lowerIsBetter: true,
-                    history: [
-                      { date: "12 Aug 2025", value: 24.4 },
-                      { date: "03 Feb 2025", value: 24.8 },
-                      { date: "15 Jul 2024", value: 25.0 },
-                      { date: "20 Jan 2024", value: 25.3 },
-                      { date: "10 Jun 2023", value: 25.3 },
-                    ],
-                  },
-                  {
-                    label: "Waist Circumference",
-                    unit: "cm",
-                    current: waist,
-                    decimals: 0,
-                    lowerIsBetter: true,
-                    history: [
-                      { date: "12 Aug 2025", value: 90 },
-                      { date: "03 Feb 2025", value: 90 },
-                      { date: "15 Jul 2024", value: 91 },
-                      { date: "20 Jan 2024", value: 92 },
-                      { date: "10 Jun 2023", value: 92 },
-                    ],
-                  },
-                  {
-                    label: "Hip Circumference",
-                    unit: "cm",
-                    current: hip,
-                    decimals: 0,
-                    lowerIsBetter: false,
-                    history: [
-                      { date: "12 Aug 2025", value: 96 },
-                      { date: "03 Feb 2025", value: 96 },
-                      { date: "15 Jul 2024", value: 97 },
-                      { date: "20 Jan 2024", value: 97 },
-                      { date: "10 Jun 2023", value: 97 },
-                    ],
-                  },
-                  {
-                    label: "W/H Ratio",
-                    unit: "",
-                    current: whr,
-                    decimals: 2,
-                    lowerIsBetter: true,
-                    history: [
-                      { date: "12 Aug 2025", value: 0.94 },
-                      { date: "03 Feb 2025", value: 0.95 },
-                      { date: "15 Jul 2024", value: 0.95 },
-                      { date: "20 Jan 2024", value: 0.96 },
-                      { date: "10 Jun 2023", value: 0.96 },
-                    ],
-                  },
+                  { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] },
+                  { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] },
+                  { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] },
+                  { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] },
+                  { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] },
+                  { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] },
                 ];
 
                 const fmt = (n: number, d: number) => n.toFixed(d);
@@ -1020,42 +941,12 @@ export function PatientOverviewView({
         const hip = 96;
         const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
         const allItems = [
-          { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true,
-            history: [
-              { date: "12 Aug 2025", value: 188 }, { date: "03 Feb 2025", value: 188 },
-              { date: "15 Jul 2024", value: 188 }, { date: "20 Jan 2024", value: 188 },
-              { date: "10 Jun 2023", value: 188 },
-            ] },
-          { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true,
-            history: [
-              { date: "12 Aug 2025", value: 86.1 }, { date: "03 Feb 2025", value: 87.5 },
-              { date: "15 Jul 2024", value: 88.3 }, { date: "20 Jan 2024", value: 89.5 },
-              { date: "10 Jun 2023", value: 89.5 },
-            ] },
-          { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true,
-            history: [
-              { date: "12 Aug 2025", value: 24.4 }, { date: "03 Feb 2025", value: 24.8 },
-              { date: "15 Jul 2024", value: 25.0 }, { date: "20 Jan 2024", value: 25.3 },
-              { date: "10 Jun 2023", value: 25.3 },
-            ], refRange: { low: 18.5, high: 24.9, label: "Healthy 18.5–24.9" } },
-          { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true,
-            history: [
-              { date: "12 Aug 2025", value: 90 }, { date: "03 Feb 2025", value: 90 },
-              { date: "15 Jul 2024", value: 91 }, { date: "20 Jan 2024", value: 92 },
-              { date: "10 Jun 2023", value: 92 },
-            ] },
-          { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false,
-            history: [
-              { date: "12 Aug 2025", value: 96 }, { date: "03 Feb 2025", value: 96 },
-              { date: "15 Jul 2024", value: 97 }, { date: "20 Jan 2024", value: 97 },
-              { date: "10 Jun 2023", value: 97 },
-            ] },
-          { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true,
-            history: [
-              { date: "12 Aug 2025", value: 0.94 }, { date: "03 Feb 2025", value: 0.95 },
-              { date: "15 Jul 2024", value: 0.95 }, { date: "20 Jan 2024", value: 0.96 },
-              { date: "10 Jun 2023", value: 0.96 },
-            ], refRange: { low: 0, high: 0.95, label: "Healthy < 0.95" } },
+          { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] as { date: string; value: number }[] },
+          { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
+          { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 18.5, high: 24.9, label: "Healthy 18.5–24.9" } },
+          { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
+          { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] as { date: string; value: number }[] },
+          { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 0, high: 0.95, label: "Healthy < 0.95" } },
         ];
         const active = allItems.find((i) => i.label === historyModalLabel);
         if (!active) return null;
