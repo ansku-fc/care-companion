@@ -24,6 +24,7 @@ const ABCDE_OPTIONS = {
 } as const;
 
 type Side = "front" | "back";
+type Sex = "female" | "male";
 
 /** Heuristic location label from pin coordinates (percent of silhouette). */
 function describeLocation(side: Side, x: number, y: number): string {
