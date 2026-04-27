@@ -243,23 +243,25 @@ function NotePopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2"
-        >
-          {hasNote ? (
-            <>
-              <span aria-hidden>📝</span>
-              <span>Edit note</span>
-            </>
-          ) : (
-            <>
-              <Plus className="h-3.5 w-3.5" />
-              Add note
-            </>
-          )}
-        </Button>
+        {hasNote ? (
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Edit note"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add note
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 p-3 space-y-2">
         <Textarea
@@ -288,17 +290,18 @@ function NotePopover({
           </Button>
         </div>
         {hasNote && (
-          <div className="pt-1 border-t border-border">
+          <div className="pt-2 border-t border-border flex justify-end">
             <button
               type="button"
-              className="text-xs text-muted-foreground hover:text-destructive"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
               onClick={() => {
                 onChange("");
                 setDraft("");
                 setOpen(false);
               }}
             >
-              Remove note
+              <Trash2 className="h-3 w-3" />
+              Delete note
             </button>
           </div>
         )}
