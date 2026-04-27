@@ -1,21 +1,14 @@
-import { Plus, Trash2 } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 import {
   useOnboardingForm,
-  blankMole,
   type ExamFinding,
   type ExamFindingKey,
   type ExamFindings,
-  type MoleEntry,
 } from "./OnboardingFormContext";
-import { FieldLabel, SectionHeading } from "./shared";
+import { SectionHeading } from "./shared";
 
 const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "heart", label: "Heart" },
