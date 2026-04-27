@@ -123,12 +123,26 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
     setTaskCategory(detectTaskCategory(title));
   }, [title, taskCategoryOverridden]);
 
+  // Medication tasks must always be assigned to a doctor.
+  const isMedicationTask = taskCategory === "medication";
+  const isNurse = (name: string) => /nurse/i.test(name);
+  useEffect(() => {
+    if (isMedicationTask && isNurse(assigneeName)) {
+      const doctor = ASSIGNEES.find((a) => a.role === "doctor");
+      if (doctor) setAssigneeName(doctor.name);
+    }
+  }, [isMedicationTask, assigneeName]);
+
   const assigneeMeta = ASSIGNEES.find((a) => a.name === assigneeName);
   const patientLabel = patients.find((p) => p.id === patientId)?.full_name;
 
   const handleSave = async () => {
     if (!user || !title.trim() || !dueDate) {
       toast.error("Title and due date are required");
+      return;
+    }
+    if (isMedicationTask && isNurse(assigneeName)) {
+      toast.error("Prescription and medication tasks must be assigned to a doctor.");
       return;
     }
     setSaving(true);
@@ -281,14 +295,38 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
 
             <div className="space-y-1.5">
               <Label>Assignee</Label>
-              <Select value={assigneeName} onValueChange={setAssigneeName}>
+              <Select
+                value={assigneeName}
+                onValueChange={(v) => {
+                  if (isMedicationTask && isNurse(v)) {
+                    toast.error("Prescription and medication tasks must be assigned to a doctor.");
+                    return;
+                  }
+                  setAssigneeName(v);
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ASSIGNEES.map((a) => (
-                    <SelectItem key={a.name} value={a.name}>{a.name}</SelectItem>
-                  ))}
+                  {ASSIGNEES.map((a) => {
+                    const blocked = isMedicationTask && a.role === "nurse";
+                    return (
+                      <SelectItem key={a.name} value={a.name} disabled={blocked}>
+                        {a.name}
+                        {blocked && (
+                          <span className="ml-2 text-[10px] text-muted-foreground">
+                            (doctor required)
+                          </span>
+                        )}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
+              {isMedicationTask && (
+                <p className="text-[11px] text-muted-foreground">
+                  Prescription and medication tasks must be assigned to a doctor.
+                </p>
+              )}
             </div>
           </div>
 
