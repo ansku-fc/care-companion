@@ -55,6 +55,7 @@ import {
   updateAnnotation,
   deleteAnnotation,
   addAnnotation,
+  setActiveAnnotationPatient,
   getSeriesRowsForBiomarker,
   type LabAnnotation,
 } from "@/components/patients/CardioLabBiomarkerPanel";
@@ -168,6 +169,14 @@ const PatientProfilePage = () => {
 
   useEffect(() => {
     fetchData();
+  }, [id]);
+
+  // Scope module-level annotation/lab caches to the active patient so any
+  // legacy helpers that don't pass a patientId only ever see this patient's
+  // data. Clears on unmount.
+  useEffect(() => {
+    setActiveAnnotationPatient(id);
+    return () => setActiveAnnotationPatient(undefined);
   }, [id]);
 
   if (loading) {
@@ -5089,6 +5098,7 @@ function CardiovascularDimensionView({
                       sidebarWindow,
                       selectedMarker.refLow,
                       selectedMarker.refHigh,
+                      patient?.id,
                     );
                     return (
                       <div

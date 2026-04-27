@@ -436,6 +436,7 @@ export function MetabolicDimensionView({
                     sidebarWindow,
                     selectedMarker.refLow,
                     selectedMarker.refHigh,
+                    patient.id,
                   );
                   return (
                     <div
