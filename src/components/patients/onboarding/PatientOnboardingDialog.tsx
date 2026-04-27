@@ -266,6 +266,8 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
   const [saving, setSaving] = useState<"draft" | "save" | "skip" | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollMemory = useRef<Record<number, number>>({});
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<SuggestedTask[]>([]);
 
   const today = useMemo(() => format(new Date(), "MMM d, yyyy"), []);
 
