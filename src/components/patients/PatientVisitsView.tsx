@@ -205,17 +205,51 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
                 </div>
               ))}
               {visitNotes.length > 0 && pastAppointments.length > 0 && <Separator />}
-              {visitNotes.map((vn) => (
-                <div key={vn.id} className="flex items-start justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="text-sm font-medium">{vn.chief_complaint || "Visit Note"}</p>
-                    {vn.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{vn.notes}</p>}
+              {visitNotes.map((vn) => {
+                const isOnb = isOnboardingVisit(vn);
+                const v = (vn.vitals as any) ?? {};
+                const doctor = v?.attending_doctor ?? "Dr. Laine";
+                const dateStr = new Date(vn.visit_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+                return (
+                  <div
+                    key={vn.id}
+                    className={`flex items-start justify-between p-3 rounded-lg border transition-colors ${isOnb ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                    onClick={isOnb ? () => setOpenVisitNote(vn) : undefined}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium">
+                          {isOnb ? "Initial Consultation" : (vn.chief_complaint || "Visit Note")}
+                        </p>
+                        {isOnb && (
+                          <>
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <UserCheck className="h-3 w-3" /> Onboarding
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Completed
+                            </Badge>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> {dateStr}
+                        </span>
+                        {isOnb && (
+                          <span className="flex items-center gap-1">
+                            <Stethoscope className="h-3 w-3" /> {doctor}
+                          </span>
+                        )}
+                      </div>
+                      {!isOnb && vn.notes && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{vn.notes}</p>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-                    {new Date(vn.visit_date).toLocaleDateString()}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
+
             </div>
           )}
         </CardContent>
