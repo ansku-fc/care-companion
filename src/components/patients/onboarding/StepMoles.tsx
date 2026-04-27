@@ -12,6 +12,8 @@ import {
   type MoleEntry,
 } from "./OnboardingFormContext";
 import { FieldLabel, SectionHeading } from "./shared";
+import silhouetteFront from "@/assets/silhouette-front.png";
+import silhouetteBack from "@/assets/silhouette-back.png";
 
 const ABCDE_OPTIONS = {
   asymmetry: ["Symmetrical", "Asymmetrical"],
