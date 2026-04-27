@@ -103,7 +103,7 @@ export function PatientOnboardingDialog(props: Props) {
           bp2_systolic: (data as any).bp2_systolic ?? null,
           bp2_diastolic: (data as any).bp2_diastolic ?? null,
           ecg_notes: ((data as any).ecg_notes as string) ?? "",
-          allergies: (extra.allergies as string[]) ?? [],
+          allergies: normalizeAllergies(extra.allergies),
           supplements: (extra.supplements as string[]) ?? [],
           current_illnesses: (extra.current_illnesses as any[]) ?? [],
           previous_illnesses: (extra.previous_illnesses as any[]) ?? [],
