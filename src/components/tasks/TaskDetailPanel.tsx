@@ -352,23 +352,21 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
           ) : isReferral ? (
             <>
               <Separator />
-              <Button
-                variant="outline"
-                className="w-full gap-1.5"
-                onClick={() => setReferralOpen((v) => !v)}
-              >
-                <FileText className="h-3.5 w-3.5" />
-                {referralOpen ? "Cancel" : "Create referral"}
-                {!referralOpen && <ArrowRight className="h-3.5 w-3.5" />}
-              </Button>
-              {referralOpen && referralForm && (
-                <ReferralFormPanel
-                  form={referralForm}
-                  onChange={setReferralForm}
-                  patientName={patientName}
-                  patientId={task.patient_id ?? null}
-                />
-              )}
+              <ReferralWorkflowPanel
+                task={task}
+                defaultTo={inferReferralTarget(task.title ?? "").to}
+                renderReferralDocument={() =>
+                  referralForm ? (
+                    <ReferralFormPanel
+                      form={referralForm}
+                      onChange={setReferralForm}
+                      patientName={patientName}
+                      patientId={task.patient_id ?? null}
+                    />
+                  ) : null
+                }
+                onAllComplete={() => onOpenChange(false)}
+              />
             </>
           ) : (
             <>
