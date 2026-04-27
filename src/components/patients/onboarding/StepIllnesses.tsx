@@ -28,7 +28,7 @@ import {
   type MedicationFrequency,
   type MedicationRoute,
 } from "./OnboardingFormContext";
-import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
+
 import { SectionHeading, FieldLabel } from "./shared";
 
 const FREQUENCY_OPTIONS: { value: MedicationFrequency; label: string }[] = [
