@@ -3489,7 +3489,7 @@ function GenericDimensionView({
   );
   const mainDim = findMainDimension(dimensionKey) ?? null;
   const score = mainDim ? (radarData.find((d) => d.key === mainDim.key)?.score ?? 1) : 1;
-  const scoreColor = score <= 3 ? "text-[hsl(189_94%_43%)]" : score <= 6 ? "text-[hsl(330_81%_60%)]" : "text-[hsl(330_81%_50%)]";
+  const scoreColor = scoreColorClass(score);
   const scoreBg = "";
 
   const [showRiskHistory, setShowRiskHistory] = useState(false);
@@ -3674,7 +3674,7 @@ function SkinMucousDimensionView({
   }, [summary]);
   const [editSummary, setEditSummary] = useState(cleanSummary);
 
-  const scoreColor = skinScore <= 3 ? "text-[hsl(189_94%_43%)]" : skinScore <= 6 ? "text-[hsl(330_81%_60%)]" : "text-[hsl(330_81%_50%)]";
+  const scoreColor = scoreColorClass(skinScore);
   const scoreBg = "";
 
   const riskHistory = useMemo(() => {
@@ -4540,7 +4540,7 @@ function CardiovascularDimensionView({
   const gtData = sorted.filter((l) => l.gt_u_l != null).map((l) => ({ date: l.result_date, value: Number(l.gt_u_l) }));
   const alatAsatData = sorted.filter((l) => l.alat_asat_ratio != null).map((l) => ({ date: l.result_date, value: Number(l.alat_asat_ratio) }));
 
-  const scoreColor = cvScore <= 3 ? "text-[hsl(189_94%_43%)]" : cvScore <= 6 ? "text-[hsl(330_81%_60%)]" : "text-[hsl(330_81%_50%)]";
+  const scoreColor = scoreColorClass(cvScore);
   const scoreBg = "";
 
   const handleSaveCv = async () => {
