@@ -3743,7 +3743,24 @@ function GenericDimensionView({
           <p className="text-xs text-muted-foreground">What is driving the current risk index</p>
         </div>
         <Card>
-          <CardContent className="pt-6">{renderRiskPicture()}</CardContent>
+          <CardContent className="pt-6">
+            <Tabs value={riskTab} onValueChange={(v) => setRiskTab(v as "risk_factors" | "lab_results")}>
+              <TabsList>
+                <TabsTrigger value="risk_factors">Risk Factors</TabsTrigger>
+                <TabsTrigger value="lab_results">Lab Results</TabsTrigger>
+              </TabsList>
+              <TabsContent value="risk_factors" className="mt-4">
+                {renderRiskPicture()}
+              </TabsContent>
+              <TabsContent value="lab_results" className="mt-4">
+                <LabResultsBlock
+                  biomarkers={biomarkers}
+                  patientId={patient.id}
+                  patientName={patient.full_name}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
         </Card>
       </section>
 
