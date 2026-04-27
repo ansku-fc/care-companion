@@ -2599,21 +2599,8 @@ function HealthDimensionView({
   const Icon = dim.icon;
   const lab = labResults[0] || null;
 
-  // Cardiovascular has no sub-dimensions and keeps its specialised view
-  if (dimensionKey === "cardiovascular") {
-    return (
-      <CardiovascularDimensionView
-        patient={patient}
-        onboarding={onboarding}
-        labResults={labResults}
-        healthCategories={healthCategories}
-        markerNotes={markerNotes}
-        setMarkerNotes={setMarkerNotes}
-        onNavigateDimension={onNavigateDimension}
-        onDataChanged={onDataChanged}
-      />
-    );
-  }
+  // Cardiovascular has no sub-dimensions — render via the standard
+  // GenericDimensionView path below (flat risk-factor list, no accordion).
 
   const renderContent = () => {
     const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
