@@ -48,15 +48,16 @@ function SubDimensionStripCard({
   onClick,
 }: {
   label: string;
-  score: number;
+  score: number | null;
   Icon: React.ComponentType<{ className?: string }>;
   onClick: () => void;
 }) {
+  const hasScore = score != null;
   return (
     <button
       onClick={onClick}
       className="flex-1 min-w-[160px] text-left rounded-md bg-card shadow-card hover:shadow-md transition-shadow p-3 border-l-4"
-      style={{ borderLeftColor: scoreBorderColor(score) }}
+      style={{ borderLeftColor: hasScore ? scoreBorderColor(score!) : "hsl(var(--border))" }}
     >
       <div className="flex items-center gap-2 mb-1.5">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
@@ -64,9 +65,13 @@ function SubDimensionStripCard({
       </div>
       <div className="flex items-baseline gap-1">
         <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Risk</span>
-        <span className={cn("text-lg font-bold leading-none", scoreColorClass(score))}>
-          {score.toFixed(1)}
-        </span>
+        {hasScore ? (
+          <span className={cn("text-lg font-bold leading-none", scoreColorClass(score!))}>
+            {score!.toFixed(1)}
+          </span>
+        ) : (
+          <span className="text-lg font-bold leading-none text-muted-foreground">—</span>
+        )}
       </div>
     </button>
   );
@@ -357,8 +362,8 @@ export function MainDimensionOverview({
   onDataChanged,
 }: {
   main: MainDimension;
-  parentScore: number;
-  subScores: Record<string, number>;
+  parentScore: number | null;
+  subScores: Record<string, number | null>;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
   onNavigateToSub: (subKey: string) => void;
@@ -386,7 +391,7 @@ export function MainDimensionOverview({
     (c) => c.category.toLowerCase() === categoryKey,
   );
 
-  const scoreColor = scoreColorClass(parentScore);
+  const scoreColor = parentScore != null ? scoreColorClass(parentScore) : "text-muted-foreground";
 
   return (
     <div className="space-y-4">
@@ -409,7 +414,7 @@ export function MainDimensionOverview({
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
                 <span className={cn("text-2xl font-bold leading-none", scoreColor)}>
-                  {parentScore.toFixed(1)}
+                  {parentScore != null ? parentScore.toFixed(1) : "—"}
                 </span>
               </div>
               <Button
@@ -440,7 +445,7 @@ export function MainDimensionOverview({
             <SubDimensionStripCard
               key={sub.key}
               label={sub.label}
-              score={subScores[sub.key] ?? parentScore}
+              score={subScores[sub.key] ?? null}
               Icon={sub.icon}
               onClick={() => onNavigateToSub(sub.key)}
             />
@@ -536,8 +541,8 @@ export function SubDimensionView({
 }: {
   parent: MainDimension;
   subKey: string;
-  parentScore: number;
-  subScore: number;
+  parentScore: number | null;
+  subScore: number | null;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
   onNavigateToParent: () => void;
@@ -556,8 +561,8 @@ export function SubDimensionView({
     (c) => c.category.toLowerCase() === categoryKey,
   );
 
-  const subScoreColor = scoreColorClass(subScore);
-  const parentScoreColor = scoreColorClass(parentScore);
+  const subScoreColor = subScore != null ? scoreColorClass(subScore) : "text-muted-foreground";
+  const parentScoreColor = parentScore != null ? scoreColorClass(parentScore) : "text-muted-foreground";
 
   return (
     <div className="space-y-4">
@@ -588,14 +593,14 @@ export function SubDimensionView({
                   {parent.label}
                 </span>
                 <span className={cn("text-base font-semibold leading-none", parentScoreColor)}>
-                  {parentScore.toFixed(1)}
+                  {parentScore != null ? parentScore.toFixed(1) : "—"}
                 </span>
               </button>
               <span className="text-muted-foreground/50">→</span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-xs font-medium text-muted-foreground">Risk Index</span>
                 <span className={cn("text-2xl font-bold leading-none", subScoreColor)}>
-                  {subScore.toFixed(1)}
+                  {subScore != null ? subScore.toFixed(1) : "—"}
                 </span>
               </div>
             </div>
