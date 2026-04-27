@@ -2617,6 +2617,9 @@ function HealthDimensionView({
   const renderContent = () => {
     const onboardingDate = onboarding?.created_at ? new Date(onboarding.created_at).toLocaleDateString() : "—";
     const extra = ((onboarding as any)?.extra_data ?? {}) as Record<string, any>;
+    const patientAge: number | null = patient.date_of_birth
+      ? Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / 31557600000)
+      : (onboarding?.age ?? null);
 
     // ── Display helpers ─────────────────────────────────────────────
     // The spec is strict: never render "No" or "Not recorded". A boolean
