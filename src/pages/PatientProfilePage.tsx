@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {
   Users, ArrowLeft, User, Eye, Brain, Dumbbell, Wind, Beaker,
   Droplets, Shield, Apple, Stethoscope, HeartPulse, Bone, FlaskConical,
-  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil,
+  Moon, Pill, Activity, Ribbon, Sparkles, Radar, Save, X, Calendar, FileText, Trash2, Pencil, FolderOpen,
   AlertTriangle, ClipboardList, Plus, ChevronDown, ChevronRight, StickyNote,
 } from "lucide-react";
 import { HEALTH_TAXONOMY, findDimension, findMainDimension, type MainDimension } from "@/lib/healthDimensions";
@@ -32,6 +32,7 @@ import { HealthReportDialog } from "@/components/patients/HealthReportDialog";
 import { HealthFileUploads, type HealthDataTab } from "@/components/patients/HealthFileUploads";
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
+import { PatientDocumentsView } from "@/components/patients/PatientDocumentsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
 import { MainDimensionOverview, SubDimensionView, LabResultsBlock } from "@/components/patients/DimensionOverviewView";
 import { getBiomarkersForMainDimension } from "@/components/patients/dimensionRegistry";
@@ -136,6 +137,7 @@ const PatientProfilePage = () => {
     const initial: SidebarSection =
       tab === "lab_results" ? "lab_results" :
       tab === "medications" ? "medications" :
+      tab === "documents" ? "documents" :
       tab === "visits" ? "visits" :
       "overview";
     setActiveSectionRaw(initial);
@@ -369,6 +371,16 @@ const PatientProfilePage = () => {
             })()}
 
             <button
+              onClick={() => setActiveSection("documents")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                activeSection === "documents" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <FolderOpen className="h-4 w-4" />
+              Documents & Images
+            </button>
+
+            <button
               onClick={() => setActiveSection("medications")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 activeSection === "medications" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
@@ -409,6 +421,7 @@ const PatientProfilePage = () => {
             if (key === "overview") return "Overview";
             if (key === "details") return "Patient Details";
             if (key === "medications") return "Medications";
+            if (key === "documents") return "Documents & Images";
             if (key === "visits") return "Visits";
             if (key === "care_team") return "Care Team";
             if (key === "health_overview") return "Health Overview";
@@ -462,7 +475,7 @@ const PatientProfilePage = () => {
               label = dynamicLabel;
               onBack = () => navigate(prevRoute.path);
             } else if (
-              ["details", "medications", "visits", "care_team", "health_overview", "lab_results"].includes(
+              ["details", "medications", "documents", "visits", "care_team", "health_overview", "lab_results"].includes(
                 activeSection,
               )
             ) {
@@ -515,6 +528,8 @@ const PatientProfilePage = () => {
           <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} onPatientUpdate={(updated) => setPatient(updated)} />
         ) : activeSection === "medications" ? (
           <PatientMedicationsView patientName={patient.full_name} patientId={patient.id} />
+        ) : activeSection === "documents" ? (
+          <PatientDocumentsView patientId={patient.id} />
         ) : activeSection === "visits" ? (
           <PatientVisitsView patient={patient} appointments={appointments} visitNotes={visitNotes} onDataChanged={fetchData} />
         ) : activeSection === "care_team" ? (

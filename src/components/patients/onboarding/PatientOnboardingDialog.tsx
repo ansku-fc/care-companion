@@ -596,6 +596,34 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       console.warn("Medication sync failed", e);
     }
 
+    // Sync ECG files attached in onboarding to patient_health_files (Cardiovascular).
+    try {
+      const ecgFiles = Array.isArray(nextForm.ecg_files) ? nextForm.ecg_files : [];
+      for (const f of ecgFiles) {
+        if (!(f instanceof File)) continue;
+        const path = `${patientId}/ekg/${Date.now()}_${f.name}`;
+        const { error: upErr } = await supabase.storage
+          .from("patient-health-files")
+          .upload(path, f);
+        if (upErr) {
+          console.warn("ECG upload failed", upErr);
+          continue;
+        }
+        await supabase.from("patient_health_files").insert({
+          patient_id: patientId,
+          created_by: user.id,
+          file_category: "ekg",
+          file_name: f.name,
+          file_path: path,
+          file_size: f.size,
+          health_dimension: "Cardiovascular System",
+          source: "Onboarding — ECG",
+        } as any);
+      }
+    } catch (e) {
+      console.warn("ECG file sync failed", e);
+    }
+
     // On completion, auto-create a review task (skip silently if it fails)
     if (options.isComplete) {
       const due = new Date();
