@@ -181,13 +181,12 @@ const PatientProfilePage = () => {
     ? Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / 31557600000)
     : onboarding?.age;
 
-  const hasClinicalDashboardData =
-    Boolean(onboarding) ||
-    labResults.length > 0 ||
-    healthCategories.length > 0 ||
-    visitNotes.length > 0 ||
-    appointments.length > 0 ||
-    patientTasks.length > 0;
+  // Onboarding gate: clinical data must NEVER appear on the Overview until the
+  // doctor finishes the final onboarding step. Drafts (status 'pending' or
+  // 'in_progress') keep showing the empty state even if a partial onboarding
+  // row exists in the database.
+  const onboardingComplete = (patient as any)?.onboarding_status === "complete";
+  const hasClinicalDashboardData = onboardingComplete;
 
   return (
     <div className="flex gap-6 h-[calc(100vh-8rem)]">
