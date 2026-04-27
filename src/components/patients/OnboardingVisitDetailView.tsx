@@ -44,6 +44,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import { OCCUPATIONS, EDUCATION_LEVELS } from "@/lib/onboardingTaxonomy";
 
 interface Props {
   patient: Tables<"patients">;
@@ -126,6 +127,47 @@ function Field({
           placeholder={placeholder ?? "—"}
           className="h-8"
         />
+      </div>
+    );
+  }
+  if (value === null || value === undefined || value === "") return null;
+  return (
+    <div className="text-sm">
+      <span className="text-muted-foreground">{label}: </span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  editing,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: any;
+  editing: boolean;
+  onChange?: (v: string) => void;
+  options: readonly string[];
+  placeholder?: string;
+}) {
+  if (editing) {
+    return (
+      <div className="text-sm grid grid-cols-[140px_1fr] items-center gap-2">
+        <span className="text-muted-foreground">{label}</span>
+        <Select value={value ?? ""} onValueChange={(v) => onChange?.(v)}>
+          <SelectTrigger className="h-8">
+            <SelectValue placeholder={placeholder ?? "Select…"} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((opt) => (
+              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     );
   }
@@ -463,8 +505,8 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <Field label="Hip" value={ov("hip", onboarding.hip_circumference_cm ? `${onboarding.hip_circumference_cm} cm` : "")} editing={editing} onChange={(v) => setOverride("hip", v)} />
             <Field label="W/H" value={ov("wh", whRatio)} editing={editing} onChange={(v) => setOverride("wh", v)} />
             <Separator className="my-2" />
-            <Field label="Occupation" value={ov("occupation", onboarding.occupation)} editing={editing} onChange={(v) => setOverride("occupation", v)} />
-            <Field label="Education" value={ov("education", onboarding.education_level)} editing={editing} onChange={(v) => setOverride("education", v)} />
+            <SelectField label="Occupation" value={ov("occupation", onboarding.occupation)} editing={editing} onChange={(v) => setOverride("occupation", v)} options={OCCUPATIONS} />
+            <SelectField label="Education" value={ov("education", onboarding.education_level)} editing={editing} onChange={(v) => setOverride("education", v)} options={EDUCATION_LEVELS} />
             <Field label="Shift work" value={ov("shift_work", onboarding.shift_work === true ? "Yes" : onboarding.shift_work === false ? "No" : "")} editing={editing} onChange={(v) => setOverride("shift_work", v)} />
           </Section>
 
