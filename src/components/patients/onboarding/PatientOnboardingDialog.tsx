@@ -467,6 +467,32 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       .update({ onboarding_status: newStatus } as any)
       .eq("id", patientId);
 
+    // Sync allergies to patient_allergies (tag + replace).
+    // Idempotent: rows tagged with notes='from_onboarding' are replaced each save.
+    try {
+      await supabase
+        .from("patient_allergies")
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("notes", "from_onboarding");
+      if (nextForm.allergies.length > 0) {
+        await supabase.from("patient_allergies").insert(
+          nextForm.allergies.map((a) => ({
+            patient_id: patientId,
+            created_by: user.id,
+            allergen: a.name,
+            icd_code: a.icd_code ?? null,
+            severity: a.severity ?? "moderate",
+            status: "active",
+            notes: "from_onboarding",
+          })) as any,
+        );
+      }
+    } catch (e) {
+      // Non-fatal: onboarding save already succeeded
+      console.warn("Allergy sync failed", e);
+    }
+
     // On completion, auto-create a review task (skip silently if it fails)
     if (options.isComplete) {
       const due = new Date();
