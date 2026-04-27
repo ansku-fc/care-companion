@@ -18,6 +18,10 @@ export type IllnessRow = {
   resolved_year: number | null; // only used by previous illnesses
   medications: string[];
   notes: string;
+  /** Health-dimension keys (matches DIMENSION_TAGS keys). */
+  dimensions: string[];
+  /** Whether the doctor has confirmed the suggested dimensions. */
+  dimensions_confirmed: boolean;
 };
 
 export type FamilyHistoryRow = {
