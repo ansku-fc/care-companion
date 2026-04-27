@@ -207,14 +207,14 @@ function IllnessRowEditor({
         />
       </div>
 
-      <div className="flex flex-col items-start min-w-0">
+      <div className="flex items-start gap-2 min-w-0">
         <NotePopover
           value={row.notes}
           onChange={(v) => onChange({ notes: v })}
         />
         {row.notes && row.notes.trim().length > 0 && (
           <p
-            className="text-xs text-muted-foreground mt-0.5 ml-2 max-w-full line-clamp-2"
+            className="text-xs text-muted-foreground mt-1 min-w-0 flex-1 line-clamp-2"
             title={row.notes}
           >
             {row.notes}
