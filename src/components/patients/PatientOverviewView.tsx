@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
 import { dimensionScore as computeDimensionScore } from "@/lib/dimensionScores";
 import { cn } from "@/lib/utils";
+import { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
 import { BiometricMiniChart } from "./BiometricMiniChart";
 import { PatientTasksCard } from "@/components/tasks/PatientTasksCard";
