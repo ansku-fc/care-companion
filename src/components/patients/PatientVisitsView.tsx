@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Plus, Play, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope } from "lucide-react";
+import { Calendar, Clock, Plus, Play, Video, MapPin, Home, UserCheck, FlaskConical, Stethoscope, CheckCircle2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { VisitConsultationView } from "./VisitConsultationView";
+import { OnboardingVisitDetailView } from "./OnboardingVisitDetailView";
 
 interface Props {
   patient: Tables<"patients">;
@@ -22,8 +23,16 @@ const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
   urgent: "Urgent",
 };
 
+function isOnboardingVisit(vn: Tables<"visit_notes">): boolean {
+  if (vn.chief_complaint === "Initial Consultation / Onboarding") return true;
+  const v = (vn.vitals as any) ?? {};
+  return v?.visit_type === "onboarding";
+}
+
 export function PatientVisitsView({ patient, appointments, visitNotes, onDataChanged }: Props) {
   const [activeVisit, setActiveVisit] = useState<{ mode: "new" | "appointment"; appointment?: Tables<"appointments"> } | null>(null);
+  const [openVisitNote, setOpenVisitNote] = useState<Tables<"visit_notes"> | null>(null);
+
 
   const now = new Date();
   const upcomingAppointments = appointments
@@ -32,6 +41,16 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
   const pastAppointments = appointments
     .filter((a) => new Date(a.start_time) < now)
     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+
+  if (openVisitNote) {
+    return (
+      <OnboardingVisitDetailView
+        patient={patient}
+        visit={openVisitNote}
+        onBack={() => setOpenVisitNote(null)}
+      />
+    );
+  }
 
   if (activeVisit) {
     return (
@@ -186,17 +205,51 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
                 </div>
               ))}
               {visitNotes.length > 0 && pastAppointments.length > 0 && <Separator />}
-              {visitNotes.map((vn) => (
-                <div key={vn.id} className="flex items-start justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="text-sm font-medium">{vn.chief_complaint || "Visit Note"}</p>
-                    {vn.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{vn.notes}</p>}
+              {visitNotes.map((vn) => {
+                const isOnb = isOnboardingVisit(vn);
+                const v = (vn.vitals as any) ?? {};
+                const doctor = v?.attending_doctor ?? "Dr. Laine";
+                const dateStr = new Date(vn.visit_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+                return (
+                  <div
+                    key={vn.id}
+                    className={`flex items-start justify-between p-3 rounded-lg border transition-colors ${isOnb ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                    onClick={isOnb ? () => setOpenVisitNote(vn) : undefined}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium">
+                          {isOnb ? "Initial Consultation" : (vn.chief_complaint || "Visit Note")}
+                        </p>
+                        {isOnb && (
+                          <>
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <UserCheck className="h-3 w-3" /> Onboarding
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Completed
+                            </Badge>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> {dateStr}
+                        </span>
+                        {isOnb && (
+                          <span className="flex items-center gap-1">
+                            <Stethoscope className="h-3 w-3" /> {doctor}
+                          </span>
+                        )}
+                      </div>
+                      {!isOnb && vn.notes && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{vn.notes}</p>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-                    {new Date(vn.visit_date).toLocaleDateString()}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
+
             </div>
           )}
         </CardContent>
