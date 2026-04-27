@@ -269,13 +269,15 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [obRes, alRes] = await Promise.all([
+      const [obRes, alRes, mfRes] = await Promise.all([
         supabase.from("patient_onboarding").select("*").eq("patient_id", patient.id).maybeSingle(),
         supabase.from("patient_allergies").select("*").eq("patient_id", patient.id),
+        supabase.from("patient_health_files").select("*").eq("patient_id", patient.id).eq("file_category", "mole_image"),
       ]);
       if (cancelled) return;
       setOnboarding(obRes.data);
       setAllergies(alRes.data || []);
+      setMoleFiles(mfRes.data || []);
       setLoading(false);
       // Seed creation log entry once
       if ((initialDoc.edit_log ?? []).length === 0) {
