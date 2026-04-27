@@ -225,7 +225,7 @@ export function PatientOnboardingDialog(props: Props) {
           // Step 10 — Status
           exam_findings: (extra.exam_findings as any) ?? blankExamFindings(),
           moles_enabled: Boolean(extra.moles_enabled),
-          moles: (extra.moles as any[]) ?? [],
+          moles: normalizeMoles(extra.moles),
 
           current_step: ((data as any).current_step as number) ?? 1,
           completed_steps: (extra.completed_steps as number[]) ?? [],
