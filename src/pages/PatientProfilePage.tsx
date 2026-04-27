@@ -31,7 +31,8 @@ import { HealthFileUploads, type HealthDataTab } from "@/components/patients/Hea
 import { MetabolicDimensionView } from "@/components/patients/MetabolicDimensionView";
 import { PatientMedicationsView } from "@/components/patients/PatientMedicationsView";
 import { DimensionMedicationsSection } from "@/components/patients/DimensionMedicationsSection";
-import { MainDimensionOverview, SubDimensionView } from "@/components/patients/DimensionOverviewView";
+import { MainDimensionOverview, SubDimensionView, LabResultsBlock } from "@/components/patients/DimensionOverviewView";
+import { getBiomarkersForMainDimension } from "@/components/patients/dimensionRegistry";
 import { computeSubScores, aggregateMainScore } from "@/lib/subDimensionScoring";
 import { PatientOverviewView } from "@/components/patients/PatientOverviewView";
 import { OnboardingEmptyState } from "@/components/patients/OnboardingEmptyState";
