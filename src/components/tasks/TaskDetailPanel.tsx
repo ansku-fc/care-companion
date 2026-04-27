@@ -495,6 +495,28 @@ export function TaskDetailPanel({ task, patientName, open, onOpenChange }: Props
 type PreviewKind = "labs" | "interaction" | "renewal" | "supply" | "risk_review" | "follow_up" | null;
 
 function detectKind(task: Task): PreviewKind {
+  // Prefer the stored task_category (set by classifier at creation / backfill).
+  const stored = (task as Task & { task_category?: string | null }).task_category as
+    | TaskCategoryKind
+    | null
+    | undefined;
+  if (stored) {
+    switch (stored) {
+      case "lab_review":       return "labs";
+      case "medication":       {
+        const hay = `${task.title} ${task.created_from ?? ""} ${task.description ?? ""}`.toLowerCase();
+        if (/interaction|warfarin|ibuprofen/.test(hay)) return "interaction";
+        if (/low supply|out of stock|stock low/.test(hay)) return "supply";
+        if (/renew|prescription|refill/.test(hay)) return "renewal";
+        return "renewal"; // generic medication preview
+      }
+      case "dimension_review": return "risk_review";
+      case "followup":         return "follow_up";
+      case "referral":         return null; // handled by isReferral branch
+      case "administrative":   return null;
+    }
+  }
+  // Legacy fallback for tasks without task_category.
   const hay = `${task.title} ${task.created_from ?? ""} ${task.description ?? ""}`.toLowerCase();
   if (/lab result|new lab|review.*lab/.test(hay)) return "labs";
   if (/interaction|warfarin|ibuprofen/.test(hay)) return "interaction";
