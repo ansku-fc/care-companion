@@ -129,6 +129,32 @@ const TasksPage = () => {
     });
   }, [filtered]);
 
+  const patientGroups = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    filtered.forEach((t) => {
+      const key = t.patient_id ?? "__none__";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    });
+    const groups = Array.from(map.entries()).map(([pid, list]) => {
+      const sorted = [...list].sort((a, b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      });
+      const overdue = sorted.filter(isOverdue).length;
+      const patient = patients.find((p) => p.id === pid);
+      const name = patient?.full_name ?? (pid === "__none__" ? "Unassigned" : "Unknown patient");
+      return { pid, name, tier: patient?.tier ?? null, tasks: sorted, overdue };
+    });
+    groups.sort((a, b) => a.name.localeCompare(b.name));
+    return groups;
+  }, [filtered, patients]);
+
+  const [openPatients, setOpenPatients] = useState<Record<string, boolean>>({});
+  const isPatientOpen = (pid: string) => openPatients[pid] ?? true;
+
   const clearFilters = () => {
     setFilterStatus("all"); setFilterAssignee("all"); setFilterCategory("all");
     setFilterPriority("all"); setFilterPatient("all");
