@@ -689,6 +689,85 @@ function ContextualPreview({
 }
 
 // ---------------------------------------------------------------------------
+// Medication preview — fetches the patient's active medications and renders
+// them inline so the doctor sees what the task is actually about. Highlights
+// medications mentioned in the task title when possible. CTA routes to the
+// patient's Medications tab.
+// ---------------------------------------------------------------------------
+function MedicationPreview({
+  task,
+  onNavigate,
+}: {
+  task: Task;
+  onNavigate: (path: string) => void;
+}) {
+  const [meds, setMeds] = useState<Array<{ medication_name: string; dose: string | null; frequency: string | null; indication: string | null }> | null>(null);
+  const patientId = task.patient_id;
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!patientId) { setMeds([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("patient_medications")
+        .select("medication_name, dose, frequency, indication")
+        .eq("patient_id", patientId)
+        .eq("status", "active")
+        .order("medication_name");
+      if (!cancelled) setMeds(data ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [patientId]);
+
+  const title = (task.title ?? "").toLowerCase();
+  const highlighted = (meds ?? []).filter((m) => {
+    const name = (m.medication_name ?? "").toLowerCase();
+    const indication = (m.indication ?? "").toLowerCase();
+    if (name && title.includes(name)) return true;
+    if (/blood pressure|hypertension/.test(title) && /(hypertension|blood pressure|\bbp\b)/.test(indication)) return true;
+    return false;
+  });
+  const display = highlighted.length > 0 ? highlighted : (meds ?? []);
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <Pill className="h-3.5 w-3.5" /> Medication review
+      </div>
+      {meds === null ? (
+        <p className="text-xs text-muted-foreground italic">Loading medications…</p>
+      ) : display.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">No active medications recorded.</p>
+      ) : (
+        <ul className="space-y-1">
+          {display.slice(0, 5).map((m, i) => (
+            <li key={i} className="text-xs">
+              <span className="font-semibold">{m.medication_name}</span>
+              {m.dose && <span className="text-muted-foreground"> · {m.dose}</span>}
+              {m.frequency && <span className="text-muted-foreground"> · {m.frequency}</span>}
+              {m.indication && (
+                <span className="block text-[11px] text-muted-foreground italic">for {m.indication}</span>
+              )}
+            </li>
+          ))}
+          {display.length > 5 && (
+            <li className="text-[11px] text-muted-foreground italic">+ {display.length - 5} more…</li>
+          )}
+        </ul>
+      )}
+      {patientId && (
+        <button
+          onClick={() => onNavigate(`/patients/${patientId}?tab=medications`)}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline pt-1"
+        >
+          Go to Medications <ArrowRight className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Inline referral form — pre-filled template for sending specialist referrals.
 // Provides "Send as email" (mailto:) and "Download as PDF" (print-to-PDF) actions.
 // ---------------------------------------------------------------------------
