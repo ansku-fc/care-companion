@@ -194,6 +194,8 @@ const blankIllness = (): IllnessRow => ({
   resolved_year: null,
   medications: [],
   notes: "",
+  dimensions: [],
+  dimensions_confirmed: false,
 });
 
 const blankFamily = (): FamilyHistoryRow => ({
