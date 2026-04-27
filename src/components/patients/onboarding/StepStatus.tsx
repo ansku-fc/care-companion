@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -19,13 +20,16 @@ const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "skin_general", label: "Skin (general)" },
   { key: "abdomen", label: "Abdomen" },
   { key: "eyes", label: "Eyes" },
-  { key: "ears", label: "Ears" },
   { key: "musculoskeletal", label: "Musculoskeletal" },
 ];
 
-// Note: ADP / ATP / AFEM sub-toggles previously lived under "Peripheral
-// circulation" but only duplicated the parent. They have been replaced with a
-// single free-text notes field shown when the parent toggle is on.
+// Sub-rows shown under "Peripheral circulation" when the parent is ON.
+// Each sub-row is a labeled inline notes/measurement input — no toggle.
+const PERIPHERAL_SUBS: { key: keyof ExamFindings; label: string }[] = [
+  { key: "peripheral_adp", label: "ADP" },
+  { key: "peripheral_atp", label: "ATP" },
+  { key: "peripheral_afem", label: "AFEM" },
+];
 
 /** Step 10 — Status (Physical Examination). */
 export function StepStatus() {
