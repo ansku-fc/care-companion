@@ -104,7 +104,15 @@ export function PatientVisitsView({ patient, appointments, visitNotes, onDataCha
             {isOnb ? (
               <>
                 <Badge variant="secondary" className="text-xs gap-1"><UserCheck className="h-3 w-3" /> Onboarding</Badge>
-                <Badge variant="secondary" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Completed</Badge>
+                {((v.extra_data?.status ?? "draft") === "finalised") ? (
+                  <Badge className="text-xs gap-1 bg-green-100 text-green-900 hover:bg-green-100 border border-green-300">
+                    <CheckCircle2 className="h-3 w-3" /> Completed
+                  </Badge>
+                ) : (
+                  <Badge className="text-xs gap-1 bg-yellow-100 text-yellow-900 hover:bg-yellow-100 border border-yellow-300">
+                    <CheckCircle2 className="h-3 w-3" /> Awaiting Review
+                  </Badge>
+                )}
               </>
             ) : (
               modeChip(v.visit_mode)
