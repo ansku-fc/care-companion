@@ -1975,7 +1975,7 @@ function PatientDetailsView({
   appointments: Tables<"appointments">[];
   onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
-  const [related, setRelated] = useState<Array<{ id: string; full_name: string; relationship_type: string }>>([]);
+  const [related, setRelated] = useState<Array<{ id: string; full_name: string; relationship_type: string; rel_row_id: string }>>([]);
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [editingContact, setEditingContact] = useState(false);
   const [editingBilling, setEditingBilling] = useState(false);
