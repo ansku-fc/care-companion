@@ -327,8 +327,10 @@ function AllergiesPicker({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            ref={triggerRef}
             variant="outline"
             role="combobox"
+            onClick={() => setOpen((o) => !o)}
             className="w-full h-11 rounded-xl justify-between font-normal text-muted-foreground"
           >
             Search allergens by category…
@@ -336,12 +338,11 @@ function AllergiesPicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent
+          ref={contentRef}
           className="p-0 w-[var(--radix-popover-trigger-width)]"
           align="start"
           onWheel={(e) => e.stopPropagation()}
-          onEscapeKeyDown={() => setOpen(false)}
-          onInteractOutside={() => setOpen(false)}
-          onPointerDownOutside={() => setOpen(false)}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <Command shouldFilter>
             <CommandInput
