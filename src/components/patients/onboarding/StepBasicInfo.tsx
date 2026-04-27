@@ -1,18 +1,35 @@
+import { useMemo, useState } from "react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { COMMON_ALLERGENS } from "@/lib/allergens";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+
+import {
+  COMMON_ALLERGENS,
+  ALLERGEN_CATEGORIES,
+  ALLERGY_SEVERITIES,
+  severityLabel,
+  findAllergen,
+  type AllergenCategory,
+  type AllergySeverity,
+} from "@/lib/allergens";
 import { OCCUPATIONS, EDUCATION_LEVELS, SUPPLEMENT_LIST } from "@/lib/onboardingTaxonomy";
-import { useOnboardingForm, calcBmi, calcWaistHipRatio } from "./OnboardingFormContext";
+import { useOnboardingForm, calcBmi, calcWaistHipRatio, type AllergyEntry } from "./OnboardingFormContext";
 import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
 import { SectionHeading, FieldLabel, CalculatedField, NumberInput } from "./shared";
-
-const ALLERGY_OPTIONS: MultiSelectOption[] = COMMON_ALLERGENS.map((a) => ({
-  value: a.name,
-  label: a.name,
-  prefix: a.icd10,
-}));
 
 const SUPPLEMENT_OPTIONS: MultiSelectOption[] = SUPPLEMENT_LIST.map((s) => ({
   value: s,
