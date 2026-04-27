@@ -2034,32 +2034,30 @@ function PatientDetailsView({
     });
   }, [patient]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data: rels } = await supabase
-        .from("patient_relationships")
-        .select("related_patient_id, relationship_type")
-        .eq("patient_id", patient.id);
-      if (!rels || rels.length === 0) {
-        if (!cancelled) setRelated([]);
-        return;
-      }
-      const ids = rels.map((r: any) => r.related_patient_id);
-      const { data: people } = await supabase
-        .from("patients")
-        .select("id, full_name")
-        .in("id", ids);
-      const merged = (rels as any[])
-        .map((r) => {
-          const p = people?.find((pp: any) => pp.id === r.related_patient_id);
-          return p ? { id: p.id, full_name: p.full_name, relationship_type: r.relationship_type } : null;
-        })
-        .filter(Boolean) as Array<{ id: string; full_name: string; relationship_type: string }>;
-      if (!cancelled) setRelated(merged);
-    })();
-    return () => { cancelled = true; };
+  const loadRelated = React.useCallback(async () => {
+    const { data: rels } = await supabase
+      .from("patient_relationships")
+      .select("id, related_patient_id, relationship_type")
+      .eq("patient_id", patient.id);
+    if (!rels || rels.length === 0) {
+      setRelated([]);
+      return;
+    }
+    const ids = rels.map((r: any) => r.related_patient_id);
+    const { data: people } = await supabase
+      .from("patients")
+      .select("id, full_name")
+      .in("id", ids);
+    const merged = (rels as any[])
+      .map((r) => {
+        const p = people?.find((pp: any) => pp.id === r.related_patient_id);
+        return p ? { id: p.id, full_name: p.full_name, relationship_type: r.relationship_type, rel_row_id: r.id } : null;
+      })
+      .filter(Boolean) as Array<{ id: string; full_name: string; relationship_type: string; rel_row_id: string }>;
+    setRelated(merged);
   }, [patient.id]);
+
+  useEffect(() => { loadRelated(); }, [loadRelated]);
 
   const navigate = useNavigate();
   const fmt = (d: string | null | undefined) =>
