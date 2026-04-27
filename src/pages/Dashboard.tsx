@@ -272,22 +272,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="flex flex-col gap-4 h-[calc(100vh-4rem)] min-h-0 overflow-hidden">
+      <div className="shrink-0">
         <h1 className="text-2xl font-bold tracking-tight">Good morning, Dr. Laine.</h1>
         <p className="text-muted-foreground">{dateLabel}</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      {/* Top row: Schedule + Action Centre, share ~55% of remaining height */}
+      <div className="grid gap-4 lg:grid-cols-5 flex-[1.1] min-h-0">
         {/* Schedule */}
-        <div ref={scheduleRef} className="lg:col-span-3">
-          <Card>
-            <CardHeader className="pb-3">
+        <div ref={scheduleRef} className="lg:col-span-3 min-h-0">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-3 shrink-0">
               <CardTitle className="text-lg flex items-center gap-2">
                 <CalendarDays className="h-5 w-5 text-primary" /> Today's Schedule
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 flex-1 min-h-0 overflow-y-auto">
               {todaySchedule.length === 0 && (
                 <p className="text-sm text-muted-foreground italic px-1 py-2">No appointments scheduled for today.</p>
               )}
@@ -321,44 +322,46 @@ const Dashboard = () => {
                   </div>
                 );
               })}
-              <div className="pt-2">
-                <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => navigate("/calendar")}>
-                  View full calendar <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
             </CardContent>
+            <div className="px-6 pb-3 pt-1 shrink-0 border-t border-border/60">
+              <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => navigate("/calendar")}>
+                View full calendar <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </Card>
         </div>
 
-        {/* Action Centre — driven by live tasks */}
-        <div ref={actionRef} className="lg:col-span-2">
-          <Card>
-            <CardHeader className="pb-3">
+        {/* Action Centre — driven by live tasks, internal scroll only */}
+        <div ref={actionRef} className="lg:col-span-2 min-h-0">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-3 shrink-0">
               <CardTitle className="text-lg flex items-center gap-2">
                 <ClipboardList className="h-5 w-5 text-primary" /> Action Centre
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-5 flex-1 min-h-0 overflow-y-auto">
               <Section icon={<AlertTriangle className="h-3 w-3" />} label="Urgent" tone="destructive" count={urgentTasks.length}>
-                {urgentTasks.length === 0 ? <Empty text="No urgent tasks" /> : urgentTasks.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="destructive" />)}
+                {urgentTasks.length === 0 ? <Empty text="No urgent tasks" /> : urgentTasks.map((t) => <ActionRow key={t.id} task={t} tone="destructive" />)}
               </Section>
               <Section icon={<Clock className="h-3 w-3" />} label="Pending" tone="warning" count={pendingTasks.length}>
-                {pendingTasks.length === 0 ? <Empty text="No pending tasks" /> : pendingTasks.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="warning" />)}
+                {pendingTasks.length === 0 ? <Empty text="No pending tasks" /> : pendingTasks.map((t) => <ActionRow key={t.id} task={t} tone="warning" />)}
               </Section>
               <Section icon={<CheckCircle2 className="h-3 w-3" />} label="Completed today" tone="success" count={completedToday.length}>
-                {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.slice(0, 6).map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
+                {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
               </Section>
+            </CardContent>
+            <div className="px-6 pb-3 pt-1 shrink-0 border-t border-border/60">
               <Button variant="ghost" size="sm" className="w-full gap-1 text-primary" onClick={() => navigate("/tasks")}>
                 Open all tasks <ArrowRight className="h-3.5 w-3.5" />
               </Button>
-            </CardContent>
+            </div>
           </Card>
         </div>
       </div>
 
-      {/* Recent Patient Activity */}
-      <Card>
-        <CardHeader className="pb-3">
+      {/* Recent Patient Activity — bottom row, always visible, scrolls internally */}
+      <Card className="flex-1 min-h-0 flex flex-col">
+        <CardHeader className="pb-3 shrink-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" /> Recent Patient Activity
@@ -368,7 +371,7 @@ const Dashboard = () => {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 min-h-0 overflow-y-auto">
           <div className="divide-y divide-border/60">
             {recentActivity.map((a, i) => (
               <button key={i} onClick={() => goToPatient(a.patient, a.section)} className="w-full text-left grid grid-cols-12 gap-3 py-2.5 items-center hover:bg-muted/40 rounded-md px-2 -mx-2 transition-colors">
