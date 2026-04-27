@@ -491,7 +491,7 @@ const PatientProfilePage = () => {
             <OnboardingEmptyState patientName={patient.full_name} patientId={patient.id} />
           )
         ) : activeSection === "details" ? (
-          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} />
+          <PatientDetailsView patient={patient} onboarding={onboarding} age={age} labResults={labResults} onLabResultsAdded={fetchData} visitNotes={visitNotes} appointments={appointments} onPatientUpdate={(updated) => setPatient(updated)} />
         ) : activeSection === "medications" ? (
           <PatientMedicationsView patientName={patient.full_name} patientId={patient.id} />
         ) : activeSection === "visits" ? (
