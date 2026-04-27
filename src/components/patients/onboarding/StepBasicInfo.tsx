@@ -229,3 +229,189 @@ function BpPair({
     </div>
   );
 }
+
+/* ---------- Allergies picker (categorised + per-allergy severity) ---------- */
+
+const SEVERITY_DOT: Record<AllergySeverity, string> = {
+  mild: "bg-muted-foreground/40",
+  moderate: "bg-amber-500",
+  severe: "bg-red-500",
+  anaphylactic: "bg-red-600 ring-2 ring-red-300",
+};
+
+const SEVERITY_CHIP: Record<AllergySeverity, string> = {
+  mild: "border-border bg-muted text-muted-foreground",
+  moderate: "border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-900",
+  severe: "border-red-200 bg-red-50 text-red-900 dark:bg-red-900/30 dark:text-red-200 dark:border-red-900",
+  anaphylactic: "border-red-300 bg-red-100 text-red-900 font-semibold dark:bg-red-900/40 dark:text-red-100 dark:border-red-800",
+};
+
+function AllergiesPicker({
+  value,
+  onChange,
+}: {
+  value: AllergyEntry[];
+  onChange: (next: AllergyEntry[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const grouped = useMemo(() => {
+    const map: Record<AllergenCategory, typeof COMMON_ALLERGENS> = {
+      Drugs: [],
+      Environmental: [],
+      Nutritional: [],
+    };
+    COMMON_ALLERGENS.forEach((a) => map[a.category].push(a));
+    return map;
+  }, []);
+
+  const selectedNames = new Set(value.map((a) => a.name.toLowerCase()));
+
+  const toggle = (name: string, icd: string | null) => {
+    const lower = name.toLowerCase();
+    if (selectedNames.has(lower)) {
+      onChange(value.filter((a) => a.name.toLowerCase() !== lower));
+    } else {
+      onChange([...value, { name, icd_code: icd, severity: null }]);
+    }
+  };
+
+  const setSeverity = (name: string, severity: AllergySeverity | null) => {
+    onChange(
+      value.map((a) =>
+        a.name.toLowerCase() === name.toLowerCase() ? { ...a, severity } : a,
+      ),
+    );
+  };
+
+  const remove = (name: string) =>
+    onChange(value.filter((a) => a.name.toLowerCase() !== name.toLowerCase()));
+
+  const addCustom = () => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    if (selectedNames.has(trimmed.toLowerCase())) return;
+    const known = findAllergen(trimmed);
+    onChange([...value, { name: trimmed, icd_code: known?.icd10 ?? null, severity: null }]);
+    setQuery("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-full h-11 rounded-xl justify-between font-normal text-muted-foreground"
+          >
+            Search allergens by category…
+            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
+          <Command shouldFilter>
+            <CommandInput
+              placeholder="Search allergen or ICD code…"
+              value={query}
+              onValueChange={setQuery}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && query.trim()) {
+                  // Only add custom if no list match exists
+                  const hasMatch = COMMON_ALLERGENS.some((a) =>
+                    a.name.toLowerCase().includes(query.trim().toLowerCase()),
+                  );
+                  if (!hasMatch) {
+                    e.preventDefault();
+                    addCustom();
+                  }
+                }
+              }}
+            />
+            <CommandList className="max-h-72">
+              <CommandEmpty>
+                {query.trim() ? (
+                  <button
+                    type="button"
+                    className="w-full text-left text-sm px-3 py-2 hover:bg-muted"
+                    onClick={addCustom}
+                  >
+                    Add “{query.trim()}” as custom allergen
+                  </button>
+                ) : (
+                  "No matches."
+                )}
+              </CommandEmpty>
+              {ALLERGEN_CATEGORIES.map((cat) => (
+                <CommandGroup key={cat} heading={cat.toUpperCase()}>
+                  {grouped[cat].map((a) => {
+                    const isSelected = selectedNames.has(a.name.toLowerCase());
+                    return (
+                      <CommandItem
+                        key={`${cat}-${a.name}`}
+                        value={`${a.name} ${a.icd10}`}
+                        onSelect={() => toggle(a.name, a.icd10)}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                        <span className="mr-2 font-mono text-xs text-muted-foreground">{a.icd10}</span>
+                        {a.name}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((a) => {
+            const sev = a.severity;
+            return (
+              <span
+                key={a.name}
+                className={cn(
+                  "inline-flex items-center gap-2 px-2 py-1 rounded-md border text-xs",
+                  sev ? SEVERITY_CHIP[sev] : "bg-muted text-foreground border-border",
+                )}
+              >
+                {sev && <span className={cn("h-2 w-2 rounded-full", SEVERITY_DOT[sev])} />}
+                {a.icd_code && <span className="font-mono opacity-80">{a.icd_code}</span>}
+                <span>{a.name}</span>
+                <Select
+                  value={sev ?? "_unset"}
+                  onValueChange={(v) =>
+                    setSeverity(a.name, v === "_unset" ? null : (v as AllergySeverity))
+                  }
+                >
+                  <SelectTrigger className="h-6 w-[120px] text-[11px] px-2 py-0 bg-background/60 border-border/60">
+                    <SelectValue placeholder="Severity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_unset">Severity…</SelectItem>
+                    {ALLERGY_SEVERITIES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {severityLabel(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <button
+                  type="button"
+                  onClick={() => remove(a.name)}
+                  className="opacity-60 hover:opacity-100"
+                  aria-label={`Remove ${a.name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
