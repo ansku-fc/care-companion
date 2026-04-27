@@ -60,6 +60,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { scoreColorClass, scoreBadgeClass } from "@/lib/scoreColor";
 import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { useNavHistory } from "@/hooks/useNavHistory";
