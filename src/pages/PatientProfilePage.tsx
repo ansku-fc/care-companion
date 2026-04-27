@@ -5469,16 +5469,8 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     if (from && to) to.scrollTop = from.scrollTop;
     isSyncing.current = false;
   };
-  // Dummy lab results for demo columns
-  const dummyLabs: Partial<Tables<"patient_lab_results">>[] = [
-    { id: "dummy-0", result_date: "2023-11-28", ldl_mmol_l: 4.1, hba1c_mmol_mol: 45, blood_pressure_systolic: 142, blood_pressure_diastolic: 92, alat_u_l: 35, afos_alp_u_l: 78, gt_u_l: 45, alat_asat_ratio: 1.1, egfr: 82, cystatin_c: 1.02, u_alb_krea_abnormal: false, tsh_mu_l: 2.5, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 88, fev1_percent: 85, fvc_percent: 87 },
-    { id: "dummy-1", result_date: "2024-03-15", ldl_mmol_l: 3.8, hba1c_mmol_mol: 42, blood_pressure_systolic: 135, blood_pressure_diastolic: 88, alat_u_l: 28, afos_alp_u_l: 72, gt_u_l: 38, alat_asat_ratio: 0.9, egfr: 88, cystatin_c: 0.95, u_alb_krea_abnormal: false, tsh_mu_l: 2.1, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 92, fev1_percent: 89, fvc_percent: 91 },
-    { id: "dummy-2", result_date: "2024-06-20", ldl_mmol_l: 3.5, hba1c_mmol_mol: 40, blood_pressure_systolic: 128, blood_pressure_diastolic: 82, alat_u_l: 32, afos_alp_u_l: 68, gt_u_l: 42, alat_asat_ratio: 1.0, egfr: 91, cystatin_c: 0.88, u_alb_krea_abnormal: false, tsh_mu_l: 1.8, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 94, fev1_percent: 91, fvc_percent: 93 },
-    { id: "dummy-3", result_date: "2024-09-10", ldl_mmol_l: 3.2, hba1c_mmol_mol: 38, blood_pressure_systolic: 122, blood_pressure_diastolic: 78, alat_u_l: 25, afos_alp_u_l: 65, gt_u_l: 35, alat_asat_ratio: 0.85, egfr: 94, cystatin_c: 0.82, u_alb_krea_abnormal: false, tsh_mu_l: 2.3, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 96, fev1_percent: 93, fvc_percent: 95 },
-    { id: "dummy-4", result_date: "2024-12-05", ldl_mmol_l: 2.9, hba1c_mmol_mol: 36, blood_pressure_systolic: 118, blood_pressure_diastolic: 75, alat_u_l: 22, afos_alp_u_l: 60, gt_u_l: 30, alat_asat_ratio: 0.8, egfr: 97, cystatin_c: 0.78, u_alb_krea_abnormal: false, tsh_mu_l: 2.0, testosterone_estrogen_abnormal: false, apoe_e4: false, pef_percent: 98, fev1_percent: 95, fvc_percent: 96 },
-  ];
-
-  const allLabs = [...labResults, ...dummyLabs.filter(d => !labResults.some(r => r.id === d.id))] as Tables<"patient_lab_results">[];
+  // Strictly patient-scoped — no demo/mock fallback rows.
+  const allLabs = labResults;
 
   // Chronological: oldest first (left), newest last (right)
   const sorted = [...allLabs].sort((a, b) => a.result_date.localeCompare(b.result_date));
@@ -5492,7 +5484,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
       rows: [
         { label: "LDL", unit: "mmol/l", key: "ldl_mmol_l" as const },
         { label: "HbA1c", unit: "mmol/mol", key: "hba1c_mmol_mol" as const },
-        { label: "RR / Blood Pressure", unit: "mmHg", key: "_bp" as const },
+        
       ],
     },
     {
@@ -5600,7 +5592,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     for (const cat of categories) {
       for (const row of cat.rows) {
         if (isOutOfRange(row.key, newestLab)) {
-          const key = row.key === "_bp" ? "blood_pressure_systolic" : row.key;
+          const key = (row.key as string) === "_bp" ? "blood_pressure_systolic" : row.key;
           markers.push({ key, label: row.label, unit: row.unit });
         }
       }
@@ -5815,15 +5807,19 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
         <div className={`min-w-0 min-h-0 flex flex-col ${selectedMarker ? "flex-1" : "w-full"}`}>
         {sorted.length === 0 ? (
           <Card className="rounded-[20px]">
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No lab results yet. Click "Add Lab Results" to add the first entry.
+            <CardContent className="py-16 flex flex-col items-center justify-center text-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <FlaskConical className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="text-sm font-medium text-foreground">No laboratory results yet</div>
+              <AddLabResultsDialog patientId={patientId} onSaved={onLabResultsAdded} />
             </CardContent>
           </Card>
         ) : viewMode === "graphs" ? (
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
             {categories.map((cat) => {
               const rowsWithData = cat.rows.filter((row) => {
-                if (row.key === "_bp") {
+                if ((row.key as string) === "_bp") {
                   return sorted.some((lab) => lab.blood_pressure_systolic != null);
                 }
                 return sorted.some((lab) => {
@@ -5839,21 +5835,21 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {rowsWithData.map((row) => {
-                      const dataKey = row.key === "_bp" ? "blood_pressure_systolic" : row.key;
+                      const dataKey = (row.key as string) === "_bp" ? "blood_pressure_systolic" : row.key;
                       const refForRow = {
                         ...REFERENCE_VALUES[dataKey],
                         ...customRefs[dataKey],
                       };
                       const series = sorted
                         .map((lab) => {
-                          const v = row.key === "_bp"
+                          const v = (row.key as string) === "_bp"
                             ? lab.blood_pressure_systolic
                             : (lab as any)[row.key];
                           if (v === null || v === undefined || typeof v === "boolean") return null;
                           return { date: lab.result_date, value: Number(v) };
                         })
                         .filter(Boolean) as { date: string; value: number }[];
-                      const isBp = row.key === "_bp";
+                      const isBp = (row.key as string) === "_bp";
                       const diastolicSeries = isBp
                         ? (sorted
                             .map((lab) => {
@@ -5916,7 +5912,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                             </td>
                           </tr>
                           {cat.rows.map((row) => {
-                            const isSel = selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
+                            const isSel = selectedMarker?.key === row.key || ((row.key as string) === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
                             return (
                               <tr
                                 key={row.key}
@@ -5967,7 +5963,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                             </td>
                           </tr>
                           {cat.rows.map((row) => {
-                            const isSel = selectedMarker?.key === row.key || (row.key === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
+                            const isSel = selectedMarker?.key === row.key || ((row.key as string) === "_bp" && selectedMarker?.key === "blood_pressure_systolic");
                             return (
                               <tr
                                 key={row.key}
