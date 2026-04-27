@@ -49,7 +49,7 @@ interface Props {
   onBack: () => void;
 }
 
-type DocStatus = "draft" | "under_review" | "finalised";
+type DocStatus = "draft" | "finalised";
 
 interface EditLogEntry {
   ts: string;
