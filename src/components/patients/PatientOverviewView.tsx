@@ -417,52 +417,15 @@ export function PatientOverviewView({
       {/* TASKS for this patient — visually merged with alert bar above */}
       <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
 
-      {/* 3. ROW 1 — Diagnoses | Medications */}
+      {/* 3. ROW 1 — Illnesses & Medications | Active Medications */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Active Diagnoses */}
-        <Card className="shadow-card">
-          <CardContent className="py-3 px-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <Stethoscope className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[13px] font-semibold">Active Diagnoses</h3>
-              <button
-                onClick={() => onSelectSection("lab_results")}
-                className="ml-auto text-[11px] text-muted-foreground hover:text-foreground hover:underline"
-              >
-                See all ({displayDiagnoses.length}) →
-              </button>
-            </div>
-            {displayDiagnoses.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">No active diagnoses recorded.</p>
-            ) : (
-              <ul className="space-y-1">
-                {displayDiagnoses.slice(0, 3).map((d: any) => (
-                  <li key={d.id} className="flex items-baseline justify-between gap-3 text-[12px]">
-                    <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
-                      <span className="font-medium">{d.diagnosis}</span>
-                      {d.dimension && (
-                        <button
-                          onClick={() => {
-                            const key = DIMENSION_LABEL_TO_KEY[d.dimension as keyof typeof DIMENSION_LABEL_TO_KEY];
-                            if (key) onSelectSection(key);
-                          }}
-                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
-                        >
-                          {d.dimension}
-                        </button>
-                      )}
-                    </div>
-                    {d.diagnosed_date && (
-                      <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                        {fmtClinicalDate(d.diagnosed_date)}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        {/* Illnesses & Medications (rich onboarding-sourced view) */}
+        <IllnessesMedicationsCard
+          patient={patient}
+          onboarding={onboarding}
+          onSelectSection={onSelectSection}
+          onDataChanged={onDataChanged}
+        />
 
         {/* Active Medications */}
         <Card className="shadow-card">
