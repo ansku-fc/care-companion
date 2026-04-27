@@ -10,19 +10,94 @@ export type AllergyEntry = {
   severity: AllergySeverity | null;
 };
 
+export type MedicationFrequency =
+  | "once_daily"
+  | "twice_daily"
+  | "three_times_daily"
+  | "as_needed"
+  | "weekly"
+  | "other"
+  | "";
+
+export type MedicationRoute =
+  | "oral"
+  | "topical"
+  | "inhaled"
+  | "injection"
+  | "other"
+  | "";
+
+export type MedicationDetail = {
+  /** Display name (e.g. "Metformin"). */
+  name: string;
+  /** Optional ATC code if known. */
+  atc?: string;
+  dose: string;
+  frequency: MedicationFrequency;
+  route: MedicationRoute;
+  start_year: number | null;
+  notes: string;
+};
+
 export type IllnessRow = {
   id: string;
   icd_code: string;
   illness_name: string;
   onset_year: number | null;
   resolved_year: number | null; // only used by previous illnesses
-  medications: string[];
+  medications: MedicationDetail[];
   notes: string;
   /** Health-dimension keys (matches DIMENSION_TAGS keys). */
   dimensions: string[];
   /** Whether the doctor has confirmed the suggested dimensions. */
   dimensions_confirmed: boolean;
 };
+
+/** Normalize legacy `string[]` medications stored in extra_data to the new shape. */
+export function normalizeMedications(input: unknown): MedicationDetail[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((m): MedicationDetail | null => {
+      if (typeof m === "string") {
+        return { name: m, dose: "", frequency: "", route: "", start_year: null, notes: "" };
+      }
+      if (m && typeof m === "object") {
+        const o = m as Record<string, unknown>;
+        if (typeof o.name !== "string" || !o.name.trim()) return null;
+        return {
+          name: o.name,
+          atc: typeof o.atc === "string" ? o.atc : undefined,
+          dose: typeof o.dose === "string" ? o.dose : "",
+          frequency: (o.frequency as MedicationFrequency) ?? "",
+          route: (o.route as MedicationRoute) ?? "",
+          start_year:
+            typeof o.start_year === "number"
+              ? o.start_year
+              : o.start_year == null
+                ? null
+                : Number(o.start_year) || null,
+          notes: typeof o.notes === "string" ? o.notes : "",
+        };
+      }
+      return null;
+    })
+    .filter((m): m is MedicationDetail => !!m);
+}
+
+export function normalizeIllnessRows(input: unknown): IllnessRow[] {
+  if (!Array.isArray(input)) return [];
+  return input.map((row: any) => ({
+    id: typeof row?.id === "string" ? row.id : crypto.randomUUID(),
+    icd_code: row?.icd_code ?? "",
+    illness_name: row?.illness_name ?? "",
+    onset_year: row?.onset_year ?? null,
+    resolved_year: row?.resolved_year ?? null,
+    medications: normalizeMedications(row?.medications),
+    notes: row?.notes ?? "",
+    dimensions: Array.isArray(row?.dimensions) ? row.dimensions : [],
+    dimensions_confirmed: Boolean(row?.dimensions_confirmed),
+  }));
+}
 
 export type FamilyHistoryRow = {
   id: string;

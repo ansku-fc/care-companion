@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, ChevronDown, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
 import {
@@ -14,20 +15,45 @@ import {
   MEDICATION_LIST,
   DIMENSION_TAGS,
   findDimensionTag,
+  findMedication,
   getSuggestedDimensionsForIcd,
   getSuggestedMedications,
   yearOptions,
   type IcdDimension,
 } from "@/lib/onboardingTaxonomy";
-import { useOnboardingForm, type IllnessRow } from "./OnboardingFormContext";
-import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
+import {
+  useOnboardingForm,
+  type IllnessRow,
+  type MedicationDetail,
+  type MedicationFrequency,
+  type MedicationRoute,
+} from "./OnboardingFormContext";
+
 import { SectionHeading, FieldLabel } from "./shared";
 
-const MED_OPTIONS: MultiSelectOption[] = MEDICATION_LIST.map((m) => ({
-  value: m.name,
-  label: m.name,
-  prefix: m.atc || undefined,
-}));
+const FREQUENCY_OPTIONS: { value: MedicationFrequency; label: string }[] = [
+  { value: "once_daily", label: "Once daily" },
+  { value: "twice_daily", label: "Twice daily" },
+  { value: "three_times_daily", label: "Three times daily" },
+  { value: "as_needed", label: "As needed" },
+  { value: "weekly", label: "Weekly" },
+  { value: "other", label: "Other" },
+];
+
+const ROUTE_OPTIONS: { value: MedicationRoute; label: string }[] = [
+  { value: "oral", label: "Oral" },
+  { value: "topical", label: "Topical" },
+  { value: "inhaled", label: "Inhaled" },
+  { value: "injection", label: "Injection" },
+  { value: "other", label: "Other" },
+];
+
+export function frequencyLabel(v: MedicationFrequency | string | undefined | null): string {
+  return FREQUENCY_OPTIONS.find((o) => o.value === v)?.label ?? "";
+}
+export function routeLabel(v: MedicationRoute | string | undefined | null): string {
+  return ROUTE_OPTIONS.find((o) => o.value === v)?.label ?? "";
+}
 
 export function StepIllnesses() {
   const { form, addIllness, removeIllness, updateIllness } = useOnboardingForm();
@@ -140,19 +166,15 @@ function IllnessRowEditor({
           </div>
         )}
 
-        <div className={cn("col-span-12", showResolved ? "md:col-span-3" : "md:col-span-5")}>
-          <FieldLabel>Medications</FieldLabel>
-          <MultiSelectChips
-            options={MED_OPTIONS}
-            selected={row.medications}
-            onChange={(meds) => onChange({ medications: meds })}
-            placeholder="Add medication…"
-            tone="neutral"
-            allowCustom
-            suggested={getSuggestedMedications(row.icd_code)}
-            suggestedLabel="Commonly used"
-          />
-        </div>
+      </div>
+
+      <div>
+        <FieldLabel>Medications</FieldLabel>
+        <MedicationsEditor
+          medications={row.medications}
+          onChange={(meds) => onChange({ medications: meds })}
+          icdCode={row.icd_code}
+        />
       </div>
 
       <div>
@@ -460,5 +482,281 @@ function AddDimensionPopover({
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/* ---------- Medications editor (expandable per-med details) ---------- */
+
+function blankMedication(name: string, atc?: string): MedicationDetail {
+  return {
+    name,
+    atc: atc || undefined,
+    dose: "",
+    frequency: "",
+    route: "",
+    start_year: null,
+    notes: "",
+  };
+}
+
+function MedicationsEditor({
+  medications,
+  onChange,
+  icdCode,
+}: {
+  medications: MedicationDetail[];
+  onChange: (next: MedicationDetail[]) => void;
+  icdCode: string;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+
+  const selectedNames = useMemo(
+    () => new Set(medications.map((m) => m.name.toLowerCase())),
+    [medications],
+  );
+  const suggestedNames = useMemo(() => getSuggestedMedications(icdCode), [icdCode]);
+
+  const addMed = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (selectedNames.has(trimmed.toLowerCase())) return;
+    const meta = findMedication(trimmed);
+    const next = [...medications, blankMedication(trimmed, meta?.atc)];
+    onChange(next);
+    setQuery("");
+    setExpandedIdx(next.length - 1);
+    setPickerOpen(false);
+  };
+
+  const removeAt = (idx: number) => {
+    onChange(medications.filter((_, i) => i !== idx));
+    if (expandedIdx === idx) setExpandedIdx(null);
+  };
+
+  const updateAt = (idx: number, patch: Partial<MedicationDetail>) => {
+    onChange(medications.map((m, i) => (i === idx ? { ...m, ...patch } : m)));
+  };
+
+  const filteredFull = MEDICATION_LIST.filter((m) => {
+    if (selectedNames.has(m.name.toLowerCase())) return false;
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return m.name.toLowerCase().includes(q) || (m.atc || "").toLowerCase().includes(q);
+  });
+  const filteredSuggested = suggestedNames
+    .filter((n) => !selectedNames.has(n.toLowerCase()))
+    .map((n) => {
+      const meta = findMedication(n);
+      return { name: n, atc: meta?.atc ?? "" };
+    });
+
+  return (
+    <div className="space-y-2">
+      {medications.length > 0 && (
+        <div className="space-y-2">
+          {medications.map((med, idx) => {
+            const isOpen = expandedIdx === idx;
+            return (
+              <div key={`${med.name}-${idx}`} className="rounded-lg border border-input bg-background">
+                <div className="flex items-center gap-2 px-2 py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedIdx(isOpen ? null : idx)}
+                    className="flex flex-1 items-center gap-2 text-left text-sm hover:text-foreground"
+                  >
+                    {isOpen ? (
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    )}
+                    {med.atc && (
+                      <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                        {med.atc}
+                      </span>
+                    )}
+                    <span className="font-medium truncate">{med.name}</span>
+                    {!isOpen && (med.dose || med.frequency) && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        · {[med.dose, frequencyLabel(med.frequency)].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeAt(idx)}
+                    className="text-muted-foreground hover:text-destructive p-1"
+                    aria-label={`Remove ${med.name}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {isOpen && (
+                  <div className="border-t px-3 py-3 grid grid-cols-12 gap-2">
+                    <div className="col-span-6 md:col-span-3">
+                      <FieldLabel>Dose</FieldLabel>
+                      <Input
+                        value={med.dose}
+                        onChange={(e) => updateAt(idx, { dose: e.target.value })}
+                        placeholder="e.g. 50 mg"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="col-span-6 md:col-span-3">
+                      <FieldLabel>Frequency</FieldLabel>
+                      <Select
+                        value={med.frequency || "_none"}
+                        onValueChange={(v) =>
+                          updateAt(idx, { frequency: v === "_none" ? "" : (v as MedicationFrequency) })
+                        }
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_none">—</SelectItem>
+                          {FREQUENCY_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-6 md:col-span-3">
+                      <FieldLabel>Route</FieldLabel>
+                      <Select
+                        value={med.route || "_none"}
+                        onValueChange={(v) =>
+                          updateAt(idx, { route: v === "_none" ? "" : (v as MedicationRoute) })
+                        }
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_none">—</SelectItem>
+                          {ROUTE_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-6 md:col-span-3">
+                      <FieldLabel>Start year</FieldLabel>
+                      <YearSelect
+                        value={med.start_year}
+                        onChange={(y) => updateAt(idx, { start_year: y })}
+                      />
+                    </div>
+                    <div className="col-span-12">
+                      <FieldLabel>Notes</FieldLabel>
+                      <Input
+                        value={med.notes}
+                        onChange={(e) => updateAt(idx, { notes: e.target.value })}
+                        placeholder="Additional instructions…"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Popover open={pickerOpen} onOpenChange={setPickerOpen} modal>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5 rounded-lg"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add medication
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="p-0 w-[360px]"
+          align="start"
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Search medication…"
+              value={query}
+              onValueChange={setQuery}
+            />
+            <CommandList
+              className="max-h-72 overflow-y-auto overscroll-contain"
+              onWheel={(e) => e.stopPropagation()}
+            >
+              <CommandEmpty>
+                {query.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => addMed(query)}
+                    className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted"
+                  >
+                    Add "{query.trim()}"
+                  </button>
+                ) : (
+                  "No matches."
+                )}
+              </CommandEmpty>
+              {filteredSuggested.length > 0 && (
+                <>
+                  <CommandGroup heading="Commonly used">
+                    {filteredSuggested.map((m) => (
+                      <CommandItem
+                        key={`s-${m.name}`}
+                        value={`s-${m.name}`}
+                        onSelect={() => addMed(m.name)}
+                      >
+                        {m.atc && (
+                          <span className="font-mono text-[10px] text-muted-foreground mr-2 w-16 shrink-0">
+                            {m.atc}
+                          </span>
+                        )}
+                        <span className="truncate">{m.name}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                  <CommandSeparator />
+                </>
+              )}
+              <CommandGroup heading="All medications">
+                {filteredFull.map((m) => (
+                  <CommandItem
+                    key={m.name}
+                    value={m.name}
+                    onSelect={() => addMed(m.name)}
+                  >
+                    {m.atc && (
+                      <span className="font-mono text-[10px] text-muted-foreground mr-2 w-16 shrink-0">
+                        {m.atc}
+                      </span>
+                    )}
+                    <span className="truncate">{m.name}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              {query.trim() && !MEDICATION_LIST.some((m) => m.name.toLowerCase() === query.trim().toLowerCase()) && (
+                <CommandGroup heading="Custom">
+                  <CommandItem value={`__add_${query}`} onSelect={() => addMed(query)}>
+                    <Plus className="h-3 w-3 mr-2" /> Add "{query.trim()}"
+                  </CommandItem>
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

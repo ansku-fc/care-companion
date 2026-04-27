@@ -30,7 +30,7 @@ import { StepSleep } from "./StepSleep";
 import { StepMentalHealth } from "./StepMentalHealth";
 import { StepCancer } from "./StepCancer";
 import { StepStatus } from "./StepStatus";
-import { blankExamFindings, type AllergyEntry } from "./OnboardingFormContext";
+import { blankExamFindings, normalizeIllnessRows, type AllergyEntry } from "./OnboardingFormContext";
 import { findAllergen } from "@/lib/allergens";
 
 function normalizeAllergies(raw: unknown): AllergyEntry[] {
@@ -130,8 +130,8 @@ export function PatientOnboardingDialog(props: Props) {
           ecg_notes: ((data as any).ecg_notes as string) ?? "",
           allergies: normalizeAllergies(extra.allergies),
           supplements: (extra.supplements as string[]) ?? [],
-          current_illnesses: (extra.current_illnesses as any[]) ?? [],
-          previous_illnesses: (extra.previous_illnesses as any[]) ?? [],
+          current_illnesses: normalizeIllnessRows(extra.current_illnesses),
+          previous_illnesses: normalizeIllnessRows(extra.previous_illnesses),
           family_history: (extra.family_history as any[]) ?? [],
 
           // Step 4 — Lifestyle (mostly extra_data; alcohol_units_per_week is a column)
@@ -491,6 +491,106 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     } catch (e) {
       // Non-fatal: onboarding save already succeeded
       console.warn("Allergy sync failed", e);
+    }
+
+    // Sync illness-row medications to patient_medications (idempotent).
+    // Rows tagged via medication_name suffix marker are removed and re-inserted.
+    try {
+      // Delete previous onboarding-sourced meds for this patient
+      await supabase
+        .from("patient_medications")
+        .delete()
+        .eq("patient_id", patientId)
+        .or("indication.ilike.%[from_onboarding]%");
+
+      const FREQ_LABELS: Record<string, string> = {
+        once_daily: "Once daily",
+        twice_daily: "Twice daily",
+        three_times_daily: "Three times daily",
+        as_needed: "As needed",
+        weekly: "Weekly",
+        other: "Other",
+      };
+      const ROUTE_LABELS: Record<string, string> = {
+        oral: "Oral",
+        topical: "Topical",
+        inhaled: "Inhaled",
+        injection: "Injection",
+        other: "Other",
+      };
+
+      type MedRow = {
+        patient_id: string;
+        created_by: string;
+        medication_name: string;
+        dose: string | null;
+        frequency: string | null;
+        indication: string | null;
+        start_date: string | null;
+        end_date: string | null;
+        status: string;
+      };
+
+      const buildRows = (
+        rows: typeof nextForm.current_illnesses,
+        kind: "current" | "previous",
+      ): MedRow[] => {
+        const out: MedRow[] = [];
+        for (const ill of rows) {
+          const meds = Array.isArray(ill.medications) ? ill.medications : [];
+          for (const m of meds) {
+            const name = (m as any)?.name?.trim?.() || (typeof m === "string" ? m : "");
+            if (!name) continue;
+            const dose = ((m as any)?.dose as string) || "";
+            const freqKey = ((m as any)?.frequency as string) || "";
+            const routeKey = ((m as any)?.route as string) || "";
+            const startYear = ((m as any)?.start_year as number | null) ?? null;
+            const notes = ((m as any)?.notes as string) || "";
+            const freqLabel = FREQ_LABELS[freqKey] || "";
+            const routeLabel = ROUTE_LABELS[routeKey] || "";
+            const freqCombined = [freqLabel, routeLabel ? `(${routeLabel})` : ""]
+              .filter(Boolean)
+              .join(" ");
+            const indicationParts = [
+              ill.illness_name ? ill.illness_name : null,
+              ill.icd_code ? `[${ill.icd_code}]` : null,
+              notes ? `— ${notes}` : null,
+              "[from_onboarding]",
+            ].filter(Boolean);
+            out.push({
+              patient_id: patientId,
+              created_by: user.id,
+              medication_name: name,
+              dose: dose || null,
+              frequency: freqCombined || null,
+              indication: indicationParts.join(" "),
+              start_date: startYear ? `${startYear}-01-01` : null,
+              end_date:
+                kind === "previous" && ill.resolved_year
+                  ? `${ill.resolved_year}-12-31`
+                  : null,
+              status:
+                kind === "previous"
+                  ? ill.resolved_year
+                    ? "discontinued"
+                    : "historical"
+                  : "active",
+            });
+          }
+        }
+        return out;
+      };
+
+      const allRows = [
+        ...buildRows(nextForm.current_illnesses, "current"),
+        ...buildRows(nextForm.previous_illnesses, "previous"),
+      ];
+
+      if (allRows.length > 0) {
+        await supabase.from("patient_medications").insert(allRows as any);
+      }
+    } catch (e) {
+      console.warn("Medication sync failed", e);
     }
 
     // On completion, auto-create a review task (skip silently if it fails)
