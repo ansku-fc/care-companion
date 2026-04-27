@@ -318,6 +318,7 @@ export function MainDimensionOverview({
   subScores,
   patient,
   healthCategories,
+  labResults,
   onNavigateToSub,
   onNavigateToMedications,
   renderRiskFactors,
@@ -328,6 +329,7 @@ export function MainDimensionOverview({
   subScores: Record<string, number | null>;
   patient: Tables<"patients">;
   healthCategories: Tables<"patient_health_categories">[];
+  labResults?: Tables<"patient_lab_results">[] | null;
   onNavigateToSub: (subKey: string) => void;
   onNavigateToMedications: () => void;
   renderRiskFactors: () => React.ReactNode;
