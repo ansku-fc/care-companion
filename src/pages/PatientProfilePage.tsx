@@ -5818,7 +5818,7 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
           </Card>
         ) : viewMode === "graphs" ? (
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
-            {categories.map((cat) => {
+            {visibleCategories.map((cat) => {
               return (
                 <div key={cat.title} className="space-y-3">
                   <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
