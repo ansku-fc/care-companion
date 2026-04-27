@@ -3326,7 +3326,7 @@ function HealthDimensionView({
           immune_defence: [
             r("ri_lymph", "Lymph node finding", examVal("lymph_nodes"), undefined, examFindings.lymph_nodes?.present === true),
             r("ri_autoimmune", "Autoimmune diagnoses", diagRowValue(autoimmuneDx), diagRowDetail(autoimmuneDx), autoimmuneDx.length > 0),
-            r("ri_family", "Family history — respiratory/immune", familyRowValue(respFamily), familyRowDetail(respFamily), respFamily.length > 0),
+            // Family history row removed — auto-appended by renderGroups.
           ],
           allergies: [
             r("ri_allergies", "Allergies", allergyValue, allergyDetail, allergiesList.length > 0),
