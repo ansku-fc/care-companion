@@ -24,6 +24,7 @@ import { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
 import { BiometricMiniChart } from "./BiometricMiniChart";
 import { PatientTasksCard } from "@/components/tasks/PatientTasksCard";
+import { IllnessesMedicationsCard } from "@/components/patients/IllnessesMedicationsCard";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
   ResponsiveContainer,
