@@ -2439,30 +2439,101 @@ function PatientDetailsView({
 
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Related Patients</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg">Related Patients</CardTitle>
+          {!addingRelated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={openAddRelated}
+              className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              + Add related patient
+            </Button>
+          )}
+        </CardHeader>
         <CardContent>
+          {addingRelated && (
+            <div className="space-y-3 mb-4 p-3 rounded-md border bg-muted/30">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="relative">
+                  <Label className="text-xs">Patient</Label>
+                  <Input
+                    placeholder="Search by name…"
+                    value={
+                      selectedRelatedId
+                        ? formatLastFirst(allPatients.find((p) => p.id === selectedRelatedId)?.full_name || "")
+                        : patientSearch
+                    }
+                    onChange={(e) => {
+                      setSelectedRelatedId(null);
+                      setPatientSearch(e.target.value);
+                    }}
+                  />
+                  {!selectedRelatedId && filteredPatients.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-auto">
+                      {filteredPatients.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedRelatedId(p.id);
+                            setPatientSearch("");
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                        >
+                          {formatLastFirst(p.full_name)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs">Relationship</Label>
+                  <Select value={relationshipType} onValueChange={setRelationshipType}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {RELATIONSHIP_OPTIONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setAddingRelated(false)} disabled={savingRelated}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleAddRelated} disabled={savingRelated}>
+                  {savingRelated ? "Saving…" : "Add"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {related.length === 0 ? (
             <p className="text-sm text-muted-foreground">No related patients linked.</p>
           ) : (
             <ul className="divide-y">
               {related.map((r) => (
-                <li key={r.id} className="flex items-center justify-between py-2 text-sm">
+                <li key={r.rel_row_id} className="flex items-center justify-between py-2 text-sm">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => navigate(`/patients/${r.id}`)}
                       className="font-medium text-primary hover:underline"
                     >
-                      {r.full_name}
+                      {formatLastFirst(r.full_name)}
                     </button>
                     <Badge variant="secondary" className="text-[10px]">{r.relationship_type}</Badge>
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/patients/${r.id}`)}
-                    className="text-xs"
+                    size="icon"
+                    onClick={() => handleRemoveRelated(r.id)}
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    aria-label="Remove related patient"
                   >
-                    Open record
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </li>
               ))}
