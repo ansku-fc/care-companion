@@ -9,6 +9,7 @@ import { ChevronDown, ChevronRight, ListTodo, Layers, Plus } from "lucide-react"
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/hooks/useTasks";
+import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import {
@@ -18,6 +19,38 @@ import {
 } from "@/lib/tasks";
 import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
 
+// Initials + tone for assignee avatar chip
+function assigneeInitials(name: string): string {
+  const cleaned = name.replace(/^(dr\.?|doctor|nurse)\s+/i, "").trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function assigneeAvatarTone(name: string | null | undefined): string {
+  if (!name) return "bg-muted text-muted-foreground";
+  if (/nurse/i.test(name)) return "bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30";
+  if (/dr\.?|doctor/i.test(name)) return "bg-primary/15 text-primary border border-primary/30";
+  return "bg-muted text-muted-foreground border border-border";
+}
+
+function AssigneeAvatar({ name, size = "sm" }: { name: string; size?: "xs" | "sm" }) {
+  const dims = size === "xs" ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-[10px]";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center justify-center rounded-full font-semibold tracking-wide shrink-0",
+        dims,
+        assigneeAvatarTone(name),
+      )}
+      title={name}
+    >
+      {assigneeInitials(name)}
+    </span>
+  );
+}
+
 const STATUS_GROUPS: TaskStatus[] = ["todo", "in_progress", "done", "deferred"];
 
 const TasksPage = () => {
@@ -25,6 +58,11 @@ const TasksPage = () => {
   const navigate = useNavigate();
   const { tasks, patients, patientName, loading } = useTasks();
   const { openNewTask } = useTaskActions();
+  const { profile } = useAuth();
+  const currentUserName = profile?.full_name ?? "Dr. Laine";
+
+  // Scope: My Tasks (default) vs All Tasks (incl. team FYI rows)
+  const [scope, setScope] = useState<"mine" | "all">("mine");
 
   // Filter state — patient & priority can be deep-linked.
   const [filterStatus, setFilterStatus]       = useState<string>("all");
@@ -44,7 +82,10 @@ const TasksPage = () => {
 
   const openDetail = (t: Task) => { setDetailTask(t); setDetailOpen(true); };
 
-  const filtered = useMemo(() => {
+  const isMine = (t: Task) => (t.assignee_name ?? "") === currentUserName;
+
+  // Apply non-scope filters first so My/All counts reflect current filters.
+  const baseFiltered = useMemo(() => {
     return tasks.filter((t) => {
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterAssignee !== "all" && (t.assignee_name ?? "") !== filterAssignee) return false;
@@ -56,6 +97,14 @@ const TasksPage = () => {
       return true;
     });
   }, [tasks, filterStatus, filterAssignee, filterCategory, filterPriority, filterPatient, dateFrom, dateTo]);
+
+  const myCount = useMemo(() => baseFiltered.filter(isMine).length, [baseFiltered, currentUserName]);
+  const allCount = baseFiltered.length;
+
+  const filtered = useMemo(
+    () => (scope === "mine" ? baseFiltered.filter(isMine) : baseFiltered),
+    [baseFiltered, scope, currentUserName],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<TaskStatus, Task[]>();
@@ -153,6 +202,29 @@ const TasksPage = () => {
         </CardContent>
       </Card>
 
+      {/* My Tasks / All Tasks scope */}
+      <div className="flex items-center gap-2">
+        <ScopePill
+          active={scope === "mine"}
+          onClick={() => setScope("mine")}
+          label="My Tasks"
+          count={myCount}
+          variant="primary"
+        />
+        <ScopePill
+          active={scope === "all"}
+          onClick={() => setScope("all")}
+          label="All Tasks"
+          count={allCount}
+          variant="outline"
+        />
+        {scope === "all" && (
+          <span className="text-[11px] text-muted-foreground ml-1">
+            Team tasks shown as <span className="font-medium">FYI</span>.
+          </span>
+        )}
+      </div>
+
       {/* Task list */}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading tasks…</p>
@@ -162,7 +234,13 @@ const TasksPage = () => {
             <p className="text-sm text-muted-foreground">No tasks match the current filters.</p>
           ) : (
             flatSorted.map((t) => (
-              <TaskRow key={t.id} task={t} patientName={patientName(t.patient_id)} onClick={() => openDetail(t)} />
+              <TaskRow
+                key={t.id}
+                task={t}
+                patientName={patientName(t.patient_id)}
+                onClick={() => openDetail(t)}
+                mine={isMine(t)}
+              />
             ))
           )}
         </div>
@@ -190,6 +268,7 @@ const TasksPage = () => {
                         task={t}
                         patientName={patientName(t.patient_id)}
                         onClick={() => openDetail(t)}
+                        mine={isMine(t)}
                       />
                     ))}
                   </div>
@@ -230,24 +309,67 @@ function FilterSelect({
   );
 }
 
+function ScopePill({
+  active, onClick, label, count, variant,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  variant: "primary" | "outline";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-colors border",
+        active && variant === "primary" && "bg-primary text-primary-foreground border-primary",
+        active && variant === "outline" && "bg-foreground text-background border-foreground",
+        !active && "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/40",
+      )}
+    >
+      <span>{label}</span>
+      <span
+        className={cn(
+          "inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] tabular-nums",
+          active ? "bg-background/20 text-current" : "bg-muted text-muted-foreground",
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
 function TaskRow({
-  task, patientName, onClick,
-}: { task: Task; patientName: string | null; onClick: () => void }) {
+  task, patientName, onClick, mine,
+}: { task: Task; patientName: string | null; onClick: () => void; mine: boolean }) {
   const meta = priorityMeta(task.priority);
   const overdue = isOverdue(task);
   const isReferral = (task as Task & { task_category?: string | null }).task_category === "referral";
   const refProgress = (task as Task & { referral_progress?: ReferralProgress | null }).referral_progress;
   const stepCount = isReferral ? completedCount(refProgress) : 0;
   const showRefProgress = isReferral && task.status !== "done";
+  const fyi = !mine;
   return (
     <button
       onClick={onClick}
       className={cn(
         "w-full text-left bg-card border rounded-lg px-3 py-2.5 hover:border-primary/40 transition-colors",
         "flex items-center gap-3",
+        fyi && "opacity-60 border-l-2 border-l-muted-foreground/30",
       )}
     >
-      <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", meta.dot)} />
+      <span
+        className={cn(
+          "h-2.5 w-2.5 rounded-full shrink-0",
+          fyi ? "bg-muted-foreground/40" : meta.dot,
+        )}
+      />
+      {fyi && task.assignee_name && (
+        <AssigneeAvatar name={task.assignee_name} size="xs" />
+      )}
       <div className="flex-1 min-w-0">
         <p className={cn(
           "text-sm font-medium truncate flex items-center gap-2",
@@ -272,10 +394,21 @@ function TaskRow({
           {patientName && <span className="text-foreground/80 font-medium">{patientName}</span>}
           {patientName && <span>·</span>}
           <span>{categoryLabel(task.category)}</span>
-          {task.assignee_name && <><span>·</span><span>{task.assignee_name}</span></>}
+          {fyi && task.assignee_name && (
+            <>
+              <span>·</span>
+              <span>{task.assignee_name}</span>
+              <span className="ml-0.5 inline-flex items-center px-1.5 h-4 rounded bg-muted text-[9px] uppercase tracking-wide font-semibold text-muted-foreground">
+                FYI
+              </span>
+            </>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {task.assignee_name && (
+          <AssigneeAvatar name={task.assignee_name} size="sm" />
+        )}
         {task.due_date && (
           <span className={cn(
             "text-[11px] tabular-nums",
