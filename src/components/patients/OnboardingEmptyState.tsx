@@ -37,6 +37,7 @@ export function OnboardingEmptyState({ patientName, patientId, onCompleted }: On
   const [open, setOpen] = useState(false);
   const [draftStep, setDraftStep] = useState<number | null>(null);
   const [completedCount, setCompletedCount] = useState<number>(0);
+  const [loaded, setLoaded] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [restarting, setRestarting] = useState(false);
 
