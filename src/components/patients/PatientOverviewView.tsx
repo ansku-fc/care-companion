@@ -637,11 +637,22 @@ export function PatientOverviewView({
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border cursor-default",
-                              a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)]",
+                              a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%/0.15)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.45)] font-bold",
+                              a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)] font-medium",
                               a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
-                              a.severity === "mild" && "bg-muted text-muted-foreground border-border",
+                              (a.severity === "mild" || !a.severity) && "bg-muted text-muted-foreground border-border",
                             )}
                           >
+                            <span
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%)] ring-1 ring-[hsl(0_57%_39%/0.4)]",
+                                a.severity === "severe" && "bg-[hsl(0_57%_39%)]",
+                                a.severity === "moderate" && "bg-[hsl(28_63%_44%)]",
+                                (a.severity === "mild" || !a.severity) && "bg-muted-foreground/40",
+                              )}
+                              aria-hidden
+                            />
                             {icd && (
                               <span className="text-[10px] tabular-nums opacity-60">{icd}</span>
                             )}
