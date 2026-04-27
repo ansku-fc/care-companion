@@ -44,7 +44,9 @@ export function HealthDataHub({
   const [tab, setTab] = useState<Tab>(initialTab);
 
   // A patient is not yet onboarded when status is pending and no onboarding row exists.
-  const notOnboarded = !onboarding && (patientStatus === "pending" || !patientStatus);
+  // Show the empty state until the doctor finishes the final onboarding step.
+  // Drafts (status 'pending' or 'in_progress') must not surface clinical data.
+  const notOnboarded = patientStatus !== "complete";
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
