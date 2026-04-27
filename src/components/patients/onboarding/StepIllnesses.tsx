@@ -533,7 +533,7 @@ function DimensionChipsRow({
           onClick={() => onChange(dimensions, true)}
           className="h-6 px-2 text-[11px]"
         >
-          Confirm
+          Confirm suggestion
         </Button>
       )}
     </div>
