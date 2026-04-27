@@ -2014,7 +2014,7 @@ function PatientDetailsView({
       last_name: n.last,
       date_of_birth: patient.date_of_birth || "",
       gender: patient.gender || "",
-      tier: patient.tier || "tier_1",
+      tier: (patient.tier as string) || "tier_1",
       insurance_provider: patient.insurance_provider || "",
       insurance_number: patient.insurance_number || "",
     });
