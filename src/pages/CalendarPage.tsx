@@ -234,7 +234,7 @@ const CalendarPage = () => {
                         const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
                         const displayName = a.appointment_type === "doctor_meeting"
                           ? (a.title ?? a.other_doctor_name ?? "Doctor Meeting")
-                          : (a.patient_name?.split(" ")[0] ?? a.title?.split("–")[0]);
+                          : (a.patient_name?.split(",")[0] ?? a.title?.split("–")[0]);
                         return (
                           <div key={a.id} className={`text-[10px] leading-tight truncate px-1 py-0.5 rounded ${s.bg} ${s.text}`}>
                             {format(parseISO(a.start_time), "HH:mm")} {displayName}
