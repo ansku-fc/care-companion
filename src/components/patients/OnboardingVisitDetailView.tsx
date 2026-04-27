@@ -757,32 +757,75 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <Field label="Protection" value={ov("sun_p", ex.sun_protection_method)} editing={editing} onChange={(v) => setOverride("sun_p", v)} />
           </Section>
 
-          <Section title="Physical Examination / Moles">
-            {moles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No moles recorded</p>
-            ) : (
-              moles.map((m: any) => {
-                const flags = [m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(
-                  (v) => v && v !== "Symmetrical" && v !== "Regular" && v !== "Single color" && v !== "No change" && v !== "None"
-                );
-                return (
-                  <div key={m.id} className="text-sm">
-                    <div className="font-medium flex items-center gap-2">
-                      {m.label}: {m.location}
-                      {flags.length > 0 && (
-                        <Badge variant="outline" className="text-[11px] gap-1 border-amber-300 text-amber-900 bg-amber-50">
-                          <AlertTriangle className="h-3 w-3" /> {flags.length} ABCDE flag{flags.length === 1 ? "" : "s"}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-muted-foreground text-xs mt-0.5">
-                      {[m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(Boolean).join(" · ")}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </Section>
+          {(() => {
+            const list = getCollection<any>("_moles", moles);
+            const setList = (next: any[]) => setOverride("_moles", next);
+            const update = (idx: number, patch: any) => setList(list.map((x: any, j: number) => (j === idx ? { ...x, ...patch } : x)));
+            const remove = (idx: number) => setList(list.filter((_: any, j: number) => j !== idx));
+            const add = () => setList([...list, { id: `new-${Date.now()}`, label: `Mole ${list.length + 1}`, location: "", asymmetry: "", borders: "", color: "", size: "", change: "", symptoms: "" }]);
+            return (
+              <Section title="Physical Examination / Moles">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{list.length} recorded</span>
+                  {editing && (
+                    <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-1.5" onClick={add}>
+                      <Plus className="h-3 w-3" /> Add mole
+                    </Button>
+                  )}
+                </div>
+                {list.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No moles recorded</p>
+                ) : (
+                  list.map((m: any, idx: number) => {
+                    const flags = [m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(
+                      (v) => v && v !== "Symmetrical" && v !== "Regular" && v !== "Single color" && v !== "No change" && v !== "None"
+                    );
+                    if (!editing) {
+                      return (
+                        <div key={m.id ?? idx} className="text-sm">
+                          <div className="font-medium flex items-center gap-2">
+                            {m.label}: {m.location}
+                            {flags.length > 0 && (
+                              <Badge variant="outline" className="text-[11px] gap-1 border-amber-300 text-amber-900 bg-amber-50">
+                                <AlertTriangle className="h-3 w-3" /> {flags.length} ABCDE flag{flags.length === 1 ? "" : "s"}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-muted-foreground text-xs mt-0.5">
+                            {[m.asymmetry, m.borders, m.color, m.size, m.change, m.symptoms].filter(Boolean).join(" · ")}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={m.id ?? idx} className="border rounded-md p-2 space-y-1.5 bg-muted/20">
+                        <div className="flex items-center gap-1">
+                          <Input value={m.label ?? ""} onChange={(e) => update(idx, { label: e.target.value })} placeholder="Label" className="h-7 text-xs w-32" />
+                          <Input value={m.location ?? ""} onChange={(e) => update(idx, { location: e.target.value })} placeholder="Location" className="h-7 text-xs flex-1" />
+                          {flags.length > 0 && (
+                            <Badge variant="outline" className="text-[11px] gap-1 border-amber-300 text-amber-900 bg-amber-50">
+                              <AlertTriangle className="h-3 w-3" /> {flags.length}
+                            </Badge>
+                          )}
+                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => remove(idx)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1">
+                          <Input value={m.asymmetry ?? ""} onChange={(e) => update(idx, { asymmetry: e.target.value })} placeholder="Asymmetry" className="h-7 text-xs" />
+                          <Input value={m.borders ?? ""} onChange={(e) => update(idx, { borders: e.target.value })} placeholder="Borders" className="h-7 text-xs" />
+                          <Input value={m.color ?? ""} onChange={(e) => update(idx, { color: e.target.value })} placeholder="Color" className="h-7 text-xs" />
+                          <Input value={m.size ?? ""} onChange={(e) => update(idx, { size: e.target.value })} placeholder="Size" className="h-7 text-xs" />
+                          <Input value={m.change ?? ""} onChange={(e) => update(idx, { change: e.target.value })} placeholder="Change" className="h-7 text-xs" />
+                          <Input value={m.symptoms ?? ""} onChange={(e) => update(idx, { symptoms: e.target.value })} placeholder="Symptoms" className="h-7 text-xs" />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </Section>
+            );
+          })()}
 
           <Card className="md:col-span-2">
             <CardHeader className="pb-3">
