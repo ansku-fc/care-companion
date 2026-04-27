@@ -252,7 +252,7 @@ export function PatientOnboardingDialog(props: Props) {
   }
 
   return (
-    <OnboardingFormProvider initial={initial}>
+    <OnboardingFormProvider initial={initial} patientGender={patientGender}>
       <DialogShell {...props} />
     </OnboardingFormProvider>
   );
