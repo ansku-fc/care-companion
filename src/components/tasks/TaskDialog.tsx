@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { formatLastFirst } from "@/lib/patientName";
 import {
   ASSIGNEES, PRIORITY_OPTIONS, STATUS_OPTIONS, TASK_CATEGORIES,
   type Task, type TaskCategory, type TaskPriority, type TaskStatus,
