@@ -268,6 +268,7 @@ const TasksPage = () => {
                         task={t}
                         patientName={patientName(t.patient_id)}
                         onClick={() => openDetail(t)}
+                        mine={isMine(t)}
                       />
                     ))}
                   </div>
