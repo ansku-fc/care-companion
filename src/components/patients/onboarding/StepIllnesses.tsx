@@ -135,17 +135,14 @@ function IllnessRowEditor({
   onDelete: () => void;
   showResolved: boolean;
 }) {
-  const [expandedMedIdx, setExpandedMedIdx] = useState<number | null>(null);
-
-  // Top-row column widths: Illness ~50%, Onset ~15% (+ Resolved ~15% for previous), Medications ~remaining.
-  const onsetCol = "col-span-6 md:col-span-2";
-  const resolvedCol = "col-span-6 md:col-span-2";
-  const illnessCol = "col-span-12 md:col-span-6";
-  const medsCol = showResolved ? "col-span-12 md:col-span-2" : "col-span-12 md:col-span-4";
+  // Top-row column widths: Illness · Onset (· Resolved).
+  const onsetCol = "col-span-6 md:col-span-3";
+  const resolvedCol = "col-span-6 md:col-span-3";
+  const illnessCol = showResolved ? "col-span-12 md:col-span-6" : "col-span-12 md:col-span-9";
 
   return (
     <div className="rounded-xl border border-input bg-card/50 p-4 space-y-3">
-      {/* Top row: Illness · Onset · (Resolved) · Add medication trigger */}
+      {/* Top row: Illness · Onset · (Resolved) */}
       <div className="grid grid-cols-12 gap-3 items-end">
         <div className={illnessCol}>
           <FieldLabel>Illness</FieldLabel>
@@ -174,18 +171,6 @@ function IllnessRowEditor({
             />
           </div>
         )}
-
-        <div className={medsCol}>
-          <FieldLabel>Medications</FieldLabel>
-          <MedicationsEditor
-            medications={row.medications}
-            onChange={(meds) => onChange({ medications: meds })}
-            icdCode={row.icd_code}
-            layout="trigger"
-            expandedIdx={expandedMedIdx}
-            onExpandedIdxChange={setExpandedMedIdx}
-          />
-        </div>
       </div>
 
       {/* Dimensions sit immediately under the illness field for visual grouping */}
@@ -200,17 +185,15 @@ function IllnessRowEditor({
         />
       </div>
 
-      {/* Medication chips + expanded details, full width */}
-      {row.medications.length > 0 && (
+      {/* Medications: list of nested rows + small Add button below */}
+      <div>
+        <FieldLabel>Medications</FieldLabel>
         <MedicationsEditor
           medications={row.medications}
           onChange={(meds) => onChange({ medications: meds })}
           icdCode={row.icd_code}
-          layout="list"
-          expandedIdx={expandedMedIdx}
-          onExpandedIdxChange={setExpandedMedIdx}
         />
-      )}
+      </div>
 
       <div>
         <FieldLabel>Notes</FieldLabel>
