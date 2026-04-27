@@ -134,6 +134,7 @@ export function StepMoles() {
               ))}
             </div>
             <BodySilhouette
+              sex={sex}
               side={side}
               moles={visibleMoles}
               numbering={numbering}
