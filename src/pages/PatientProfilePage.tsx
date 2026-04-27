@@ -2967,6 +2967,7 @@ function HealthDimensionView({
           internalSections: content.internalSections,
           hideScore: content.hideScore,
           explicitScore: content.explicitScore,
+          icon: (sub as { icon?: React.ComponentType<{ className?: string }> }).icon,
         };
       });
 
