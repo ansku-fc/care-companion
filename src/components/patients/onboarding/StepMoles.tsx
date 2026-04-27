@@ -217,12 +217,14 @@ export function StepMoles() {
 /* --------------------------------- Silhouette ---------------------------------- */
 
 function BodySilhouette({
+  sex,
   side,
   moles,
   numbering,
   onAdd,
   onPinClick,
 }: {
+  sex: Sex;
   side: Side;
   moles: MoleEntry[];
   numbering: Record<string, number>;
@@ -241,6 +243,7 @@ function BodySilhouette({
   };
 
   const pins = moles.filter((m) => m.side === side && m.pin_x != null && m.pin_y != null);
+  const bodyPath = SILHOUETTE_PATHS[sex][side];
 
   return (
     <div className="relative mx-auto aspect-[1/2.2] w-full max-w-[260px]">
@@ -251,44 +254,20 @@ function BodySilhouette({
         className="h-full w-full cursor-crosshair select-none"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Generic gender-neutral silhouette */}
-        <g
-          fill="hsl(var(--muted))"
-          stroke="hsl(var(--border))"
-          strokeWidth="0.6"
-        >
-          {/* Head */}
-          <ellipse cx="50" cy="14" rx="9" ry="11" />
-          {/* Neck */}
-          <rect x="46" y="23" width="8" height="6" rx="2" />
-          {/* Torso */}
-          <path d="M30 32 Q50 28 70 32 L72 90 Q50 96 28 90 Z" />
-          {/* Arms */}
-          <path d="M30 33 Q20 36 18 60 Q16 86 22 110 L28 110 Q26 84 28 62 Q30 44 34 36 Z" />
-          <path d="M70 33 Q80 36 82 60 Q84 86 78 110 L72 110 Q74 84 72 62 Q70 44 66 36 Z" />
-          {/* Hands */}
-          <ellipse cx="22" cy="115" rx="4.5" ry="6" />
-          <ellipse cx="78" cy="115" rx="4.5" ry="6" />
-          {/* Legs */}
-          <path d="M32 92 Q34 130 36 170 Q37 200 42 215 L48 215 Q47 195 47 170 Q47 130 46 95 Z" />
-          <path d="M68 92 Q66 130 64 170 Q63 200 58 215 L52 215 Q53 195 53 170 Q53 130 54 95 Z" />
-          {/* Feet */}
-          <ellipse cx="44" cy="217" rx="5" ry="3" />
-          <ellipse cx="56" cy="217" rx="5" ry="3" />
-        </g>
+        {/* Solid lavender silhouette — clinical, no facial detail */}
+        <path d={bodyPath} fill="#C4B5E8" />
 
-        {/* Subtle back-side hint when viewing back */}
-        {side === "back" && (
-          <line
-            x1="50"
-            y1="32"
-            x2="50"
-            y2="90"
-            stroke="hsl(var(--border))"
-            strokeWidth="0.4"
-            strokeDasharray="1.5 1.5"
-          />
-        )}
+        {/* Pins */}
+        {pins.map((m) => (
+          <g
+            key={m.id}
+            data-pin
+            transform={`translate(${(m.pin_x! / 100) * 100}, ${(m.pin_y! / 100) * 220})`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPinClick(m.id);
+            }}
+            className="cursor-pointer"
 
         {/* Pins */}
         {pins.map((m) => (
