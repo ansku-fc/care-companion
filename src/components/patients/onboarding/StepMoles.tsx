@@ -42,9 +42,15 @@ function regionForPin(side: "front" | "back", x: number, y: number): string {
   if (y < 10) return "Head";
   if (y < 14) return "Neck";
 
-  // Upper torso band: 14–22% — shoulder vs chest split by lateral position.
+  // Priority: SHOULDER zone — outer 28% of body width between neck and armpit
+  // (y 13–24%). Checked before chest so it always wins in this band.
+  // Patient anatomical: viewer-left of image (low x) = patient's right.
+  if (y >= 13 && y < 24 && (x < 28 || x > 72)) {
+    return x > 72 ? "Shoulder (left)" : "Shoulder (right)";
+  }
+
+  // Upper torso band: 14–22% — chest/upper-back occupies the central 44%.
   if (y < 22) {
-    if (isOuter) return `Shoulder (${lateral === "center" ? "left" : lateral})`;
     return side === "front"
       ? lateral === "center"
         ? "Chest (center)"
