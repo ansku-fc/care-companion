@@ -688,21 +688,26 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       console.warn("Mole image sync failed", e);
     }
 
-    // On completion, auto-create a review task (skip silently if it fails)
+    // On completion, auto-create a review task (skip silently if it fails).
+    // Always assigned to Dr. Laine, due in 3 days, links back to the patient
+    // overview so the doctor can review all recorded data in one place.
     if (options.isComplete) {
       const due = new Date();
       due.setDate(due.getDate() + 3);
       await supabase.from("tasks").insert({
         title: `Review onboarding data — ${patientName}`,
-        description: "Auto-generated after the patient completed onboarding.",
+        description: "Auto-generated after the patient completed onboarding. Open the patient overview to review all recorded data.",
         patient_id: patientId,
         created_by: user.id,
         assigned_to: user.id,
+        assignee_name: "Dr. Laine",
+        assignee_type: "doctor_internal",
         category: "clinical_review",
         priority: "medium",
         status: "todo",
         due_date: due.toISOString().slice(0, 10),
         created_from: "onboarding",
+        task_category: "review",
       } as any);
 
       // Auto-create an "Initial Consultation / Onboarding" visit record (idempotent).
