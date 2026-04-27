@@ -1975,11 +1975,20 @@ function PatientDetailsView({
   appointments: Tables<"appointments">[];
   onPatientUpdate: (updated: Tables<"patients">) => void;
 }) {
-  const [related, setRelated] = useState<Array<{ id: string; full_name: string; relationship_type: string }>>([]);
+  const { user } = useAuth();
+  const [related, setRelated] = useState<Array<{ id: string; full_name: string; relationship_type: string; rel_row_id: string }>>([]);
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [editingContact, setEditingContact] = useState(false);
   const [editingBilling, setEditingBilling] = useState(false);
   const [savingSection, setSavingSection] = useState<null | "personal" | "contact" | "billing">(null);
+
+  // Related patients editor state
+  const [addingRelated, setAddingRelated] = useState(false);
+  const [allPatients, setAllPatients] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [selectedRelatedId, setSelectedRelatedId] = useState<string | null>(null);
+  const [relationshipType, setRelationshipType] = useState<string>("");
+  const [savingRelated, setSavingRelated] = useState(false);
 
   const initialName = useMemo(() => splitName(patient.full_name), [patient.full_name]);
   const [personalForm, setPersonalForm] = useState({
@@ -2034,32 +2043,30 @@ function PatientDetailsView({
     });
   }, [patient]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data: rels } = await supabase
-        .from("patient_relationships")
-        .select("related_patient_id, relationship_type")
-        .eq("patient_id", patient.id);
-      if (!rels || rels.length === 0) {
-        if (!cancelled) setRelated([]);
-        return;
-      }
-      const ids = rels.map((r: any) => r.related_patient_id);
-      const { data: people } = await supabase
-        .from("patients")
-        .select("id, full_name")
-        .in("id", ids);
-      const merged = (rels as any[])
-        .map((r) => {
-          const p = people?.find((pp: any) => pp.id === r.related_patient_id);
-          return p ? { id: p.id, full_name: p.full_name, relationship_type: r.relationship_type } : null;
-        })
-        .filter(Boolean) as Array<{ id: string; full_name: string; relationship_type: string }>;
-      if (!cancelled) setRelated(merged);
-    })();
-    return () => { cancelled = true; };
+  const loadRelated = React.useCallback(async () => {
+    const { data: rels } = await supabase
+      .from("patient_relationships")
+      .select("id, related_patient_id, relationship_type")
+      .eq("patient_id", patient.id);
+    if (!rels || rels.length === 0) {
+      setRelated([]);
+      return;
+    }
+    const ids = rels.map((r: any) => r.related_patient_id);
+    const { data: people } = await supabase
+      .from("patients")
+      .select("id, full_name")
+      .in("id", ids);
+    const merged = (rels as any[])
+      .map((r) => {
+        const p = people?.find((pp: any) => pp.id === r.related_patient_id);
+        return p ? { id: p.id, full_name: p.full_name, relationship_type: r.relationship_type, rel_row_id: r.id } : null;
+      })
+      .filter(Boolean) as Array<{ id: string; full_name: string; relationship_type: string; rel_row_id: string }>;
+    setRelated(merged);
   }, [patient.id]);
+
+  useEffect(() => { loadRelated(); }, [loadRelated]);
 
   const navigate = useNavigate();
   const fmt = (d: string | null | undefined) =>
@@ -2122,6 +2129,116 @@ function PatientDetailsView({
     } as any, "billing");
     if (ok) setEditingBilling(false);
   };
+
+  // ---- Related patients helpers ----
+  const RELATIONSHIP_OPTIONS = [
+    "Spouse / Partner",
+    "Parent",
+    "Child",
+    "Sibling",
+    "Grandparent",
+    "Grandchild",
+    "Other",
+  ];
+  const inverseRelationship = (rel: string): string => {
+    switch (rel) {
+      case "Parent": return "Child";
+      case "Child": return "Parent";
+      case "Grandparent": return "Grandchild";
+      case "Grandchild": return "Grandparent";
+      case "Spouse / Partner": return "Spouse / Partner";
+      case "Sibling": return "Sibling";
+      default: return "Other";
+    }
+  };
+  const formatLastFirst = (full: string) => {
+    const { first, last } = splitName(full);
+    if (!last) return first || full;
+    if (!first) return last;
+    return `${last}, ${first}`;
+  };
+
+  const openAddRelated = async () => {
+    setAddingRelated(true);
+    setPatientSearch("");
+    setSelectedRelatedId(null);
+    setRelationshipType("");
+    if (allPatients.length === 0) {
+      const { data } = await supabase
+        .from("patients")
+        .select("id, full_name")
+        .order("full_name", { ascending: true });
+      setAllPatients((data as any) || []);
+    }
+  };
+
+  const handleAddRelated = async () => {
+    if (!user) { toast.error("Not authenticated"); return; }
+    if (!selectedRelatedId || !relationshipType) {
+      toast.error("Select a patient and relationship");
+      return;
+    }
+    if (selectedRelatedId === patient.id) {
+      toast.error("Cannot link a patient to themselves");
+      return;
+    }
+    if (related.some((r) => r.id === selectedRelatedId)) {
+      toast.error("This patient is already linked");
+      return;
+    }
+    setSavingRelated(true);
+    const inverse = inverseRelationship(relationshipType);
+    const { error } = await supabase.from("patient_relationships").insert([
+      {
+        patient_id: patient.id,
+        related_patient_id: selectedRelatedId,
+        relationship_type: relationshipType,
+        created_by: user.id,
+      },
+      {
+        patient_id: selectedRelatedId,
+        related_patient_id: patient.id,
+        relationship_type: inverse,
+        created_by: user.id,
+      },
+    ] as any);
+    setSavingRelated(false);
+    if (error) {
+      toast.error("Failed to add related patient");
+      console.error(error);
+      return;
+    }
+    toast.success("Related patient added");
+    setAddingRelated(false);
+    await loadRelated();
+  };
+
+  const handleRemoveRelated = async (relatedId: string) => {
+    const { error } = await supabase
+      .from("patient_relationships")
+      .delete()
+      .or(
+        `and(patient_id.eq.${patient.id},related_patient_id.eq.${relatedId}),` +
+        `and(patient_id.eq.${relatedId},related_patient_id.eq.${patient.id})`,
+      );
+    if (error) {
+      toast.error("Failed to remove");
+      console.error(error);
+      return;
+    }
+    toast.success("Removed");
+    await loadRelated();
+  };
+
+  const filteredPatients = allPatients
+    .filter((p) => p.id !== patient.id && !related.some((r) => r.id === p.id))
+    .filter((p) =>
+      patientSearch.trim() === ""
+        ? true
+        : p.full_name.toLowerCase().includes(patientSearch.toLowerCase()),
+    )
+    .slice(0, 8);
+
 
   return (
     <div className="space-y-4">
@@ -2322,30 +2439,101 @@ function PatientDetailsView({
 
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Related Patients</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg">Related Patients</CardTitle>
+          {!addingRelated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={openAddRelated}
+              className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              + Add related patient
+            </Button>
+          )}
+        </CardHeader>
         <CardContent>
+          {addingRelated && (
+            <div className="space-y-3 mb-4 p-3 rounded-md border bg-muted/30">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="relative">
+                  <Label className="text-xs">Patient</Label>
+                  <Input
+                    placeholder="Search by name…"
+                    value={
+                      selectedRelatedId
+                        ? formatLastFirst(allPatients.find((p) => p.id === selectedRelatedId)?.full_name || "")
+                        : patientSearch
+                    }
+                    onChange={(e) => {
+                      setSelectedRelatedId(null);
+                      setPatientSearch(e.target.value);
+                    }}
+                  />
+                  {!selectedRelatedId && filteredPatients.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-auto">
+                      {filteredPatients.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedRelatedId(p.id);
+                            setPatientSearch("");
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                        >
+                          {formatLastFirst(p.full_name)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs">Relationship</Label>
+                  <Select value={relationshipType} onValueChange={setRelationshipType}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {RELATIONSHIP_OPTIONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setAddingRelated(false)} disabled={savingRelated}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleAddRelated} disabled={savingRelated}>
+                  {savingRelated ? "Saving…" : "Add"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {related.length === 0 ? (
             <p className="text-sm text-muted-foreground">No related patients linked.</p>
           ) : (
             <ul className="divide-y">
               {related.map((r) => (
-                <li key={r.id} className="flex items-center justify-between py-2 text-sm">
+                <li key={r.rel_row_id} className="flex items-center justify-between py-2 text-sm">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => navigate(`/patients/${r.id}`)}
                       className="font-medium text-primary hover:underline"
                     >
-                      {r.full_name}
+                      {formatLastFirst(r.full_name)}
                     </button>
                     <Badge variant="secondary" className="text-[10px]">{r.relationship_type}</Badge>
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/patients/${r.id}`)}
-                    className="text-xs"
+                    size="icon"
+                    onClick={() => handleRemoveRelated(r.id)}
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    aria-label="Remove related patient"
                   >
-                    Open record
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </li>
               ))}
