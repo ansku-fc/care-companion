@@ -3222,7 +3222,7 @@ function HealthDimensionView({
           ],
           metabolism: [
             r("met_diabetes_dx", "Diabetes / metabolic diagnoses", diagRowValue(diabetesDx), diagRowDetail(diabetesDx), diabetesDx.length > 0),
-            r("met_family", "Family history — metabolic/diabetes", familyRowValue(metabolicFamily), familyRowDetail(metabolicFamily), metabolicFamily.length > 0),
+            // Family history row removed — auto-appended by renderGroups.
           ],
         });
       }
