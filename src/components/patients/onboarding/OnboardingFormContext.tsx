@@ -332,6 +332,7 @@ export const blankOnboardingForm: OnboardingForm = {
   bp2_systolic: null,
   bp2_diastolic: null,
   ecg_notes: "",
+  ecg_files: [],
   allergies: [],
   supplements: [],
 
