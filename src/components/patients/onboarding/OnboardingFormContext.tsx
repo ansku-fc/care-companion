@@ -131,6 +131,9 @@ export type MoleEntry = {
   id: string;
   label: string;
   side: "front" | "back";
+  /** Pin position on the silhouette, as a percentage (0–100) of the SVG's viewBox. */
+  pin_x: number;
+  pin_y: number;
   location: string;
   asymmetry: string;
   borders: string;
@@ -138,6 +141,8 @@ export type MoleEntry = {
   size: string;
   change: string;
   symptoms: string;
+  /** Transient: chosen during onboarding, uploaded on save. */
+  image_files: File[];
 };
 
 export type OnboardingForm = {
