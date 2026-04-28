@@ -656,11 +656,12 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     // Sync onboarding illnesses to patient_diagnoses (idempotent).
     // Marker is stored in notes — rows containing "[from_onboarding]" are wiped and re-inserted.
     try {
-      await supabase
+      const { error: deleteDiagnosesError } = await supabase
         .from("patient_diagnoses")
         .delete()
         .eq("patient_id", patientId)
         .ilike("notes", "%[from_onboarding]%");
+      if (deleteDiagnosesError) throw deleteDiagnosesError;
 
       type DiagRow = {
         patient_id: string;
@@ -706,10 +707,13 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         ...buildDiagRows(nextForm.previous_illnesses, "previous"),
       ];
       if (allDiags.length > 0) {
-        await supabase.from("patient_diagnoses").insert(allDiags as any);
+        const { error: insertDiagnosesError } = await supabase.from("patient_diagnoses").insert(allDiags as any);
+        if (insertDiagnosesError) throw insertDiagnosesError;
       }
     } catch (e) {
-      console.warn("Diagnoses sync failed", e);
+      console.error("Diagnoses sync failed", e);
+      toast.error("Illness details were not saved");
+      throw e;
     }
 
     // Sync ECG files attached in onboarding to patient_health_files (Cardiovascular).
