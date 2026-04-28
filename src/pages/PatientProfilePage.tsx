@@ -78,6 +78,7 @@ import {
   completeLabReviewTask,
   type NewMarker,
 } from "@/lib/labReview";
+import { logActivity } from "@/lib/activityLog";
 
 // Legacy flat list for backward compat in dimension views
 const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
