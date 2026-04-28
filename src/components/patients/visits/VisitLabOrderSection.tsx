@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { LAB_DESTINATIONS, labOrderStatusLabel, type LabOrderStatus } from "@/lib/labOrders";
 import { LabResultsVerifyDialog } from "@/components/patients/LabResultsVerifyDialog";
 import type { Tables } from "@/integrations/supabase/types";
+import { logActivity } from "@/lib/activityLog";
 
 interface Props {
   patient: Tables<"patients">;
@@ -83,54 +84,76 @@ export function VisitLabOrderSection({ patient, labOrderId, onChanged }: Props) 
   const onResultsConfirmed = async () => {
     // Hook called by LabResultsVerifyDialog onSaved
     if (!user) return;
-    // Tag the most recent lab result for this patient with this visit/order
-    await supabase
-      .from("patient_lab_results")
-      .update({ visit_id: order.visit_id, lab_order_id: order.id })
-      .eq("patient_id", patient.id)
-      .order("created_at", { ascending: false })
-      .limit(1);
+    try {
+      // Tag the most recent lab result for this patient with this visit/order
+      const { error: resultError } = await supabase
+        .from("patient_lab_results")
+        .update({ visit_id: order.visit_id, lab_order_id: order.id })
+        .eq("patient_id", patient.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (resultError) throw resultError;
 
-    await supabase.from("lab_orders").update({
-      status: "results_received",
-      results_received_at: new Date().toISOString(),
-    }).eq("id", order.id);
+      const { error: orderError } = await supabase.from("lab_orders").update({
+        status: "results_received",
+        results_received_at: new Date().toISOString(),
+      }).eq("id", order.id);
+      if (orderError) throw orderError;
 
-    // Notify the doctor (the visit's provider)
-    let providerId = user.id;
-    if (order.visit_id) {
-      const { data: vn } = await supabase.from("visit_notes").select("provider_id").eq("id", order.visit_id).maybeSingle();
-      if (vn?.provider_id) providerId = vn.provider_id;
+      // Notify the doctor (the visit's provider)
+      let providerId = user.id;
+      if (order.visit_id) {
+        const { data: vn, error: visitError } = await supabase.from("visit_notes").select("provider_id").eq("id", order.visit_id).maybeSingle();
+        if (visitError) throw visitError;
+        if (vn?.provider_id) providerId = vn.provider_id;
+      }
+      const { error: notificationError } = await supabase.from("user_notifications").insert({
+        user_id: providerId,
+        type: "lab_results_ready",
+        title: `Lab results ready — ${patient.full_name}`,
+        body: `${order.markers?.length ?? 0} markers received from ${order.destination ?? "lab"}.`,
+        link: `/patients/${patient.id}`,
+        patient_id: patient.id,
+      });
+      if (notificationError) throw notificationError;
+
+      // Auto-create lab review task (priority HIGH per spec — assume any new results warrants review)
+      const { error: taskError } = await supabase.from("tasks").insert({
+        title: `Review new lab results — ${patient.full_name}`,
+        description: `Lab order with ${order.markers?.length ?? 0} markers from ${order.destination ?? "lab"} returned. Please review and update care plan.`,
+        patient_id: patient.id,
+        assignee_name: "Dr. Laine",
+        assignee_type: "doctor_internal",
+        category: "clinical",
+        task_category: "clinical",
+        priority: "high",
+        status: "todo",
+        due_date: new Date().toISOString().slice(0, 10),
+        created_by: user.id,
+        created_from: `Lab results received on ${new Date().toLocaleDateString()}`,
+        referral_progress: { lab_order_id: order.id },
+      });
+      if (taskError) throw taskError;
+
+      await logActivity({
+        eventType: "lab_results_uploaded",
+        title: "New lab results uploaded",
+        patientId: patient.id,
+        patientName: patient.full_name,
+        actorName: "Lab system",
+        actorType: "lab",
+        section: "health-data",
+        createdBy: user.id,
+        metadata: { lab_order_id: order.id, markers: order.markers ?? [] },
+      });
+
+      toast.success("Results recorded — doctor notified");
+      load();
+      onChanged?.();
+    } catch (error: any) {
+      console.error("Failed to persist lab results workflow", error);
+      toast.error(error?.message ?? "Failed to record lab results workflow");
     }
-    await supabase.from("user_notifications").insert({
-      user_id: providerId,
-      type: "lab_results_ready",
-      title: `Lab results ready — ${patient.full_name}`,
-      body: `${order.markers?.length ?? 0} markers received from ${order.destination ?? "lab"}.`,
-      link: `/patients/${patient.id}`,
-      patient_id: patient.id,
-    });
-
-    // Auto-create lab review task (priority HIGH per spec — assume any new results warrants review)
-    await supabase.from("tasks").insert({
-      title: `Review new lab results — ${patient.full_name}`,
-      description: `Lab order with ${order.markers?.length ?? 0} markers from ${order.destination ?? "lab"} returned. Please review and update care plan.`,
-      patient_id: patient.id,
-      assignee_name: "Dr. Laine",
-      assignee_type: "doctor_internal",
-      category: "clinical",
-      task_category: "clinical",
-      priority: "high",
-      status: "todo",
-      due_date: new Date().toISOString().slice(0, 10),
-      created_by: user.id,
-      created_from: `Lab results received on ${new Date().toLocaleDateString()}`,
-      referral_progress: { lab_order_id: order.id },
-    });
-
-    toast.success("Results recorded — doctor notified");
-    load();
-    onChanged?.();
   };
 
   const statusBadge = status === "results_received"
