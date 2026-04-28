@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import {
   LAB_MARKERS, LAB_DIMENSIONS, LAB_PACKAGES, getMarkerByField, type LabMarker,
 } from "@/lib/labMarkerCatalog";
+import { logActivity } from "@/lib/activityLog";
 
 type Confidence = "confident" | "uncertain" | "not_found";
 
@@ -241,15 +242,27 @@ export default function NewLabResultsPage() {
         if (!isNaN(n)) payload[m.field] = n;
       }
     }
-    const { error } = await supabase.from("patient_lab_results").insert(payload as any);
-    setSaving(false);
-    if (error) {
-      console.error(error);
-      toast.error("Failed to save lab results");
-      return;
+    try {
+      const { error } = await supabase.from("patient_lab_results").insert(payload as any);
+      if (error) throw error;
+      await logActivity({
+        eventType: "lab_results_uploaded",
+        title: "New lab results uploaded",
+        patientId,
+        actorName: file ? "Lab system" : "Dr. Laine",
+        actorType: file ? "lab" : "doctor",
+        section: "health-data",
+        createdBy: userData.user.id,
+        metadata: { source: payload.source, source_filename: payload.source_filename, marker_count: Object.keys(payload).length - 5 },
+      });
+      toast.success("Lab results saved");
+      navigate(`/patients/${patientId}?tab=lab`);
+    } catch (error: any) {
+      console.error("Failed to save lab results", error);
+      toast.error(error?.message ?? "Failed to save lab results");
+    } finally {
+      setSaving(false);
     }
-    toast.success("Lab results saved");
-    navigate(`/patients/${patientId}?tab=lab`);
   };
 
   // ─── STEP 1: UPLOAD ─────────────────────────────────────────────
