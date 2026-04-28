@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
+import { useAuth } from "@/hooks/useAuth";
 import type { Task } from "@/lib/tasks";
 import { formatLastFirst } from "@/lib/patientName";
 
@@ -11,6 +12,7 @@ interface UseTasksOptions {
 export function useTasks(options: UseTasksOptions = {}) {
   const { patientId } = options;
   const { subscribe } = useTaskActions();
+  const { loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [patients, setPatients] = useState<{ id: string; full_name: string; tier: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,7 @@ export function useTasks(options: UseTasksOptions = {}) {
   }, [patientId]);
 
   useEffect(() => {
+    if (authLoading) return; // Wait for the real session — RLS depends on auth.uid().
     setLoading(true);
     fetchTasks();
     supabase
@@ -36,7 +39,7 @@ export function useTasks(options: UseTasksOptions = {}) {
       .then(({ data }) => setPatients((data ?? []) as { id: string; full_name: string; tier: string | null }[]));
     const unsubscribe = subscribe(fetchTasks);
     return unsubscribe;
-  }, [fetchTasks, subscribe]);
+  }, [fetchTasks, subscribe, authLoading]);
 
   const patientName = (id: string | null) => {
     if (!id) return null;
