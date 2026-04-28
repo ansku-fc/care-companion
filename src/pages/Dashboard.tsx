@@ -58,16 +58,6 @@ type ActivityEntry = {
   section: "overview" | "health-data" | "visits";
 };
 
-// Seed entries shown alongside live derived activity. These represent legacy
-// signals we don't yet capture in DB (lab uploads, risk index updates, etc.).
-const seedActivity: ActivityEntry[] = [
-  { ts: Date.now() - 1000 * 60 * 60 * 6,  time: "Today 09:15",  event: "New lab results uploaded",                            patient: "Korhonen, Elena", actor: "Lab system",     section: "health-data" },
-  { ts: Date.now() - 1000 * 60 * 60 * 7,  time: "Today 08:30",  event: "Risk index updated: Cardiovascular 8.4 (↑ from 7.1)", patient: "Carter, Jay-Z",   actor: "System",         section: "overview"    },
-  { ts: Date.now() - 1000 * 60 * 60 * 26, time: "Yesterday",    event: "Annotation added to LDL graph",                       patient: "Carter, Jay-Z",   actor: "Dr. Laine",      section: "health-data" },
-  { ts: Date.now() - 1000 * 60 * 60 * 28, time: "Yesterday",    event: "Care plan note added",                                patient: "Mäkinen, Aino",   actor: "Nurse Mäkinen",  section: "overview"    },
-  { ts: Date.now() - 1000 * 60 * 60 * 24 * 6, time: "21 Apr",   event: "New onboarding form submitted",                       patient: "Okafor, David",   actor: "Patient",        section: "overview"    },
-];
-
 const initialsOf = (name: string) => {
   const parts = name.replace(",", "").trim().split(/\s+/);
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
