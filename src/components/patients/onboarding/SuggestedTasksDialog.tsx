@@ -12,6 +12,7 @@ import { categoryLabel, priorityMeta, ASSIGNEES } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { dueDateFromDays, type SuggestedTask } from "./suggestedTasks";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
+import { logActivity } from "@/lib/activityLog";
 
 type Props = {
   open: boolean;
@@ -74,16 +75,29 @@ export function SuggestedTasksDialog({ open, onOpenChange, patientId, suggestion
         created_by: user.id,
       };
     });
-    const { error } = await supabase.from("tasks").insert(rows as never);
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to create tasks");
-      return;
+    try {
+      const { error } = await supabase.from("tasks").insert(rows as never);
+      if (error) throw error;
+      await logActivity({
+        eventType: "onboarding_tasks_created",
+        title: `${chosen.length} task${chosen.length === 1 ? "" : "s"} created from onboarding`,
+        patientId,
+        actorName: "System",
+        actorType: "system",
+        section: "overview",
+        createdBy: user.id,
+        metadata: { task_titles: chosen.map((s) => s.title), count: chosen.length },
+      });
+      toast.success(`${chosen.length} task${chosen.length === 1 ? "" : "s"} created`);
+      notifyChanged();
+      onOpenChange(false);
+      onDone();
+    } catch (error: any) {
+      console.error("Failed to create suggested onboarding tasks", error);
+      toast.error(error?.message ?? "Failed to create tasks");
+    } finally {
+      setSaving(false);
     }
-    toast.success(`${chosen.length} task${chosen.length === 1 ? "" : "s"} created`);
-    notifyChanged();
-    onOpenChange(false);
-    onDone();
   };
 
   return (
