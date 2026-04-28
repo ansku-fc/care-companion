@@ -711,16 +711,32 @@ function HealthOverviewView({
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase
-      .from("patients")
-      .update({ health_summary: summary, health_recommendations: recommendations } as any)
-      .eq("id", patient.id);
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to save");
-    } else {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const actorId = authData.user?.id;
+      if (!actorId) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("patients")
+        .update({ health_summary: summary, health_recommendations: recommendations } as any)
+        .eq("id", patient.id);
+      if (error) throw error;
+      await logActivity({
+        eventType: "care_plan_note_added",
+        title: "Care plan note added",
+        patientId: patient.id,
+        patientName: fmtLastFirst(patient.full_name),
+        actorName: "Dr. Laine",
+        actorType: "doctor",
+        section: "overview",
+        createdBy: actorId,
+      });
       toast.success("Saved successfully");
       onPatientUpdate({ ...patient, health_summary: summary, health_recommendations: recommendations } as any);
+    } catch (error: any) {
+      console.error("Failed to save patient overview", error);
+      toast.error(error?.message ?? "Failed to save");
+    } finally {
+      setSaving(false);
     }
   };
 
