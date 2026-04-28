@@ -13,94 +13,74 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-// Fallback mock — used only when no real Supabase session is available.
-const MOCK_USER_ID = "00000000-0000-0000-0000-000000000001";
-const MOCK_USER = {
-  id: MOCK_USER_ID,
-  email: "dr.laine@clinic.local",
-  app_metadata: {},
-  user_metadata: { full_name: "Dr. Laine" },
-  aud: "authenticated",
-  created_at: new Date().toISOString(),
-} as unknown as User;
+const DEFAULT_PROFILE = { full_name: "Dr. Laine", avatar_url: null };
 
-const MOCK_SESSION = {
-  access_token: "mock",
-  refresh_token: "mock",
-  expires_in: 3600,
-  expires_at: Date.now() / 1000 + 3600,
-  token_type: "bearer",
-  user: MOCK_USER,
-} as unknown as Session;
-
-const DEFAULT_CONTEXT: AuthContextType = {
+const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   role: "doctor",
-  profile: { full_name: "Dr. Laine", avatar_url: null },
+  profile: DEFAULT_PROFILE,
   loading: true,
   signOut: async () => {
     await supabase.auth.signOut().catch(() => {});
   },
-};
-
-const AuthContext = createContext<AuthContextType>(DEFAULT_CONTEXT);
+});
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Start with NO session — components must wait for auth to resolve before
-  // writing. Otherwise writes get stamped with the mock UUID and RLS hides
-  // the rows from the real user, which manifests as "data disappears on
-  // reload" in Preview.
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile] = useState<{ full_name: string; avatar_url: string | null } | null>(
-    DEFAULT_CONTEXT.profile,
+  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(
+    DEFAULT_PROFILE,
   );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // CRITICAL: subscribe BEFORE getSession() so the initial SIGNED_IN event
-    // isn't missed. Do NOT await any Supabase call inside this callback — it
-    // can deadlock subsequent auth events.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      if (s?.user) {
-        setSession(s);
-        setUser(s.user);
-      } else {
-        // No real session — fall back to mock so the demo UI still renders
-        // for fully unauthenticated previews.
-        setSession(MOCK_SESSION);
-        setUser(MOCK_USER);
-      }
+      setSession(s);
+      setUser(s?.user ?? null);
       setLoading(false);
+      if (s?.user) {
+        // defer profile fetch to avoid deadlock
+        setTimeout(() => {
+          supabase
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("user_id", s.user.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data) setProfile({ full_name: data.full_name || "Dr. Laine", avatar_url: data.avatar_url });
+            });
+        }, 0);
+      } else {
+        setProfile(DEFAULT_PROFILE);
+      }
     });
 
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        setSession(data.session);
-        setUser(data.session.user);
-      } else {
-        setSession(MOCK_SESSION);
-        setUser(MOCK_USER);
-      }
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
       setLoading(false);
     });
 
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const value: AuthContextType = {
-    session,
-    user,
-    role: "doctor",
-    profile,
-    loading,
-    signOut: async () => {
-      await supabase.auth.signOut().catch(() => {});
-    },
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        role: "doctor",
+        profile,
+        loading,
+        signOut: async () => {
+          await supabase.auth.signOut().catch(() => {});
+        },
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
