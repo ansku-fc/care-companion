@@ -10,6 +10,7 @@ import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatLastFirst, initialsLastFirst } from "@/lib/patientName";
+import { useAuth } from "@/hooks/useAuth";
 
 const TIER_OPTIONS = [
   { value: "all", label: "All Tiers" },
@@ -26,6 +27,7 @@ type SortDir = "asc" | "desc";
 
 const PatientsPage = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [patients, setPatients] = useState<Tables<"patients">[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -35,14 +37,16 @@ const PatientsPage = () => {
 
   const fetchPatients = async () => {
     setLoading(true);
-    const { data } = await supabase.from("patients").select("*").order("full_name");
+    const { data, error } = await supabase.from("patients").select("*").order("full_name");
+    if (error) console.error("[PatientsPage] fetch failed:", error);
     setPatients(data || []);
     setLoading(false);
   };
 
   useEffect(() => {
+    if (authLoading) return; // Wait for real session — RLS hides rows from anon.
     fetchPatients();
-  }, []);
+  }, [authLoading, user?.id]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
