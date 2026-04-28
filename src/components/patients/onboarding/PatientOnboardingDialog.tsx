@@ -550,11 +550,12 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     // Rows tagged via medication_name suffix marker are removed and re-inserted.
     try {
       // Delete previous onboarding-sourced meds for this patient
-      await supabase
+      const { error: deleteMedsError } = await supabase
         .from("patient_medications")
         .delete()
         .eq("patient_id", patientId)
         .or("indication.ilike.%[from_onboarding]%");
+      if (deleteMedsError) throw deleteMedsError;
 
       const FREQ_LABELS: Record<string, string> = {
         once_daily: "Once daily",
@@ -643,10 +644,13 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       ];
 
       if (allRows.length > 0) {
-        await supabase.from("patient_medications").insert(allRows as any);
+        const { error: insertMedsError } = await supabase.from("patient_medications").insert(allRows as any);
+        if (insertMedsError) throw insertMedsError;
       }
     } catch (e) {
-      console.warn("Medication sync failed", e);
+      console.error("Medication sync failed", e);
+      toast.error("Medication details were not saved");
+      throw e;
     }
 
     // Sync onboarding illnesses to patient_diagnoses (idempotent).
