@@ -35,6 +35,7 @@ import { findAllergen } from "@/lib/allergens";
 import { buildSuggestedTasks, type SuggestedTask } from "./suggestedTasks";
 import { SuggestedTasksDialog } from "./SuggestedTasksDialog";
 import { StepMoles } from "./StepMoles";
+import { logActivity } from "@/lib/activityLog";
 
 function normalizeAllergies(raw: unknown): AllergyEntry[] {
   if (!Array.isArray(raw)) return [];
