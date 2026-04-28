@@ -798,6 +798,37 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     // Sync mole images attached in onboarding to patient_health_files (Skin).
     try {
       const moles = Array.isArray(nextForm.moles) ? nextForm.moles : [];
+      const { error: deleteMolesError } = await supabase
+        .from("patient_moles" as any)
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("source", "onboarding");
+      if (deleteMolesError) throw deleteMolesError;
+
+      const moleRows = moles.map((mole, index) => ({
+        patient_id: patientId,
+        mole_key: mole.id || `mole-${index + 1}`,
+        label: mole.label || `Mole ${index + 1}`,
+        side: mole.side,
+        pin_x: mole.pin_x,
+        pin_y: mole.pin_y,
+        location: mole.location || null,
+        asymmetry: mole.asymmetry || null,
+        borders: mole.borders || null,
+        color: mole.color || null,
+        size: mole.size || null,
+        change: mole.change || null,
+        symptoms: mole.symptoms || null,
+        source: "onboarding",
+        created_by: user.id,
+      }));
+      if (moleRows.length > 0) {
+        const { error: insertMolesError } = await supabase
+          .from("patient_moles" as any)
+          .insert(moleRows as any);
+        if (insertMolesError) throw insertMolesError;
+      }
+
       for (let i = 0; i < moles.length; i++) {
         const mole = moles[i];
         const imgs = Array.isArray(mole.image_files) ? mole.image_files : [];
@@ -825,7 +856,9 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         }
       }
     } catch (e) {
-      console.warn("Mole image sync failed", e);
+      console.error("Mole sync failed", e);
+      toast.error("Mole assessment details were not saved");
+      throw e;
     }
 
     // On completion, auto-create a review task (skip silently if it fails).
