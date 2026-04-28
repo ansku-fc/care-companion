@@ -167,7 +167,7 @@ const Dashboard = () => {
     queryKey: ["recent-activity", user?.id],
     enabled: !authLoading && !!user,
     queryFn: async (): Promise<ActivityEntry[]> => {
-      const [obRes, vnRes, taskRes] = await Promise.all([
+      const [activityRes, onboardingRes, visitNotesRes, onboardingTaskRes] = await Promise.all([
         supabase
           .from("activity_log" as any)
           .select("title, patient_id, patient_name, actor_name, section, created_at")
@@ -200,7 +200,7 @@ const Dashboard = () => {
       const out: ActivityEntry[] = [];
 
       // Persisted activity log
-      for (const row of ((obRes as any).data ?? []) as any[]) {
+      for (const row of ((activityRes as any).data ?? []) as any[]) {
         const d = new Date(row.created_at);
         out.push({
           ts: d.getTime(),
@@ -213,7 +213,7 @@ const Dashboard = () => {
       }
 
       // Onboarding completed
-      for (const row of ((vnRes as any).data ?? []) as any[]) {
+      for (const row of ((onboardingRes as any).data ?? []) as any[]) {
         const name = row.patients?.full_name ? formatLastFirst(row.patients.full_name) : "Patient";
         const d = new Date(row.updated_at);
         out.push({ ts: d.getTime(), time: fmt(d), event: "Onboarding completed", patient: name, actor: "Dr. Laine", section: "overview" });
@@ -221,7 +221,7 @@ const Dashboard = () => {
 
       // Onboarding document created (Draft) — heuristic: visit_notes whose
       // extra_data has a status (draft|finalised) AND originated from onboarding.
-      for (const row of ((taskRes as any).data ?? []) as any[]) {
+      for (const row of ((visitNotesRes as any).data ?? []) as any[]) {
         const ed = row.extra_data ?? {};
         if (!ed?.status) continue;
         const name = row.patients?.full_name ? formatLastFirst(row.patients.full_name) : "Patient";
@@ -233,7 +233,7 @@ const Dashboard = () => {
       // Group onboarding-generated tasks by patient + 5-minute bucket so a
       // single onboarding completion shows as one "N tasks created" entry.
       const buckets = new Map<string, { ts: number; patient_id: string; count: number }>();
-      for (const t of (((arguments as any)[0])?.data ?? []) as any[]) {
+      for (const t of ((onboardingTaskRes as any).data ?? []) as any[]) {
         const ts = new Date(t.created_at).getTime();
         const bucketKey = `${t.patient_id}-${Math.floor(ts / (5 * 60 * 1000))}`;
         const cur = buckets.get(bucketKey);
@@ -264,8 +264,7 @@ const Dashboard = () => {
   });
 
   const recentActivity: ActivityEntry[] = useMemo(() => {
-    const merged = [...liveActivity, ...seedActivity];
-    return merged.sort((a, b) => b.ts - a.ts).slice(0, 12);
+    return [...liveActivity].sort((a, b) => b.ts - a.ts).slice(0, 12);
   }, [liveActivity]);
 
   // Today's schedule = real appointments from DB + today's dummy appointments
