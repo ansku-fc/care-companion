@@ -9,6 +9,7 @@ interface AuthContextType {
   user: User | null;
   role: AppRole | null;
   profile: { full_name: string; avatar_url: string | null } | null;
+  isAuthenticated: boolean | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   role: "doctor",
   profile: DEFAULT_PROFILE,
+  isAuthenticated: null,
   loading: true,
   signOut: async () => {
     await supabase.auth.signOut().catch(() => {});
@@ -28,21 +30,24 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
+function checkAuth(s: Session | null): boolean {
+  return !!s?.user?.email;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(
     DEFAULT_PROFILE,
   );
-  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const apply = (s: Session | null) => {
       setSession(s);
       setUser(s?.user ?? null);
-      setLoading(false);
-      if (s?.user) {
-        // defer profile fetch to avoid deadlock
+      setIsAuthenticated(checkAuth(s));
+      if (s?.user?.email) {
         setTimeout(() => {
           supabase
             .from("profiles")
@@ -50,19 +55,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .eq("user_id", s.user.id)
             .maybeSingle()
             .then(({ data }) => {
-              if (data) setProfile({ full_name: data.full_name || "Dr. Laine", avatar_url: data.avatar_url });
+              if (data)
+                setProfile({
+                  full_name: data.full_name || "Dr. Laine",
+                  avatar_url: data.avatar_url,
+                });
             });
         }, 0);
       } else {
         setProfile(DEFAULT_PROFILE);
       }
-    });
+    };
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => apply(s));
+    supabase.auth.getSession().then(({ data }) => apply(data.session));
 
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -74,7 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         role: "doctor",
         profile,
-        loading,
+        isAuthenticated,
+        loading: isAuthenticated === null,
         signOut: async () => {
           await supabase.auth.signOut().catch(() => {});
         },
