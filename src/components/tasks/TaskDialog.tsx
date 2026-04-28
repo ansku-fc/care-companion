@@ -22,6 +22,7 @@ import {
 import {
   detectTaskCategory, TASK_CATEGORY_META, type TaskCategoryKind,
 } from "@/lib/taskCategory";
+import { logActivity } from "@/lib/activityLog";
 
 export interface TaskPrefill {
   title?: string;
@@ -164,23 +165,40 @@ export function TaskDialog({ open, onOpenChange, task, prefill, onSaved }: Props
       task_category: taskCategory,
     };
 
-    if (task) {
-      const { error } = await supabase
-        .from("tasks")
-        .update(payload as never)
-        .eq("id", task.id);
-      if (error) { toast.error("Failed to update task"); setSaving(false); return; }
-      toast.success("Task updated");
-    } else {
-      const { error } = await supabase
-        .from("tasks")
-        .insert({ ...payload, created_by: user.id } as never);
-      if (error) { toast.error("Failed to create task"); setSaving(false); return; }
-      toast.success("Task created");
+    try {
+      if (task) {
+        const { error } = await supabase
+          .from("tasks")
+          .update(payload as never)
+          .eq("id", task.id);
+        if (error) throw error;
+        toast.success("Task updated");
+      } else {
+        const { error } = await supabase
+          .from("tasks")
+          .insert({ ...payload, created_by: user.id } as never);
+        if (error) throw error;
+        await logActivity({
+          eventType: "task_created",
+          title: `Task created: ${payload.title}`,
+          patientId,
+          patientName: patientLabel ?? null,
+          actorName: assigneeName || "Dr. Laine",
+          actorType: isNurse(assigneeName) ? "nurse" : "doctor",
+          section: "overview",
+          createdBy: user.id,
+          metadata: { task_title: payload.title, created_from: createdFrom, priority, task_category: taskCategory },
+        });
+        toast.success("Task created");
+      }
+      onOpenChange(false);
+      onSaved?.();
+    } catch (error: any) {
+      console.error(task ? "Failed to update task" : "Failed to create task", error);
+      toast.error(error?.message ?? (task ? "Failed to update task" : "Failed to create task"));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    onOpenChange(false);
-    onSaved?.();
   };
 
   return (
