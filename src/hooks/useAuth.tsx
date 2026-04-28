@@ -34,11 +34,11 @@ const MOCK_SESSION = {
 } as unknown as Session;
 
 const DEFAULT_CONTEXT: AuthContextType = {
-  session: MOCK_SESSION,
-  user: MOCK_USER,
+  session: null,
+  user: null,
   role: "doctor",
   profile: { full_name: "Dr. Laine", avatar_url: null },
-  loading: false,
+  loading: true,
   signOut: async () => {
     await supabase.auth.signOut().catch(() => {});
   },
@@ -49,33 +49,45 @@ const AuthContext = createContext<AuthContextType>(DEFAULT_CONTEXT);
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(MOCK_SESSION);
-  const [user, setUser] = useState<User | null>(MOCK_USER);
-  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(
+  // Start with NO session — components must wait for auth to resolve before
+  // writing. Otherwise writes get stamped with the mock UUID and RLS hides
+  // the rows from the real user, which manifests as "data disappears on
+  // reload" in Preview.
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile] = useState<{ full_name: string; avatar_url: string | null } | null>(
     DEFAULT_CONTEXT.profile,
   );
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Pick up the real Supabase session if one exists, so writes pass RLS —
-    // but the displayed clinician identity is always "Dr. Laine" (the mocked
-    // doctor the entire UI is built around). Only `user.id` switches to the
-    // real session id so RLS `auth.uid() = created_by` checks pass.
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        setSession(data.session);
-        setUser(data.session.user);
-      }
-    });
-
+    // CRITICAL: subscribe BEFORE getSession() so the initial SIGNED_IN event
+    // isn't missed. Do NOT await any Supabase call inside this callback — it
+    // can deadlock subsequent auth events.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       if (s?.user) {
         setSession(s);
         setUser(s.user);
       } else {
+        // No real session — fall back to mock so the demo UI still renders
+        // for fully unauthenticated previews.
         setSession(MOCK_SESSION);
         setUser(MOCK_USER);
       }
+      setLoading(false);
     });
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        setSession(data.session);
+        setUser(data.session.user);
+      } else {
+        setSession(MOCK_SESSION);
+        setUser(MOCK_USER);
+      }
+      setLoading(false);
+    });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -84,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     role: "doctor",
     profile,
-    loading: false,
+    loading,
     signOut: async () => {
       await supabase.auth.signOut().catch(() => {});
     },
