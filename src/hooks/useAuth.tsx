@@ -67,8 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => apply(s));
-    supabase.auth.getSession().then(({ data }) => apply(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (s && !s.user?.email) {
+        supabase.auth.signOut().finally(() => apply(null));
+      } else {
+        apply(s);
+      }
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session && !data.session.user?.email) {
+        supabase.auth.signOut().finally(() => apply(null));
+      } else {
+        apply(data.session);
+      }
+    });
 
     return () => sub.subscription.unsubscribe();
   }, []);
