@@ -21,34 +21,42 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 const Protected = ({ children }: { children: React.ReactNode }) => {
-  const { session, loading } = useAuth();
-  if (loading) {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
-  const u: any = session?.user;
-  const isAuthenticated = !!u && u.role === "authenticated" && !!u.email && u.is_anonymous !== true;
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <AppLayout>{children}</AppLayout>;
 };
 
-const AppRoutes = () => (
-  <Routes>
-    <Route path="/auth" element={<AuthPage />} />
-    <Route path="/" element={<Protected><Dashboard /></Protected>} />
-    <Route path="/calendar" element={<Protected><CalendarPage /></Protected>} />
-    <Route path="/tasks" element={<Protected><TasksPage /></Protected>} />
-    <Route path="/patients" element={<Protected><PatientsPage /></Protected>} />
-    <Route path="/patients/:id" element={<Protected><PatientProfilePage /></Protected>} />
-    <Route path="/patients/:id/labs/new" element={<Protected><NewLabResultsPage /></Protected>} />
-    <Route path="/clinical-hours" element={<Protected><ClinicalHoursPage /></Protected>} />
-    <Route path="/notes" element={<Protected><NotesPage /></Protected>} />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
+const AppRoutes = () => {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  return (
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/" element={<Protected><Dashboard /></Protected>} />
+      <Route path="/calendar" element={<Protected><CalendarPage /></Protected>} />
+      <Route path="/tasks" element={<Protected><TasksPage /></Protected>} />
+      <Route path="/patients" element={<Protected><PatientsPage /></Protected>} />
+      <Route path="/patients/:id" element={<Protected><PatientProfilePage /></Protected>} />
+      <Route path="/patients/:id/labs/new" element={<Protected><NewLabResultsPage /></Protected>} />
+      <Route path="/clinical-hours" element={<Protected><ClinicalHoursPage /></Protected>} />
+      <Route path="/notes" element={<Protected><NotesPage /></Protected>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
