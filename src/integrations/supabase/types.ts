@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          actor_name: string
+          actor_type: string
+          created_at: string
+          created_by: string
+          event_type: string
+          id: string
+          metadata: Json
+          patient_id: string | null
+          patient_name: string | null
+          section: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actor_name?: string
+          actor_type?: string
+          created_at?: string
+          created_by: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          patient_id?: string | null
+          patient_name?: string | null
+          section?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actor_name?: string
+          actor_type?: string
+          created_at?: string
+          created_by?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          patient_id?: string | null
+          patient_name?: string | null
+          section?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_type: Database["public"]["Enums"]["appointment_type"]
@@ -464,6 +509,51 @@ export type Database = {
           },
         ]
       }
+      patient_family_history: {
+        Row: {
+          age_at_diagnosis: number | null
+          created_at: string
+          created_by: string
+          deceased: boolean
+          icd_code: string | null
+          id: string
+          illness_name: string
+          notes: string | null
+          patient_id: string
+          relative: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          age_at_diagnosis?: number | null
+          created_at?: string
+          created_by: string
+          deceased?: boolean
+          icd_code?: string | null
+          id?: string
+          illness_name: string
+          notes?: string | null
+          patient_id: string
+          relative: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          age_at_diagnosis?: number | null
+          created_at?: string
+          created_by?: string
+          deceased?: boolean
+          icd_code?: string | null
+          id?: string
+          illness_name?: string
+          notes?: string | null
+          patient_id?: string
+          relative?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patient_health_categories: {
         Row: {
           category: string
@@ -832,6 +922,69 @@ export type Database = {
           },
         ]
       }
+      patient_moles: {
+        Row: {
+          asymmetry: string | null
+          borders: string | null
+          change: string | null
+          color: string | null
+          created_at: string
+          created_by: string
+          id: string
+          label: string
+          location: string | null
+          mole_key: string
+          patient_id: string
+          pin_x: number | null
+          pin_y: number | null
+          side: string
+          size: string | null
+          source: string
+          symptoms: string | null
+          updated_at: string
+        }
+        Insert: {
+          asymmetry?: string | null
+          borders?: string | null
+          change?: string | null
+          color?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          label: string
+          location?: string | null
+          mole_key: string
+          patient_id: string
+          pin_x?: number | null
+          pin_y?: number | null
+          side?: string
+          size?: string | null
+          source?: string
+          symptoms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asymmetry?: string | null
+          borders?: string | null
+          change?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string
+          location?: string | null
+          mole_key?: string
+          patient_id?: string
+          pin_x?: number | null
+          pin_y?: number | null
+          side?: string
+          size?: string | null
+          source?: string
+          symptoms?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patient_onboarding: {
         Row: {
           age: number | null
@@ -1199,6 +1352,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      patient_supplements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          patient_id: string
+          source: string
+          supplement_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          patient_id: string
+          source?: string
+          supplement_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          patient_id?: string
+          source?: string
+          supplement_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       patients: {
         Row: {

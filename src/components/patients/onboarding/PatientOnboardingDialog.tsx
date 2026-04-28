@@ -35,6 +35,7 @@ import { findAllergen } from "@/lib/allergens";
 import { buildSuggestedTasks, type SuggestedTask } from "./suggestedTasks";
 import { SuggestedTasksDialog } from "./SuggestedTasksDialog";
 import { StepMoles } from "./StepMoles";
+import { logActivity } from "@/lib/activityLog";
 
 function normalizeAllergies(raw: unknown): AllergyEntry[] {
   if (!Array.isArray(raw)) return [];
@@ -493,25 +494,50 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         .from("patient_onboarding")
         .insert(payload as any);
       if (error) throw error;
+      await logActivity({
+        eventType: "onboarding_document_created",
+        title: "Onboarding document created (Draft)",
+        patientId,
+        patientName,
+        actorName: "System",
+        actorType: "system",
+        section: "visits",
+        createdBy: user.id,
+      });
     }
 
     // Sync patient onboarding lifecycle status
     const newStatus = options.isComplete ? "complete" : "in_progress";
-    await supabase
+    const { error: statusError } = await supabase
       .from("patients")
       .update({ onboarding_status: newStatus } as any)
       .eq("id", patientId);
+    if (statusError) throw statusError;
+
+    if (options.isComplete) {
+      await logActivity({
+        eventType: "onboarding_completed",
+        title: "Onboarding completed",
+        patientId,
+        patientName,
+        actorName: "Dr. Laine",
+        actorType: "doctor",
+        section: "overview",
+        createdBy: user.id,
+      });
+    }
 
     // Sync allergies to patient_allergies (tag + replace).
     // Idempotent: rows tagged with notes='from_onboarding' are replaced each save.
     try {
-      await supabase
+      const { error: deleteAllergiesError } = await supabase
         .from("patient_allergies")
         .delete()
         .eq("patient_id", patientId)
         .eq("notes", "from_onboarding");
+      if (deleteAllergiesError) throw deleteAllergiesError;
       if (nextForm.allergies.length > 0) {
-        await supabase.from("patient_allergies").insert(
+        const { error: insertAllergiesError } = await supabase.from("patient_allergies").insert(
           nextForm.allergies.map((a) => ({
             patient_id: patientId,
             created_by: user.id,
@@ -522,21 +548,24 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
             notes: "from_onboarding",
           })) as any,
         );
+        if (insertAllergiesError) throw insertAllergiesError;
       }
     } catch (e) {
-      // Non-fatal: onboarding save already succeeded
-      console.warn("Allergy sync failed", e);
+      console.error("Allergy sync failed", e);
+      toast.error("Allergy details were not saved");
+      throw e;
     }
 
     // Sync illness-row medications to patient_medications (idempotent).
     // Rows tagged via medication_name suffix marker are removed and re-inserted.
     try {
       // Delete previous onboarding-sourced meds for this patient
-      await supabase
+      const { error: deleteMedsError } = await supabase
         .from("patient_medications")
         .delete()
         .eq("patient_id", patientId)
         .or("indication.ilike.%[from_onboarding]%");
+      if (deleteMedsError) throw deleteMedsError;
 
       const FREQ_LABELS: Record<string, string> = {
         once_daily: "Once daily",
@@ -625,20 +654,24 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       ];
 
       if (allRows.length > 0) {
-        await supabase.from("patient_medications").insert(allRows as any);
+        const { error: insertMedsError } = await supabase.from("patient_medications").insert(allRows as any);
+        if (insertMedsError) throw insertMedsError;
       }
     } catch (e) {
-      console.warn("Medication sync failed", e);
+      console.error("Medication sync failed", e);
+      toast.error("Medication details were not saved");
+      throw e;
     }
 
     // Sync onboarding illnesses to patient_diagnoses (idempotent).
     // Marker is stored in notes — rows containing "[from_onboarding]" are wiped and re-inserted.
     try {
-      await supabase
+      const { error: deleteDiagnosesError } = await supabase
         .from("patient_diagnoses")
         .delete()
         .eq("patient_id", patientId)
         .ilike("notes", "%[from_onboarding]%");
+      if (deleteDiagnosesError) throw deleteDiagnosesError;
 
       type DiagRow = {
         patient_id: string;
@@ -684,10 +717,64 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         ...buildDiagRows(nextForm.previous_illnesses, "previous"),
       ];
       if (allDiags.length > 0) {
-        await supabase.from("patient_diagnoses").insert(allDiags as any);
+        const { error: insertDiagnosesError } = await supabase.from("patient_diagnoses").insert(allDiags as any);
+        if (insertDiagnosesError) throw insertDiagnosesError;
       }
     } catch (e) {
-      console.warn("Diagnoses sync failed", e);
+      console.error("Diagnoses sync failed", e);
+      toast.error("Illness details were not saved");
+      throw e;
+    }
+
+    // Sync structured family history and supplements into their own tables.
+    try {
+      const { error: deleteFamilyError } = await supabase
+        .from("patient_family_history" as any)
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("source", "onboarding");
+      if (deleteFamilyError) throw deleteFamilyError;
+
+      const familyRows = nextForm.family_history
+        .filter((row) => row.relative.trim() && row.illness_name.trim())
+        .map((row) => ({
+          patient_id: patientId,
+          relative: row.relative.trim(),
+          illness_name: row.illness_name.trim(),
+          icd_code: row.icd_code.trim() || null,
+          age_at_diagnosis: row.age_at_diagnosis,
+          deceased: row.deceased,
+          source: "onboarding",
+          created_by: user.id,
+        }));
+      if (familyRows.length > 0) {
+        const { error: insertFamilyError } = await supabase
+          .from("patient_family_history" as any)
+          .insert(familyRows as any);
+        if (insertFamilyError) throw insertFamilyError;
+      }
+
+      const { error: deleteSupplementsError } = await supabase
+        .from("patient_supplements" as any)
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("source", "onboarding");
+      if (deleteSupplementsError) throw deleteSupplementsError;
+
+      const supplementRows = nextForm.supplements
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((supplement_name) => ({ patient_id: patientId, supplement_name, source: "onboarding", created_by: user.id }));
+      if (supplementRows.length > 0) {
+        const { error: insertSupplementsError } = await supabase
+          .from("patient_supplements" as any)
+          .insert(supplementRows as any);
+        if (insertSupplementsError) throw insertSupplementsError;
+      }
+    } catch (e) {
+      console.error("Family history/supplement sync failed", e);
+      toast.error("Family history or supplement details were not saved");
+      throw e;
     }
 
     // Sync ECG files attached in onboarding to patient_health_files (Cardiovascular).
@@ -721,6 +808,37 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     // Sync mole images attached in onboarding to patient_health_files (Skin).
     try {
       const moles = Array.isArray(nextForm.moles) ? nextForm.moles : [];
+      const { error: deleteMolesError } = await supabase
+        .from("patient_moles" as any)
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("source", "onboarding");
+      if (deleteMolesError) throw deleteMolesError;
+
+      const moleRows = moles.map((mole, index) => ({
+        patient_id: patientId,
+        mole_key: mole.id || `mole-${index + 1}`,
+        label: mole.label || `Mole ${index + 1}`,
+        side: mole.side,
+        pin_x: mole.pin_x,
+        pin_y: mole.pin_y,
+        location: mole.location || null,
+        asymmetry: mole.asymmetry || null,
+        borders: mole.borders || null,
+        color: mole.color || null,
+        size: mole.size || null,
+        change: mole.change || null,
+        symptoms: mole.symptoms || null,
+        source: "onboarding",
+        created_by: user.id,
+      }));
+      if (moleRows.length > 0) {
+        const { error: insertMolesError } = await supabase
+          .from("patient_moles" as any)
+          .insert(moleRows as any);
+        if (insertMolesError) throw insertMolesError;
+      }
+
       for (let i = 0; i < moles.length; i++) {
         const mole = moles[i];
         const imgs = Array.isArray(mole.image_files) ? mole.image_files : [];
@@ -748,7 +866,9 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         }
       }
     } catch (e) {
-      console.warn("Mole image sync failed", e);
+      console.error("Mole sync failed", e);
+      toast.error("Mole assessment details were not saved");
+      throw e;
     }
 
     // On completion, auto-create a review task (skip silently if it fails).
@@ -757,7 +877,7 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     if (options.isComplete) {
       const due = new Date();
       due.setDate(due.getDate() + 3);
-      await supabase.from("tasks").insert({
+      const { error: reviewTaskError } = await supabase.from("tasks").insert({
         title: `Review onboarding data — ${patientName}`,
         description: "Auto-generated after the patient completed onboarding. Open the patient overview to review all recorded data.",
         patient_id: patientId,
@@ -772,6 +892,11 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         created_from: "onboarding",
         task_category: "review",
       } as any);
+      if (reviewTaskError) {
+        console.error("Auto-create onboarding review task failed", reviewTaskError);
+        toast.error("Onboarding review task was not created");
+        throw reviewTaskError;
+      }
 
       // Auto-create an "Initial Consultation / Onboarding" visit record (idempotent).
       try {

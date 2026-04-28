@@ -78,6 +78,7 @@ import {
   completeLabReviewTask,
   type NewMarker,
 } from "@/lib/labReview";
+import { logActivity } from "@/lib/activityLog";
 
 // Legacy flat list for backward compat in dimension views
 const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
@@ -710,16 +711,32 @@ function HealthOverviewView({
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase
-      .from("patients")
-      .update({ health_summary: summary, health_recommendations: recommendations } as any)
-      .eq("id", patient.id);
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to save");
-    } else {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const actorId = authData.user?.id;
+      if (!actorId) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("patients")
+        .update({ health_summary: summary, health_recommendations: recommendations } as any)
+        .eq("id", patient.id);
+      if (error) throw error;
+      await logActivity({
+        eventType: "care_plan_note_added",
+        title: "Care plan note added",
+        patientId: patient.id,
+        patientName: fmtLastFirst(patient.full_name),
+        actorName: "Dr. Laine",
+        actorType: "doctor",
+        section: "overview",
+        createdBy: actorId,
+      });
       toast.success("Saved successfully");
       onPatientUpdate({ ...patient, health_summary: summary, health_recommendations: recommendations } as any);
+    } catch (error: any) {
+      console.error("Failed to save patient overview", error);
+      toast.error(error?.message ?? "Failed to save");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -4913,22 +4930,38 @@ function CardiovascularDimensionView({
 
   const handleSaveCv = async () => {
     setSaving(true);
-    const { error } = await supabase
-      .from("patient_health_categories")
-      .upsert({
-        patient_id: patient.id,
-        category: "cardiovascular",
-        summary: cvSummary,
-        recommendations: cvRecommendations,
-        status: cvCategory?.status || "normal",
-        updated_by: (await supabase.auth.getUser()).data.user?.id || "",
-      } as any, { onConflict: "patient_id,category" });
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to save");
-    } else {
+    try {
+      const actorId = (await supabase.auth.getUser()).data.user?.id;
+      if (!actorId) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("patient_health_categories")
+        .upsert({
+          patient_id: patient.id,
+          category: "cardiovascular",
+          summary: cvSummary,
+          recommendations: cvRecommendations,
+          status: cvCategory?.status || "normal",
+          updated_by: actorId,
+        } as any, { onConflict: "patient_id,category" });
+      if (error) throw error;
+      await logActivity({
+        eventType: "risk_index_updated",
+        title: `Risk index updated: Cardiovascular ${cvScore}`,
+        patientId: patient.id,
+        patientName: fmtLastFirst(patient.full_name),
+        actorName: "System",
+        actorType: "system",
+        section: "overview",
+        createdBy: actorId,
+        metadata: { dimension: "cardiovascular", score: cvScore },
+      });
       toast.success("Saved successfully");
       onDataChanged?.();
+    } catch (error: any) {
+      console.error("Failed to save cardiovascular category", error);
+      toast.error(error?.message ?? "Failed to save");
+    } finally {
+      setSaving(false);
     }
   };
 
