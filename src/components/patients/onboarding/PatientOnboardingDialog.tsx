@@ -520,13 +520,14 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     // Sync allergies to patient_allergies (tag + replace).
     // Idempotent: rows tagged with notes='from_onboarding' are replaced each save.
     try {
-      await supabase
+      const { error: deleteAllergiesError } = await supabase
         .from("patient_allergies")
         .delete()
         .eq("patient_id", patientId)
         .eq("notes", "from_onboarding");
+      if (deleteAllergiesError) throw deleteAllergiesError;
       if (nextForm.allergies.length > 0) {
-        await supabase.from("patient_allergies").insert(
+        const { error: insertAllergiesError } = await supabase.from("patient_allergies").insert(
           nextForm.allergies.map((a) => ({
             patient_id: patientId,
             created_by: user.id,
@@ -537,10 +538,12 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
             notes: "from_onboarding",
           })) as any,
         );
+        if (insertAllergiesError) throw insertAllergiesError;
       }
     } catch (e) {
-      // Non-fatal: onboarding save already succeeded
-      console.warn("Allergy sync failed", e);
+      console.error("Allergy sync failed", e);
+      toast.error("Allergy details were not saved");
+      throw e;
     }
 
     // Sync illness-row medications to patient_medications (idempotent).
