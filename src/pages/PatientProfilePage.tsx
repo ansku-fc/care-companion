@@ -4930,22 +4930,38 @@ function CardiovascularDimensionView({
 
   const handleSaveCv = async () => {
     setSaving(true);
-    const { error } = await supabase
-      .from("patient_health_categories")
-      .upsert({
-        patient_id: patient.id,
-        category: "cardiovascular",
-        summary: cvSummary,
-        recommendations: cvRecommendations,
-        status: cvCategory?.status || "normal",
-        updated_by: (await supabase.auth.getUser()).data.user?.id || "",
-      } as any, { onConflict: "patient_id,category" });
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to save");
-    } else {
+    try {
+      const actorId = (await supabase.auth.getUser()).data.user?.id;
+      if (!actorId) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("patient_health_categories")
+        .upsert({
+          patient_id: patient.id,
+          category: "cardiovascular",
+          summary: cvSummary,
+          recommendations: cvRecommendations,
+          status: cvCategory?.status || "normal",
+          updated_by: actorId,
+        } as any, { onConflict: "patient_id,category" });
+      if (error) throw error;
+      await logActivity({
+        eventType: "risk_index_updated",
+        title: `Risk index updated: Cardiovascular ${cvScore}`,
+        patientId: patient.id,
+        patientName: fmtLastFirst(patient.full_name),
+        actorName: "System",
+        actorType: "system",
+        section: "overview",
+        createdBy: actorId,
+        metadata: { dimension: "cardiovascular", score: cvScore },
+      });
       toast.success("Saved successfully");
       onDataChanged?.();
+    } catch (error: any) {
+      console.error("Failed to save cardiovascular category", error);
+      toast.error(error?.message ?? "Failed to save");
+    } finally {
+      setSaving(false);
     }
   };
 
