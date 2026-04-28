@@ -498,10 +498,24 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
 
     // Sync patient onboarding lifecycle status
     const newStatus = options.isComplete ? "complete" : "in_progress";
-    await supabase
+    const { error: statusError } = await supabase
       .from("patients")
       .update({ onboarding_status: newStatus } as any)
       .eq("id", patientId);
+    if (statusError) throw statusError;
+
+    if (options.isComplete) {
+      await logActivity({
+        eventType: "onboarding_completed",
+        title: "Onboarding completed",
+        patientId,
+        patientName,
+        actorName: "Dr. Laine",
+        actorType: "doctor",
+        section: "overview",
+        createdBy: user.id,
+      });
+    }
 
     // Sync allergies to patient_allergies (tag + replace).
     // Idempotent: rows tagged with notes='from_onboarding' are replaced each save.
