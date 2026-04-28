@@ -494,6 +494,16 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         .from("patient_onboarding")
         .insert(payload as any);
       if (error) throw error;
+      await logActivity({
+        eventType: "onboarding_document_created",
+        title: "Onboarding document created (Draft)",
+        patientId,
+        patientName,
+        actorName: "System",
+        actorType: "system",
+        section: "visits",
+        createdBy: user.id,
+      });
     }
 
     // Sync patient onboarding lifecycle status
