@@ -13,6 +13,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { formatLastFirst } from "@/lib/patientName";
+import { useAuth } from "@/hooks/useAuth";
 import {
   isCompletedToday, dueWithinDays, isOverdue, isDueToday,
   priorityMeta, type Task,
@@ -94,13 +95,15 @@ const Dashboard = () => {
   const actionRef = useRef<HTMLDivElement>(null);
   const [patients, setPatients] = useState<PatientLite[]>([]);
   const { tasks, patientName } = useTasks();
+  const { user, loading: authLoading } = useAuth();
   const { openNewTask } = useTaskActions();
   const [detail, setDetail] = useState<Task | null>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     supabase.from("patients").select("id, full_name").then(({ data }) => setPatients(data ?? []));
-  }, []);
+  }, [authLoading, user?.id]);
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString(undefined, {
@@ -172,7 +175,8 @@ const Dashboard = () => {
   // onboarding visit_notes drafts, batches of onboarding-generated tasks) merged
   // with the legacy seed entries.
   const { data: liveActivity = [] } = useQuery({
-    queryKey: ["recent-activity"],
+    queryKey: ["recent-activity", user?.id],
+    enabled: !authLoading && !!user,
     queryFn: async (): Promise<ActivityEntry[]> => {
       const [obRes, vnRes, taskRes] = await Promise.all([
         supabase
@@ -260,7 +264,8 @@ const Dashboard = () => {
   // Today's schedule = real appointments from DB + today's dummy appointments
   const todayKey = format(today, "yyyy-MM-dd");
   const { data: realTodayAppts = [] } = useQuery({
-    queryKey: ["today-appointments", todayKey],
+    queryKey: ["today-appointments", todayKey, user?.id],
+    enabled: !authLoading && !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")

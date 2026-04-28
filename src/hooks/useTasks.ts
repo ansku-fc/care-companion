@@ -12,7 +12,7 @@ interface UseTasksOptions {
 export function useTasks(options: UseTasksOptions = {}) {
   const { patientId } = options;
   const { subscribe } = useTaskActions();
-  const { loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [patients, setPatients] = useState<{ id: string; full_name: string; tier: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export function useTasks(options: UseTasksOptions = {}) {
       .then(({ data }) => setPatients((data ?? []) as { id: string; full_name: string; tier: string | null }[]));
     const unsubscribe = subscribe(fetchTasks);
     return unsubscribe;
-  }, [fetchTasks, subscribe, authLoading]);
+  }, [fetchTasks, subscribe, authLoading, user?.id]);
 
   const patientName = (id: string | null) => {
     if (!id) return null;
