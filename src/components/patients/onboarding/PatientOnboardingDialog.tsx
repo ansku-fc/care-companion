@@ -716,6 +716,57 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
       throw e;
     }
 
+    // Sync structured family history and supplements into their own tables.
+    try {
+      const { error: deleteFamilyError } = await supabase
+        .from("patient_family_history" as any)
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("source", "onboarding");
+      if (deleteFamilyError) throw deleteFamilyError;
+
+      const familyRows = nextForm.family_history
+        .filter((row) => row.relative.trim() && row.illness_name.trim())
+        .map((row) => ({
+          patient_id: patientId,
+          relative: row.relative.trim(),
+          illness_name: row.illness_name.trim(),
+          icd_code: row.icd_code.trim() || null,
+          age_at_diagnosis: row.age_at_diagnosis,
+          deceased: row.deceased,
+          source: "onboarding",
+          created_by: user.id,
+        }));
+      if (familyRows.length > 0) {
+        const { error: insertFamilyError } = await supabase
+          .from("patient_family_history" as any)
+          .insert(familyRows as any);
+        if (insertFamilyError) throw insertFamilyError;
+      }
+
+      const { error: deleteSupplementsError } = await supabase
+        .from("patient_supplements" as any)
+        .delete()
+        .eq("patient_id", patientId)
+        .eq("source", "onboarding");
+      if (deleteSupplementsError) throw deleteSupplementsError;
+
+      const supplementRows = nextForm.supplements
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((supplement_name) => ({ patient_id: patientId, supplement_name, source: "onboarding", created_by: user.id }));
+      if (supplementRows.length > 0) {
+        const { error: insertSupplementsError } = await supabase
+          .from("patient_supplements" as any)
+          .insert(supplementRows as any);
+        if (insertSupplementsError) throw insertSupplementsError;
+      }
+    } catch (e) {
+      console.error("Family history/supplement sync failed", e);
+      toast.error("Family history or supplement details were not saved");
+      throw e;
+    }
+
     // Sync ECG files attached in onboarding to patient_health_files (Cardiovascular).
     try {
       const ecgFiles = Array.isArray(nextForm.ecg_files) ? nextForm.ecg_files : [];
