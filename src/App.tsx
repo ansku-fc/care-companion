@@ -29,8 +29,9 @@ const Protected = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  const isAnon = (session?.user as any)?.is_anonymous === true;
-  if (!session || !session.user || isAnon) return <Navigate to="/auth" replace />;
+  const u: any = session?.user;
+  const isAuthenticated = !!u && u.role === "authenticated" && !!u.email && u.is_anonymous !== true;
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <AppLayout>{children}</AppLayout>;
 };
 
