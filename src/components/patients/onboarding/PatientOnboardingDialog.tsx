@@ -867,7 +867,7 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
     if (options.isComplete) {
       const due = new Date();
       due.setDate(due.getDate() + 3);
-      await supabase.from("tasks").insert({
+      const { error: reviewTaskError } = await supabase.from("tasks").insert({
         title: `Review onboarding data — ${patientName}`,
         description: "Auto-generated after the patient completed onboarding. Open the patient overview to review all recorded data.",
         patient_id: patientId,
@@ -882,6 +882,11 @@ function DialogShell({ patientId, patientName, open, onOpenChange, onCompleted }
         created_from: "onboarding",
         task_category: "review",
       } as any);
+      if (reviewTaskError) {
+        console.error("Auto-create onboarding review task failed", reviewTaskError);
+        toast.error("Onboarding review task was not created");
+        throw reviewTaskError;
+      }
 
       // Auto-create an "Initial Consultation / Onboarding" visit record (idempotent).
       try {
