@@ -32,6 +32,8 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
   const [notes, setNotes] = useState(task.description ?? "");
   const [diagnoses, setDiagnoses] = useState<string>("Loading…");
   const [medications, setMedications] = useState<string>("Loading…");
+  const [allergies, setAllergies] = useState<string>("Loading…");
+  const [considerations, setConsiderations] = useState<string>("Loading…");
   const dateStr = format(new Date(), "dd MMM yyyy");
   const cleanupRef = useRef<() => void>();
 
@@ -43,10 +45,12 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
     if (!task.patient_id) {
       setDiagnoses("None on record");
       setMedications("None on record");
+      setAllergies("None on record");
+      setConsiderations("None on record");
       return;
     }
     (async () => {
-      const [dxRes, medRes] = await Promise.all([
+      const [dxRes, medRes, alRes, ccRes] = await Promise.all([
         supabase
           .from("patient_diagnoses")
           .select("diagnosis, icd_code, status")
@@ -58,6 +62,18 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
           .select("medication_name, dose, frequency, status")
           .eq("patient_id", task.patient_id)
           .eq("status", "active")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("patient_allergies")
+          .select("allergen, icd_code, status")
+          .eq("patient_id", task.patient_id)
+          .eq("status", "active")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("patient_clinical_considerations")
+          .select("title, description, is_active")
+          .eq("patient_id", task.patient_id)
+          .eq("is_active", true)
           .order("created_at", { ascending: true }),
       ]);
       if (cancelled) return;
@@ -71,6 +87,16 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
         .map((m) => [m.medication_name, m.dose, m.frequency].filter(Boolean).join(" · "))
         .filter(Boolean);
       setMedications(medLines.length ? medLines.join("\n") : "None on record");
+
+      const alLines = (alRes.data ?? [])
+        .map((a) => (a.icd_code ? `${a.icd_code} ${a.allergen}` : a.allergen))
+        .filter(Boolean);
+      setAllergies(alLines.length ? alLines.join("\n") : "None on record");
+
+      const ccLines = (ccRes.data ?? [])
+        .map((c) => (c.description ? `${c.title} — ${c.description}` : c.title))
+        .filter(Boolean);
+      setConsiderations(ccLines.length ? ccLines.join("\n") : "None on record");
     })();
     return () => { cancelled = true; };
   }, [task.patient_id]);
@@ -172,6 +198,26 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
             rows={3}
             className="text-xs font-mono"
             placeholder="One per line, e.g. Metformin · 500 mg · twice daily"
+          />
+        </Field>
+        <Separator className="my-1" />
+        <Field label="Allergies">
+          <Textarea
+            value={allergies}
+            onChange={(e) => setAllergies(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line, e.g. Z88.4 Ibuprofen"
+          />
+        </Field>
+        <Separator className="my-1" />
+        <Field label="Clinical considerations">
+          <Textarea
+            value={considerations}
+            onChange={(e) => setConsiderations(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line"
           />
         </Field>
       </div>
@@ -296,6 +342,38 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
           }}
         >
           {medications || "None on record"}
+        </pre>
+
+        <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "16px 0 12px 0" }} />
+
+        <div style={{ marginBottom: 8 }}>
+          <strong>Allergies</strong>
+        </div>
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            fontFamily: "Helvetica, Arial, sans-serif",
+            fontSize: "12px",
+            margin: 0,
+          }}
+        >
+          {allergies || "None on record"}
+        </pre>
+
+        <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "16px 0 12px 0" }} />
+
+        <div style={{ marginBottom: 8 }}>
+          <strong>Clinical considerations</strong>
+        </div>
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            fontFamily: "Helvetica, Arial, sans-serif",
+            fontSize: "12px",
+            margin: 0,
+          }}
+        >
+          {considerations || "None on record"}
         </pre>
 
         <div style={{ marginTop: "32px", fontSize: "11px", color: "#555" }}>
