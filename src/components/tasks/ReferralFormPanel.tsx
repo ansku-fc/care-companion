@@ -75,6 +75,7 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
     return () => { cancelled = true; };
   }, [task.patient_id]);
 
+  const handleDownloadPdf = () => {
     const style = document.createElement("style");
     style.id = "print-hide-style";
     style.textContent = `
