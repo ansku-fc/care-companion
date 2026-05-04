@@ -1006,7 +1006,6 @@ export type Database = {
           deep_sleep_percent: number | null
           draft: boolean
           ecg_notes: string | null
-          education_level: string | null
           exercise_met_hours: number | null
           extra_data: Json
           fiber_g_per_day: number | null
@@ -1018,7 +1017,11 @@ export type Database = {
           genetic_cardiovascular: boolean | null
           genetic_melanoma: boolean | null
           genetic_nervous_system: boolean | null
+          hazard_biological: boolean
+          hazard_chemical: boolean
+          hazard_physical: boolean
           height_cm: number | null
+          high_stress_environment: boolean
           hip_circumference_cm: number | null
           id: string
           illness_cancer: boolean | null
@@ -1042,7 +1045,8 @@ export type Database = {
           infections_per_year: number | null
           insomnia: boolean | null
           job_strain_perceived: number | null
-          occupation: string | null
+          occupation: string[] | null
+          occupational_hazards: boolean
           other_substances: boolean | null
           other_substances_notes: string | null
           patient_id: string
@@ -1110,7 +1114,6 @@ export type Database = {
           deep_sleep_percent?: number | null
           draft?: boolean
           ecg_notes?: string | null
-          education_level?: string | null
           exercise_met_hours?: number | null
           extra_data?: Json
           fiber_g_per_day?: number | null
@@ -1122,7 +1125,11 @@ export type Database = {
           genetic_cardiovascular?: boolean | null
           genetic_melanoma?: boolean | null
           genetic_nervous_system?: boolean | null
+          hazard_biological?: boolean
+          hazard_chemical?: boolean
+          hazard_physical?: boolean
           height_cm?: number | null
+          high_stress_environment?: boolean
           hip_circumference_cm?: number | null
           id?: string
           illness_cancer?: boolean | null
@@ -1146,7 +1153,8 @@ export type Database = {
           infections_per_year?: number | null
           insomnia?: boolean | null
           job_strain_perceived?: number | null
-          occupation?: string | null
+          occupation?: string[] | null
+          occupational_hazards?: boolean
           other_substances?: boolean | null
           other_substances_notes?: string | null
           patient_id: string
@@ -1214,7 +1222,6 @@ export type Database = {
           deep_sleep_percent?: number | null
           draft?: boolean
           ecg_notes?: string | null
-          education_level?: string | null
           exercise_met_hours?: number | null
           extra_data?: Json
           fiber_g_per_day?: number | null
@@ -1226,7 +1233,11 @@ export type Database = {
           genetic_cardiovascular?: boolean | null
           genetic_melanoma?: boolean | null
           genetic_nervous_system?: boolean | null
+          hazard_biological?: boolean
+          hazard_chemical?: boolean
+          hazard_physical?: boolean
           height_cm?: number | null
+          high_stress_environment?: boolean
           hip_circumference_cm?: number | null
           id?: string
           illness_cancer?: boolean | null
@@ -1250,7 +1261,8 @@ export type Database = {
           infections_per_year?: number | null
           insomnia?: boolean | null
           job_strain_perceived?: number | null
-          occupation?: string | null
+          occupation?: string[] | null
+          occupational_hazards?: boolean
           other_substances?: boolean | null
           other_substances_notes?: string | null
           patient_id?: string

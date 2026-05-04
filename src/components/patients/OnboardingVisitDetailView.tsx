@@ -47,7 +47,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { OCCUPATIONS, EDUCATION_LEVELS } from "@/lib/onboardingTaxonomy";
+// (occupation/education taxonomies removed — occupation is now multi-select free-form)
 
 interface Props {
   patient: Tables<"patients">;
@@ -652,9 +652,20 @@ export function OnboardingVisitDetailView({ patient, visit, onBack }: Props) {
             <Field label="Hip" value={ov("hip", onboarding.hip_circumference_cm ? `${onboarding.hip_circumference_cm} cm` : "")} editing={editing} onChange={(v) => setOverride("hip", v)} />
             <Field label="W/H" value={ov("wh", whRatio)} editing={editing} onChange={(v) => setOverride("wh", v)} />
             <Separator className="my-2" />
-            <SelectField label="Occupation" value={ov("occupation", onboarding.occupation)} editing={editing} onChange={(v) => setOverride("occupation", v)} options={OCCUPATIONS} />
-            <SelectField label="Education" value={ov("education", onboarding.education_level)} editing={editing} onChange={(v) => setOverride("education", v)} options={EDUCATION_LEVELS} />
-            <Field label="Shift work" value={ov("shift_work", onboarding.shift_work === true ? "Yes" : onboarding.shift_work === false ? "No" : "")} editing={editing} onChange={(v) => setOverride("shift_work", v)} />
+            <Field
+              label="Occupation"
+              value={ov(
+                "occupation",
+                Array.isArray((onboarding as any).occupation)
+                  ? ((onboarding as any).occupation as string[]).join(", ")
+                  : (onboarding as any).occupation ?? "",
+              )}
+              editing={editing}
+              onChange={(v) => setOverride("occupation", v)}
+            />
+            <Field label="Occupational hazards" value={ov("occupational_hazards", (onboarding as any).occupational_hazards === true ? "Yes" : (onboarding as any).occupational_hazards === false ? "No" : "")} editing={editing} onChange={(v) => setOverride("occupational_hazards", v)} />
+            <Field label="Shift work / unstable hours" value={ov("shift_work", onboarding.shift_work === true ? "Yes" : onboarding.shift_work === false ? "No" : "")} editing={editing} onChange={(v) => setOverride("shift_work", v)} />
+            <Field label="High stress environment" value={ov("high_stress_environment", (onboarding as any).high_stress_environment === true ? "Yes" : (onboarding as any).high_stress_environment === false ? "No" : "")} editing={editing} onChange={(v) => setOverride("high_stress_environment", v)} />
           </>)}</Section>
 
           <Section name="diagnostics" title="Diagnostics" editable={canEdit} isActive={activeSection === "diagnostics"} onEnter={() => enterSection("diagnostics")} onDone={doneSection}>{(editing) => (<>

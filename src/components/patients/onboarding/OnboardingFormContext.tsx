@@ -152,9 +152,13 @@ export type OnboardingForm = {
   weight_kg: number | null;
   waist_circumference_cm: number | null;
   hip_circumference_cm: number | null;
-  occupation: string;
-  education_level: string;
+  occupation: string[];
+  occupational_hazards: boolean;
+  hazard_physical: boolean;
+  hazard_biological: boolean;
+  hazard_chemical: boolean;
   shift_work: boolean;
+  high_stress_environment: boolean;
   bp1_systolic: number | null;
   bp1_diastolic: number | null;
   bp2_systolic: number | null;
@@ -333,9 +337,13 @@ export const blankOnboardingForm: OnboardingForm = {
   weight_kg: null,
   waist_circumference_cm: null,
   hip_circumference_cm: null,
-  occupation: "",
-  education_level: "",
+  occupation: [],
+  occupational_hazards: false,
+  hazard_physical: false,
+  hazard_biological: false,
+  hazard_chemical: false,
   shift_work: false,
+  high_stress_environment: false,
   bp1_systolic: null,
   bp1_diastolic: null,
   bp2_systolic: null,
