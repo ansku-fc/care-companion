@@ -344,6 +344,38 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
           {medications || "None on record"}
         </pre>
 
+        <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "16px 0 12px 0" }} />
+
+        <div style={{ marginBottom: 8 }}>
+          <strong>Allergies</strong>
+        </div>
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            fontFamily: "Helvetica, Arial, sans-serif",
+            fontSize: "12px",
+            margin: 0,
+          }}
+        >
+          {allergies || "None on record"}
+        </pre>
+
+        <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "16px 0 12px 0" }} />
+
+        <div style={{ marginBottom: 8 }}>
+          <strong>Clinical considerations</strong>
+        </div>
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            fontFamily: "Helvetica, Arial, sans-serif",
+            fontSize: "12px",
+            margin: 0,
+          }}
+        >
+          {considerations || "None on record"}
+        </pre>
+
         <div style={{ marginTop: "32px", fontSize: "11px", color: "#555" }}>
           Issued by Foundation Clinic · {dateStr}
         </div>
