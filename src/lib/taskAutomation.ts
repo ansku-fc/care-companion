@@ -56,7 +56,6 @@ function taskCategoryFor(t: TaskType) {
     case "REFERRAL":              return "referral" as const;
     case "MONITORING":            return "dimension_review" as const;
     case "ONBOARDING_ADMIN":      return "administrative" as const;
-    case "PATIENT_COMMUNICATION":
     case "APPOINTMENT_CLINIC":
     case "APPOINTMENT_EXTERNAL":
     default:                      return "administrative" as const;
