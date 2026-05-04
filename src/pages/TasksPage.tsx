@@ -83,6 +83,7 @@ const TasksPage = () => {
   const [filterCategory, setFilterCategory]   = useState<string>("all");
   const [filterPriority, setFilterPriority]   = useState<string>(searchParams.get("priority") ?? "all");
   const [filterPatient, setFilterPatient]     = useState<string>(searchParams.get("patient") ?? "all");
+  const [filterTypePill, setFilterTypePill]   = useState<TaskTypePillKey>("all");
   const [dateFrom, setDateFrom]               = useState<string>("");
   const [dateTo, setDateTo]                   = useState<string>("");
   const [view, setView]                       = useState<"grouped" | "flat" | "patient">("grouped");
@@ -105,11 +106,15 @@ const TasksPage = () => {
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
       if (filterPatient !== "all" && (t.patient_id ?? "") !== filterPatient) return false;
+      if (filterTypePill !== "all") {
+        const pill = pillForTaskType((t as any).task_type);
+        if (pill !== filterTypePill) return false;
+      }
       if (dateFrom && t.due_date && t.due_date < dateFrom) return false;
       if (dateTo && t.due_date && t.due_date > dateTo) return false;
       return true;
     });
-  }, [tasks, filterStatus, filterAssignee, filterCategory, filterPriority, filterPatient, dateFrom, dateTo]);
+  }, [tasks, filterStatus, filterAssignee, filterCategory, filterPriority, filterPatient, filterTypePill, dateFrom, dateTo]);
 
   const myCount = useMemo(() => baseFiltered.filter(isMine).length, [baseFiltered, currentUserName]);
   const allCount = baseFiltered.length;
