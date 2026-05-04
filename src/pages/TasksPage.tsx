@@ -17,6 +17,7 @@ import {
   categoryLabel, priorityMeta, statusLabel, isOverdue,
   type Task, type TaskStatus, type TaskPriority, type TaskCategory,
 } from "@/lib/tasks";
+import { TASK_TYPE_PILLS, pillForTaskType, type TaskTypePillKey } from "@/lib/taskTypes";
 import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
 import { formatLastFirst, sortByLastFirst } from "@/lib/patientName";
 
@@ -82,6 +83,7 @@ const TasksPage = () => {
   const [filterCategory, setFilterCategory]   = useState<string>("all");
   const [filterPriority, setFilterPriority]   = useState<string>(searchParams.get("priority") ?? "all");
   const [filterPatient, setFilterPatient]     = useState<string>(searchParams.get("patient") ?? "all");
+  const [filterTypePill, setFilterTypePill]   = useState<TaskTypePillKey>("all");
   const [dateFrom, setDateFrom]               = useState<string>("");
   const [dateTo, setDateTo]                   = useState<string>("");
   const [view, setView]                       = useState<"grouped" | "flat" | "patient">("grouped");
@@ -104,11 +106,15 @@ const TasksPage = () => {
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
       if (filterPatient !== "all" && (t.patient_id ?? "") !== filterPatient) return false;
+      if (filterTypePill !== "all") {
+        const pill = pillForTaskType((t as any).task_type);
+        if (pill !== filterTypePill) return false;
+      }
       if (dateFrom && t.due_date && t.due_date < dateFrom) return false;
       if (dateTo && t.due_date && t.due_date > dateTo) return false;
       return true;
     });
-  }, [tasks, filterStatus, filterAssignee, filterCategory, filterPriority, filterPatient, dateFrom, dateTo]);
+  }, [tasks, filterStatus, filterAssignee, filterCategory, filterPriority, filterPatient, filterTypePill, dateFrom, dateTo]);
 
   const myCount = useMemo(() => baseFiltered.filter(isMine).length, [baseFiltered, currentUserName]);
   const allCount = baseFiltered.length;
@@ -247,6 +253,28 @@ const TasksPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Type pills */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {TASK_TYPE_PILLS.map((p) => {
+          const active = filterTypePill === p.key;
+          return (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setFilterTypePill(p.key)}
+              className={cn(
+                "h-7 px-3 rounded-full text-xs font-medium border transition-colors",
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted",
+              )}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* My Tasks / All Tasks scope */}
       <div className="flex items-center gap-2">
