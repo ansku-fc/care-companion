@@ -32,6 +32,8 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
   const [notes, setNotes] = useState(task.description ?? "");
   const [diagnoses, setDiagnoses] = useState<string>("Loading…");
   const [medications, setMedications] = useState<string>("Loading…");
+  const [allergies, setAllergies] = useState<string>("Loading…");
+  const [considerations, setConsiderations] = useState<string>("Loading…");
   const dateStr = format(new Date(), "dd MMM yyyy");
   const cleanupRef = useRef<() => void>();
 
