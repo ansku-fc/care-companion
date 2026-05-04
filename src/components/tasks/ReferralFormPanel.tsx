@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { Download, Pencil, FileText } from "lucide-react";
 import foundationClinicLogo from "@/assets/foundation-clinic-logo-white.jpg";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/lib/tasks";
 
 interface Props {
@@ -28,10 +30,50 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
   const [specialty, setSpecialty] = useState(defaultSpecialty);
   const [reason, setReason] = useState(task.title ?? "");
   const [notes, setNotes] = useState(task.description ?? "");
+  const [diagnoses, setDiagnoses] = useState<string>("Loading…");
+  const [medications, setMedications] = useState<string>("Loading…");
   const dateStr = format(new Date(), "dd MMM yyyy");
   const cleanupRef = useRef<() => void>();
 
   useEffect(() => () => cleanupRef.current?.(), []);
+
+  // Pre-fill diagnoses & medications from the patient's profile.
+  useEffect(() => {
+    let cancelled = false;
+    if (!task.patient_id) {
+      setDiagnoses("None on record");
+      setMedications("None on record");
+      return;
+    }
+    (async () => {
+      const [dxRes, medRes] = await Promise.all([
+        supabase
+          .from("patient_diagnoses")
+          .select("diagnosis, icd_code, status")
+          .eq("patient_id", task.patient_id)
+          .eq("status", "active")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("patient_medications")
+          .select("medication_name, dose, frequency, status")
+          .eq("patient_id", task.patient_id)
+          .eq("status", "active")
+          .order("created_at", { ascending: true }),
+      ]);
+      if (cancelled) return;
+
+      const dxLines = (dxRes.data ?? [])
+        .map((d) => (d.icd_code ? `${d.diagnosis} (${d.icd_code})` : d.diagnosis))
+        .filter(Boolean);
+      setDiagnoses(dxLines.length ? dxLines.join("\n") : "None on record");
+
+      const medLines = (medRes.data ?? [])
+        .map((m) => [m.medication_name, m.dose, m.frequency].filter(Boolean).join(" · "))
+        .filter(Boolean);
+      setMedications(medLines.length ? medLines.join("\n") : "None on record");
+    })();
+    return () => { cancelled = true; };
+  }, [task.patient_id]);
 
   const handleDownloadPdf = () => {
     const style = document.createElement("style");
@@ -110,6 +152,28 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
             )}
           </div>
         )}
+
+        {/* Diagnoses + Medications — always editable, pulled from patient profile */}
+        <Separator className="my-1" />
+        <Field label="Active diagnoses">
+          <Textarea
+            value={diagnoses}
+            onChange={(e) => setDiagnoses(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line, e.g. Hypertension (I10)"
+          />
+        </Field>
+        <Separator className="my-1" />
+        <Field label="Current medications">
+          <Textarea
+            value={medications}
+            onChange={(e) => setMedications(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line, e.g. Metformin · 500 mg · twice daily"
+          />
+        </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -200,6 +264,38 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
           }}
         >
           {notes || "—"}
+        </pre>
+
+        <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "16px 0 12px 0" }} />
+
+        <div style={{ marginBottom: 8 }}>
+          <strong>Active diagnoses</strong>
+        </div>
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            fontFamily: "Helvetica, Arial, sans-serif",
+            fontSize: "12px",
+            margin: 0,
+          }}
+        >
+          {diagnoses || "None on record"}
+        </pre>
+
+        <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "16px 0 12px 0" }} />
+
+        <div style={{ marginBottom: 8 }}>
+          <strong>Current medications</strong>
+        </div>
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            fontFamily: "Helvetica, Arial, sans-serif",
+            fontSize: "12px",
+            margin: 0,
+          }}
+        >
+          {medications || "None on record"}
         </pre>
 
         <div style={{ marginTop: "32px", fontSize: "11px", color: "#555" }}>
