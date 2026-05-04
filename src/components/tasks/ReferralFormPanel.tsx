@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { Download, Pencil, FileText } from "lucide-react";
 import foundationClinicLogo from "@/assets/foundation-clinic-logo-white.jpg";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/lib/tasks";
 
 interface Props {
