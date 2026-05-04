@@ -77,12 +77,14 @@ export type Database = {
           notes: string | null
           other_doctor_name: string | null
           patient_id: string
+          patient_invite_text: string | null
           provider_id: string | null
           specialist_location: string | null
           specialist_name: string | null
           start_time: string
           title: string
           visit_modality: string
+          visit_type: Database["public"]["Enums"]["visit_type"] | null
         }
         Insert: {
           appointment_type?: Database["public"]["Enums"]["appointment_type"]
@@ -101,12 +103,14 @@ export type Database = {
           notes?: string | null
           other_doctor_name?: string | null
           patient_id: string
+          patient_invite_text?: string | null
           provider_id?: string | null
           specialist_location?: string | null
           specialist_name?: string | null
           start_time: string
           title: string
           visit_modality?: string
+          visit_type?: Database["public"]["Enums"]["visit_type"] | null
         }
         Update: {
           appointment_type?: Database["public"]["Enums"]["appointment_type"]
@@ -125,12 +129,14 @@ export type Database = {
           notes?: string | null
           other_doctor_name?: string | null
           patient_id?: string
+          patient_invite_text?: string | null
           provider_id?: string | null
           specialist_location?: string | null
           specialist_name?: string | null
           start_time?: string
           title?: string
           visit_modality?: string
+          visit_type?: Database["public"]["Enums"]["visit_type"] | null
         }
         Relationships: [
           {
@@ -169,6 +175,48 @@ export type Database = {
           notes?: string | null
           patient_tier?: Database["public"]["Enums"]["patient_tier"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      episodes: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string
+          episode_type: Database["public"]["Enums"]["episode_type"]
+          id: string
+          patient_id: string
+          status: Database["public"]["Enums"]["episode_status"]
+          title: string
+          triggered_by: string | null
+          updated_at: string
+          urgency: Database["public"]["Enums"]["episode_urgency"]
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by: string
+          episode_type: Database["public"]["Enums"]["episode_type"]
+          id?: string
+          patient_id: string
+          status?: Database["public"]["Enums"]["episode_status"]
+          title: string
+          triggered_by?: string | null
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["episode_urgency"]
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string
+          episode_type?: Database["public"]["Enums"]["episode_type"]
+          id?: string
+          patient_id?: string
+          status?: Database["public"]["Enums"]["episode_status"]
+          title?: string
+          triggered_by?: string | null
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["episode_urgency"]
         }
         Relationships: []
       }
@@ -1555,13 +1603,16 @@ export type Database = {
           created_from: string | null
           description: string | null
           due_date: string | null
+          episode_id: string | null
           id: string
           linked_entity_id: string | null
           linked_entity_type: string | null
+          parent_task_id: string | null
           patient_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           referral_progress: Json
           scheduled_appointment_id: string | null
+          sequence_order: number | null
           status: Database["public"]["Enums"]["task_status"]
           task_category: string
           task_type: Database["public"]["Enums"]["task_type"] | null
@@ -1580,13 +1631,16 @@ export type Database = {
           created_from?: string | null
           description?: string | null
           due_date?: string | null
+          episode_id?: string | null
           id?: string
           linked_entity_id?: string | null
           linked_entity_type?: string | null
+          parent_task_id?: string | null
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           referral_progress?: Json
           scheduled_appointment_id?: string | null
+          sequence_order?: number | null
           status?: Database["public"]["Enums"]["task_status"]
           task_category?: string
           task_type?: Database["public"]["Enums"]["task_type"] | null
@@ -1605,13 +1659,16 @@ export type Database = {
           created_from?: string | null
           description?: string | null
           due_date?: string | null
+          episode_id?: string | null
           id?: string
           linked_entity_id?: string | null
           linked_entity_type?: string | null
+          parent_task_id?: string | null
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           referral_progress?: Json
           scheduled_appointment_id?: string | null
+          sequence_order?: number | null
           status?: Database["public"]["Enums"]["task_status"]
           task_category?: string
           task_type?: Database["public"]["Enums"]["task_type"] | null
@@ -1619,6 +1676,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_patient_id_fkey"
             columns: ["patient_id"]
@@ -1788,6 +1859,14 @@ export type Database = {
         | "annual_checkup"
         | "acute_consultation"
         | "care_coordination"
+      episode_status: "ACTIVE" | "CLOSED"
+      episode_type:
+        | "DIAGNOSTIC"
+        | "TREATMENT"
+        | "REFERRAL"
+        | "MONITORING"
+        | "CARE_COORDINATION"
+      episode_urgency: "ROUTINE" | "ELEVATED" | "URGENT"
       patient_tier:
         | "tier_1"
         | "tier_2"
@@ -1815,6 +1894,13 @@ export type Database = {
         | "APPOINTMENT_EXTERNAL"
         | "ONBOARDING_ADMIN"
         | "MONITORING"
+      visit_type:
+        | "ANNUAL_CHECKUP"
+        | "ACUTE_CONSULTATION"
+        | "LAB_VISIT"
+        | "FOLLOWUP_CONSULTATION"
+        | "NURSE_CONSULTATION"
+        | "RESULTS_REVIEW_CALL"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1957,6 +2043,15 @@ export const Constants = {
         "acute_consultation",
         "care_coordination",
       ],
+      episode_status: ["ACTIVE", "CLOSED"],
+      episode_type: [
+        "DIAGNOSTIC",
+        "TREATMENT",
+        "REFERRAL",
+        "MONITORING",
+        "CARE_COORDINATION",
+      ],
+      episode_urgency: ["ROUTINE", "ELEVATED", "URGENT"],
       patient_tier: [
         "tier_1",
         "tier_2",
@@ -1986,6 +2081,14 @@ export const Constants = {
         "APPOINTMENT_EXTERNAL",
         "ONBOARDING_ADMIN",
         "MONITORING",
+      ],
+      visit_type: [
+        "ANNUAL_CHECKUP",
+        "ACUTE_CONSULTATION",
+        "LAB_VISIT",
+        "FOLLOWUP_CONSULTATION",
+        "NURSE_CONSULTATION",
+        "RESULTS_REVIEW_CALL",
       ],
     },
   },
