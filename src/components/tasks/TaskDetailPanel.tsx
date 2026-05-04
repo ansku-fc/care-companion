@@ -205,7 +205,6 @@ interface ActionProps {
 function ActionSection(props: ActionProps) {
   const { task, taskType } = props;
   const isInteraction = taskType === "PRESCRIPTION" && /interaction/i.test(task.title ?? "");
-  const isPreVisit = taskType === "PATIENT_COMMUNICATION" && /pre-visit/i.test(task.title ?? "");
 
   switch (taskType) {
     case "APPOINTMENT_CLINIC":  return <ActionAppointmentClinic {...props} />;
@@ -215,9 +214,6 @@ function ActionSection(props: ActionProps) {
     case "PRESCRIPTION":        return isInteraction
                                   ? <ActionInteraction {...props} />
                                   : <ActionPrescription {...props} />;
-    case "PATIENT_COMMUNICATION": return isPreVisit
-                                  ? <ActionPreVisit {...props} />
-                                  : <ActionResults {...props} />;
     case "ONBOARDING_ADMIN":    return <ActionOnboarding {...props} />;
     case "MONITORING":          return <ActionMonitoring {...props} />;
     default:                    return <ActionGeneric {...props} />;
