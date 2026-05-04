@@ -188,45 +188,6 @@ export function StepBasicInfo() {
         </div>
       </section>
 
-      {/* DIAGNOSTICS */}
-      <section className="space-y-4">
-        <SectionHeading>Diagnostics</SectionHeading>
-
-        <div>
-          <FieldLabel>Blood pressure (mm/Hg)</FieldLabel>
-          <div className="grid grid-cols-2 gap-4">
-            <BpPair
-              label="1st measurement"
-              sys={form.bp1_systolic}
-              dia={form.bp1_diastolic}
-              onSys={(v) => set("bp1_systolic", v)}
-              onDia={(v) => set("bp1_diastolic", v)}
-            />
-            <BpPair
-              label="2nd measurement"
-              sys={form.bp2_systolic}
-              dia={form.bp2_diastolic}
-              onSys={(v) => set("bp2_systolic", v)}
-              onDia={(v) => set("bp2_diastolic", v)}
-            />
-          </div>
-        </div>
-
-        <div>
-          <FieldLabel>ECG notes</FieldLabel>
-          <Textarea
-            value={form.ecg_notes}
-            onChange={(e) => set("ecg_notes", e.target.value)}
-            placeholder="Sinus rhythm, no acute changes…"
-            className="min-h-[88px]"
-          />
-          <EcgFileUploader
-            files={form.ecg_files}
-            onChange={(files) => set("ecg_files", files)}
-          />
-        </div>
-      </section>
-
       {/* ALLERGIES & SUPPLEMENTS */}
       <section className="space-y-4">
         <SectionHeading>Allergies &amp; Supplements</SectionHeading>
@@ -277,7 +238,7 @@ function SubHazardToggle({
   );
 }
 
-function BpPair({
+export function BpPair({
   label,
   sys,
   dia,
@@ -544,7 +505,7 @@ function AllergiesPicker({
 
 /* ---------- ECG file uploader ---------- */
 
-function EcgFileUploader({
+export function EcgFileUploader({
   files,
   onChange,
 }: {
