@@ -321,45 +321,22 @@ function ActionAppointmentExternal({ task, onComplete, notifyChanged }: ActionPr
 }
 
 // ---- REFERRAL --------------------------------------------------------------
-function ActionReferral({ task, onComplete, onClose }: ActionProps) {
-  const [open, setOpen] = useState(false);
+function ActionReferral({ task, patientName, onComplete, onClose }: ActionProps) {
   const { to, specialty } = inferReferralTarget(task.title ?? "");
-  const progress = (task.referral_progress as any) ?? {};
-  const hasReferral = !!progress?.send_referral;
-
-  if (open) {
-    return (
-      <ReferralWorkflowPanel
-        task={task}
-        defaultTo={to}
-        renderReferralDocument={() => (
-          <div className="rounded-md border bg-muted/30 p-3 space-y-1.5 text-xs">
-            <div className="flex items-center gap-1.5 font-semibold text-foreground">
-              <FileText className="h-3.5 w-3.5" /> Referral document
-            </div>
-            <p><span className="text-muted-foreground">To:</span> {to || "—"}</p>
-            <p><span className="text-muted-foreground">Specialty:</span> {specialty}</p>
-            <p><span className="text-muted-foreground">Reason:</span> {task.title}</p>
-            {task.description && (
-              <p className="text-muted-foreground leading-relaxed pt-1">{task.description}</p>
-            )}
-          </div>
-        )}
-        onAllComplete={onClose}
-      />
-    );
-  }
-
   return (
-    <div className="space-y-2">
-      <PrimaryButton onClick={() => setOpen(true)}>
-        <FileText className="h-3.5 w-3.5" />
-        {hasReferral ? "Open referral document" : "Create referral document"} <ArrowRight className="h-3.5 w-3.5" />
-      </PrimaryButton>
-      <SecondaryButton onClick={() => onComplete("Referral marked as sent")}>
-        <CheckCircle2 className="h-3.5 w-3.5" /> Mark referral as sent
-      </SecondaryButton>
-    </div>
+    <ReferralWorkflowPanel
+      task={task}
+      defaultTo={to}
+      onAllComplete={onClose}
+      renderReferralDocument={() => (
+        <ReferralFormPanel
+          task={task}
+          patientName={patientName}
+          defaultTo={to}
+          defaultSpecialty={specialty}
+        />
+      )}
+    />
   );
 }
 
