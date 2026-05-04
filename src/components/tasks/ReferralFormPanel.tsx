@@ -200,6 +200,26 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
             placeholder="One per line, e.g. Metformin · 500 mg · twice daily"
           />
         </Field>
+        <Separator className="my-1" />
+        <Field label="Allergies">
+          <Textarea
+            value={allergies}
+            onChange={(e) => setAllergies(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line, e.g. Z88.4 Ibuprofen"
+          />
+        </Field>
+        <Separator className="my-1" />
+        <Field label="Clinical considerations">
+          <Textarea
+            value={considerations}
+            onChange={(e) => setConsiderations(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line"
+          />
+        </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
