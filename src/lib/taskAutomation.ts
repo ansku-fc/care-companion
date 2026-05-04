@@ -5,7 +5,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
   buildInteractionTitle,
-  buildPreVisitTitle,
   buildOnboardingReviewTitle,
   buildTaskTitle,
   TASK_TYPE_META,
