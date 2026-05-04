@@ -88,7 +88,6 @@ export const TASK_TYPE_PILLS: { key: TaskTypePillKey; label: string }[] = [
   { key: "referrals",      label: "Referrals" },
   { key: "prescriptions",  label: "Prescriptions" },
   { key: "appointments",   label: "Appointments" },
-  { key: "communication",  label: "Communication" },
   { key: "onboarding",     label: "Onboarding" },
   { key: "monitoring",     label: "Monitoring" },
 ];
