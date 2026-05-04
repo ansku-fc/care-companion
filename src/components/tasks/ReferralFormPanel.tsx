@@ -118,6 +118,10 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
           color: #000 !important;
         }
         @page { margin: 16mm; }
+        #referral-print-area .referral-logo {
+          height: 64px !important;
+          width: auto !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -268,9 +272,10 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
             style={{ display: "flex", alignItems: "center", marginLeft: 0, paddingLeft: 0 }}
           >
             <img
+              className="referral-logo"
               src={foundationClinicLogo}
               alt="Foundation Clinic"
-              style={{ height: "48px", width: "auto", display: "block" }}
+              style={{ height: "64px", width: "auto", display: "block" }}
             />
           </div>
           <div className="header-right" style={{ textAlign: "right", fontSize: "11px", color: "#555" }}>
