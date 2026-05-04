@@ -273,10 +273,9 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
             style={{ display: "flex", alignItems: "center", marginLeft: 0, paddingLeft: 0 }}
           >
             <img
-              className="referral-logo"
               src={foundationClinicLogo}
+              style={{ height: "64px", width: "auto", display: "block", minHeight: "64px", maxHeight: "64px" }}
               alt="Foundation Clinic"
-              style={{ height: "64px", width: "auto", display: "block" }}
             />
           </div>
           <div className="header-right" style={{ textAlign: "right", fontSize: "11px", color: "#555" }}>
