@@ -17,6 +17,7 @@ import {
   categoryLabel, priorityMeta, statusLabel, isOverdue,
   type Task, type TaskStatus, type TaskPriority, type TaskCategory,
 } from "@/lib/tasks";
+import { TASK_TYPE_PILLS, pillForTaskType, type TaskTypePillKey } from "@/lib/taskTypes";
 import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
 import { formatLastFirst, sortByLastFirst } from "@/lib/patientName";
 
