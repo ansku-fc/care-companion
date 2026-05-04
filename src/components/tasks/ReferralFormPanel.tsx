@@ -30,12 +30,51 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
   const [specialty, setSpecialty] = useState(defaultSpecialty);
   const [reason, setReason] = useState(task.title ?? "");
   const [notes, setNotes] = useState(task.description ?? "");
+  const [diagnoses, setDiagnoses] = useState<string>("Loading…");
+  const [medications, setMedications] = useState<string>("Loading…");
   const dateStr = format(new Date(), "dd MMM yyyy");
   const cleanupRef = useRef<() => void>();
 
   useEffect(() => () => cleanupRef.current?.(), []);
 
-  const handleDownloadPdf = () => {
+  // Pre-fill diagnoses & medications from the patient's profile.
+  useEffect(() => {
+    let cancelled = false;
+    if (!task.patient_id) {
+      setDiagnoses("None on record");
+      setMedications("None on record");
+      return;
+    }
+    (async () => {
+      const [dxRes, medRes] = await Promise.all([
+        supabase
+          .from("patient_diagnoses")
+          .select("diagnosis, icd_code, status")
+          .eq("patient_id", task.patient_id)
+          .eq("status", "active")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("patient_medications")
+          .select("medication_name, dose, frequency, status")
+          .eq("patient_id", task.patient_id)
+          .eq("status", "active")
+          .order("created_at", { ascending: true }),
+      ]);
+      if (cancelled) return;
+
+      const dxLines = (dxRes.data ?? [])
+        .map((d) => (d.icd_code ? `${d.diagnosis} (${d.icd_code})` : d.diagnosis))
+        .filter(Boolean);
+      setDiagnoses(dxLines.length ? dxLines.join("\n") : "None on record");
+
+      const medLines = (medRes.data ?? [])
+        .map((m) => [m.medication_name, m.dose, m.frequency].filter(Boolean).join(" · "))
+        .filter(Boolean);
+      setMedications(medLines.length ? medLines.join("\n") : "None on record");
+    })();
+    return () => { cancelled = true; };
+  }, [task.patient_id]);
+
     const style = document.createElement("style");
     style.id = "print-hide-style";
     style.textContent = `
