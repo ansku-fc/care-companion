@@ -8,7 +8,8 @@ import {
   type ExamFindingKey,
   type ExamFindings,
 } from "./OnboardingFormContext";
-import { SectionHeading } from "./shared";
+import { SectionHeading, FieldLabel } from "./shared";
+import { BpPair, EcgFileUploader } from "./StepBasicInfo";
 
 const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "heart", label: "Heart" },
@@ -23,11 +24,7 @@ const FINDINGS: { key: ExamFindingKey; label: string }[] = [
   { key: "musculoskeletal", label: "Musculoskeletal" },
 ];
 
-// Note: ADP / ATP / AFEM sub-toggles previously lived under "Peripheral
-// circulation" but only duplicated the parent. They have been replaced with a
-// single free-text notes field shown when the parent toggle is on.
-
-/** Step 10 — Status (Physical Examination). */
+/** Step 10 — Status (Physical Examination + Diagnostics). */
 export function StepStatus() {
   const { form, set } = useOnboardingForm();
 
@@ -50,6 +47,45 @@ export function StepStatus() {
           ))}
         </div>
       </div>
+
+      {/* DIAGNOSTICS */}
+      <section className="space-y-4">
+        <SectionHeading>Diagnostics</SectionHeading>
+
+        <div>
+          <FieldLabel>Blood pressure (mm/Hg)</FieldLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <BpPair
+              label="1st measurement"
+              sys={form.bp1_systolic}
+              dia={form.bp1_diastolic}
+              onSys={(v) => set("bp1_systolic", v)}
+              onDia={(v) => set("bp1_diastolic", v)}
+            />
+            <BpPair
+              label="2nd measurement"
+              sys={form.bp2_systolic}
+              dia={form.bp2_diastolic}
+              onSys={(v) => set("bp2_systolic", v)}
+              onDia={(v) => set("bp2_diastolic", v)}
+            />
+          </div>
+        </div>
+
+        <div>
+          <FieldLabel>ECG notes</FieldLabel>
+          <Textarea
+            value={form.ecg_notes}
+            onChange={(e) => set("ecg_notes", e.target.value)}
+            placeholder="Sinus rhythm, no acute changes…"
+            className="min-h-[88px]"
+          />
+          <EcgFileUploader
+            files={form.ecg_files}
+            onChange={(files) => set("ecg_files", files)}
+          />
+        </div>
+      </section>
     </div>
   );
 }
