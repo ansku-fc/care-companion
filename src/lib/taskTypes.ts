@@ -134,7 +134,7 @@ export function buildInteractionTitle(opts: {
 }): string {
   return buildTaskTitle({
     type: "PRESCRIPTION",
-    prefixOverride: "Drug interaction review",
+    prefixOverride: "Review interaction",
     detail: `${opts.drugA} × ${opts.drugB}`,
     patientName: opts.patientName,
   });
@@ -144,7 +144,7 @@ export function buildInteractionTitle(opts: {
 export function buildPreVisitTitle(opts: { patientName?: string | null }): string {
   return buildTaskTitle({
     type: "PATIENT_COMMUNICATION",
-    prefixOverride: "Pre-visit instructions",
+    prefixOverride: "Send pre-visit instructions",
     detail: null,
     patientName: opts.patientName,
   });
@@ -154,7 +154,7 @@ export function buildPreVisitTitle(opts: { patientName?: string | null }): strin
 export function buildOnboardingReviewTitle(opts: { patientName?: string | null }): string {
   return buildTaskTitle({
     type: "ONBOARDING_ADMIN",
-    prefixOverride: "Onboarding review",
+    prefixOverride: "Complete onboarding",
     detail: null,
     patientName: opts.patientName,
   });
