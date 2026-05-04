@@ -39,7 +39,6 @@ function dueDate(days: number): string {
 function categoryFor(t: TaskType) {
   switch (t) {
     case "REFERRAL":              return "referral" as const;
-    case "PATIENT_COMMUNICATION": return "care_coordination" as const;
     case "ONBOARDING_ADMIN":      return "administrative" as const;
     case "APPOINTMENT_CLINIC":
     case "APPOINTMENT_EXTERNAL":  return "care_coordination" as const;
