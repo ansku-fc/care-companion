@@ -402,24 +402,6 @@ function ActionInteraction({ task, onComplete, onNavigate }: ActionProps) {
   );
 }
 
-// ---- PATIENT_COMMUNICATION (results) ---------------------------------------
-function ActionResults({ onComplete }: ActionProps) {
-  return (
-    <PrimaryButton onClick={() => onComplete("Message marked as sent")}>
-      <CheckCircle2 className="h-3.5 w-3.5" /> Mark message sent
-    </PrimaryButton>
-  );
-}
-
-// ---- PATIENT_COMMUNICATION (pre-visit) -------------------------------------
-function ActionPreVisit({ onComplete }: ActionProps) {
-  return (
-    <PrimaryButton onClick={() => onComplete("Pre-visit instructions sent")}>
-      <CheckCircle2 className="h-3.5 w-3.5" /> Mark instructions sent
-    </PrimaryButton>
-  );
-}
-
 // ---- ONBOARDING_ADMIN ------------------------------------------------------
 function ActionOnboarding({ task, onNavigate }: ActionProps) {
   return (
