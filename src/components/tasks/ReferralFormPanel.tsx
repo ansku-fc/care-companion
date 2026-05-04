@@ -152,6 +152,28 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
             )}
           </div>
         )}
+
+        {/* Diagnoses + Medications — always editable, pulled from patient profile */}
+        <Separator className="my-1" />
+        <Field label="Active diagnoses">
+          <Textarea
+            value={diagnoses}
+            onChange={(e) => setDiagnoses(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line, e.g. Hypertension (I10)"
+          />
+        </Field>
+        <Separator className="my-1" />
+        <Field label="Current medications">
+          <Textarea
+            value={medications}
+            onChange={(e) => setMedications(e.target.value)}
+            rows={3}
+            className="text-xs font-mono"
+            placeholder="One per line, e.g. Metformin · 500 mg · twice daily"
+          />
+        </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
