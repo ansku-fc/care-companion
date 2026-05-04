@@ -1547,6 +1547,7 @@ export type Database = {
           assigned_to: string | null
           assignee_name: string | null
           assignee_type: string | null
+          auto_close_event: string | null
           category: Database["public"]["Enums"]["task_category"]
           clinical_source: string | null
           created_at: string
@@ -1555,12 +1556,15 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          linked_entity_id: string | null
+          linked_entity_type: string | null
           patient_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           referral_progress: Json
           scheduled_appointment_id: string | null
           status: Database["public"]["Enums"]["task_status"]
           task_category: string
+          task_type: Database["public"]["Enums"]["task_type"] | null
           title: string
           updated_at: string
         }
@@ -1568,6 +1572,7 @@ export type Database = {
           assigned_to?: string | null
           assignee_name?: string | null
           assignee_type?: string | null
+          auto_close_event?: string | null
           category: Database["public"]["Enums"]["task_category"]
           clinical_source?: string | null
           created_at?: string
@@ -1576,12 +1581,15 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           referral_progress?: Json
           scheduled_appointment_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_category?: string
+          task_type?: Database["public"]["Enums"]["task_type"] | null
           title: string
           updated_at?: string
         }
@@ -1589,6 +1597,7 @@ export type Database = {
           assigned_to?: string | null
           assignee_name?: string | null
           assignee_type?: string | null
+          auto_close_event?: string | null
           category?: Database["public"]["Enums"]["task_category"]
           clinical_source?: string | null
           created_at?: string
@@ -1597,12 +1606,15 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
           patient_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           referral_progress?: Json
           scheduled_appointment_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_category?: string
+          task_type?: Database["public"]["Enums"]["task_type"] | null
           title?: string
           updated_at?: string
         }
@@ -1795,6 +1807,15 @@ export type Database = {
         | "administrative"
       task_priority: "urgent" | "high" | "medium" | "low"
       task_status: "todo" | "in_progress" | "done" | "deferred"
+      task_type:
+        | "LAB_DIAGNOSTICS"
+        | "REFERRAL"
+        | "PRESCRIPTION"
+        | "APPOINTMENT_CLINIC"
+        | "APPOINTMENT_EXTERNAL"
+        | "PATIENT_COMMUNICATION"
+        | "ONBOARDING_ADMIN"
+        | "MONITORING"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1958,6 +1979,16 @@ export const Constants = {
       ],
       task_priority: ["urgent", "high", "medium", "low"],
       task_status: ["todo", "in_progress", "done", "deferred"],
+      task_type: [
+        "LAB_DIAGNOSTICS",
+        "REFERRAL",
+        "PRESCRIPTION",
+        "APPOINTMENT_CLINIC",
+        "APPOINTMENT_EXTERNAL",
+        "PATIENT_COMMUNICATION",
+        "ONBOARDING_ADMIN",
+        "MONITORING",
+      ],
     },
   },
 } as const
