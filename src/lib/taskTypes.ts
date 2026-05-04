@@ -131,15 +131,6 @@ export function buildInteractionTitle(opts: {
   });
 }
 
-// Pre-visit instructions (PATIENT_COMMUNICATION).
-export function buildPreVisitTitle(opts: { patientName?: string | null }): string {
-  return buildTaskTitle({
-    type: "PATIENT_COMMUNICATION",
-    prefixOverride: "Send pre-visit instructions",
-    detail: null,
-    patientName: opts.patientName,
-  });
-}
 
 // Onboarding review.
 export function buildOnboardingReviewTitle(opts: { patientName?: string | null }): string {
