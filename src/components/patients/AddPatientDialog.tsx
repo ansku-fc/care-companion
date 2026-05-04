@@ -198,6 +198,18 @@ export function AddPatientDialog() {
 
       if (error) throw error;
 
+      // Auto-create the Onboarding review task for the new patient.
+      try {
+        const { createOnboardingReviewTask } = await import("@/lib/taskAutomation");
+        await createOnboardingReviewTask({
+          patientId: patient.id,
+          patientName: fullName,
+          createdBy: authUser.id,
+        });
+      } catch (e) {
+        console.warn("Onboarding review task auto-create failed", e);
+      }
+
       toast.success("Patient profile created");
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       const newId = patient.id;
