@@ -254,6 +254,28 @@ const TasksPage = () => {
         </CardContent>
       </Card>
 
+      {/* Type pills */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {TASK_TYPE_PILLS.map((p) => {
+          const active = filterTypePill === p.key;
+          return (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setFilterTypePill(p.key)}
+              className={cn(
+                "h-7 px-3 rounded-full text-xs font-medium border transition-colors",
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted",
+              )}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* My Tasks / All Tasks scope */}
       <div className="flex items-center gap-2">
         <ScopePill
