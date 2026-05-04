@@ -57,12 +57,6 @@ export const TASK_TYPE_META: Record<TaskType, TypeMeta> = {
     pillKey: "appointments",
     autoCloseEvent: "Nurse marks external appointment booked + patient notified",
   },
-  PATIENT_COMMUNICATION: {
-    label: "Communication",
-    prefix: "Send results",
-    pillKey: "communication",
-    autoCloseEvent: "Results message marked as sent",
-  },
   ONBOARDING_ADMIN: {
     label: "Onboarding",
     prefix: "Complete onboarding",
