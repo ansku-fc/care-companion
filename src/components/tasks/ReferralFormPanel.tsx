@@ -118,9 +118,10 @@ export function ReferralFormPanel({ task, patientName, defaultTo, defaultSpecial
           color: #000 !important;
         }
         @page { margin: 16mm; }
-        #referral-print-area .referral-logo {
+        #referral-print-area img {
           height: 64px !important;
           width: auto !important;
+          min-height: 64px !important;
         }
       }
     `;
