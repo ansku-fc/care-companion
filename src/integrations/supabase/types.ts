@@ -1813,7 +1813,6 @@ export type Database = {
         | "PRESCRIPTION"
         | "APPOINTMENT_CLINIC"
         | "APPOINTMENT_EXTERNAL"
-        | "PATIENT_COMMUNICATION"
         | "ONBOARDING_ADMIN"
         | "MONITORING"
     }
@@ -1985,7 +1984,6 @@ export const Constants = {
         "PRESCRIPTION",
         "APPOINTMENT_CLINIC",
         "APPOINTMENT_EXTERNAL",
-        "PATIENT_COMMUNICATION",
         "ONBOARDING_ADMIN",
         "MONITORING",
       ],

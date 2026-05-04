@@ -15,7 +15,6 @@ export const TASK_TYPES: TaskType[] = [
   "PRESCRIPTION",
   "APPOINTMENT_CLINIC",
   "APPOINTMENT_EXTERNAL",
-  "PATIENT_COMMUNICATION",
   "ONBOARDING_ADMIN",
   "MONITORING",
 ];
@@ -58,12 +57,6 @@ export const TASK_TYPE_META: Record<TaskType, TypeMeta> = {
     pillKey: "appointments",
     autoCloseEvent: "Nurse marks external appointment booked + patient notified",
   },
-  PATIENT_COMMUNICATION: {
-    label: "Communication",
-    prefix: "Send results",
-    pillKey: "communication",
-    autoCloseEvent: "Results message marked as sent",
-  },
   ONBOARDING_ADMIN: {
     label: "Onboarding",
     prefix: "Complete onboarding",
@@ -85,7 +78,6 @@ export type TaskTypePillKey =
   | "referrals"
   | "prescriptions"
   | "appointments"
-  | "communication"
   | "onboarding"
   | "monitoring";
 
@@ -95,7 +87,6 @@ export const TASK_TYPE_PILLS: { key: TaskTypePillKey; label: string }[] = [
   { key: "referrals",      label: "Referrals" },
   { key: "prescriptions",  label: "Prescriptions" },
   { key: "appointments",   label: "Appointments" },
-  { key: "communication",  label: "Communication" },
   { key: "onboarding",     label: "Onboarding" },
   { key: "monitoring",     label: "Monitoring" },
 ];
@@ -140,15 +131,6 @@ export function buildInteractionTitle(opts: {
   });
 }
 
-// Pre-visit instructions (PATIENT_COMMUNICATION).
-export function buildPreVisitTitle(opts: { patientName?: string | null }): string {
-  return buildTaskTitle({
-    type: "PATIENT_COMMUNICATION",
-    prefixOverride: "Send pre-visit instructions",
-    detail: null,
-    patientName: opts.patientName,
-  });
-}
 
 // Onboarding review.
 export function buildOnboardingReviewTitle(opts: { patientName?: string | null }): string {
