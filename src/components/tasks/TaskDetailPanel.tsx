@@ -14,6 +14,7 @@ import {
   CheckCircle2, AlertTriangle, FileText,
 } from "lucide-react";
 import { ReferralWorkflowPanel } from "@/components/tasks/ReferralWorkflowPanel";
+import { ReferralFormPanel } from "@/components/tasks/ReferralFormPanel";
 import { inferReferralTarget } from "@/lib/referralWorkflow";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
