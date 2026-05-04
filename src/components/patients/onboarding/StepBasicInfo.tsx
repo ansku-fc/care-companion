@@ -26,7 +26,7 @@ import {
   type AllergenCategory,
   type AllergySeverity,
 } from "@/lib/allergens";
-import { OCCUPATIONS, EDUCATION_LEVELS, SUPPLEMENT_LIST } from "@/lib/onboardingTaxonomy";
+import { SUPPLEMENT_LIST } from "@/lib/onboardingTaxonomy";
 import { useOnboardingForm, calcBmi, calcWaistHipRatio, type AllergyEntry } from "./OnboardingFormContext";
 import { MultiSelectChips, type MultiSelectOption } from "./MultiSelectChips";
 import { SectionHeading, FieldLabel, CalculatedField, NumberInput } from "./shared";
@@ -35,6 +35,19 @@ const SUPPLEMENT_OPTIONS: MultiSelectOption[] = SUPPLEMENT_LIST.map((s) => ({
   value: s,
   label: s,
 }));
+
+// LOINC 68505-7 / answer list LL1916-7
+const OCCUPATION_OPTIONS: MultiSelectOption[] = [
+  "Employed",
+  "Unemployed",
+  "Homemaker",
+  "Student",
+  "Retired",
+  "Disabled",
+  "Part-time",
+  "Full-time",
+  "Other",
+].map((o) => ({ value: o, label: o }));
 
 export function StepBasicInfo() {
   const { form, set } = useOnboardingForm();
@@ -88,45 +101,90 @@ export function StepBasicInfo() {
             />
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <FieldLabel>Occupation</FieldLabel>
-            <Select value={form.occupation} onValueChange={(v) => set("occupation", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                {OCCUPATIONS.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <FieldLabel>Education level</FieldLabel>
-            <Select value={form.education_level} onValueChange={(v) => set("education_level", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                {EDUCATION_LEVELS.map((e) => (
-                  <SelectItem key={e} value={e}>
-                    {e}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectChips
+              options={OCCUPATION_OPTIONS}
+              selected={form.occupation}
+              onChange={(v) => set("occupation", v)}
+              placeholder="Select one or more…"
+              tone="teal"
+            />
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl border border-input bg-background px-4 py-3">
-          <div>
-            <p className="text-sm font-medium">Shift work</p>
-            <p className="text-xs text-muted-foreground">Patient works rotating or night shifts</p>
+        {/* Work conditions */}
+        <div className="space-y-3 pt-2">
+          <p className="text-sm font-medium">Work conditions</p>
+
+          <div className="rounded-xl border border-input bg-background overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Occupational hazards</p>
+                <p className="text-xs text-muted-foreground">
+                  Does the patient work with occupational hazards?
+                </p>
+              </div>
+              <Switch
+                checked={form.occupational_hazards}
+                onCheckedChange={(v) => set("occupational_hazards", v)}
+              />
+            </div>
+            <div
+              className={cn(
+                "grid transition-all duration-300 ease-out",
+                form.occupational_hazards
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0",
+              )}
+            >
+              <div className="overflow-hidden">
+                <div className="border-t border-border bg-muted/30 px-4 py-3 space-y-3">
+                  <SubHazardToggle
+                    label="Physical hazards"
+                    description="Noise, vibration, temperature extremes, radiation"
+                    checked={form.hazard_physical}
+                    onChange={(v) => set("hazard_physical", v)}
+                  />
+                  <SubHazardToggle
+                    label="Biological hazards"
+                    description="Pathogens, allergens, organic dust"
+                    checked={form.hazard_biological}
+                    onChange={(v) => set("hazard_biological", v)}
+                  />
+                  <SubHazardToggle
+                    label="Chemical hazards"
+                    description="Solvents, heavy metals, pesticides, fumes"
+                    checked={form.hazard_chemical}
+                    onChange={(v) => set("hazard_chemical", v)}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <Switch checked={form.shift_work} onCheckedChange={(v) => set("shift_work", v)} />
+
+          <div className="flex items-center justify-between rounded-xl border border-input bg-background px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Shift work / unstable working hours</p>
+              <p className="text-xs text-muted-foreground">
+                Rotating shifts, night shifts, or irregular schedules
+              </p>
+            </div>
+            <Switch checked={form.shift_work} onCheckedChange={(v) => set("shift_work", v)} />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-input bg-background px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">High stress environment</p>
+              <p className="text-xs text-muted-foreground">
+                Chronically high psychological stress at work
+              </p>
+            </div>
+            <Switch
+              checked={form.high_stress_environment}
+              onCheckedChange={(v) => set("high_stress_environment", v)}
+            />
+          </div>
         </div>
       </section>
 
