@@ -150,31 +150,6 @@ export async function createOnboardingReviewTask(opts: {
   });
 }
 
-export async function createPreVisitInstructionsTask(opts: {
-  patientId: string;
-  patientName: string;
-  appointmentId: string;
-  createdBy: string;
-  dueDateISO: string;
-}) {
-  return createTypedTask({
-    taskType: "PATIENT_COMMUNICATION",
-    patientId: opts.patientId,
-    patientName: opts.patientName,
-    titleOverride: buildPreVisitTitle({ patientName: opts.patientName }),
-    description: "Send pre-visit preparation instructions (fasting, documents, etc.) to patient.",
-    assigneeName: "Nurse Mäkinen",
-    priority: "medium",
-    dueInDays: Math.max(
-      1,
-      Math.floor((new Date(opts.dueDateISO).getTime() - Date.now()) / 86_400_000) - 1,
-    ),
-    createdBy: opts.createdBy,
-    linkedEntityType: "appointment",
-    linkedEntityId: opts.appointmentId,
-    createdFrom: "Appointment created with prep requirements",
-  });
-}
 
 export async function createInteractionReviewTasks(opts: {
   patientId: string;
