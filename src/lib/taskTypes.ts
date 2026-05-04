@@ -78,7 +78,6 @@ export type TaskTypePillKey =
   | "referrals"
   | "prescriptions"
   | "appointments"
-  | "communication"
   | "onboarding"
   | "monitoring";
 
