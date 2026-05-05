@@ -5993,7 +5993,29 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
         </div>
       )}
 
-      {newMarkers.length > 0 && (
+      {reviewActive && (
+        <div className="rounded-[14px] border border-amber-500/50 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300 shrink-0">
+            Review requested
+          </span>
+          <div className="flex-1 min-w-0 text-xs text-foreground">
+            <span className="font-medium">{(reviewTokens ?? []).join(", ")}</span>
+            {reviewTaskTitle && (
+              <span className="text-muted-foreground"> · From task: {reviewTaskTitle}</span>
+            )}
+          </div>
+          <Button size="sm" className="h-7 text-xs gap-1" onClick={handleMarkReviewedFromBanner}>
+            <FlaskConical className="h-3 w-3" /> Mark results reviewed
+          </Button>
+          <Button
+            size="icon" variant="ghost" className="h-7 w-7 shrink-0"
+            onClick={() => { setReviewDismissed(true); onDismissReview?.(); }}
+            aria-label="Dismiss review mode"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
         <Card className="rounded-[20px] shadow-card overflow-hidden border-l-4 border-l-warning">
           <CardContent className="p-0">
             <div className="px-4 py-2.5 bg-warning/5 flex items-center gap-2">
