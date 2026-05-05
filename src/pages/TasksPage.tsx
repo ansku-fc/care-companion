@@ -252,6 +252,14 @@ const TasksPage = () => {
             >
               <Users className="h-3.5 w-3.5" /> By Patient
             </Button>
+            <Button
+              variant={view === "episode" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView("episode")}
+              className="gap-1.5"
+            >
+              <Activity className="h-3.5 w-3.5" /> By Episode
+            </Button>
           </div>
         </CardContent>
       </Card>
