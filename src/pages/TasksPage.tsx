@@ -312,6 +312,12 @@ const TasksPage = () => {
       {/* Task list */}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading tasks…</p>
+      ) : view === "episode" ? (
+        <EpisodeGroupedView
+          patientFilter={filterPatient !== "all" ? filterPatient : undefined}
+          patientNameOf={patientName}
+          onTaskClick={openDetail}
+        />
       ) : view === "flat" ? (
         <div className="space-y-2">
           {flatSorted.length === 0 ? (
