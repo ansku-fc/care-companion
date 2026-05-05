@@ -80,6 +80,43 @@ import {
 } from "@/lib/labReview";
 import { logActivity } from "@/lib/activityLog";
 
+// Map free-text marker tokens (from a task title, e.g. "HbA1c", "Lipid panel")
+// to the lab-marker row keys used by LabResultsView.
+const REVIEW_TOKEN_MAP: Record<string, string[]> = {
+  hba1c: ["hba1c_mmol_mol"],
+  ldl: ["ldl_mmol_l"],
+  "lipid panel": ["ldl_mmol_l"],
+  lipids: ["ldl_mmol_l"],
+  cholesterol: ["ldl_mmol_l"],
+  "blood pressure": ["blood_pressure_systolic", "_bp"],
+  bp: ["blood_pressure_systolic", "_bp"],
+  alat: ["alat_u_l"],
+  asat: ["alat_asat_ratio"],
+  "liver enzymes": ["alat_u_l", "afos_alp_u_l", "gt_u_l", "alat_asat_ratio"],
+  liver: ["alat_u_l", "afos_alp_u_l", "gt_u_l", "alat_asat_ratio"],
+  alp: ["afos_alp_u_l"],
+  "afos": ["afos_alp_u_l"],
+  gt: ["gt_u_l"],
+  egfr: ["egfr"],
+  "kidney function": ["egfr", "cystatin_c", "u_alb_krea_abnormal"],
+  tsh: ["tsh_mu_l"],
+  thyroid: ["tsh_mu_l"],
+};
+
+export function expandReviewTokensToMarkerKeys(tokens: string[]): Set<string> {
+  const out = new Set<string>();
+  for (const tok of tokens) {
+    const norm = tok.toLowerCase().trim();
+    const mapped = REVIEW_TOKEN_MAP[norm];
+    if (mapped) { mapped.forEach((k) => out.add(k)); continue; }
+    // Loose match: token appears in any registered key/label
+    for (const [name, keys] of Object.entries(REVIEW_TOKEN_MAP)) {
+      if (norm.includes(name) || name.includes(norm)) keys.forEach((k) => out.add(k));
+    }
+  }
+  return out;
+}
+
 // Legacy flat list for backward compat in dimension views
 const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
   const items = [{ key: main.key, label: main.label, icon: main.icon }];
@@ -159,7 +196,25 @@ const PatientProfilePage = () => {
     // Note: we keep the ?review=1 param so HealthDataHub/LabResultsView can read it.
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const reviewMode = searchParams.get("review") === "1";
+  const reviewParamRaw = searchParams.get("review");
+  const reviewMode = reviewParamRaw === "1";
+  const reviewHighlight = !!reviewParamRaw && reviewParamRaw !== "1";
+  const reviewTaskId = searchParams.get("taskId");
+  const reviewTokens = React.useMemo(() => {
+    if (!reviewParamRaw || reviewParamRaw === "1") return [] as string[];
+    return reviewParamRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  }, [reviewParamRaw]);
+  const reviewMarkerKeys = React.useMemo(
+    () => expandReviewTokensToMarkerKeys(reviewTokens),
+    [reviewTokens],
+  );
+  const reviewTaskTitle = React.useMemo(
+    () => patientTasks.find((t: any) => t.id === reviewTaskId)?.title ?? null,
+    [patientTasks, reviewTaskId],
+  );
+  const dismissReview = React.useCallback(() => {
+    setSearchParams({ tab: "lab_results" }, { replace: true });
+  }, [setSearchParams]);
 
 
 
@@ -597,7 +652,12 @@ const PatientProfilePage = () => {
                 markerNotes={markerNotes}
                 setMarkerNotes={setMarkerNotes}
                 reviewMode={reviewMode}
-                onReviewComplete={() => setSearchParams({}, { replace: true })}
+                reviewHighlightKeys={reviewMarkerKeys}
+                reviewTokens={reviewTokens}
+                reviewTaskId={reviewTaskId}
+                reviewTaskTitle={reviewTaskTitle}
+                onDismissReview={dismissReview}
+                onReviewComplete={() => setSearchParams({ tab: "lab_results" }, { replace: true })}
               />
             }
           />
@@ -5629,7 +5689,7 @@ const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: str
   fvc_percent: { low: 80, label: "FVC" },
 };
 
-function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes, reviewMode, onReviewComplete }: {
+function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes, reviewMode, reviewHighlightKeys, reviewTokens, reviewTaskId, reviewTaskTitle, onDismissReview, onReviewComplete }: {
   patientId: string;
   patientName?: string | null;
   labResults: Tables<"patient_lab_results">[];
@@ -5638,6 +5698,11 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   reviewMode?: boolean;
+  reviewHighlightKeys?: Set<string>;
+  reviewTokens?: string[];
+  reviewTaskId?: string | null;
+  reviewTaskTitle?: string | null;
+  onDismissReview?: () => void;
   onReviewComplete?: () => void;
 }) {
   const { notifyChanged, openNewTask } = useTaskActions();
@@ -5648,6 +5713,25 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   // Local re-render trigger for the lab-review store
   const [, forceTick] = useState(0);
   const [reviewBanner, setReviewBanner] = useState(false);
+  const [reviewDismissed, setReviewDismissed] = useState(false);
+  const reviewActive = !!reviewHighlightKeys && reviewHighlightKeys.size > 0 && !reviewDismissed;
+  const chartRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const scrolledRef = React.useRef(false);
+
+  // Mark linked task as done from the in-page review banner.
+  const handleMarkReviewedFromBanner = async () => {
+    if (reviewTaskId) {
+      const { error } = await supabase.from("tasks").update({ status: "done" }).eq("id", reviewTaskId);
+      if (error) { toast.error("Could not complete task"); return; }
+    } else {
+      await completeLabReviewTask(patientId);
+    }
+    toast.success("Lab results marked as reviewed");
+    notifyChanged();
+    setReviewDismissed(true);
+    onDismissReview?.();
+    onReviewComplete?.();
+  };
 
   // Annotations for the selected marker
   type Annotation = { id: string; annotation_date: string; text: string; author_name: string };
@@ -5763,6 +5847,19 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     return unsub;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId, reviewMode, newestLab?.id]);
+
+  // Scroll to first highlighted chart when entering review-highlight mode.
+  React.useEffect(() => {
+    if (!reviewActive || scrolledRef.current) return;
+    const t = setTimeout(() => {
+      const first = Object.values(chartRefs.current).find(Boolean);
+      if (first) {
+        first.scrollIntoView({ behavior: "smooth", block: "center" });
+        scrolledRef.current = true;
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [reviewActive, viewMode]);
 
   const newMarkers = getNewMarkers(patientId);
   const newKeys = new Set(newMarkers.map((m) => m.key));
@@ -5909,6 +6006,30 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
         </div>
       )}
 
+      {reviewActive && (
+        <div className="rounded-[14px] border border-amber-500/50 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300 shrink-0">
+            Review requested
+          </span>
+          <div className="flex-1 min-w-0 text-xs text-foreground">
+            <span className="font-medium">{(reviewTokens ?? []).join(", ")}</span>
+            {reviewTaskTitle && (
+              <span className="text-muted-foreground"> · From task: {reviewTaskTitle}</span>
+            )}
+          </div>
+          <Button size="sm" className="h-7 text-xs gap-1" onClick={handleMarkReviewedFromBanner}>
+            <FlaskConical className="h-3 w-3" /> Mark results reviewed
+          </Button>
+          <Button
+            size="icon" variant="ghost" className="h-7 w-7 shrink-0"
+            onClick={() => { setReviewDismissed(true); onDismissReview?.(); }}
+            aria-label="Dismiss review mode"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
       {newMarkers.length > 0 && (
         <Card className="rounded-[20px] shadow-card overflow-hidden border-l-4 border-l-warning">
           <CardContent className="p-0">
@@ -6015,14 +6136,20 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                         : undefined;
                       const isSel = selectedMarker?.key === dataKey;
                       const hasData = series.length > 0 || (diastolicSeries?.length ?? 0) > 0;
+                      const isReviewHit = reviewActive && (
+                        reviewHighlightKeys!.has(row.key as string) ||
+                        reviewHighlightKeys!.has(dataKey as string)
+                      );
                       return (
                         <button
                           key={row.key}
+                          ref={(el) => { if (isReviewHit) chartRefs.current[row.key as string] = el; }}
                           onClick={() => handleRowClick(row.key, row.label, row.unit)}
                           className={cn(
                             "text-left rounded-[14px] border bg-card p-3 transition-colors hover:border-primary/50 relative",
                             isSel && "border-primary shadow-sm",
                             !hasData && "opacity-90",
+                            isReviewHit && "border-amber-500 border-t-4 ring-1 ring-amber-300/40 shadow-sm",
                           )}
                         >
                           <MarkerDetailChart
@@ -6041,6 +6168,11 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                                 No data yet
                               </span>
                             </div>
+                          )}
+                          {isReviewHit && (
+                            <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 shadow-sm">
+                              Review requested
+                            </span>
                           )}
                         </button>
                       );
