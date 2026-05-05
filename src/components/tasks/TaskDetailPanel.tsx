@@ -338,13 +338,18 @@ function ActionReferral({ task, patientName, onComplete, onClose }: ActionProps)
 
 // ---- LAB_DIAGNOSTICS -------------------------------------------------------
 function ActionLab({ task, onComplete, onNavigate }: ActionProps) {
+  // Extract marker tokens from "Review lab results — HbA1c & Lipid panel — Surname, First"
+  const detail = extractDetail(task.title) ?? "";
+  const markers = detail.split(/[&,]/).map((s) => s.trim()).filter(Boolean);
+  const reviewParam = markers.length ? encodeURIComponent(markers.join(",")) : "1";
+  const labUrl = `/patients/${task.patient_id}?tab=lab_results&review=${reviewParam}&taskId=${task.id}`;
   return (
     <div className="space-y-2">
       <PrimaryButton onClick={() => onComplete("Lab results marked as reviewed")}>
         <CheckCircle2 className="h-3.5 w-3.5" /> Mark results reviewed
       </PrimaryButton>
       {task.patient_id && (
-        <SecondaryButton onClick={() => onNavigate(`/patients/${task.patient_id}?tab=lab_results`)}>
+        <SecondaryButton onClick={() => onNavigate(labUrl)}>
           Open lab results <ArrowRight className="h-3.5 w-3.5" />
         </SecondaryButton>
       )}
