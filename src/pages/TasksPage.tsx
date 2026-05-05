@@ -564,3 +564,96 @@ function TaskRow({
 }
 
 export default TasksPage;
+
+function EpisodeGroupedView({
+  patientFilter, patientNameOf, onTaskClick,
+}: {
+  patientFilter?: string;
+  patientNameOf: (id: string | null) => string | null;
+  onTaskClick: (t: Task) => void;
+}) {
+  const { episodes, tasksByEpisode, loading } = useEpisodes({
+    patientId: patientFilter,
+    status: "ACTIVE",
+  });
+  if (loading) return <p className="text-sm text-muted-foreground">Loading episodes…</p>;
+  if (episodes.length === 0) {
+    return <p className="text-sm text-muted-foreground">No active episodes.</p>;
+  }
+  return (
+    <div className="space-y-3">
+      {episodes.map((ep) => {
+        const meta = EPISODE_TYPE_META[ep.episode_type];
+        const urgency = URGENCY_META[ep.urgency];
+        const list = tasksByEpisode[ep.id] ?? [];
+        const taskById = new Map(list.map((t) => [t.id, t]));
+        const isLocked = (t: Task) => {
+          const parentId = (t as any).parent_task_id as string | null | undefined;
+          if (!parentId) return false;
+          const parent = taskById.get(parentId);
+          return !!parent && parent.status !== "done";
+        };
+        const pName = patientNameOf(ep.patient_id);
+        return (
+          <Card key={ep.id}>
+            <div className="px-4 py-3 flex items-center gap-2 border-b">
+              <span className={cn("h-2 w-2 rounded-full", meta.dotClass)} />
+              <Badge variant="outline" className={cn("text-[9px] uppercase tracking-wide border-0", meta.badgeClass)}>
+                {meta.label}
+              </Badge>
+              <h2 className="text-sm font-semibold truncate">{ep.title}</h2>
+              {pName && <span className="text-[11px] text-muted-foreground">· {pName}</span>}
+              {ep.urgency !== "ROUTINE" && (
+                <span className={cn("text-[10px] uppercase tracking-wide font-semibold ml-1", urgency.className)}>
+                  {urgency.label}
+                </span>
+              )}
+              <Badge variant="secondary" className="ml-auto text-[10px]">
+                {list.filter((t) => t.status === "done").length}/{list.length}
+              </Badge>
+            </div>
+            <div className="px-3 py-2 space-y-1">
+              {list.length === 0 && (
+                <p className="text-[11px] text-muted-foreground italic px-1 py-1">No tasks yet</p>
+              )}
+              {list.map((t) => {
+                const locked = isLocked(t);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    disabled={locked}
+                    onClick={() => !locked && onTaskClick(t)}
+                    className={cn(
+                      "w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[12px] transition-colors",
+                      locked ? "opacity-50 cursor-not-allowed" : "hover:bg-muted/50",
+                      t.status === "done" && "line-through text-muted-foreground",
+                    )}
+                    title={locked ? "Locked — waiting for previous step" : undefined}
+                  >
+                    {locked
+                      ? <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+                      : <span className={cn("h-2 w-2 rounded-full shrink-0", priorityMeta(t.priority).dot)} />}
+                    <span className="flex-1 truncate">{t.title}</span>
+                    {t.assignee_name && (
+                      <span className="text-[10px] text-muted-foreground">{t.assignee_name}</span>
+                    )}
+                    {t.due_date && (
+                      <span className={cn(
+                        "text-[10px] tabular-nums",
+                        isOverdue(t) ? "text-destructive font-medium" : "text-muted-foreground",
+                      )}>
+                        {format(new Date(t.due_date), "dd MMM")}
+                      </span>
+                    )}
+                    <Badge variant="outline" className="text-[9px]">{statusLabel(t.status)}</Badge>
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
