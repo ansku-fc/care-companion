@@ -38,9 +38,13 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
 
-  const initials = profile?.full_name
-    ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-    : "?";
+  const initials = (() => {
+    const name = (profile?.full_name ?? "").replace(/^(Dr\.?|Nurse|Mr\.?|Mrs\.?|Ms\.?)\s+/i, "").trim();
+    if (!name) return "?";
+    const parts = name.split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  })();
 
   const renderNavItem = (item: { title: string; url: string; icon: any }) => {
     const link = (
