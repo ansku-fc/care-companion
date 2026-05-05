@@ -6156,6 +6156,11 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                               </span>
                             </div>
                           )}
+                          {isReviewHit && (
+                            <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 shadow-sm">
+                              Review requested
+                            </span>
+                          )}
                         </button>
                       );
                     })}
