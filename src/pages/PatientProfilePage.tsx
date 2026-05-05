@@ -155,6 +155,7 @@ const PatientProfilePage = () => {
       "overview";
     setActiveSectionRaw(initial);
     navHistory.resetScope(scopeKey, initial);
+    if (tab === "lab_results") setHealthDataInitialTab("labs");
     // Note: we keep the ?review=1 param so HealthDataHub/LabResultsView can read it.
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
