@@ -80,6 +80,43 @@ import {
 } from "@/lib/labReview";
 import { logActivity } from "@/lib/activityLog";
 
+// Map free-text marker tokens (from a task title, e.g. "HbA1c", "Lipid panel")
+// to the lab-marker row keys used by LabResultsView.
+const REVIEW_TOKEN_MAP: Record<string, string[]> = {
+  hba1c: ["hba1c_mmol_mol"],
+  ldl: ["ldl_mmol_l"],
+  "lipid panel": ["ldl_mmol_l"],
+  lipids: ["ldl_mmol_l"],
+  cholesterol: ["ldl_mmol_l"],
+  "blood pressure": ["blood_pressure_systolic", "_bp"],
+  bp: ["blood_pressure_systolic", "_bp"],
+  alat: ["alat_u_l"],
+  asat: ["alat_asat_ratio"],
+  "liver enzymes": ["alat_u_l", "afos_alp_u_l", "gt_u_l", "alat_asat_ratio"],
+  liver: ["alat_u_l", "afos_alp_u_l", "gt_u_l", "alat_asat_ratio"],
+  alp: ["afos_alp_u_l"],
+  "afos": ["afos_alp_u_l"],
+  gt: ["gt_u_l"],
+  egfr: ["egfr"],
+  "kidney function": ["egfr", "cystatin_c", "u_alb_krea_abnormal"],
+  tsh: ["tsh_mu_l"],
+  thyroid: ["tsh_mu_l"],
+};
+
+export function expandReviewTokensToMarkerKeys(tokens: string[]): Set<string> {
+  const out = new Set<string>();
+  for (const tok of tokens) {
+    const norm = tok.toLowerCase().trim();
+    const mapped = REVIEW_TOKEN_MAP[norm];
+    if (mapped) { mapped.forEach((k) => out.add(k)); continue; }
+    // Loose match: token appears in any registered key/label
+    for (const [name, keys] of Object.entries(REVIEW_TOKEN_MAP)) {
+      if (norm.includes(name) || name.includes(norm)) keys.forEach((k) => out.add(k));
+    }
+  }
+  return out;
+}
+
 // Legacy flat list for backward compat in dimension views
 const HEALTH_DIMENSIONS = HEALTH_TAXONOMY.flatMap((main) => {
   const items = [{ key: main.key, label: main.label, icon: main.icon }];
