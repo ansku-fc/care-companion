@@ -5689,7 +5689,7 @@ const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: str
   fvc_percent: { low: 80, label: "FVC" },
 };
 
-function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes, reviewMode, onReviewComplete }: {
+function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded, onNavigateDimension, markerNotes, setMarkerNotes, reviewMode, reviewHighlightKeys, reviewTokens, reviewTaskId, reviewTaskTitle, onDismissReview, onReviewComplete }: {
   patientId: string;
   patientName?: string | null;
   labResults: Tables<"patient_lab_results">[];
@@ -5698,6 +5698,11 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   markerNotes: Record<string, string>;
   setMarkerNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   reviewMode?: boolean;
+  reviewHighlightKeys?: Set<string>;
+  reviewTokens?: string[];
+  reviewTaskId?: string | null;
+  reviewTaskTitle?: string | null;
+  onDismissReview?: () => void;
   onReviewComplete?: () => void;
 }) {
   const { notifyChanged, openNewTask } = useTaskActions();
