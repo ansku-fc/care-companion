@@ -24,6 +24,7 @@ import { scoreColorClass, scoreBorderColor } from "@/lib/scoreColor";
 import { BiometricHistoryModal } from "./BiometricHistoryModal";
 import { BiometricMiniChart } from "./BiometricMiniChart";
 import { PatientTasksCard } from "@/components/tasks/PatientTasksCard";
+import { PatientEpisodesPanel } from "@/components/patients/PatientEpisodesPanel";
 import { IllnessesMedicationsCard } from "@/components/patients/IllnessesMedicationsCard";
 import { useTaskActions } from "@/components/tasks/TaskProvider";
 import {
@@ -417,6 +418,7 @@ export function PatientOverviewView({
 
       {/* TASKS for this patient — visually merged with alert bar above */}
       <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
+      <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
 
       {/* 3. ROW 1 — Illnesses & Medications (full width; medications shown inline) */}
       <IllnessesMedicationsCard
