@@ -5848,6 +5848,19 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId, reviewMode, newestLab?.id]);
 
+  // Scroll to first highlighted chart when entering review-highlight mode.
+  React.useEffect(() => {
+    if (!reviewActive || scrolledRef.current) return;
+    const t = setTimeout(() => {
+      const first = Object.values(chartRefs.current).find(Boolean);
+      if (first) {
+        first.scrollIntoView({ behavior: "smooth", block: "center" });
+        scrolledRef.current = true;
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [reviewActive, viewMode]);
+
   const newMarkers = getNewMarkers(patientId);
   const newKeys = new Set(newMarkers.map((m) => m.key));
 
