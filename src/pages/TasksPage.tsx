@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, ChevronRight, ListTodo, Layers, Plus, Users } from "lucide-react";
+import { ChevronDown, ChevronRight, ListTodo, Layers, Plus, Users, Activity, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/hooks/useTasks";
@@ -20,6 +20,8 @@ import {
 import { TASK_TYPE_PILLS, pillForTaskType, type TaskTypePillKey } from "@/lib/taskTypes";
 import { completedCount, TOTAL_REFERRAL_STEPS, type ReferralProgress } from "@/lib/referralWorkflow";
 import { formatLastFirst, sortByLastFirst } from "@/lib/patientName";
+import { useEpisodes } from "@/hooks/useEpisodes";
+import { EPISODE_TYPE_META, URGENCY_META } from "@/lib/episodes";
 
 // Initials + tone for assignee avatar chip
 function assigneeInitials(name: string): string {
@@ -86,7 +88,7 @@ const TasksPage = () => {
   const [filterTypePill, setFilterTypePill]   = useState<TaskTypePillKey>("all");
   const [dateFrom, setDateFrom]               = useState<string>("");
   const [dateTo, setDateTo]                   = useState<string>("");
-  const [view, setView]                       = useState<"grouped" | "flat" | "patient">("grouped");
+  const [view, setView]                       = useState<"grouped" | "flat" | "patient" | "episode">("grouped");
   const [openSections, setOpenSections]       = useState<Record<TaskStatus, boolean>>({
     todo: true, in_progress: true, done: false, deferred: false,
   });
