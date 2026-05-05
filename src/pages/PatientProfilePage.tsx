@@ -159,7 +159,24 @@ const PatientProfilePage = () => {
     // Note: we keep the ?review=1 param so HealthDataHub/LabResultsView can read it.
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const reviewMode = searchParams.get("review") === "1";
+  const reviewParamRaw = searchParams.get("review");
+  const reviewMode = reviewParamRaw === "1";
+  const reviewTaskId = searchParams.get("taskId");
+  const reviewTokens = React.useMemo(() => {
+    if (!reviewParamRaw || reviewParamRaw === "1") return [] as string[];
+    return reviewParamRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  }, [reviewParamRaw]);
+  const reviewMarkerKeys = React.useMemo(
+    () => expandReviewTokensToMarkerKeys(reviewTokens),
+    [reviewTokens],
+  );
+  const reviewTaskTitle = React.useMemo(
+    () => patientTasks.find((t: any) => t.id === reviewTaskId)?.title ?? null,
+    [patientTasks, reviewTaskId],
+  );
+  const dismissReview = React.useCallback(() => {
+    setSearchParams({ tab: "lab_results" }, { replace: true });
+  }, [setSearchParams]);
 
 
 
