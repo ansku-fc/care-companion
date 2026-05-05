@@ -5713,6 +5713,25 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
   // Local re-render trigger for the lab-review store
   const [, forceTick] = useState(0);
   const [reviewBanner, setReviewBanner] = useState(false);
+  const [reviewDismissed, setReviewDismissed] = useState(false);
+  const reviewActive = !!reviewHighlightKeys && reviewHighlightKeys.size > 0 && !reviewDismissed;
+  const chartRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const scrolledRef = React.useRef(false);
+
+  // Mark linked task as done from the in-page review banner.
+  const handleMarkReviewedFromBanner = async () => {
+    if (reviewTaskId) {
+      const { error } = await supabase.from("tasks").update({ status: "done" }).eq("id", reviewTaskId);
+      if (error) { toast.error("Could not complete task"); return; }
+    } else {
+      await completeLabReviewTask(patientId);
+    }
+    toast.success("Lab results marked as reviewed");
+    notifyChanged();
+    setReviewDismissed(true);
+    onDismissReview?.();
+    onReviewComplete?.();
+  };
 
   // Annotations for the selected marker
   type Annotation = { id: string; annotation_date: string; text: string; author_name: string };
