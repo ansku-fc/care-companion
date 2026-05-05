@@ -197,7 +197,8 @@ const PatientProfilePage = () => {
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reviewParamRaw = searchParams.get("review");
-  const reviewMode = !!reviewParamRaw;
+  const reviewMode = reviewParamRaw === "1";
+  const reviewHighlight = !!reviewParamRaw && reviewParamRaw !== "1";
   const reviewTaskId = searchParams.get("taskId");
   const reviewTokens = React.useMemo(() => {
     if (!reviewParamRaw || reviewParamRaw === "1") return [] as string[];
