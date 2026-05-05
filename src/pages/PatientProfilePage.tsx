@@ -6016,6 +6016,8 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
           </Button>
         </div>
       )}
+
+      {newMarkers.length > 0 && (
         <Card className="rounded-[20px] shadow-card overflow-hidden border-l-4 border-l-warning">
           <CardContent className="p-0">
             <div className="px-4 py-2.5 bg-warning/5 flex items-center gap-2">
