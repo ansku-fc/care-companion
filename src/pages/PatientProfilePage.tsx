@@ -652,7 +652,12 @@ const PatientProfilePage = () => {
                 markerNotes={markerNotes}
                 setMarkerNotes={setMarkerNotes}
                 reviewMode={reviewMode}
-                onReviewComplete={() => setSearchParams({}, { replace: true })}
+                reviewHighlightKeys={reviewMarkerKeys}
+                reviewTokens={reviewTokens}
+                reviewTaskId={reviewTaskId}
+                reviewTaskTitle={reviewTaskTitle}
+                onDismissReview={dismissReview}
+                onReviewComplete={() => setSearchParams({ tab: "lab_results" }, { replace: true })}
               />
             }
           />
