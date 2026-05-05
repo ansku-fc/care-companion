@@ -6123,14 +6123,20 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                         : undefined;
                       const isSel = selectedMarker?.key === dataKey;
                       const hasData = series.length > 0 || (diastolicSeries?.length ?? 0) > 0;
+                      const isReviewHit = reviewActive && (
+                        reviewHighlightKeys!.has(row.key as string) ||
+                        reviewHighlightKeys!.has(dataKey as string)
+                      );
                       return (
                         <button
                           key={row.key}
+                          ref={(el) => { if (isReviewHit) chartRefs.current[row.key as string] = el; }}
                           onClick={() => handleRowClick(row.key, row.label, row.unit)}
                           className={cn(
                             "text-left rounded-[14px] border bg-card p-3 transition-colors hover:border-primary/50 relative",
                             isSel && "border-primary shadow-sm",
                             !hasData && "opacity-90",
+                            isReviewHit && "border-amber-500 border-t-4 ring-1 ring-amber-300/40 shadow-sm",
                           )}
                         >
                           <MarkerDetailChart
