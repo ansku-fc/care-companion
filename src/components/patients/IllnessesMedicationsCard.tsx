@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Stethoscope, Pencil, Pill } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { PatientOnboardingDialog } from "@/components/patients/onboarding/PatientOnboardingDialog";
+import { isCarter, CARTER_DIAGNOSES, CARTER_MEDICATIONS } from "@/lib/patientClinicalData";
 
 type MedicationDetail = {
   name: string;
