@@ -71,13 +71,34 @@ export function IllnessesMedicationsCard({ patient, onboarding, onSelectSection,
 
   const { current, previous } = useMemo(() => {
     const ex = (onboarding?.extra_data ?? {}) as any;
-    const cur: IllnessRow[] = Array.isArray(ex.current_illnesses) ? ex.current_illnesses : [];
+    let cur: IllnessRow[] = Array.isArray(ex.current_illnesses) ? ex.current_illnesses : [];
     const prev: IllnessRow[] = Array.isArray(ex.previous_illnesses) ? ex.previous_illnesses : [];
+
+    // Demo fallback: synthesize Carter's illnesses + medications from the
+    // central source-of-truth when onboarding extra_data is empty.
+    if (cur.length === 0 && isCarter(patient.id, patient.full_name)) {
+      cur = CARTER_DIAGNOSES.filter((d) => d.status === "active").map((d) => ({
+        id: d.id,
+        icd_code: d.icd10,
+        illness_name: d.name,
+        onset_year: d.diagnosedDate ? new Date(d.diagnosedDate).getFullYear() : null,
+        dimensions: [d.dimension],
+        medications: CARTER_MEDICATIONS
+          .filter((m) => m.status === "active" && m.dimension === d.dimension)
+          .map((m) => ({
+            name: m.name,
+            dose: m.dose,
+            frequency: m.frequency,
+            start_year: m.startDate ? new Date(m.startDate).getFullYear() : null,
+          })),
+      }));
+    }
+
     return {
       current: cur.filter((r) => r?.illness_name?.trim()),
       previous: prev.filter((r) => r?.illness_name?.trim()),
     };
-  }, [onboarding]);
+  }, [onboarding, patient.id, patient.full_name]);
 
   const totalCount = current.length + previous.length;
 
