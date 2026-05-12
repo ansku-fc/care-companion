@@ -114,6 +114,9 @@ export default function PatientReportEditor() {
   const [onboarding, setOnboarding] = useState<Tables<"patient_onboarding"> | null>(null);
   const [labResults, setLabResults] = useState<Tables<"patient_lab_results">[]>([]);
   const [healthCategories, setHealthCategories] = useState<Tables<"patient_health_categories">[]>([]);
+  const [allergies, setAllergies] = useState<Tables<"patient_allergies">[]>([]);
+  const [familyHistory, setFamilyHistory] = useState<Tables<"patient_family_history">[]>([]);
+  const [moles, setMoles] = useState<Tables<"patient_moles">[]>([]);
 
   const [zoom, setZoom] = useState(0.7);
   const [activePage, setActivePage] = useState<PageId>("cover");
@@ -140,17 +143,23 @@ export default function PatientReportEditor() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [pRes, obRes, lrRes, hcRes] = await Promise.all([
+      const [pRes, obRes, lrRes, hcRes, alRes, fhRes, mRes] = await Promise.all([
         supabase.from("patients").select("*").eq("id", id).single(),
         supabase.from("patient_onboarding").select("*").eq("patient_id", id).maybeSingle(),
         supabase.from("patient_lab_results").select("*").eq("patient_id", id).order("result_date", { ascending: false }),
         supabase.from("patient_health_categories").select("*").eq("patient_id", id),
+        supabase.from("patient_allergies").select("*").eq("patient_id", id).eq("status", "active"),
+        supabase.from("patient_family_history").select("*").eq("patient_id", id),
+        supabase.from("patient_moles").select("*").eq("patient_id", id),
       ]);
       if (cancelled) return;
       if (pRes.data) setPatient(pRes.data);
       setOnboarding(obRes.data ?? null);
       setLabResults(lrRes.data ?? []);
       setHealthCategories(hcRes.data ?? []);
+      setAllergies(alRes.data ?? []);
+      setFamilyHistory(fhRes.data ?? []);
+      setMoles(mRes.data ?? []);
       setLoading(false);
     })();
     return () => { cancelled = true; };
