@@ -196,7 +196,7 @@ export default function PatientReportEditor() {
     setDimState(next);
     setObjectives(patient.health_summary ?? "");
     setAnnualPlan(patient.health_recommendations ?? "");
-  }, [patient, onboarding, labResults, healthCategories]);
+  }, [patient, onboarding, labResults, healthCategories, allergies, familyHistory, moles]);
 
   // ─── Page list ─────────────────────────────────────────────────────────
   const pageList = useMemo(() => {
