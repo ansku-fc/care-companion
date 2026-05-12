@@ -478,7 +478,7 @@ export default function PatientReportEditor() {
 
             {/* DIMENSION PAGES */}
             {pageList
-              .filter((p) => DIMENSIONS.some((d) => d.key === p.id))
+              .filter((p) => !!PAGE_BY_ID[p.id])
               .map((p) => (
                 <DimensionPage
                   key={p.id}
