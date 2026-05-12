@@ -37,37 +37,102 @@ type Marker = {
   optHigh?: number;
 };
 
-const DIMENSION_MARKERS: Record<string, Marker[]> = {
-  cardiovascular: [
-    { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refLow: 0, refHigh: 3.0, optLow: 0, optHigh: 2.6 },
-    { key: "blood_pressure_systolic", label: "BP Systolic", unit: "mmHg", refLow: 90, refHigh: 140, optLow: 100, optHigh: 120 },
-    { key: "blood_pressure_diastolic", label: "BP Diastolic", unit: "mmHg", refLow: 60, refHigh: 90, optLow: 65, optHigh: 80 },
-    { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42, optLow: 0, optHigh: 36 },
-  ],
-  metabolic: [
-    { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42, optLow: 0, optHigh: 36 },
-    { key: "free_t4_pmol_l", label: "Free T4", unit: "pmol/L", refLow: 12, refHigh: 22 },
-    { key: "tsh_mu_l", label: "TSH", unit: "mU/L", refLow: 0.4, refHigh: 4.0 },
-    { key: "egfr", label: "eGFR", unit: "mL/min/1.73m²", refLow: 60 },
-    { key: "creatinine_umol_l", label: "Creatinine", unit: "µmol/L", refLow: 45, refHigh: 110 },
-  ],
-  brain_mental: [],
-  exercise_functional: [],
-  digestion: [
-    { key: "alat_u_l", label: "ALAT", unit: "U/L", refLow: 0, refHigh: 50 },
-    { key: "gt_u_l", label: "GT", unit: "U/L", refLow: 0, refHigh: 60 },
-    { key: "afos_alp_u_l", label: "ALP", unit: "U/L", refLow: 35, refHigh: 105 },
-    { key: "alat_asat_ratio", label: "ALAT/ASAT", unit: "" },
-  ],
-  respiratory_immune: [
-    { key: "fev1_percent", label: "FEV1", unit: "%", refLow: 80 },
-    { key: "fvc_percent", label: "FVC", unit: "%", refLow: 80 },
-    { key: "pef_percent", label: "PEF", unit: "%", refLow: 80 },
-  ],
-  cancer_risk: [],
-  skin_oral_mucosal: [],
-  reproductive_sexual: [],
+// Master marker registry — keyed by patient_lab_results column name
+const MARKER_DEFS: Record<string, Marker> = {
+  ldl_mmol_l: { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refLow: 0, refHigh: 3.0, optLow: 0, optHigh: 2.6 },
+  blood_pressure_systolic: { key: "blood_pressure_systolic", label: "BP Systolic", unit: "mmHg", refLow: 90, refHigh: 140, optLow: 100, optHigh: 120 },
+  blood_pressure_diastolic: { key: "blood_pressure_diastolic", label: "BP Diastolic", unit: "mmHg", refLow: 60, refHigh: 90, optLow: 65, optHigh: 80 },
+  hba1c_mmol_mol: { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42, optLow: 0, optHigh: 36 },
+  free_t4_pmol_l: { key: "free_t4_pmol_l", label: "Free T4", unit: "pmol/L", refLow: 12, refHigh: 22 },
+  tsh_mu_l: { key: "tsh_mu_l", label: "TSH", unit: "mU/L", refLow: 0.4, refHigh: 4.0 },
+  egfr: { key: "egfr", label: "eGFR", unit: "mL/min/1.73m²", refLow: 60 },
+  creatinine_umol_l: { key: "creatinine_umol_l", label: "Creatinine", unit: "µmol/L", refLow: 45, refHigh: 110 },
+  cystatin_c: { key: "cystatin_c", label: "Cystatin C", unit: "mg/L", refLow: 0.5, refHigh: 1.0 },
+  urine_acr_mg_mmol: { key: "urine_acr_mg_mmol", label: "Urine ACR", unit: "mg/mmol", refLow: 0, refHigh: 3 },
+  alat_u_l: { key: "alat_u_l", label: "ALAT", unit: "U/L", refLow: 0, refHigh: 50 },
+  gt_u_l: { key: "gt_u_l", label: "GT", unit: "U/L", refLow: 0, refHigh: 60 },
+  afos_alp_u_l: { key: "afos_alp_u_l", label: "ALP", unit: "U/L", refLow: 35, refHigh: 105 },
+  alat_asat_ratio: { key: "alat_asat_ratio", label: "ALAT/ASAT", unit: "" },
+  vitamin_d_25oh_nmol_l: { key: "vitamin_d_25oh_nmol_l", label: "Vitamin D (25-OH)", unit: "nmol/L", refLow: 50, refHigh: 150, optLow: 75 },
+  calcium_mmol_l: { key: "calcium_mmol_l", label: "Calcium", unit: "mmol/L", refLow: 2.15, refHigh: 2.55 },
+  calcium_ionised_mmol_l: { key: "calcium_ionised_mmol_l", label: "Ionised Ca", unit: "mmol/L", refLow: 1.15, refHigh: 1.30 },
+  phosphate_mmol_l: { key: "phosphate_mmol_l", label: "Phosphate", unit: "mmol/L", refLow: 0.8, refHigh: 1.5 },
+  vitamin_b12_total_ng_l: { key: "vitamin_b12_total_ng_l", label: "Vitamin B12", unit: "ng/L", refLow: 200, refHigh: 900 },
+  holotranscobalamin_pmol_l: { key: "holotranscobalamin_pmol_l", label: "Holo-TC", unit: "pmol/L", refLow: 35 },
+  folate_ug_l: { key: "folate_ug_l", label: "Folate", unit: "µg/L", refLow: 4 },
+  ferritin_ug_l: { key: "ferritin_ug_l", label: "Ferritin", unit: "µg/L", refLow: 30, refHigh: 400 },
+  iron_serum_umol_l: { key: "iron_serum_umol_l", label: "Iron", unit: "µmol/L", refLow: 10, refHigh: 30 },
+  transferrin_saturation_pct: { key: "transferrin_saturation_pct", label: "Transferrin Sat.", unit: "%", refLow: 20, refHigh: 50 },
+  transferrin_g_l: { key: "transferrin_g_l", label: "Transferrin", unit: "g/L", refLow: 2.0, refHigh: 3.6 },
+  fev1_percent: { key: "fev1_percent", label: "FEV1", unit: "%", refLow: 80 },
+  fvc_percent: { key: "fvc_percent", label: "FVC", unit: "%", refLow: 80 },
+  pef_percent: { key: "pef_percent", label: "PEF", unit: "%", refLow: 80 },
 };
+
+// Report sub-pages (in display order) — each maps to one or more parent dimensions
+// for risk-factor extraction and to a list of marker columns for lab data.
+type ReportPage = {
+  id: string;
+  label: string;
+  parents: string[];          // dimension keys passed to getRiskFactorsForDimension
+  markerKeys: string[];       // resolved against MARKER_DEFS + lab data
+  hideLabs?: boolean;         // hide lab table + graphs entirely
+  riskKeywords?: string[];    // if set, filter risk strings to those containing one of these (case-insensitive)
+};
+
+const REPORT_PAGES: ReportPage[] = [
+  { id: "cardiovascular", label: "Cardiovascular", parents: ["cardiovascular"],
+    markerKeys: ["ldl_mmol_l", "blood_pressure_systolic", "blood_pressure_diastolic", "hba1c_mmol_mol"] },
+  { id: "cancer", label: "Cancer", parents: ["cancer_risk"], markerKeys: [] },
+  { id: "hormones", label: "Hormones", parents: ["metabolic"],
+    markerKeys: ["tsh_mu_l", "free_t4_pmol_l"],
+    riskKeywords: ["thyroid", "hormone", "shift"] },
+  { id: "immune_defence", label: "Immune Defence", parents: ["respiratory_immune"],
+    markerKeys: [],
+    riskKeywords: ["allerg", "biological", "chemical", "lymph", "immune"] },
+  { id: "kidneys", label: "Kidneys", parents: ["metabolic", "cardiovascular"],
+    markerKeys: ["creatinine_umol_l", "egfr", "cystatin_c", "urine_acr_mg_mmol"],
+    riskKeywords: ["salt", "blood pressure", "water", "bmi", "waist"] },
+  { id: "liver", label: "Liver", parents: ["digestion"],
+    markerKeys: ["alat_u_l", "gt_u_l", "afos_alp_u_l", "alat_asat_ratio"],
+    riskKeywords: ["alcohol", "red meat", "bmi", "abdomin"] },
+  { id: "mental_health", label: "Mental Health", parents: ["brain_mental"],
+    markerKeys: [], hideLabs: true,
+    riskKeywords: ["stress", "gad", "phq", "sleep quality", "social", "work", "shift", "anxiety", "depress"] },
+  { id: "musculoskeletal", label: "Musculoskeletal", parents: ["exercise_functional"],
+    markerKeys: ["vitamin_d_25oh_nmol_l", "calcium_mmol_l", "calcium_ionised_mmol_l", "phosphate_mmol_l"],
+    riskKeywords: ["musculoskeletal", "sedentary", "strength"] },
+  { id: "nervous_system", label: "Nervous System", parents: ["brain_mental"],
+    markerKeys: ["vitamin_b12_total_ng_l", "holotranscobalamin_pmol_l", "folate_ug_l"],
+    riskKeywords: ["sense", "memory", "eyes", "ears", "neuro"] },
+  { id: "physical_performance", label: "Physical Performance", parents: ["exercise_functional"],
+    markerKeys: ["ferritin_ug_l", "iron_serum_umol_l", "transferrin_saturation_pct", "transferrin_g_l"],
+    riskKeywords: ["met", "physical activity", "cardio", "sedentary", "recovery", "exercise", "strength"] },
+  { id: "respiratory", label: "Respiratory", parents: ["respiratory_immune"],
+    markerKeys: ["fev1_percent", "fvc_percent", "pef_percent"],
+    riskKeywords: ["smok", "occupational", "lung", "respiratory"] },
+  { id: "senses", label: "Senses", parents: ["brain_mental"],
+    markerKeys: [], hideLabs: true,
+    riskKeywords: ["eyes", "ears", "sense", "vision", "hearing"] },
+  { id: "skin_mucous", label: "Skin & Mucous", parents: ["skin_oral_mucosal"],
+    markerKeys: [], hideLabs: true },
+  { id: "sleep", label: "Sleep", parents: ["brain_mental"],
+    markerKeys: [], hideLabs: true,
+    riskKeywords: ["sleep", "apnea", "insomnia", "fatigue"] },
+  { id: "substances", label: "Substances", parents: ["brain_mental", "cardiovascular"],
+    markerKeys: ["alat_u_l", "gt_u_l", "ldl_mmol_l", "blood_pressure_systolic"],
+    riskKeywords: ["smok", "alcohol", "nicotine", "drug", "substance"] },
+  { id: "weight_nutrition", label: "Weight & Nutrition", parents: ["metabolic"],
+    markerKeys: ["hba1c_mmol_mol", "ldl_mmol_l"] },
+];
+
+const PAGE_BY_ID: Record<string, ReportPage> = Object.fromEntries(REPORT_PAGES.map((p) => [p.id, p]));
+
+function markersForPage(pageId: string): Marker[] {
+  const p = PAGE_BY_ID[pageId];
+  if (!p) return [];
+  return p.markerKeys.map((k) => MARKER_DEFS[k]).filter(Boolean);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Risk factor extraction per dimension (from onboarding)
