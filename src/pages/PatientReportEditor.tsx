@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import coverBg from "@/assets/report-cover-bg.jpg";
 import logoFull from "@/assets/foundation-clinic-logo.png";
 import logoIcon from "@/assets/foundation-clinic-icon.png";
+import { getRiskFactorsForDimension } from "@/lib/reportRiskFactors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lab marker definitions per dimension (id → patient_lab_results column)
