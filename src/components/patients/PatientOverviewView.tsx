@@ -342,7 +342,7 @@ export function PatientOverviewView({
     <div className="space-y-3 p-1 overflow-auto h-full text-[13px]">
       {/* 1. HEADER BUTTONS — top right */}
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" className="text-xs gap-1.5">
+        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => navigate(`/patients/${patient.id}/report`)}>
           <FileText className="h-3.5 w-3.5" />
           Generate Patient Report
         </Button>

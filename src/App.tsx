@@ -11,6 +11,7 @@ import CalendarPage from "./pages/CalendarPage";
 import TasksPage from "./pages/TasksPage";
 import PatientsPage from "./pages/PatientsPage";
 import PatientProfilePage from "./pages/PatientProfilePage";
+import PatientReportEditor from "./pages/PatientReportEditor";
 import NewLabResultsPage from "./pages/NewLabResultsPage";
 import ClinicalHoursPage from "./pages/ClinicalHoursPage";
 import NotesPage from "./pages/NotesPage";
@@ -51,6 +52,7 @@ const AppRoutes = () => {
       <Route path="/patients" element={<Protected><PatientsPage /></Protected>} />
       <Route path="/patients/:id" element={<Protected><PatientProfilePage /></Protected>} />
       <Route path="/patients/:id/labs/new" element={<Protected><NewLabResultsPage /></Protected>} />
+      <Route path="/patients/:id/report" element={<Protected><PatientReportEditor /></Protected>} />
       <Route path="/clinical-hours" element={<Protected><ClinicalHoursPage /></Protected>} />
       <Route path="/notes" element={<Protected><NotesPage /></Protected>} />
       <Route path="*" element={<NotFound />} />
