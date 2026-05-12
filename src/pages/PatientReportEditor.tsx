@@ -878,7 +878,8 @@ function DimensionPage({
   if (!state) return null;
   const tone = scoreTone(state.index);
   const color = TONE_HEX(tone);
-  const allMarkers = DIMENSION_MARKERS[dimKey] ?? [];
+  const hideLabs = PAGE_BY_ID[dimKey]?.hideLabs ?? false;
+  const allMarkers = hideLabs ? [] : markersForPage(dimKey);
   const selected = allMarkers.filter((m) => state.selectedMarkers.includes(m.key));
 
   // Latest values per marker
