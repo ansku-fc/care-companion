@@ -37,37 +37,102 @@ type Marker = {
   optHigh?: number;
 };
 
-const DIMENSION_MARKERS: Record<string, Marker[]> = {
-  cardiovascular: [
-    { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refLow: 0, refHigh: 3.0, optLow: 0, optHigh: 2.6 },
-    { key: "blood_pressure_systolic", label: "BP Systolic", unit: "mmHg", refLow: 90, refHigh: 140, optLow: 100, optHigh: 120 },
-    { key: "blood_pressure_diastolic", label: "BP Diastolic", unit: "mmHg", refLow: 60, refHigh: 90, optLow: 65, optHigh: 80 },
-    { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42, optLow: 0, optHigh: 36 },
-  ],
-  metabolic: [
-    { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42, optLow: 0, optHigh: 36 },
-    { key: "free_t4_pmol_l", label: "Free T4", unit: "pmol/L", refLow: 12, refHigh: 22 },
-    { key: "tsh_mu_l", label: "TSH", unit: "mU/L", refLow: 0.4, refHigh: 4.0 },
-    { key: "egfr", label: "eGFR", unit: "mL/min/1.73m²", refLow: 60 },
-    { key: "creatinine_umol_l", label: "Creatinine", unit: "µmol/L", refLow: 45, refHigh: 110 },
-  ],
-  brain_mental: [],
-  exercise_functional: [],
-  digestion: [
-    { key: "alat_u_l", label: "ALAT", unit: "U/L", refLow: 0, refHigh: 50 },
-    { key: "gt_u_l", label: "GT", unit: "U/L", refLow: 0, refHigh: 60 },
-    { key: "afos_alp_u_l", label: "ALP", unit: "U/L", refLow: 35, refHigh: 105 },
-    { key: "alat_asat_ratio", label: "ALAT/ASAT", unit: "" },
-  ],
-  respiratory_immune: [
-    { key: "fev1_percent", label: "FEV1", unit: "%", refLow: 80 },
-    { key: "fvc_percent", label: "FVC", unit: "%", refLow: 80 },
-    { key: "pef_percent", label: "PEF", unit: "%", refLow: 80 },
-  ],
-  cancer_risk: [],
-  skin_oral_mucosal: [],
-  reproductive_sexual: [],
+// Master marker registry — keyed by patient_lab_results column name
+const MARKER_DEFS: Record<string, Marker> = {
+  ldl_mmol_l: { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refLow: 0, refHigh: 3.0, optLow: 0, optHigh: 2.6 },
+  blood_pressure_systolic: { key: "blood_pressure_systolic", label: "BP Systolic", unit: "mmHg", refLow: 90, refHigh: 140, optLow: 100, optHigh: 120 },
+  blood_pressure_diastolic: { key: "blood_pressure_diastolic", label: "BP Diastolic", unit: "mmHg", refLow: 60, refHigh: 90, optLow: 65, optHigh: 80 },
+  hba1c_mmol_mol: { key: "hba1c_mmol_mol", label: "HbA1c", unit: "mmol/mol", refLow: 0, refHigh: 42, optLow: 0, optHigh: 36 },
+  free_t4_pmol_l: { key: "free_t4_pmol_l", label: "Free T4", unit: "pmol/L", refLow: 12, refHigh: 22 },
+  tsh_mu_l: { key: "tsh_mu_l", label: "TSH", unit: "mU/L", refLow: 0.4, refHigh: 4.0 },
+  egfr: { key: "egfr", label: "eGFR", unit: "mL/min/1.73m²", refLow: 60 },
+  creatinine_umol_l: { key: "creatinine_umol_l", label: "Creatinine", unit: "µmol/L", refLow: 45, refHigh: 110 },
+  cystatin_c: { key: "cystatin_c", label: "Cystatin C", unit: "mg/L", refLow: 0.5, refHigh: 1.0 },
+  urine_acr_mg_mmol: { key: "urine_acr_mg_mmol", label: "Urine ACR", unit: "mg/mmol", refLow: 0, refHigh: 3 },
+  alat_u_l: { key: "alat_u_l", label: "ALAT", unit: "U/L", refLow: 0, refHigh: 50 },
+  gt_u_l: { key: "gt_u_l", label: "GT", unit: "U/L", refLow: 0, refHigh: 60 },
+  afos_alp_u_l: { key: "afos_alp_u_l", label: "ALP", unit: "U/L", refLow: 35, refHigh: 105 },
+  alat_asat_ratio: { key: "alat_asat_ratio", label: "ALAT/ASAT", unit: "" },
+  vitamin_d_25oh_nmol_l: { key: "vitamin_d_25oh_nmol_l", label: "Vitamin D (25-OH)", unit: "nmol/L", refLow: 50, refHigh: 150, optLow: 75 },
+  calcium_mmol_l: { key: "calcium_mmol_l", label: "Calcium", unit: "mmol/L", refLow: 2.15, refHigh: 2.55 },
+  calcium_ionised_mmol_l: { key: "calcium_ionised_mmol_l", label: "Ionised Ca", unit: "mmol/L", refLow: 1.15, refHigh: 1.30 },
+  phosphate_mmol_l: { key: "phosphate_mmol_l", label: "Phosphate", unit: "mmol/L", refLow: 0.8, refHigh: 1.5 },
+  vitamin_b12_total_ng_l: { key: "vitamin_b12_total_ng_l", label: "Vitamin B12", unit: "ng/L", refLow: 200, refHigh: 900 },
+  holotranscobalamin_pmol_l: { key: "holotranscobalamin_pmol_l", label: "Holo-TC", unit: "pmol/L", refLow: 35 },
+  folate_ug_l: { key: "folate_ug_l", label: "Folate", unit: "µg/L", refLow: 4 },
+  ferritin_ug_l: { key: "ferritin_ug_l", label: "Ferritin", unit: "µg/L", refLow: 30, refHigh: 400 },
+  iron_serum_umol_l: { key: "iron_serum_umol_l", label: "Iron", unit: "µmol/L", refLow: 10, refHigh: 30 },
+  transferrin_saturation_pct: { key: "transferrin_saturation_pct", label: "Transferrin Sat.", unit: "%", refLow: 20, refHigh: 50 },
+  transferrin_g_l: { key: "transferrin_g_l", label: "Transferrin", unit: "g/L", refLow: 2.0, refHigh: 3.6 },
+  fev1_percent: { key: "fev1_percent", label: "FEV1", unit: "%", refLow: 80 },
+  fvc_percent: { key: "fvc_percent", label: "FVC", unit: "%", refLow: 80 },
+  pef_percent: { key: "pef_percent", label: "PEF", unit: "%", refLow: 80 },
 };
+
+// Report sub-pages (in display order) — each maps to one or more parent dimensions
+// for risk-factor extraction and to a list of marker columns for lab data.
+type ReportPage = {
+  id: string;
+  label: string;
+  parents: string[];          // dimension keys passed to getRiskFactorsForDimension
+  markerKeys: string[];       // resolved against MARKER_DEFS + lab data
+  hideLabs?: boolean;         // hide lab table + graphs entirely
+  riskKeywords?: string[];    // if set, filter risk strings to those containing one of these (case-insensitive)
+};
+
+const REPORT_PAGES: ReportPage[] = [
+  { id: "cardiovascular", label: "Cardiovascular", parents: ["cardiovascular"],
+    markerKeys: ["ldl_mmol_l", "blood_pressure_systolic", "blood_pressure_diastolic", "hba1c_mmol_mol"] },
+  { id: "cancer", label: "Cancer", parents: ["cancer_risk"], markerKeys: [] },
+  { id: "hormones", label: "Hormones", parents: ["metabolic"],
+    markerKeys: ["tsh_mu_l", "free_t4_pmol_l"],
+    riskKeywords: ["thyroid", "hormone", "shift"] },
+  { id: "immune_defence", label: "Immune Defence", parents: ["respiratory_immune"],
+    markerKeys: [],
+    riskKeywords: ["allerg", "biological", "chemical", "lymph", "immune"] },
+  { id: "kidneys", label: "Kidneys", parents: ["metabolic", "cardiovascular"],
+    markerKeys: ["creatinine_umol_l", "egfr", "cystatin_c", "urine_acr_mg_mmol"],
+    riskKeywords: ["salt", "blood pressure", "water", "bmi", "waist"] },
+  { id: "liver", label: "Liver", parents: ["digestion"],
+    markerKeys: ["alat_u_l", "gt_u_l", "afos_alp_u_l", "alat_asat_ratio"],
+    riskKeywords: ["alcohol", "red meat", "bmi", "abdomin"] },
+  { id: "mental_health", label: "Mental Health", parents: ["brain_mental"],
+    markerKeys: [], hideLabs: true,
+    riskKeywords: ["stress", "gad", "phq", "sleep quality", "social", "work", "shift", "anxiety", "depress"] },
+  { id: "musculoskeletal", label: "Musculoskeletal", parents: ["exercise_functional"],
+    markerKeys: ["vitamin_d_25oh_nmol_l", "calcium_mmol_l", "calcium_ionised_mmol_l", "phosphate_mmol_l"],
+    riskKeywords: ["musculoskeletal", "sedentary", "strength"] },
+  { id: "nervous_system", label: "Nervous System", parents: ["brain_mental"],
+    markerKeys: ["vitamin_b12_total_ng_l", "holotranscobalamin_pmol_l", "folate_ug_l"],
+    riskKeywords: ["sense", "memory", "eyes", "ears", "neuro"] },
+  { id: "physical_performance", label: "Physical Performance", parents: ["exercise_functional"],
+    markerKeys: ["ferritin_ug_l", "iron_serum_umol_l", "transferrin_saturation_pct", "transferrin_g_l"],
+    riskKeywords: ["met", "physical activity", "cardio", "sedentary", "recovery", "exercise", "strength"] },
+  { id: "respiratory", label: "Respiratory", parents: ["respiratory_immune"],
+    markerKeys: ["fev1_percent", "fvc_percent", "pef_percent"],
+    riskKeywords: ["smok", "occupational", "lung", "respiratory"] },
+  { id: "senses", label: "Senses", parents: ["brain_mental"],
+    markerKeys: [], hideLabs: true,
+    riskKeywords: ["eyes", "ears", "sense", "vision", "hearing"] },
+  { id: "skin_mucous", label: "Skin & Mucous", parents: ["skin_oral_mucosal"],
+    markerKeys: [], hideLabs: true },
+  { id: "sleep", label: "Sleep", parents: ["brain_mental"],
+    markerKeys: [], hideLabs: true,
+    riskKeywords: ["sleep", "apnea", "insomnia", "fatigue"] },
+  { id: "substances", label: "Substances", parents: ["brain_mental", "cardiovascular"],
+    markerKeys: ["alat_u_l", "gt_u_l", "ldl_mmol_l", "blood_pressure_systolic"],
+    riskKeywords: ["smok", "alcohol", "nicotine", "drug", "substance"] },
+  { id: "weight_nutrition", label: "Weight & Nutrition", parents: ["metabolic"],
+    markerKeys: ["hba1c_mmol_mol", "ldl_mmol_l"] },
+];
+
+const PAGE_BY_ID: Record<string, ReportPage> = Object.fromEntries(REPORT_PAGES.map((p) => [p.id, p]));
+
+function markersForPage(pageId: string): Marker[] {
+  const p = PAGE_BY_ID[pageId];
+  if (!p) return [];
+  return p.markerKeys.map((k) => MARKER_DEFS[k]).filter(Boolean);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Risk factor extraction per dimension (from onboarding)
@@ -173,19 +238,36 @@ export default function PatientReportEditor() {
     }
   }, [profile]);
 
-  // Initialize per-dimension state once data is loaded
+  // Initialize per-page state once data is loaded
   useEffect(() => {
     if (!patient) return;
     const ctx = { patientId: patient.id, onboarding, labResults, healthCategories };
+    const riskCtx = { onboarding, allergies, familyHistory, moles, patient };
+    // Pre-compute score per parent dimension key (cached)
+    const dimScoreCache: Record<string, number> = {};
+    const getDimScore = (k: string) =>
+      dimScoreCache[k] ?? (dimScoreCache[k] = computeDimensionScore(k, ctx));
+
     const next: Record<string, DimState> = {};
-    DIMENSIONS.forEach((d) => {
-      const score = computeDimensionScore(d.key, ctx);
-      const cat = healthCategories.find((h) => h.category.toLowerCase() === d.label.toLowerCase());
-      const allMarkers = (DIMENSION_MARKERS[d.key] ?? []).map((m) => m.key);
-      next[d.key] = {
-        index: score,
+    REPORT_PAGES.forEach((p) => {
+      const score = p.parents.length
+        ? p.parents.reduce((sum, k) => sum + getDimScore(k), 0) / p.parents.length
+        : 0;
+      const cat = healthCategories.find((h) => h.category.toLowerCase() === p.label.toLowerCase());
+      const allMarkers = p.markerKeys;
+
+      // Aggregate risk strings from all parents, dedupe, then optional keyword filter
+      const allRisks = Array.from(
+        new Set(p.parents.flatMap((k) => getRiskFactorsForDimension(riskCtx, k))),
+      );
+      const filtered = p.riskKeywords
+        ? allRisks.filter((s) => p.riskKeywords!.some((kw) => s.toLowerCase().includes(kw.toLowerCase())))
+        : allRisks;
+
+      next[p.id] = {
+        index: Number(score.toFixed(1)),
         showRisk: true,
-        riskFactors: getRiskFactorsForDimension({ onboarding, allergies, familyHistory, moles, patient }, d.key).map((s) => `• ${s}`).join("\n"),
+        riskFactors: filtered.map((s) => `• ${s}`).join("\n"),
         selectedMarkers: allMarkers,
         showRefIntervals: true,
         showOptIntervals: false,
@@ -200,26 +282,17 @@ export default function PatientReportEditor() {
 
   // ─── Page list ─────────────────────────────────────────────────────────
   const pageList = useMemo(() => {
-    const dims = DIMENSIONS.filter((d) => {
-      // Only include dimensions that have data
-      const ds = dimState[d.key];
-      if (!ds) return false;
-      const hasMarkers = (DIMENSION_MARKERS[d.key] ?? []).some((m) =>
-        labResults.some((l) => (l as any)[m.key] != null),
-      );
-      return hasMarkers || ds.summary || ds.recommendations || ds.riskFactors;
-    });
     return [
       { id: "cover", label: "Cover", color: "#1f2937" },
       { id: "overview", label: "Health Overview", color: "#3b82f6" },
       { id: "objectives", label: "Your Objectives", color: "#8b5cf6" },
-      ...dims.map((d) => {
-        const s = dimState[d.key]?.index ?? 0;
-        return { id: d.key, label: d.label, color: TONE_HEX(scoreTone(s)) };
+      ...REPORT_PAGES.map((p) => {
+        const s = dimState[p.id]?.index ?? 0;
+        return { id: p.id, label: p.label, color: TONE_HEX(scoreTone(s)) };
       }),
       { id: "annual", label: "Annual Plan", color: "#10b981" },
     ];
-  }, [dimState, labResults]);
+  }, [dimState]);
 
   const scrollToPage = (pid: PageId) => {
     const el = pagesScrollRef.current?.querySelector(`[data-page="${pid}"]`) as HTMLElement | null;
@@ -295,7 +368,7 @@ export default function PatientReportEditor() {
 
   const formattedDate = new Date(reportDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const ds = dimState[activePage];
-  const isDimensionPage = !!ds && DIMENSIONS.some((d) => d.key === activePage);
+  const isDimensionPage = !!ds && !!PAGE_BY_ID[activePage];
 
   return (
     <div className="fixed inset-0 z-50 bg-[#2a2a2a] flex flex-col text-white">
@@ -405,7 +478,7 @@ export default function PatientReportEditor() {
 
             {/* DIMENSION PAGES */}
             {pageList
-              .filter((p) => DIMENSIONS.some((d) => d.key === p.id))
+              .filter((p) => !!PAGE_BY_ID[p.id])
               .map((p) => (
                 <DimensionPage
                   key={p.id}
@@ -553,7 +626,9 @@ function DimensionEditor({
   labResults: Tables<"patient_lab_results">[];
   onChange: (patch: Partial<DimState>) => void;
 }) {
-  const markers = DIMENSION_MARKERS[dimKey] ?? [];
+  const markers = markersForPage(dimKey);
+  const pageDef = PAGE_BY_ID[dimKey];
+  const hideLabs = pageDef?.hideLabs ?? false;
   const availableMarkers = markers.filter((m) => labResults.some((l) => (l as any)[m.key] != null));
 
   return (
@@ -574,53 +649,59 @@ function DimensionEditor({
         <FieldText label="Risk factors" value={state.riskFactors} onChange={(v) => onChange({ riskFactors: v })} rows={5} />
       )}
 
-      <div className="space-y-1.5">
-        <Label className="text-[11px] text-white/70">Graphs to include</Label>
-        {availableMarkers.length === 0 ? (
-          <p className="text-[11px] text-white/40 italic">No lab data for this dimension</p>
-        ) : (
-          <div className="space-y-1.5 rounded border border-white/10 p-2 bg-white/5">
-            {availableMarkers.map((m) => {
-              const checked = state.selectedMarkers.includes(m.key);
-              return (
-                <label key={m.key} className="flex items-center gap-2 cursor-pointer text-[11px]">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(v) =>
-                      onChange({
-                        selectedMarkers: v
-                          ? [...state.selectedMarkers, m.key]
-                          : state.selectedMarkers.filter((k) => k !== m.key),
-                      })
-                    }
-                    className="border-white/40 data-[state=checked]:bg-primary"
-                  />
-                  <span>{m.label}</span>
-                </label>
-              );
-            })}
+      {!hideLabs && (
+        <>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-white/70">Graphs to include</Label>
+            {availableMarkers.length === 0 ? (
+              <p className="text-[11px] text-white/40 italic">No lab data for this dimension</p>
+            ) : (
+              <div className="space-y-1.5 rounded border border-white/10 p-2 bg-white/5">
+                {availableMarkers.map((m) => {
+                  const checked = state.selectedMarkers.includes(m.key);
+                  return (
+                    <label key={m.key} className="flex items-center gap-2 cursor-pointer text-[11px]">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) =>
+                          onChange({
+                            selectedMarkers: v
+                              ? [...state.selectedMarkers, m.key]
+                              : state.selectedMarkers.filter((k) => k !== m.key),
+                          })
+                        }
+                        className="border-white/40 data-[state=checked]:bg-primary"
+                      />
+                      <span>{m.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-[11px] cursor-pointer">
-          <Checkbox
-            checked={state.showRefIntervals}
-            onCheckedChange={(v) => onChange({ showRefIntervals: !!v })}
-            className="border-white/40 data-[state=checked]:bg-primary"
-          />
-          Show reference intervals
-        </label>
-        <label className="flex items-center gap-2 text-[11px] cursor-pointer">
-          <Checkbox
-            checked={state.showOptIntervals}
-            onCheckedChange={(v) => onChange({ showOptIntervals: !!v })}
-            className="border-white/40 data-[state=checked]:bg-primary"
-          />
-          Show optimal intervals
-        </label>
-      </div>
+          {availableMarkers.length > 0 && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                <Checkbox
+                  checked={state.showRefIntervals}
+                  onCheckedChange={(v) => onChange({ showRefIntervals: !!v })}
+                  className="border-white/40 data-[state=checked]:bg-primary"
+                />
+                Show reference intervals
+              </label>
+              <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                <Checkbox
+                  checked={state.showOptIntervals}
+                  onCheckedChange={(v) => onChange({ showOptIntervals: !!v })}
+                  className="border-white/40 data-[state=checked]:bg-primary"
+                />
+                Show optimal intervals
+              </label>
+            </div>
+          )}
+        </>
+      )}
 
       <FieldText label="Summary" value={state.summary} onChange={(v) => onChange({ summary: v })} rows={5} placeholder="Doctor's interpretation…" />
       <FieldText label="Recommendations" value={state.recommendations} onChange={(v) => onChange({ recommendations: v })} rows={5} placeholder="Next steps…" />
@@ -797,7 +878,8 @@ function DimensionPage({
   if (!state) return null;
   const tone = scoreTone(state.index);
   const color = TONE_HEX(tone);
-  const allMarkers = DIMENSION_MARKERS[dimKey] ?? [];
+  const hideLabs = PAGE_BY_ID[dimKey]?.hideLabs ?? false;
+  const allMarkers = hideLabs ? [] : markersForPage(dimKey);
   const selected = allMarkers.filter((m) => state.selectedMarkers.includes(m.key));
 
   // Latest values per marker
