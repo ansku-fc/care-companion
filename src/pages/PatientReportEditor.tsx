@@ -626,7 +626,9 @@ function DimensionEditor({
   labResults: Tables<"patient_lab_results">[];
   onChange: (patch: Partial<DimState>) => void;
 }) {
-  const markers = DIMENSION_MARKERS[dimKey] ?? [];
+  const markers = markersForPage(dimKey);
+  const pageDef = PAGE_BY_ID[dimKey];
+  const hideLabs = pageDef?.hideLabs ?? false;
   const availableMarkers = markers.filter((m) => labResults.some((l) => (l as any)[m.key] != null));
 
   return (
