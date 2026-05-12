@@ -368,7 +368,7 @@ export default function PatientReportEditor() {
 
   const formattedDate = new Date(reportDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const ds = dimState[activePage];
-  const isDimensionPage = !!ds && DIMENSIONS.some((d) => d.key === activePage);
+  const isDimensionPage = !!ds && !!PAGE_BY_ID[activePage];
 
   return (
     <div className="fixed inset-0 z-50 bg-[#2a2a2a] flex flex-col text-white">
