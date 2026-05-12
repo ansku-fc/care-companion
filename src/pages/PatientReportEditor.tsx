@@ -839,12 +839,30 @@ function DimensionPage({
         </div>
       )}
 
-      {state.showRisk && state.riskFactors && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Risk Factors</div>
-          <div style={{ fontSize: 11, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "#333" }}>{state.riskFactors}</div>
-        </div>
-      )}
+      {state.showRisk && (() => {
+        const items = (state.riskFactors || "")
+          .split("\n")
+          .map((l) => l.replace(/^•\s*/, "").trim())
+          .filter(Boolean);
+        return (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Risk Factors</div>
+            {items.length === 0 ? (
+              <div style={{ fontSize: 10.5, lineHeight: 1.5, color: "#888", fontStyle: "italic", padding: "6px 10px", background: "#f8f9fb", borderRadius: 4 }}>
+                No lifestyle or examination risk factors identified for this dimension.
+              </div>
+            ) : (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                {items.map((it, i) => (
+                  <li key={i} style={{ fontSize: 11, lineHeight: 1.5, color: "#2c2c2c", borderLeft: "3px solid #D97706", padding: "4px 10px", background: "#fffaf3", borderRadius: 2 }}>
+                    {it}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })()}
 
       {latestRows.length > 0 && (
         <div style={{ marginBottom: 16 }}>
