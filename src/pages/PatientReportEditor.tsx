@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import coverBg from "@/assets/report-cover-bg.jpg";
 import logoFull from "@/assets/foundation-clinic-logo.png";
 import logoIcon from "@/assets/foundation-clinic-icon.png";
+import { getRiskFactorsForDimension } from "@/lib/reportRiskFactors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lab marker definitions per dimension (id → patient_lab_results column)
@@ -72,87 +73,8 @@ const DIMENSION_MARKERS: Record<string, Marker[]> = {
 // Risk factor extraction per dimension (from onboarding)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function defaultRiskFactors(key: string, ob: Tables<"patient_onboarding"> | null): string {
-  if (!ob) return "";
-  const yn = (v: any, l: string) => (v ? `• ${l}` : null);
-  const num = (v: any, l: string, suffix = "") => (v != null ? `• ${l}: ${v}${suffix}` : null);
-  const lines: (string | null)[] = [];
-  switch (key) {
-    case "cardiovascular":
-      lines.push(
-        num(ob.waist_to_hip_ratio, "Waist-Hip Ratio"),
-        num(ob.exercise_met_hours, "Exercise", " MET-hrs/wk"),
-        ob.smoking ? `• Smoking: ${ob.smoking}` : null,
-        yn(ob.genetic_cardiovascular, "Genetic predisposition"),
-        yn(ob.illness_cardiovascular, "Cardiovascular illness on record"),
-      );
-      break;
-    case "metabolic":
-      lines.push(
-        num(ob.bmi, "BMI"),
-        num(ob.waist_circumference_cm, "Waist", " cm"),
-        yn(ob.illness_hormone, "Hormone illness"),
-        yn(ob.illness_kidney, "Kidney illness"),
-      );
-      break;
-    case "brain_mental":
-      lines.push(
-        num(ob.gad7_score, "GAD-7"),
-        num(ob.stress_perceived, "Perceived stress"),
-        num(ob.sleep_hours_per_night, "Sleep", " h/night"),
-        yn(ob.illness_mental_health, "Mental health condition"),
-      );
-      break;
-    case "exercise_functional":
-      lines.push(
-        num(ob.exercise_met_hours, "Exercise", " MET-hrs/wk"),
-        num(ob.strength_hours_per_week, "Strength", " h/wk"),
-        num(ob.sedentary_hours_per_day, "Sedentary", " h/day"),
-        yn(ob.symptom_joint_pain, "Joint pain"),
-        yn(ob.symptom_mobility_restriction, "Mobility restriction"),
-      );
-      break;
-    case "digestion":
-      lines.push(
-        yn(ob.illness_liver, "Liver illness"),
-        yn(ob.illness_gastrointestinal, "GI illness"),
-        yn(ob.symptom_gastrointestinal, "GI symptoms"),
-        ob.alcohol_units_per_week != null ? `• Alcohol: ${ob.alcohol_units_per_week} u/wk` : null,
-      );
-      break;
-    case "respiratory_immune":
-      lines.push(
-        ob.smoking ? `• Smoking: ${ob.smoking}` : null,
-        yn(ob.symptom_respiratory, "Respiratory symptoms"),
-        yn(ob.symptom_sleep_apnoea, "Sleep apnoea"),
-        yn(ob.illness_immune, "Immune condition"),
-        num(ob.infections_per_year, "Infections", "/yr"),
-      );
-      break;
-    case "cancer_risk":
-      lines.push(
-        yn(ob.prev_cancer, "Previous cancer"),
-        yn(ob.prev_precancerous, "Precancerous lesions"),
-        yn(ob.genetic_cancer, "Genetic cancer risk"),
-        yn(ob.genetic_melanoma, "Genetic melanoma risk"),
-      );
-      break;
-    case "skin_oral_mucosal":
-      lines.push(
-        yn(ob.symptom_skin_rash, "Skin rash"),
-        yn(ob.symptom_mucous_membranes, "Mucous membrane symptoms"),
-        yn(ob.sun_exposure, "High sun exposure"),
-      );
-      break;
-    case "reproductive_sexual":
-      lines.push(
-        yn(ob.symptom_menstruation_menopause, "Menstrual / menopause symptoms"),
-        yn(ob.illness_hormone, "Hormone condition"),
-      );
-      break;
-  }
-  return lines.filter(Boolean).join("\n");
-}
+// Risk factor extraction is now provided by getRiskFactorsForDimension
+// in src/lib/reportRiskFactors.ts (see PART 1 of the spec).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -192,6 +114,9 @@ export default function PatientReportEditor() {
   const [onboarding, setOnboarding] = useState<Tables<"patient_onboarding"> | null>(null);
   const [labResults, setLabResults] = useState<Tables<"patient_lab_results">[]>([]);
   const [healthCategories, setHealthCategories] = useState<Tables<"patient_health_categories">[]>([]);
+  const [allergies, setAllergies] = useState<Tables<"patient_allergies">[]>([]);
+  const [familyHistory, setFamilyHistory] = useState<Tables<"patient_family_history">[]>([]);
+  const [moles, setMoles] = useState<Tables<"patient_moles">[]>([]);
 
   const [zoom, setZoom] = useState(0.7);
   const [activePage, setActivePage] = useState<PageId>("cover");
@@ -218,17 +143,23 @@ export default function PatientReportEditor() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [pRes, obRes, lrRes, hcRes] = await Promise.all([
+      const [pRes, obRes, lrRes, hcRes, alRes, fhRes, mRes] = await Promise.all([
         supabase.from("patients").select("*").eq("id", id).single(),
         supabase.from("patient_onboarding").select("*").eq("patient_id", id).maybeSingle(),
         supabase.from("patient_lab_results").select("*").eq("patient_id", id).order("result_date", { ascending: false }),
         supabase.from("patient_health_categories").select("*").eq("patient_id", id),
+        supabase.from("patient_allergies").select("*").eq("patient_id", id).eq("status", "active"),
+        supabase.from("patient_family_history").select("*").eq("patient_id", id),
+        supabase.from("patient_moles").select("*").eq("patient_id", id),
       ]);
       if (cancelled) return;
       if (pRes.data) setPatient(pRes.data);
       setOnboarding(obRes.data ?? null);
       setLabResults(lrRes.data ?? []);
       setHealthCategories(hcRes.data ?? []);
+      setAllergies(alRes.data ?? []);
+      setFamilyHistory(fhRes.data ?? []);
+      setMoles(mRes.data ?? []);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -254,7 +185,7 @@ export default function PatientReportEditor() {
       next[d.key] = {
         index: score,
         showRisk: true,
-        riskFactors: defaultRiskFactors(d.key, onboarding),
+        riskFactors: getRiskFactorsForDimension({ onboarding, allergies, familyHistory, moles, patient }, d.key).map((s) => `• ${s}`).join("\n"),
         selectedMarkers: allMarkers,
         showRefIntervals: true,
         showOptIntervals: false,
@@ -265,7 +196,7 @@ export default function PatientReportEditor() {
     setDimState(next);
     setObjectives(patient.health_summary ?? "");
     setAnnualPlan(patient.health_recommendations ?? "");
-  }, [patient, onboarding, labResults, healthCategories]);
+  }, [patient, onboarding, labResults, healthCategories, allergies, familyHistory, moles]);
 
   // ─── Page list ─────────────────────────────────────────────────────────
   const pageList = useMemo(() => {
@@ -908,12 +839,30 @@ function DimensionPage({
         </div>
       )}
 
-      {state.showRisk && state.riskFactors && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Risk Factors</div>
-          <div style={{ fontSize: 11, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "#333" }}>{state.riskFactors}</div>
-        </div>
-      )}
+      {state.showRisk && (() => {
+        const items = (state.riskFactors || "")
+          .split("\n")
+          .map((l) => l.replace(/^•\s*/, "").trim())
+          .filter(Boolean);
+        return (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Risk Factors</div>
+            {items.length === 0 ? (
+              <div style={{ fontSize: 10.5, lineHeight: 1.5, color: "#888", fontStyle: "italic", padding: "6px 10px", background: "#f8f9fb", borderRadius: 4 }}>
+                No lifestyle or examination risk factors identified for this dimension.
+              </div>
+            ) : (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                {items.map((it, i) => (
+                  <li key={i} style={{ fontSize: 11, lineHeight: 1.5, color: "#2c2c2c", borderLeft: "3px solid #D97706", padding: "4px 10px", background: "#fffaf3", borderRadius: 2 }}>
+                    {it}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })()}
 
       {latestRows.length > 0 && (
         <div style={{ marginBottom: 16 }}>
