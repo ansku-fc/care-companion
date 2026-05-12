@@ -185,7 +185,7 @@ export default function PatientReportEditor() {
       next[d.key] = {
         index: score,
         showRisk: true,
-        riskFactors: defaultRiskFactors(d.key, onboarding),
+        riskFactors: getRiskFactorsForDimension({ onboarding, allergies, familyHistory, moles, patient }, d.key).map((s) => `• ${s}`).join("\n"),
         selectedMarkers: allMarkers,
         showRefIntervals: true,
         showOptIntervals: false,
