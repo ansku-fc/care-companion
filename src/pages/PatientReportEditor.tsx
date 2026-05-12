@@ -238,19 +238,36 @@ export default function PatientReportEditor() {
     }
   }, [profile]);
 
-  // Initialize per-dimension state once data is loaded
+  // Initialize per-page state once data is loaded
   useEffect(() => {
     if (!patient) return;
     const ctx = { patientId: patient.id, onboarding, labResults, healthCategories };
+    const riskCtx = { onboarding, allergies, familyHistory, moles, patient };
+    // Pre-compute score per parent dimension key (cached)
+    const dimScoreCache: Record<string, number> = {};
+    const getDimScore = (k: string) =>
+      dimScoreCache[k] ?? (dimScoreCache[k] = computeDimensionScore(k, ctx));
+
     const next: Record<string, DimState> = {};
-    DIMENSIONS.forEach((d) => {
-      const score = computeDimensionScore(d.key, ctx);
-      const cat = healthCategories.find((h) => h.category.toLowerCase() === d.label.toLowerCase());
-      const allMarkers = (DIMENSION_MARKERS[d.key] ?? []).map((m) => m.key);
-      next[d.key] = {
-        index: score,
+    REPORT_PAGES.forEach((p) => {
+      const score = p.parents.length
+        ? p.parents.reduce((sum, k) => sum + getDimScore(k), 0) / p.parents.length
+        : 0;
+      const cat = healthCategories.find((h) => h.category.toLowerCase() === p.label.toLowerCase());
+      const allMarkers = p.markerKeys;
+
+      // Aggregate risk strings from all parents, dedupe, then optional keyword filter
+      const allRisks = Array.from(
+        new Set(p.parents.flatMap((k) => getRiskFactorsForDimension(riskCtx, k))),
+      );
+      const filtered = p.riskKeywords
+        ? allRisks.filter((s) => p.riskKeywords!.some((kw) => s.toLowerCase().includes(kw.toLowerCase())))
+        : allRisks;
+
+      next[p.id] = {
+        index: Number(score.toFixed(1)),
         showRisk: true,
-        riskFactors: getRiskFactorsForDimension({ onboarding, allergies, familyHistory, moles, patient }, d.key).map((s) => `• ${s}`).join("\n"),
+        riskFactors: filtered.map((s) => `• ${s}`).join("\n"),
         selectedMarkers: allMarkers,
         showRefIntervals: true,
         showOptIntervals: false,
@@ -265,26 +282,17 @@ export default function PatientReportEditor() {
 
   // ─── Page list ─────────────────────────────────────────────────────────
   const pageList = useMemo(() => {
-    const dims = DIMENSIONS.filter((d) => {
-      // Only include dimensions that have data
-      const ds = dimState[d.key];
-      if (!ds) return false;
-      const hasMarkers = (DIMENSION_MARKERS[d.key] ?? []).some((m) =>
-        labResults.some((l) => (l as any)[m.key] != null),
-      );
-      return hasMarkers || ds.summary || ds.recommendations || ds.riskFactors;
-    });
     return [
       { id: "cover", label: "Cover", color: "#1f2937" },
       { id: "overview", label: "Health Overview", color: "#3b82f6" },
       { id: "objectives", label: "Your Objectives", color: "#8b5cf6" },
-      ...dims.map((d) => {
-        const s = dimState[d.key]?.index ?? 0;
-        return { id: d.key, label: d.label, color: TONE_HEX(scoreTone(s)) };
+      ...REPORT_PAGES.map((p) => {
+        const s = dimState[p.id]?.index ?? 0;
+        return { id: p.id, label: p.label, color: TONE_HEX(scoreTone(s)) };
       }),
       { id: "annual", label: "Annual Plan", color: "#10b981" },
     ];
-  }, [dimState, labResults]);
+  }, [dimState]);
 
   const scrollToPage = (pid: PageId) => {
     const el = pagesScrollRef.current?.querySelector(`[data-page="${pid}"]`) as HTMLElement | null;
