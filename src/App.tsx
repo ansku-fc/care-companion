@@ -11,6 +11,7 @@ import CalendarPage from "./pages/CalendarPage";
 import TasksPage from "./pages/TasksPage";
 import PatientsPage from "./pages/PatientsPage";
 import PatientProfilePage from "./pages/PatientProfilePage";
+import PatientReportEditor from "./pages/PatientReportEditor";
 import NewLabResultsPage from "./pages/NewLabResultsPage";
 import ClinicalHoursPage from "./pages/ClinicalHoursPage";
 import NotesPage from "./pages/NotesPage";
