@@ -649,53 +649,59 @@ function DimensionEditor({
         <FieldText label="Risk factors" value={state.riskFactors} onChange={(v) => onChange({ riskFactors: v })} rows={5} />
       )}
 
-      <div className="space-y-1.5">
-        <Label className="text-[11px] text-white/70">Graphs to include</Label>
-        {availableMarkers.length === 0 ? (
-          <p className="text-[11px] text-white/40 italic">No lab data for this dimension</p>
-        ) : (
-          <div className="space-y-1.5 rounded border border-white/10 p-2 bg-white/5">
-            {availableMarkers.map((m) => {
-              const checked = state.selectedMarkers.includes(m.key);
-              return (
-                <label key={m.key} className="flex items-center gap-2 cursor-pointer text-[11px]">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(v) =>
-                      onChange({
-                        selectedMarkers: v
-                          ? [...state.selectedMarkers, m.key]
-                          : state.selectedMarkers.filter((k) => k !== m.key),
-                      })
-                    }
-                    className="border-white/40 data-[state=checked]:bg-primary"
-                  />
-                  <span>{m.label}</span>
-                </label>
-              );
-            })}
+      {!hideLabs && (
+        <>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-white/70">Graphs to include</Label>
+            {availableMarkers.length === 0 ? (
+              <p className="text-[11px] text-white/40 italic">No lab data for this dimension</p>
+            ) : (
+              <div className="space-y-1.5 rounded border border-white/10 p-2 bg-white/5">
+                {availableMarkers.map((m) => {
+                  const checked = state.selectedMarkers.includes(m.key);
+                  return (
+                    <label key={m.key} className="flex items-center gap-2 cursor-pointer text-[11px]">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) =>
+                          onChange({
+                            selectedMarkers: v
+                              ? [...state.selectedMarkers, m.key]
+                              : state.selectedMarkers.filter((k) => k !== m.key),
+                          })
+                        }
+                        className="border-white/40 data-[state=checked]:bg-primary"
+                      />
+                      <span>{m.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-[11px] cursor-pointer">
-          <Checkbox
-            checked={state.showRefIntervals}
-            onCheckedChange={(v) => onChange({ showRefIntervals: !!v })}
-            className="border-white/40 data-[state=checked]:bg-primary"
-          />
-          Show reference intervals
-        </label>
-        <label className="flex items-center gap-2 text-[11px] cursor-pointer">
-          <Checkbox
-            checked={state.showOptIntervals}
-            onCheckedChange={(v) => onChange({ showOptIntervals: !!v })}
-            className="border-white/40 data-[state=checked]:bg-primary"
-          />
-          Show optimal intervals
-        </label>
-      </div>
+          {availableMarkers.length > 0 && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                <Checkbox
+                  checked={state.showRefIntervals}
+                  onCheckedChange={(v) => onChange({ showRefIntervals: !!v })}
+                  className="border-white/40 data-[state=checked]:bg-primary"
+                />
+                Show reference intervals
+              </label>
+              <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                <Checkbox
+                  checked={state.showOptIntervals}
+                  onCheckedChange={(v) => onChange({ showOptIntervals: !!v })}
+                  className="border-white/40 data-[state=checked]:bg-primary"
+                />
+                Show optimal intervals
+              </label>
+            </div>
+          )}
+        </>
+      )}
 
       <FieldText label="Summary" value={state.summary} onChange={(v) => onChange({ summary: v })} rows={5} placeholder="Doctor's interpretation…" />
       <FieldText label="Recommendations" value={state.recommendations} onChange={(v) => onChange({ recommendations: v })} rows={5} placeholder="Next steps…" />
