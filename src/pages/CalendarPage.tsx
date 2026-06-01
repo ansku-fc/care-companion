@@ -32,15 +32,15 @@ import { buildDummyAppointments, TYPE_STYLES, typeStyle } from "@/lib/dummyAppoi
 
 
 const LEGEND_DOT_COLORS: Record<string, string> = {
-  onboarding: "bg-primary",
-  acute: "bg-destructive",
-  consultation: "bg-purple-500",
-  follow_up: "bg-green-500",
-  check_up: "bg-yellow-500",
-  procedure: "bg-muted-foreground",
-  urgent: "bg-destructive",
-  working_time: "bg-blue-500",
-  doctor_meeting: "bg-teal-500",
+  onboarding: "bg-[#C8A98A]",
+  acute: "bg-[#E8446A]",
+  consultation: "bg-[#5A3E2B]",
+  follow_up: "bg-[#0EA5A0]",
+  check_up: "bg-[#D4A847]",
+  procedure: "bg-[#8C7B6E]",
+  urgent: "bg-[#E8446A]",
+  working_time: "bg-[#E8E0D5] border border-[#C8A98A]",
+  doctor_meeting: "bg-[#FDF6EE] border border-[#C8A98A]",
 };
 
 const MOCK_NOTES = [
