@@ -19,17 +19,17 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    --primary: 0 0% 10%;                /* near-black */
+    --primary: 25 39% 13%;              /* #2E1F14 espresso */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 40 13% 91%;            /* #ECEAE6 */
-    --secondary-foreground: 0 0% 10%;
+    --secondary-foreground: 25 39% 13%;
 
     --muted: 40 17% 92%;                /* #F0EEE9 */
     --muted-foreground: 40 8% 40%;      /* #6B6860 */
 
     --accent: 28 39% 66%;               /* #C8A98A sand */
-    --accent-foreground: 0 0% 10%;
+    --accent-foreground: 25 39% 13%;
 
     --destructive: 348 78% 59%;
     --destructive-foreground: 0 0% 100%;
@@ -38,7 +38,7 @@
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 10%;
+    --warning-foreground: 25 39% 13%;
 
     --border: 40 14% 89%;               /* #E8E6E1 */
     --input: 40 14% 89%;
@@ -48,11 +48,11 @@
 
     /* Sidebar — warm grey */
     --sidebar-background: 40 13% 91%;   /* #ECEAE6 */
-    --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 0 0% 100%;       /* white active pill */
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 0 0% 100%;        /* hover white */
-    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-foreground: 25 39% 13%;
+    --sidebar-primary: 32 79% 96%;      /* #FDF6EE cream active pill */
+    --sidebar-primary-foreground: 25 39% 13%;
+    --sidebar-accent: 32 79% 96%;       /* hover cream */
+    --sidebar-accent-foreground: 25 39% 13%;
     --sidebar-border: 40 14% 89%;
     --sidebar-ring: 28 39% 66%;
 
