@@ -51,17 +51,17 @@ export function AppSidebar() {
       <NavLink
         to={item.url}
         end={item.url === "/"}
-        className="relative rounded-[10px] text-[hsl(232_30%_70%)] hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors [&>svg]:text-[hsl(232_30%_70%)] hover:[&>svg]:text-sidebar-foreground"
-        activeClassName="bg-sidebar-primary text-sidebar-foreground font-medium [&>svg]:text-sidebar-foreground [&>span.active-pill]:opacity-100"
+        className="relative rounded-none text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors [&>svg]:text-sidebar-foreground/75 hover:[&>svg]:text-sidebar-foreground"
+        activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium [&>svg]:text-sidebar-foreground [&>span.active-pill]:opacity-100"
       >
-        <span className="active-pill pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-accent opacity-0 transition-opacity" />
+        <span className="active-pill pointer-events-none absolute left-0 top-0 bottom-0 w-[3px] bg-accent opacity-0 transition-opacity" />
         <item.icon className={collapsed ? "h-[18px] w-[18px]" : "mr-3 h-[18px] w-[18px]"} />
         {!collapsed && <span className="text-[13px]">{item.title}</span>}
       </NavLink>
     );
     return (
-      <SidebarMenuItem key={item.title} className="px-2 py-0.5">
-        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-[10px]">
+      <SidebarMenuItem key={item.title} className="px-0 py-0">
+        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-none px-4">
           {link}
         </SidebarMenuButton>
       </SidebarMenuItem>
