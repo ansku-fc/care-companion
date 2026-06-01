@@ -283,7 +283,7 @@ const CalendarPage = () => {
                   {dayAppointments.map((a: any) => {
                     const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
                     return (
-                      <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${s.bg} border-transparent`}>
+                      <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${s.bg} ${s.border}`}>
                         {/* Time & type */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
