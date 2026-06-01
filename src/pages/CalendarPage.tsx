@@ -225,8 +225,8 @@ const CalendarPage = () => {
                       ${selected ? "ring-2 ring-primary ring-inset" : ""}
                       hover:bg-accent/30`}
                   >
-                    <span className={`text-xs font-medium mb-0.5 px-1 rounded-full
-                      ${today ? "bg-primary text-primary-foreground" : inMonth ? "text-foreground" : "text-muted-foreground"}`}>
+                    <span className={`text-xs font-medium mb-0.5 px-1.5 py-0.5 rounded-full border
+                      ${today ? "bg-[#FDF6EE] text-[#2E1F14] border-[#C8A98A]" : inMonth ? "text-foreground border-transparent" : "text-muted-foreground border-transparent"}`}>
                       {format(day, "d")}
                     </span>
                     <div className="w-full space-y-0.5 overflow-hidden">
