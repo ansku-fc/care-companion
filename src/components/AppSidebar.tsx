@@ -77,7 +77,7 @@ export function AppSidebar() {
                 src={logoIcon}
                 alt="Foundation Clinic"
                 className="h-8 w-8 object-contain"
-                style={{ mixBlendMode: "screen" }}
+                style={{ mixBlendMode: "multiply" }}
               />
               <Button
                 variant="ghost"
@@ -95,7 +95,7 @@ export function AppSidebar() {
                 src={logoFull}
                 alt="Foundation Clinic"
                 className="h-9 w-[140px] object-contain object-left"
-                style={{ mixBlendMode: "screen" }}
+                style={{ mixBlendMode: "multiply" }}
               />
               <Button
                 variant="ghost"
