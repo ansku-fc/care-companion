@@ -2,16 +2,16 @@
 // views display the same demo schedule. Builds a deterministic set of demo
 // appointments for the given month.
 
-export const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  onboarding: { bg: "bg-primary/10", text: "text-primary", label: "Onboarding" },
-  acute: { bg: "bg-destructive/10", text: "text-destructive", label: "Acute" },
-  consultation: { bg: "bg-accent/60", text: "text-accent-foreground", label: "Consultation" },
-  follow_up: { bg: "bg-success/10", text: "text-success", label: "Follow-up" },
-  check_up: { bg: "bg-warning/10", text: "text-warning", label: "Check-up" },
-  procedure: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Procedure" },
-  urgent: { bg: "bg-destructive/10", text: "text-destructive", label: "Urgent" },
-  working_time: { bg: "bg-blue-500/10", text: "text-blue-600", label: "Working Time" },
-  doctor_meeting: { bg: "bg-teal-500/10", text: "text-teal-700", label: "Doctor Meeting" },
+export const TYPE_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  onboarding:     { bg: "bg-[#C8A98A]",     text: "text-[#2E1F14]", border: "border-transparent",            label: "Onboarding" },
+  acute:          { bg: "bg-[#E8446A]",     text: "text-[#7A1530]", border: "border-transparent",            label: "Acute" },
+  consultation:   { bg: "bg-[#5A3E2B]",     text: "text-[#FDF6EE]", border: "border-transparent",            label: "Consultation" },
+  follow_up:      { bg: "bg-[#0EA5A0]",     text: "text-[#04342C]", border: "border-transparent",            label: "Follow-up" },
+  check_up:       { bg: "bg-[#D4A847]",     text: "text-[#4A2E05]", border: "border-transparent",            label: "Check-up" },
+  procedure:      { bg: "bg-[#8C7B6E]",     text: "text-[#2E1F14]", border: "border-transparent",            label: "Procedure" },
+  urgent:         { bg: "bg-[#E8446A]",     text: "text-[#7A1530]", border: "border-transparent",            label: "Urgent" },
+  working_time:   { bg: "bg-[#E8E0D5]",     text: "text-[#5A3E2B]", border: "border-transparent",            label: "Working Time" },
+  doctor_meeting: { bg: "bg-[#FDF6EE]",     text: "text-[#2E1F14]", border: "border-[#C8A98A]",            label: "Doctor Meeting" },
 };
 
 export const typeStyle = (type: string) => TYPE_STYLES[type] ?? TYPE_STYLES.consultation;
