@@ -32,15 +32,15 @@ import { buildDummyAppointments, TYPE_STYLES, typeStyle } from "@/lib/dummyAppoi
 
 
 const LEGEND_DOT_COLORS: Record<string, string> = {
-  onboarding: "bg-primary",
-  acute: "bg-destructive",
-  consultation: "bg-purple-500",
-  follow_up: "bg-green-500",
-  check_up: "bg-yellow-500",
-  procedure: "bg-muted-foreground",
-  urgent: "bg-destructive",
-  working_time: "bg-blue-500",
-  doctor_meeting: "bg-teal-500",
+  onboarding: "bg-[#C8A98A]",
+  acute: "bg-[#E8446A]",
+  consultation: "bg-[#5A3E2B]",
+  follow_up: "bg-[#0EA5A0]",
+  check_up: "bg-[#D4A847]",
+  procedure: "bg-[#8C7B6E]",
+  urgent: "bg-[#E8446A]",
+  working_time: "bg-[#E8E0D5] border border-[#C8A98A]",
+  doctor_meeting: "bg-[#FDF6EE] border border-[#C8A98A]",
 };
 
 const MOCK_NOTES = [
@@ -225,8 +225,8 @@ const CalendarPage = () => {
                       ${selected ? "ring-2 ring-primary ring-inset" : ""}
                       hover:bg-accent/30`}
                   >
-                    <span className={`text-xs font-medium mb-0.5 px-1 rounded-full
-                      ${today ? "bg-primary text-primary-foreground" : inMonth ? "text-foreground" : "text-muted-foreground"}`}>
+                    <span className={`text-xs font-medium mb-0.5 px-1.5 py-0.5 rounded-full border
+                      ${today ? "bg-[#FDF6EE] text-[#2E1F14] border-[#C8A98A]" : inMonth ? "text-foreground border-transparent" : "text-muted-foreground border-transparent"}`}>
                       {format(day, "d")}
                     </span>
                     <div className="w-full space-y-0.5 overflow-hidden">
@@ -236,7 +236,7 @@ const CalendarPage = () => {
                           ? (a.title ?? a.other_doctor_name ?? "Doctor Meeting")
                           : (a.patient_name?.split(",")[0] ?? a.title?.split("–")[0]);
                         return (
-                          <div key={a.id} className={`text-[10px] leading-tight truncate px-1 py-0.5 rounded ${s.bg} ${s.text}`}>
+                          <div key={a.id} className={`text-[10px] leading-tight truncate px-1 py-0.5 rounded border ${s.bg} ${s.text} ${s.border}`}>
                             {format(parseISO(a.start_time), "HH:mm")} {displayName}
                           </div>
                         );
@@ -283,7 +283,7 @@ const CalendarPage = () => {
                   {dayAppointments.map((a: any) => {
                     const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
                     return (
-                      <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${s.bg} border-transparent`}>
+                      <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${s.bg} ${s.border}`}>
                         {/* Time & type */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
