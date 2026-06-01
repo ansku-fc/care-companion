@@ -51,16 +51,15 @@ export function AppSidebar() {
       <NavLink
         to={item.url}
         end={item.url === "/"}
-        className="relative rounded-none text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors [&>svg]:text-sidebar-foreground/75 hover:[&>svg]:text-sidebar-foreground"
-        activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium [&>svg]:text-sidebar-foreground [&>span.active-pill]:opacity-100"
+        className="relative rounded-none border-l-2 border-transparent text-foreground hover:bg-sidebar-accent transition-colors [&>svg]:text-muted-foreground"
+        activeClassName="bg-sidebar-primary border-l-accent text-foreground font-medium [&>svg]:text-foreground"
       >
-        <span className="active-pill pointer-events-none absolute left-0 top-0 bottom-0 w-[3px] bg-accent opacity-0 transition-opacity" />
         <item.icon className={collapsed ? "h-[18px] w-[18px]" : "mr-3 h-[18px] w-[18px]"} />
-        {!collapsed && <span className="text-[13px]">{item.title}</span>}
+        {!collapsed && <span className="text-[14px]">{item.title}</span>}
       </NavLink>
     );
     return (
-      <SidebarMenuItem key={item.title} className="px-0 py-0">
+      <SidebarMenuItem key={item.title} className="px-0 py-0.5">
         <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-none px-4">
           {link}
         </SidebarMenuButton>
@@ -78,7 +77,7 @@ export function AppSidebar() {
                 src={logoIcon}
                 alt="Foundation Clinic"
                 className="h-8 w-8 object-contain"
-                style={{ mixBlendMode: "screen" }}
+                style={{ mixBlendMode: "multiply" }}
               />
               <Button
                 variant="ghost"
@@ -96,7 +95,7 @@ export function AppSidebar() {
                 src={logoFull}
                 alt="Foundation Clinic"
                 className="h-9 w-[140px] object-contain object-left"
-                style={{ mixBlendMode: "screen" }}
+                style={{ mixBlendMode: "multiply" }}
               />
               <Button
                 variant="ghost"
