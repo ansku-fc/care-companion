@@ -563,8 +563,8 @@ export function PatientOverviewView({
                   { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] },
                   { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] },
                   { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] },
-                  { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] },
-                  { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] },
+                  { label: "Waist", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] },
+                  { label: "Hip", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] },
                   { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] },
                 ];
 
