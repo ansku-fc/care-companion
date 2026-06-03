@@ -339,7 +339,7 @@ export function PatientOverviewView({
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-3 p-1 overflow-auto h-full text-[13px]">
+    <div className="space-y-2 p-1 overflow-auto h-full text-[13px]">
       {/* 1. HEADER BUTTONS — top right */}
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => navigate(`/patients/${patient.id}/report`)}>
@@ -351,9 +351,10 @@ export function PatientOverviewView({
         </Button>
       </div>
 
-      {/* 2. ALERTS BAR — merged visually with Tasks card below */}
-      <Card className={cn("border shadow-card transition-colors rounded-b-none", alertBarClass)}>
-        <CardContent className="py-3 px-4">
+      {/* 2. ALERTS BAR — slim, full width */}
+      <Card className={cn("border shadow-card transition-colors", alertBarClass)}>
+        <CardContent className="py-1.5 px-3">
+
           {!hasAlerts ? (
             <p className="text-sm text-muted-foreground">No active alerts</p>
           ) : (
