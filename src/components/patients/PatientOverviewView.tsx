@@ -339,7 +339,8 @@ export function PatientOverviewView({
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-2 p-1 overflow-auto h-full text-[13px]">
+    <div className="flex flex-col h-full p-1 gap-3 text-[13px] min-h-0">
+
       {/* 1. HEADER BUTTONS — top right */}
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => navigate(`/patients/${patient.id}/report`)}>
