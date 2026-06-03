@@ -893,8 +893,9 @@ export function PatientOverviewView({
                     <button
                       key={dim.key}
                       onClick={() => onSelectSection(dim.key)}
-                      className="flex flex-col gap-1 p-1.5 rounded-md border border-border/60 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                      className="h-full flex flex-col justify-center gap-1.5 p-2 rounded-md border border-border/60 hover:bg-muted/50 transition-colors text-left cursor-pointer min-h-0"
                     >
+
                       <div className="flex items-center gap-1.5">
                         <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span className="text-[11px] font-medium text-foreground truncate flex-1">
