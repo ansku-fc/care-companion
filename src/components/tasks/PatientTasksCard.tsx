@@ -22,7 +22,7 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
   const [detail, setDetail] = useState<Task | null>(null);
   const [open, setOpen] = useState(false);
 
-  const visible = tasks.slice(0, 3);
+  const visible = tasks.slice(0, 4);
 
   return (
     <Card className="shadow-card rounded-t-none border-t-0">
