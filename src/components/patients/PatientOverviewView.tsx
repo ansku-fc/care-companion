@@ -434,207 +434,7 @@ export function PatientOverviewView({
         {/* RIGHT COLUMN */}
         <div className="space-y-2 min-w-0">
 
-
-      {/* ROW 2 — Allergies | Considerations | Biometrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Allergies */}
-        <Card className="shadow-card">
-          <CardContent className="py-3 px-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[13px] font-semibold">Allergies</h3>
-              <Button
-                variant="ghost" size="sm"
-                className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowAllergyForm((v) => !v)}
-              >
-                <Plus className="h-3 w-3" /> Add
-              </Button>
-            </div>
-
-            {showAllergyForm && (
-              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      role="combobox"
-                      className="h-8 w-full justify-between text-sm font-normal"
-                    >
-                      {newAllergy.allergen ? (
-                        <span className="flex items-center gap-1.5 truncate">
-                          <span className="truncate">{newAllergy.allergen}</span>
-                          {newAllergy.icd_code && (
-                            <span className="text-[11px] text-muted-foreground tabular-nums">{newAllergy.icd_code}</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Search allergen…</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="start">
-                    <Command
-                      filter={(value, search) => {
-                        if (!search) return 1;
-                        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-                      }}
-                    >
-                      <CommandInput
-                        placeholder="Type to search…"
-                        value={newAllergy.allergen}
-                        onValueChange={(v) =>
-                          setNewAllergy((p) => ({ ...p, allergen: v, icd_code: findAllergen(v)?.icd10 ?? "" }))
-                        }
-                      />
-                      <CommandList>
-                        <CommandEmpty>
-                          <span className="text-xs text-muted-foreground">
-                            Press Add to use “{newAllergy.allergen}” as a custom allergen.
-                          </span>
-                        </CommandEmpty>
-                        {(["Drug", "Food", "Environmental"] as const).map((cat) => (
-                          <CommandGroup key={cat} heading={cat}>
-                            {COMMON_ALLERGENS.filter((a) => a.category === cat).map((a) => (
-                              <CommandItem
-                                key={`${a.name}-${a.icd10}`}
-                                value={`${a.name} ${a.icd10}`}
-                                onSelect={() => setNewAllergy((p) => ({ ...p, allergen: a.name, icd_code: a.icd10 }))}
-                                className="group"
-                              >
-                                <span className="flex-1">{a.name}</span>
-                                <span className="text-[11px] tabular-nums text-muted-foreground group-data-[selected=true]:text-accent-foreground">{a.icd10}</span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        ))}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <Input placeholder="Reaction (optional)" value={newAllergy.reaction} onChange={(e) => setNewAllergy((p) => ({ ...p, reaction: e.target.value }))} className="h-8 text-sm" />
-                <Select value={newAllergy.severity} onValueChange={(v) => setNewAllergy((p) => ({ ...p, severity: v }))}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mild">Mild</SelectItem>
-                    <SelectItem value="moderate">Moderate</SelectItem>
-                    <SelectItem value="severe">Severe</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex gap-2">
-                  <Button size="sm" className="h-7 text-xs" onClick={handleAddAllergy} disabled={!newAllergy.allergen.trim()}>Add</Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAllergyForm(false)}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {allergies.length === 0 && !showAllergyForm ? (
-              <p className="text-[11px] text-muted-foreground">No allergies recorded.</p>
-            ) : (
-              <TooltipProvider delayDuration={150}>
-                <div className="flex flex-wrap gap-1">
-                  {allergies.map((a: any) => {
-                    const icd = a.icd_code || findAllergen(a.allergen)?.icd10;
-                    return (
-                      <Tooltip key={a.id}>
-                        <TooltipTrigger asChild>
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border cursor-default",
-                              a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%/0.15)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.45)] font-bold",
-                              a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)] font-medium",
-                              a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
-                              (a.severity === "mild" || !a.severity) && "bg-muted text-muted-foreground border-border",
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "h-1.5 w-1.5 rounded-full",
-                                a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%)] ring-1 ring-[hsl(0_57%_39%/0.4)]",
-                                a.severity === "severe" && "bg-[hsl(0_57%_39%)]",
-                                a.severity === "moderate" && "bg-[hsl(28_63%_44%)]",
-                                (a.severity === "mild" || !a.severity) && "bg-muted-foreground/40",
-                              )}
-                              aria-hidden
-                            />
-                            {icd && (
-                              <span className="text-[10px] tabular-nums opacity-60">{icd}</span>
-                            )}
-                            <span>{a.allergen}</span>
-                            <button
-                              onClick={async () => {
-                                await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
-                                fetchOverviewData();
-                              }}
-                              className="opacity-50 hover:opacity-100"
-                              aria-label={`Remove ${a.allergen}`}
-                            >
-                              <Trash2 className="h-2.5 w-2.5" />
-                            </button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs">
-                          {icd ? (
-                            <span>
-                              ICD-10: <span className="font-medium tabular-nums">{icd}</span>
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">No ICD-10 code</span>
-                          )}
-                          {a.reaction && <div className="text-muted-foreground">{a.reaction}</div>}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </TooltipProvider>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Clinical Considerations */}
-        <Card className="shadow-card">
-          <CardContent className="py-3 px-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[13px] font-semibold">Clinical Considerations</h3>
-              <Button
-                variant="ghost" size="sm"
-                className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowConsiderationForm((v) => !v)}
-              >
-                <Plus className="h-3 w-3" /> Add
-              </Button>
-            </div>
-
-            {showConsiderationForm && (
-              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-                <Input placeholder="Title" value={newConsideration.title} onChange={(e) => setNewConsideration((p) => ({ ...p, title: e.target.value }))} className="h-8 text-sm" />
-                <Input placeholder="Description (optional)" value={newConsideration.description} onChange={(e) => setNewConsideration((p) => ({ ...p, description: e.target.value }))} className="h-8 text-sm" />
-                <div className="flex gap-2">
-                  <Button size="sm" className="h-7 text-xs" onClick={handleAddConsideration} disabled={!newConsideration.title.trim()}>Add</Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowConsiderationForm(false)}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {considerations.length === 0 && !showConsiderationForm ? (
-              <p className="text-[11px] text-muted-foreground">No clinical considerations recorded.</p>
-            ) : (
-              <ul className="space-y-1">
-                {considerations.slice(0, 3).map((c: any) => (
-                  <li key={c.id} className="text-[12px]">
-                    <p className="font-medium leading-tight">{c.title}</p>
-                    {c.description && <p className="text-[11px] text-muted-foreground leading-tight">{c.description}</p>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
+          {/* Biometrics — 2×4 grid */}
       {/* ROW 3 — Biometrics full width */}
       <Card className="shadow-card">
         <CardContent className="py-3 px-4 space-y-2">
@@ -839,47 +639,209 @@ export function PatientOverviewView({
                         </div>
                       </PopoverContent>
                     </Popover>
-                  );
-                });
-              })()}
-            </dl>
-          )}
-        </CardContent>
-      </Card>
 
-      {(() => {
-        const height = onboarding?.height_cm ?? 188;
-        const weight = onboarding?.weight_kg ?? 84;
-        const bmi = computedBmi ?? 23.8;
-        const waist = onboarding?.waist_circumference_cm ?? 88;
-        const hip = 96;
-        const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
-        const allItems = [
-          { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] as { date: string; value: number }[] },
-          { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
-          { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 18.5, high: 24.9, label: "Healthy 18.5–24.9" } },
-          { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
-          { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] as { date: string; value: number }[] },
-          { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 0, high: 0.95, label: "Healthy < 0.95" } },
-        ];
-        const active = allItems.find((i) => i.label === historyModalLabel);
-        if (!active) return null;
-        return (
-          <BiometricHistoryModal
-            open={!!historyModalLabel}
-            onOpenChange={(v) => !v && setHistoryModalLabel(null)}
-            metricLabel={active.label}
-            patientName={patient.full_name}
-            unit={active.unit}
-            decimals={active.decimals}
-            lowerIsBetter={active.lowerIsBetter}
-            staticValue={active.staticValue}
-            series={[{ date: "Today", value: active.current }, ...active.history]}
-            refRange={(active as any).refRange}
-          />
-        );
-      })()}
+          {/* Allergies + Clinical Considerations */}
+      {/* ROW 2 — Allergies | Considerations | Biometrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Allergies */}
+        <Card className="shadow-card">
+          <CardContent className="py-3 px-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-primary" />
+              <h3 className="text-[13px] font-semibold">Allergies</h3>
+              <Button
+                variant="ghost" size="sm"
+                className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowAllergyForm((v) => !v)}
+              >
+                <Plus className="h-3 w-3" /> Add
+              </Button>
+            </div>
 
+            {showAllergyForm && (
+              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="h-8 w-full justify-between text-sm font-normal"
+                    >
+                      {newAllergy.allergen ? (
+                        <span className="flex items-center gap-1.5 truncate">
+                          <span className="truncate">{newAllergy.allergen}</span>
+                          {newAllergy.icd_code && (
+                            <span className="text-[11px] text-muted-foreground tabular-nums">{newAllergy.icd_code}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Search allergen…</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command
+                      filter={(value, search) => {
+                        if (!search) return 1;
+                        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput
+                        placeholder="Type to search…"
+                        value={newAllergy.allergen}
+                        onValueChange={(v) =>
+                          setNewAllergy((p) => ({ ...p, allergen: v, icd_code: findAllergen(v)?.icd10 ?? "" }))
+                        }
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-xs text-muted-foreground">
+                            Press Add to use “{newAllergy.allergen}” as a custom allergen.
+                          </span>
+                        </CommandEmpty>
+                        {(["Drug", "Food", "Environmental"] as const).map((cat) => (
+                          <CommandGroup key={cat} heading={cat}>
+                            {COMMON_ALLERGENS.filter((a) => a.category === cat).map((a) => (
+                              <CommandItem
+                                key={`${a.name}-${a.icd10}`}
+                                value={`${a.name} ${a.icd10}`}
+                                onSelect={() => setNewAllergy((p) => ({ ...p, allergen: a.name, icd_code: a.icd10 }))}
+                                className="group"
+                              >
+                                <span className="flex-1">{a.name}</span>
+                                <span className="text-[11px] tabular-nums text-muted-foreground group-data-[selected=true]:text-accent-foreground">{a.icd10}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Input placeholder="Reaction (optional)" value={newAllergy.reaction} onChange={(e) => setNewAllergy((p) => ({ ...p, reaction: e.target.value }))} className="h-8 text-sm" />
+                <Select value={newAllergy.severity} onValueChange={(v) => setNewAllergy((p) => ({ ...p, severity: v }))}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mild">Mild</SelectItem>
+                    <SelectItem value="moderate">Moderate</SelectItem>
+                    <SelectItem value="severe">Severe</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" onClick={handleAddAllergy} disabled={!newAllergy.allergen.trim()}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAllergyForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {allergies.length === 0 && !showAllergyForm ? (
+              <p className="text-[11px] text-muted-foreground">No allergies recorded.</p>
+            ) : (
+              <TooltipProvider delayDuration={150}>
+                <div className="flex flex-wrap gap-1">
+                  {allergies.map((a: any) => {
+                    const icd = a.icd_code || findAllergen(a.allergen)?.icd10;
+                    return (
+                      <Tooltip key={a.id}>
+                        <TooltipTrigger asChild>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border cursor-default",
+                              a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%/0.15)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.45)] font-bold",
+                              a.severity === "severe" && "bg-[hsl(0_57%_39%/0.08)] text-[hsl(0_57%_39%)] border-[hsl(0_57%_39%/0.25)] font-medium",
+                              a.severity === "moderate" && "bg-[hsl(28_63%_44%/0.08)] text-[hsl(28_63%_44%)] border-[hsl(28_63%_44%/0.25)]",
+                              (a.severity === "mild" || !a.severity) && "bg-muted text-muted-foreground border-border",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                a.severity === "anaphylactic" && "bg-[hsl(0_57%_39%)] ring-1 ring-[hsl(0_57%_39%/0.4)]",
+                                a.severity === "severe" && "bg-[hsl(0_57%_39%)]",
+                                a.severity === "moderate" && "bg-[hsl(28_63%_44%)]",
+                                (a.severity === "mild" || !a.severity) && "bg-muted-foreground/40",
+                              )}
+                              aria-hidden
+                            />
+                            {icd && (
+                              <span className="text-[10px] tabular-nums opacity-60">{icd}</span>
+                            )}
+                            <span>{a.allergen}</span>
+                            <button
+                              onClick={async () => {
+                                await supabase.from("patient_allergies" as any).update({ status: "inactive" } as any).eq("id", a.id);
+                                fetchOverviewData();
+                              }}
+                              className="opacity-50 hover:opacity-100"
+                              aria-label={`Remove ${a.allergen}`}
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">
+                          {icd ? (
+                            <span>
+                              ICD-10: <span className="font-medium tabular-nums">{icd}</span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">No ICD-10 code</span>
+                          )}
+                          {a.reaction && <div className="text-muted-foreground">{a.reaction}</div>}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </TooltipProvider>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Clinical Considerations */}
+        <Card className="shadow-card">
+          <CardContent className="py-3 px-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-3.5 w-3.5 text-primary" />
+              <h3 className="text-[13px] font-semibold">Clinical Considerations</h3>
+              <Button
+                variant="ghost" size="sm"
+                className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowConsiderationForm((v) => !v)}
+              >
+                <Plus className="h-3 w-3" /> Add
+              </Button>
+            </div>
+
+            {showConsiderationForm && (
+              <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+                <Input placeholder="Title" value={newConsideration.title} onChange={(e) => setNewConsideration((p) => ({ ...p, title: e.target.value }))} className="h-8 text-sm" />
+                <Input placeholder="Description (optional)" value={newConsideration.description} onChange={(e) => setNewConsideration((p) => ({ ...p, description: e.target.value }))} className="h-8 text-sm" />
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" onClick={handleAddConsideration} disabled={!newConsideration.title.trim()}>Add</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowConsiderationForm(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {considerations.length === 0 && !showConsiderationForm ? (
+              <p className="text-[11px] text-muted-foreground">No clinical considerations recorded.</p>
+            ) : (
+              <ul className="space-y-1">
+                {considerations.slice(0, 3).map((c: any) => (
+                  <li key={c.id} className="text-[12px]">
+                    <p className="font-medium leading-tight">{c.title}</p>
+                    {c.description && <p className="text-[11px] text-muted-foreground leading-tight">{c.description}</p>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+          {/* Health Dimensions — compact 3-col grid */}
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
       <Card className="shadow-card">
         <CardContent className="py-3 px-4">
@@ -934,6 +896,48 @@ export function PatientOverviewView({
           )}
         </CardContent>
       </Card>
+
+                });
+              })()}
+            </dl>
+          )}
+        </CardContent>
+      </Card>
+
+      {(() => {
+        const height = onboarding?.height_cm ?? 188;
+        const weight = onboarding?.weight_kg ?? 84;
+        const bmi = computedBmi ?? 23.8;
+        const waist = onboarding?.waist_circumference_cm ?? 88;
+        const hip = 96;
+        const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
+        const allItems = [
+          { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] as { date: string; value: number }[] },
+          { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
+          { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 18.5, high: 24.9, label: "Healthy 18.5–24.9" } },
+          { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
+          { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] as { date: string; value: number }[] },
+          { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 0, high: 0.95, label: "Healthy < 0.95" } },
+        ];
+        const active = allItems.find((i) => i.label === historyModalLabel);
+        if (!active) return null;
+        return (
+          <BiometricHistoryModal
+            open={!!historyModalLabel}
+            onOpenChange={(v) => !v && setHistoryModalLabel(null)}
+            metricLabel={active.label}
+            patientName={patient.full_name}
+            unit={active.unit}
+            decimals={active.decimals}
+            lowerIsBetter={active.lowerIsBetter}
+            staticValue={active.staticValue}
+            series={[{ date: "Today", value: active.current }, ...active.history]}
+            refRange={(active as any).refRange}
+          />
+        );
+      })()}
+        </div>
+      </div>
     </div>
   );
 }
