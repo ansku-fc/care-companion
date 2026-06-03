@@ -339,7 +339,7 @@ export function PatientOverviewView({
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-3 p-1 overflow-auto h-full text-[13px]">
+    <div className="space-y-2 p-1 overflow-auto h-full text-[13px]">
       {/* 1. HEADER BUTTONS — top right */}
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => navigate(`/patients/${patient.id}/report`)}>
@@ -351,9 +351,10 @@ export function PatientOverviewView({
         </Button>
       </div>
 
-      {/* 2. ALERTS BAR — merged visually with Tasks card below */}
-      <Card className={cn("border shadow-card transition-colors rounded-b-none", alertBarClass)}>
-        <CardContent className="py-3 px-4">
+      {/* 2. ALERTS BAR — slim, full width */}
+      <Card className={cn("border shadow-card transition-colors", alertBarClass)}>
+        <CardContent className="py-1.5 px-3">
+
           {!hasAlerts ? (
             <p className="text-sm text-muted-foreground">No active alerts</p>
           ) : (
@@ -416,26 +417,248 @@ export function PatientOverviewView({
         </CardContent>
       </Card>
 
-      {/* TASKS for this patient — visually merged with alert bar above */}
-      <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
-      <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
+      {/* DASHBOARD GRID — Left (58%) / Right (42%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[58fr_42fr] gap-2 items-start">
+        {/* LEFT COLUMN */}
+        <div className="space-y-2 min-w-0">
+          <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
+          <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
+          <IllnessesMedicationsCard
+            patient={patient}
+            onboarding={onboarding}
+            onSelectSection={onSelectSection}
+            onDataChanged={onDataChanged}
+          />
+        </div>
 
-      {/* 3. ROW 1 — Illnesses & Medications (full width; medications shown inline) */}
-      <IllnessesMedicationsCard
-        patient={patient}
-        onboarding={onboarding}
-        onSelectSection={onSelectSection}
-        onDataChanged={onDataChanged}
-      />
+        {/* RIGHT COLUMN */}
+        <div className="space-y-2 min-w-0">
 
+          {/* Biometrics — 2×4 grid */}
+      {/* ROW 3 — Biometrics full width */}
+      <Card className="shadow-card">
+        <CardContent className="py-2 px-3 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Ruler className="h-3.5 w-3.5 text-primary" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Biometrics</h3>
+
+            <Button
+              variant="ghost" size="sm"
+              className="ml-auto h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowBioForm((v) => !v)}
+            >
+              {showBioForm ? "Cancel" : (
+                <>
+                  <Pencil className="h-3 w-3" /> Edit
+                </>
+              )}
+            </Button>
+          </div>
+
+          {showBioForm ? (
+            <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Height (cm)</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.height_cm}
+                    onChange={(e) => setBioForm((p) => ({ ...p, height_cm: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Weight (kg)</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.weight_kg}
+                    onChange={(e) => setBioForm((p) => ({ ...p, weight_kg: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Waist (cm)</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.waist_circumference_cm}
+                    onChange={(e) => setBioForm((p) => ({ ...p, waist_circumference_cm: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Hip (cm)</label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={bioForm.hip_circumference_cm}
+                    onChange={(e) => setBioForm((p) => ({ ...p, hip_circumference_cm: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-1">
+                <p className="text-[11px] text-muted-foreground">
+                  BMI: <span className="font-medium text-foreground">{computedBmi ?? "—"}</span> (auto-calculated)
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  W/H Ratio: <span className="font-medium text-foreground">{(() => {
+                    const w = parseNum(bioForm.waist_circumference_cm);
+                    const h = parseNum(bioForm.hip_circumference_cm);
+                    return w && h && h > 0 ? (w / h).toFixed(2) : "—";
+                  })()}</span> (auto-calculated)
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" className="h-7 text-xs" onClick={handleSaveBiometrics}>Save</Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBioForm(false)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <dl className="grid grid-cols-4 gap-x-2 gap-y-1.5 text-[12px]">
+              <div>
+                <dt className="text-[11px] text-muted-foreground">Age</dt>
+                <dd className="text-[14px] font-bold text-foreground">
+                  {age !== null ? `${age} years` : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] text-muted-foreground">Gender</dt>
+                <dd className="text-[14px] font-bold text-foreground capitalize">
+                  {patient.gender || "Male"}
+                </dd>
+              </div>
+              {(() => {
+                const height = onboarding?.height_cm ?? 188;
+                const weight = onboarding?.weight_kg ?? 84;
+                const bmi = computedBmi ?? 23.8;
+                const waist = onboarding?.waist_circumference_cm ?? 88;
+                const hip = onboarding?.hip_circumference_cm ?? 96;
+                const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
+
+                // unit + lower-is-better flag for delta colouring
+                type HistoryEntry = { date: string; value: number };
+                type Item = {
+                  label: string;
+                  unit: string;
+                  current: number;
+                  decimals: number;
+                  lowerIsBetter: boolean;
+                  staticValue?: boolean; // height — no delta
+                  history: HistoryEntry[]; // newest first, current excluded
+                };
+
+                const items: Item[] = [
+                  { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] },
+                  { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] },
+                  { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] },
+                  { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] },
+                  { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] },
+                  { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] },
+                ];
+
+                const fmt = (n: number, d: number) => n.toFixed(d);
+
+                const getDelta = (
+                  curr: number,
+                  prev: number | undefined,
+                  unit: string,
+                  decimals: number,
+                  lowerIsBetter: boolean,
+                ) => {
+                  if (prev === undefined) return null;
+                  const diff = +(curr - prev).toFixed(decimals);
+                  if (diff === 0) return { text: "—", positive: null as null | boolean, dir: null as null | "up" | "down" };
+                  const direction: "up" | "down" = diff < 0 ? "down" : "up";
+                  const positive = lowerIsBetter ? diff < 0 : diff > 0;
+                  const abs = Math.abs(diff).toFixed(decimals);
+                  return {
+                    text: `${direction === "down" ? "▼" : "▲"} ${abs}${unit ? " " + unit : ""}`,
+                    positive,
+                    dir: direction,
+                  };
+                };
+
+                const ImprovedColor = "text-[hsl(142_71%_35%)]";
+                const WorsenedColor = "text-[hsl(0_57%_39%)]";
+
+                return items.map((item) => {
+                  const prevEntry = item.history[0];
+                  const headlineDelta = item.staticValue
+                    ? null
+                    : getDelta(item.current, prevEntry?.value, item.unit, item.decimals, item.lowerIsBetter);
+
+                  // Build full series newest-first including current
+                  const series: HistoryEntry[] = [
+                    { date: "Today", value: item.current },
+                    ...item.history,
+                  ];
+
+                  return (
+                    <Popover key={item.label}>
+                      <div>
+                        <dt className="text-[11px] text-muted-foreground">{item.label}</dt>
+                        <dd className="text-[14px] font-bold text-foreground flex items-baseline gap-1.5">
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex items-baseline gap-1.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+                            >
+                              <span>{fmt(item.current, item.decimals)}{item.unit ? ` ${item.unit}` : ""}</span>
+                              {headlineDelta && headlineDelta.positive !== null && (
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-medium tabular-nums inline-flex items-center gap-0.5",
+                                    headlineDelta.positive ? ImprovedColor : WorsenedColor,
+                                  )}
+                                >
+                                  {headlineDelta.text}
+                                </span>
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                        </dd>
+                      </div>
+
+                      <PopoverContent align="start" className="w-80 p-0">
+                        <BiometricMiniChart
+                          label={`${item.label} history`}
+                          unit={item.unit}
+                          decimals={item.decimals}
+                          series={series}
+                        />
+                        <div className="px-3 py-1.5 border-t text-right">
+                          <button
+                            type="button"
+                            className="text-[11px] text-primary hover:underline"
+                            onClick={() => setHistoryModalLabel(item.label)}
+                          >
+                            See all
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                });
+
+              })()}
+            </dl>
+          )}
+        </CardContent>
+      </Card>
+
+          {/* Allergies + Clinical Considerations */}
       {/* ROW 2 — Allergies | Considerations | Biometrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         {/* Allergies */}
         <Card className="shadow-card">
-          <CardContent className="py-3 px-3 space-y-2">
+          <CardContent className="py-2 px-3 space-y-1.5">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[13px] font-semibold">Allergies</h3>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Allergies</h3>
+
               <Button
                 variant="ghost" size="sm"
                 className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
@@ -588,10 +811,11 @@ export function PatientOverviewView({
 
         {/* Clinical Considerations */}
         <Card className="shadow-card">
-          <CardContent className="py-3 px-3 space-y-2">
+          <CardContent className="py-2 px-3 space-y-1.5">
             <div className="flex items-center gap-2">
               <ClipboardList className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[13px] font-semibold">Clinical Considerations</h3>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Clinical Considerations</h3>
+
               <Button
                 variant="ghost" size="sm"
                 className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
@@ -628,217 +852,62 @@ export function PatientOverviewView({
         </Card>
       </div>
 
-      {/* ROW 3 — Biometrics full width */}
-      <Card className="shadow-card">
-        <CardContent className="py-3 px-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <Ruler className="h-3.5 w-3.5 text-primary" />
-            <h3 className="text-[13px] font-semibold">Biometrics</h3>
-            <Button
-              variant="ghost" size="sm"
-              className="ml-auto h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
-              onClick={() => setShowBioForm((v) => !v)}
-            >
-              {showBioForm ? "Cancel" : (
-                <>
-                  <Pencil className="h-3 w-3" /> Edit
-                </>
-              )}
-            </Button>
-          </div>
 
-          {showBioForm ? (
-            <div className="space-y-2 p-2 border rounded-md bg-muted/30">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div>
-                  <label className="text-[11px] text-muted-foreground">Height (cm)</label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    value={bioForm.height_cm}
-                    onChange={(e) => setBioForm((p) => ({ ...p, height_cm: e.target.value }))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] text-muted-foreground">Weight (kg)</label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    value={bioForm.weight_kg}
-                    onChange={(e) => setBioForm((p) => ({ ...p, weight_kg: e.target.value }))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] text-muted-foreground">Waist (cm)</label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    value={bioForm.waist_circumference_cm}
-                    onChange={(e) => setBioForm((p) => ({ ...p, waist_circumference_cm: e.target.value }))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] text-muted-foreground">Hip (cm)</label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    value={bioForm.hip_circumference_cm}
-                    onChange={(e) => setBioForm((p) => ({ ...p, hip_circumference_cm: e.target.value }))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-x-6 gap-y-1">
-                <p className="text-[11px] text-muted-foreground">
-                  BMI: <span className="font-medium text-foreground">{computedBmi ?? "—"}</span> (auto-calculated)
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  W/H Ratio: <span className="font-medium text-foreground">{(() => {
-                    const w = parseNum(bioForm.waist_circumference_cm);
-                    const h = parseNum(bioForm.hip_circumference_cm);
-                    return w && h && h > 0 ? (w / h).toFixed(2) : "—";
-                  })()}</span> (auto-calculated)
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" className="h-7 text-xs" onClick={handleSaveBiometrics}>Save</Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowBioForm(false)}>Cancel</Button>
-              </div>
+          {/* Health Dimensions — compact 3-col grid */}
+      {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
+      <Card className="shadow-card">
+        <CardContent className="py-2 px-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Health Dimensions
+            </h3>
+          </div>
+          {!onboarding ? (
+            <div className="py-4 text-center">
+              <p className="text-[12px] text-muted-foreground">
+                Complete onboarding to see health dimensions.
+              </p>
             </div>
           ) : (
-            <dl className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-x-3 gap-y-2 text-[12px]">
-              <div>
-                <dt className="text-[11px] text-muted-foreground">Age</dt>
-                <dd className="text-[13px] font-medium text-foreground">
-                  {age !== null ? `${age} years` : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[11px] text-muted-foreground">Gender</dt>
-                <dd className="text-[13px] font-medium text-foreground capitalize">
-                  {patient.gender || "Male"}
-                </dd>
-              </div>
-              {(() => {
-                const height = onboarding?.height_cm ?? 188;
-                const weight = onboarding?.weight_kg ?? 84;
-                const bmi = computedBmi ?? 23.8;
-                const waist = onboarding?.waist_circumference_cm ?? 88;
-                const hip = onboarding?.hip_circumference_cm ?? 96;
-                const whr = waist && hip ? +(waist / hip).toFixed(2) : (onboarding?.waist_to_hip_ratio ?? 0.92);
-
-                // unit + lower-is-better flag for delta colouring
-                type HistoryEntry = { date: string; value: number };
-                type Item = {
-                  label: string;
-                  unit: string;
-                  current: number;
-                  decimals: number;
-                  lowerIsBetter: boolean;
-                  staticValue?: boolean; // height — no delta
-                  history: HistoryEntry[]; // newest first, current excluded
-                };
-
-                const items: Item[] = [
-                  { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] },
-                  { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] },
-                  { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] },
-                  { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] },
-                  { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] },
-                  { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] },
-                ];
-
-                const fmt = (n: number, d: number) => n.toFixed(d);
-
-                const getDelta = (
-                  curr: number,
-                  prev: number | undefined,
-                  unit: string,
-                  decimals: number,
-                  lowerIsBetter: boolean,
-                ) => {
-                  if (prev === undefined) return null;
-                  const diff = +(curr - prev).toFixed(decimals);
-                  if (diff === 0) return { text: "—", positive: null as null | boolean, dir: null as null | "up" | "down" };
-                  const direction: "up" | "down" = diff < 0 ? "down" : "up";
-                  const positive = lowerIsBetter ? diff < 0 : diff > 0;
-                  const abs = Math.abs(diff).toFixed(decimals);
-                  return {
-                    text: `${direction === "down" ? "▼" : "▲"} ${abs}${unit ? " " + unit : ""}`,
-                    positive,
-                    dir: direction,
-                  };
-                };
-
-                const ImprovedColor = "text-[hsl(142_71%_35%)]";
-                const WorsenedColor = "text-[hsl(0_57%_39%)]";
-
-                return items.map((item) => {
-                  const prevEntry = item.history[0];
-                  const headlineDelta = item.staticValue
-                    ? null
-                    : getDelta(item.current, prevEntry?.value, item.unit, item.decimals, item.lowerIsBetter);
-
-                  // Build full series newest-first including current
-                  const series: HistoryEntry[] = [
-                    { date: "Today", value: item.current },
-                    ...item.history,
-                  ];
-
+            <div className="grid grid-cols-3 gap-1.5">
+              {[...HEALTH_TAXONOMY]
+                .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
+                .sort((a, b) => b.score - a.score)
+                .map(({ dim, score }) => {
+                  const Icon = dim.icon;
+                  const widthPct = Math.max(4, (score / 10) * 100);
+                  const barColor = scoreBorderColor(score);
                   return (
-                    <Popover key={item.label}>
-                      <div>
-                        <dt className="text-[11px] text-muted-foreground">{item.label}</dt>
-                        <dd className="text-[13px] font-medium text-foreground flex items-baseline gap-1.5">
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              className="inline-flex items-baseline gap-1.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
-                            >
-                              <span>{fmt(item.current, item.decimals)}{item.unit ? ` ${item.unit}` : ""}</span>
-                              {headlineDelta && headlineDelta.positive !== null && (
-                                <span
-                                  className={cn(
-                                    "text-[10px] font-medium tabular-nums inline-flex items-center gap-0.5",
-                                    headlineDelta.positive ? ImprovedColor : WorsenedColor,
-                                  )}
-                                >
-                                  {headlineDelta.text}
-                                </span>
-                              )}
-                            </button>
-                          </PopoverTrigger>
-                        </dd>
+                    <button
+                      key={dim.key}
+                      onClick={() => onSelectSection(dim.key)}
+                      className="flex flex-col gap-1 p-1.5 rounded-md border border-border/60 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-[11px] font-medium text-foreground truncate flex-1">
+                          {dim.label}
+                        </span>
+                        <span
+                          className={cn("text-[12px] font-semibold tabular-nums", scoreColorClass(score))}
+                        >
+                          {score.toFixed(1)}
+                        </span>
                       </div>
-
-                      <PopoverContent align="start" className="w-80 p-0">
-                        <BiometricMiniChart
-                          label={`${item.label} history`}
-                          unit={item.unit}
-                          decimals={item.decimals}
-                          series={series}
+                      <div className="h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${widthPct}%`, backgroundColor: barColor }}
                         />
-                        <div className="px-3 py-1.5 border-t text-right">
-                          <button
-                            type="button"
-                            className="text-[11px] text-primary hover:underline"
-                            onClick={() => setHistoryModalLabel(item.label)}
-                          >
-                            See all
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </button>
                   );
-                });
-              })()}
-            </dl>
+                })}
+            </div>
           )}
         </CardContent>
       </Card>
+
 
       {(() => {
         const height = onboarding?.height_cm ?? 188;
@@ -872,61 +941,8 @@ export function PatientOverviewView({
           />
         );
       })()}
-
-      {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
-      <Card className="shadow-card">
-        <CardContent className="py-3 px-4">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Health Dimensions
-            </h3>
-          </div>
-          {!onboarding ? (
-            <div className="py-6 text-center">
-              <p className="text-[12px] text-muted-foreground">
-                Complete onboarding to see health dimensions.
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-0.5">
-              {[...HEALTH_TAXONOMY]
-                .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
-                .sort((a, b) => b.score - a.score)
-                .map(({ dim, score }) => {
-                  const Icon = dim.icon;
-                  const widthPct = Math.max(4, (score / 10) * 100);
-                  const barColor = scoreBorderColor(score);
-                  return (
-                    <li key={dim.key}>
-                      <button
-                        onClick={() => onSelectSection(dim.key)}
-                        className="w-full flex items-center gap-3 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 w-60 shrink-0">
-                          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
-                            {dim.label}
-                          </span>
-                        </div>
-                        <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${widthPct}%`, backgroundColor: barColor }}
-                          />
-                        </div>
-                        <span
-                          className={cn("text-[13px] font-semibold tabular-nums w-10 text-right", scoreColorClass(score))}
-                        >
-                          {score.toFixed(1)}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

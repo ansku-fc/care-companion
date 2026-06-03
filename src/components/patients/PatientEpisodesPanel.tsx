@@ -20,10 +20,10 @@ export function PatientEpisodesPanel({ patientId, patientName }: { patientId: st
 
   return (
     <Card className="shadow-card">
-      <CardContent className="py-3 px-3 space-y-2">
+      <CardContent className="py-2 px-3 space-y-1.5">
         <div className="flex items-center gap-2">
           <Activity className="h-3.5 w-3.5 text-primary" />
-          <h3 className="text-[13px] font-semibold">Active Episodes</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Active Episodes</h3>
           <Badge variant="secondary" className="text-[10px]">{episodes.length}</Badge>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -56,7 +56,7 @@ function EpisodeCard({
   };
 
   return (
-    <div className="min-w-[260px] max-w-[280px] shrink-0 rounded-lg border bg-card p-2.5 space-y-2">
+    <div className="min-w-[240px] max-w-[260px] shrink-0 rounded-lg border bg-card p-2 space-y-1.5">
       <div className="flex items-start gap-1.5">
         <span className={cn("mt-1 h-2 w-2 rounded-full shrink-0", meta.dotClass)} />
         <div className="flex-1 min-w-0">

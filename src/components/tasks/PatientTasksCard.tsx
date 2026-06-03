@@ -22,14 +22,15 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
   const [detail, setDetail] = useState<Task | null>(null);
   const [open, setOpen] = useState(false);
 
-  const visible = tasks.slice(0, 3);
+  const visible = tasks.slice(0, 4);
 
   return (
-    <Card className="shadow-card rounded-t-none border-t-0">
-      <CardContent className="py-3 px-3 space-y-2">
+    <Card className="shadow-card">
+      <CardContent className="py-2 px-3 space-y-1.5">
+
         <div className="flex items-center gap-2">
           <ListTodo className="h-3.5 w-3.5 text-primary" />
-          <h3 className="text-[13px] font-semibold">Tasks</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tasks</h3>
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="ghost" size="sm"
@@ -42,7 +43,7 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
             >
               <Plus className="h-3 w-3" /> Add task
             </Button>
-            {tasks.length > 3 && (
+            {tasks.length > 4 && (
               <button
                 onClick={() => navigate(`/tasks?patient=${patientId}`)}
                 className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
