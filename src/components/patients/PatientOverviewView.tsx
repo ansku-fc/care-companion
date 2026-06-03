@@ -825,7 +825,7 @@ export function PatientOverviewView({
 
             <div className="flex items-center gap-2">
               <ClipboardList className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Clinical Considerations</h3>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Considerations</h3>
 
               <Button
                 variant="ghost" size="sm"
