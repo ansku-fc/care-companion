@@ -104,8 +104,8 @@ export function IllnessesMedicationsCard({ patient, onboarding, onSelectSection,
 
   return (
     <>
-      <Card className="shadow-card">
-        <CardContent className="py-2 px-3 space-y-1.5">
+      <Card className="shadow-card h-full flex flex-col">
+        <CardContent className="p-4 space-y-2 flex-1">
           <div className="flex items-center gap-2">
             <Stethoscope className="h-3.5 w-3.5 text-primary" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Illnesses & Medications</h3>

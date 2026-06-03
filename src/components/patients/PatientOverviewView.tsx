@@ -339,7 +339,8 @@ export function PatientOverviewView({
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-2 p-1 overflow-auto h-full text-[13px]">
+    <div className="flex flex-col h-full p-1 gap-3 text-[13px] min-h-0">
+
       {/* 1. HEADER BUTTONS — top right */}
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => navigate(`/patients/${patient.id}/report`)}>
@@ -418,26 +419,34 @@ export function PatientOverviewView({
       </Card>
 
       {/* DASHBOARD GRID — Left (58%) / Right (42%) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[58fr_42fr] gap-2 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[58fr_42fr] gap-4 flex-1 min-h-0">
         {/* LEFT COLUMN */}
-        <div className="space-y-2 min-w-0">
-          <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
-          <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
-          <IllnessesMedicationsCard
-            patient={patient}
-            onboarding={onboarding}
-            onSelectSection={onSelectSection}
-            onDataChanged={onDataChanged}
-          />
+        <div className="flex flex-col gap-4 min-w-0 min-h-0">
+          <div className="min-h-[160px] shrink-0">
+            <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
+          </div>
+          <div className="min-h-[160px] shrink-0">
+            <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
+          </div>
+          <div className="flex-1 min-h-0">
+            <IllnessesMedicationsCard
+              patient={patient}
+              onboarding={onboarding}
+              onSelectSection={onSelectSection}
+              onDataChanged={onDataChanged}
+            />
+          </div>
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className="space-y-2 min-w-0">
+        <div className="flex flex-col gap-4 min-w-0 min-h-0">
+
 
           {/* Biometrics — 2×4 grid */}
       {/* ROW 3 — Biometrics full width */}
-      <Card className="shadow-card">
-        <CardContent className="py-2 px-3 space-y-1.5">
+      <Card className="shadow-card min-h-[100px] shrink-0">
+        <CardContent className="p-4 space-y-2">
+
           <div className="flex items-center gap-2">
             <Ruler className="h-3.5 w-3.5 text-primary" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Biometrics</h3>
@@ -651,10 +660,11 @@ export function PatientOverviewView({
 
           {/* Allergies + Clinical Considerations */}
       {/* ROW 2 — Allergies | Considerations | Biometrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[80px] shrink-0">
         {/* Allergies */}
-        <Card className="shadow-card">
-          <CardContent className="py-2 px-3 space-y-1.5">
+        <Card className="shadow-card h-full">
+          <CardContent className="p-4 space-y-2">
+
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-primary" />
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Allergies</h3>
@@ -810,8 +820,9 @@ export function PatientOverviewView({
         </Card>
 
         {/* Clinical Considerations */}
-        <Card className="shadow-card">
-          <CardContent className="py-2 px-3 space-y-1.5">
+        <Card className="shadow-card h-full">
+          <CardContent className="p-4 space-y-2">
+
             <div className="flex items-center gap-2">
               <ClipboardList className="h-3.5 w-3.5 text-primary" />
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Clinical Considerations</h3>
@@ -855,9 +866,9 @@ export function PatientOverviewView({
 
           {/* Health Dimensions — compact 3-col grid */}
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
-      <Card className="shadow-card">
-        <CardContent className="py-2 px-3">
-          <div className="flex items-center gap-2 mb-1.5">
+      <Card className="shadow-card flex-1 min-h-0 flex flex-col overflow-hidden">
+        <CardContent className="p-4 flex-1 min-h-0 flex flex-col">
+          <div className="flex items-center gap-2 mb-2 shrink-0">
             <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Health Dimensions
             </h3>
@@ -869,7 +880,8 @@ export function PatientOverviewView({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 grid-rows-3 gap-2 flex-1 min-h-0">
+
               {[...HEALTH_TAXONOMY]
                 .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
                 .sort((a, b) => b.score - a.score)
@@ -881,8 +893,9 @@ export function PatientOverviewView({
                     <button
                       key={dim.key}
                       onClick={() => onSelectSection(dim.key)}
-                      className="flex flex-col gap-1 p-1.5 rounded-md border border-border/60 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                      className="h-full flex flex-col justify-center gap-1.5 p-2 rounded-md border border-border/60 hover:bg-muted/50 transition-colors text-left cursor-pointer min-h-0"
                     >
+
                       <div className="flex items-center gap-1.5">
                         <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span className="text-[11px] font-medium text-foreground truncate flex-1">
