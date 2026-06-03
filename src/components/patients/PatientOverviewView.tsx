@@ -660,10 +660,11 @@ export function PatientOverviewView({
 
           {/* Allergies + Clinical Considerations */}
       {/* ROW 2 — Allergies | Considerations | Biometrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[80px] shrink-0">
         {/* Allergies */}
-        <Card className="shadow-card">
-          <CardContent className="py-2 px-3 space-y-1.5">
+        <Card className="shadow-card h-full">
+          <CardContent className="p-4 space-y-2">
+
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-primary" />
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Allergies</h3>
