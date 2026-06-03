@@ -444,8 +444,9 @@ export function PatientOverviewView({
 
           {/* Biometrics — 2×4 grid */}
       {/* ROW 3 — Biometrics full width */}
-      <Card className="shadow-card">
-        <CardContent className="py-2 px-3 space-y-1.5">
+      <Card className="shadow-card min-h-[100px] shrink-0">
+        <CardContent className="p-4 space-y-2">
+
           <div className="flex items-center gap-2">
             <Ruler className="h-3.5 w-3.5 text-primary" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Biometrics</h3>
