@@ -934,8 +934,8 @@ export function PatientOverviewView({
           { label: "Height", unit: "cm", current: height, decimals: 0, lowerIsBetter: false, staticValue: true, history: [] as { date: string; value: number }[] },
           { label: "Weight", unit: "kg", current: weight, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
           { label: "BMI", unit: "", current: bmi, decimals: 1, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 18.5, high: 24.9, label: "Healthy 18.5–24.9" } },
-          { label: "Waist Circumference", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
-          { label: "Hip Circumference", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] as { date: string; value: number }[] },
+          { label: "Waist", unit: "cm", current: waist, decimals: 0, lowerIsBetter: true, history: [] as { date: string; value: number }[] },
+          { label: "Hip", unit: "cm", current: hip, decimals: 0, lowerIsBetter: false, history: [] as { date: string; value: number }[] },
           { label: "W/H Ratio", unit: "", current: whr, decimals: 2, lowerIsBetter: true, history: [] as { date: string; value: number }[], refRange: { low: 0, high: 0.95, label: "Healthy < 0.95" } },
         ];
         const active = allItems.find((i) => i.label === historyModalLabel);
