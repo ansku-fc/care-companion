@@ -74,7 +74,7 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
                     <span className={cn(
                       "text-[12px] flex-1 truncate",
                       t.status === "done" && "line-through text-muted-foreground",
-                    )}>{t.title}</span>
+                    )}>{t.title.replace(/\s*—\s*/g, " · ")}</span>
                     {showRefProgress && (
                       <Badge
                         variant="outline"
