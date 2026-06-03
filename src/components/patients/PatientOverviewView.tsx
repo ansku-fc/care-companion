@@ -640,6 +640,13 @@ export function PatientOverviewView({
                       </PopoverContent>
                     </Popover>
 
+                });
+              })()}
+            </dl>
+          )}
+        </CardContent>
+      </Card>
+
           {/* Allergies + Clinical Considerations */}
       {/* ROW 2 — Allergies | Considerations | Biometrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -841,6 +848,7 @@ export function PatientOverviewView({
         </Card>
       </div>
 
+
           {/* Health Dimensions — compact 3-col grid */}
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
       <Card className="shadow-card">
@@ -893,13 +901,6 @@ export function PatientOverviewView({
                   );
                 })}
             </ul>
-          )}
-        </CardContent>
-      </Card>
-
-                });
-              })()}
-            </dl>
           )}
         </CardContent>
       </Card>
