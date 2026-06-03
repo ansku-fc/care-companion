@@ -417,17 +417,23 @@ export function PatientOverviewView({
         </CardContent>
       </Card>
 
-      {/* TASKS for this patient — visually merged with alert bar above */}
-      <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
-      <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
+      {/* DASHBOARD GRID — Left (58%) / Right (42%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[58fr_42fr] gap-2 items-start">
+        {/* LEFT COLUMN */}
+        <div className="space-y-2 min-w-0">
+          <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
+          <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
+          <IllnessesMedicationsCard
+            patient={patient}
+            onboarding={onboarding}
+            onSelectSection={onSelectSection}
+            onDataChanged={onDataChanged}
+          />
+        </div>
 
-      {/* 3. ROW 1 — Illnesses & Medications (full width; medications shown inline) */}
-      <IllnessesMedicationsCard
-        patient={patient}
-        onboarding={onboarding}
-        onSelectSection={onSelectSection}
-        onDataChanged={onDataChanged}
-      />
+        {/* RIGHT COLUMN */}
+        <div className="space-y-2 min-w-0">
+
 
       {/* ROW 2 — Allergies | Considerations | Biometrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
