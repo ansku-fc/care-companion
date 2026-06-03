@@ -811,10 +811,11 @@ export function PatientOverviewView({
 
         {/* Clinical Considerations */}
         <Card className="shadow-card">
-          <CardContent className="py-3 px-3 space-y-2">
+          <CardContent className="py-2 px-3 space-y-1.5">
             <div className="flex items-center gap-2">
               <ClipboardList className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-[13px] font-semibold">Clinical Considerations</h3>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Clinical Considerations</h3>
+
               <Button
                 variant="ghost" size="sm"
                 className="ml-auto h-6 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
