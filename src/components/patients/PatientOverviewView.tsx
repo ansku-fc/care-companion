@@ -820,8 +820,9 @@ export function PatientOverviewView({
         </Card>
 
         {/* Clinical Considerations */}
-        <Card className="shadow-card">
-          <CardContent className="py-2 px-3 space-y-1.5">
+        <Card className="shadow-card h-full">
+          <CardContent className="p-4 space-y-2">
+
             <div className="flex items-center gap-2">
               <ClipboardList className="h-3.5 w-3.5 text-primary" />
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Clinical Considerations</h3>
