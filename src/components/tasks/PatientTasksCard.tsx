@@ -42,7 +42,7 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
             >
               <Plus className="h-3 w-3" /> Add task
             </Button>
-            {tasks.length > 3 && (
+            {tasks.length > 4 && (
               <button
                 onClick={() => navigate(`/tasks?patient=${patientId}`)}
                 className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
