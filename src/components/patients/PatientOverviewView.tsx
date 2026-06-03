@@ -856,20 +856,20 @@ export function PatientOverviewView({
           {/* Health Dimensions — compact 3-col grid */}
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
       <Card className="shadow-card">
-        <CardContent className="py-3 px-4">
-          <div className="flex items-center gap-2 mb-2">
+        <CardContent className="py-2 px-3">
+          <div className="flex items-center gap-2 mb-1.5">
             <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Health Dimensions
             </h3>
           </div>
           {!onboarding ? (
-            <div className="py-6 text-center">
+            <div className="py-4 text-center">
               <p className="text-[12px] text-muted-foreground">
                 Complete onboarding to see health dimensions.
               </p>
             </div>
           ) : (
-            <ul className="space-y-0.5">
+            <div className="grid grid-cols-3 gap-1.5">
               {[...HEALTH_TAXONOMY]
                 .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
                 .sort((a, b) => b.score - a.score)
@@ -878,36 +878,36 @@ export function PatientOverviewView({
                   const widthPct = Math.max(4, (score / 10) * 100);
                   const barColor = scoreBorderColor(score);
                   return (
-                    <li key={dim.key}>
-                      <button
-                        onClick={() => onSelectSection(dim.key)}
-                        className="w-full flex items-center gap-3 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors text-left cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 w-60 shrink-0">
-                          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
-                            {dim.label}
-                          </span>
-                        </div>
-                        <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${widthPct}%`, backgroundColor: barColor }}
-                          />
-                        </div>
+                    <button
+                      key={dim.key}
+                      onClick={() => onSelectSection(dim.key)}
+                      className="flex flex-col gap-1 p-1.5 rounded-md border border-border/60 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-[11px] font-medium text-foreground truncate flex-1">
+                          {dim.label}
+                        </span>
                         <span
-                          className={cn("text-[13px] font-semibold tabular-nums w-10 text-right", scoreColorClass(score))}
+                          className={cn("text-[12px] font-semibold tabular-nums", scoreColorClass(score))}
                         >
                           {score.toFixed(1)}
                         </span>
-                      </button>
-                    </li>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${widthPct}%`, backgroundColor: barColor }}
+                        />
+                      </div>
+                    </button>
                   );
                 })}
-            </ul>
+            </div>
           )}
         </CardContent>
       </Card>
+
 
       {(() => {
         const height = onboarding?.height_cm ?? 188;
