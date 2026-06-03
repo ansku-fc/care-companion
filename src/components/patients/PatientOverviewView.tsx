@@ -419,21 +419,28 @@ export function PatientOverviewView({
       </Card>
 
       {/* DASHBOARD GRID — Left (58%) / Right (42%) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[58fr_42fr] gap-2 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[58fr_42fr] gap-4 flex-1 min-h-0">
         {/* LEFT COLUMN */}
-        <div className="space-y-2 min-w-0">
-          <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
-          <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
-          <IllnessesMedicationsCard
-            patient={patient}
-            onboarding={onboarding}
-            onSelectSection={onSelectSection}
-            onDataChanged={onDataChanged}
-          />
+        <div className="flex flex-col gap-4 min-w-0 min-h-0">
+          <div className="min-h-[160px] shrink-0">
+            <PatientTasksCard patientId={patient.id} patientName={patient.full_name} />
+          </div>
+          <div className="min-h-[160px] shrink-0">
+            <PatientEpisodesPanel patientId={patient.id} patientName={patient.full_name} />
+          </div>
+          <div className="flex-1 min-h-0">
+            <IllnessesMedicationsCard
+              patient={patient}
+              onboarding={onboarding}
+              onSelectSection={onSelectSection}
+              onDataChanged={onDataChanged}
+            />
+          </div>
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className="space-y-2 min-w-0">
+        <div className="flex flex-col gap-4 min-w-0 min-h-0">
+
 
           {/* Biometrics — 2×4 grid */}
       {/* ROW 3 — Biometrics full width */}
