@@ -896,7 +896,7 @@ export function PatientOverviewView({
                       title={`${dim.label}: ${score.toFixed(1)}`}
                     >
                       <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
-                      <span className="text-[11px] font-medium text-foreground truncate w-32 shrink-0 text-left">
+                      <span className="text-[11px] font-medium text-foreground w-44 shrink-0 text-left whitespace-nowrap">
                         {dim.label}
                       </span>
                       <div className="flex-1 min-w-0 h-2.5 rounded-full bg-muted/60 overflow-hidden">
