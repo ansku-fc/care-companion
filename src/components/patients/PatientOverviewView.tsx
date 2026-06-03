@@ -520,13 +520,13 @@ export function PatientOverviewView({
             <dl className="grid grid-cols-4 gap-x-2 gap-y-1.5 text-[12px]">
               <div>
                 <dt className="text-[11px] text-muted-foreground">Age</dt>
-                <dd className="text-[13px] font-medium text-foreground">
+                <dd className="text-[14px] font-bold text-foreground">
                   {age !== null ? `${age} years` : "—"}
                 </dd>
               </div>
               <div>
                 <dt className="text-[11px] text-muted-foreground">Gender</dt>
-                <dd className="text-[13px] font-medium text-foreground capitalize">
+                <dd className="text-[14px] font-bold text-foreground capitalize">
                   {patient.gender || "Male"}
                 </dd>
               </div>
@@ -600,7 +600,7 @@ export function PatientOverviewView({
                     <Popover key={item.label}>
                       <div>
                         <dt className="text-[11px] text-muted-foreground">{item.label}</dt>
-                        <dd className="text-[13px] font-medium text-foreground flex items-baseline gap-1.5">
+                        <dd className="text-[14px] font-bold text-foreground flex items-baseline gap-1.5">
                           <PopoverTrigger asChild>
                             <button
                               type="button"
