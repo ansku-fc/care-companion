@@ -30,7 +30,7 @@ export function PatientTasksCard({ patientId, patientName }: { patientId: string
 
         <div className="flex items-center gap-2">
           <ListTodo className="h-3.5 w-3.5 text-primary" />
-          <h3 className="text-[13px] font-semibold">Tasks</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tasks</h3>
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="ghost" size="sm"

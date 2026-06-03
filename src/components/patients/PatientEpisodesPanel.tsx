@@ -23,7 +23,7 @@ export function PatientEpisodesPanel({ patientId, patientName }: { patientId: st
       <CardContent className="py-3 px-3 space-y-2">
         <div className="flex items-center gap-2">
           <Activity className="h-3.5 w-3.5 text-primary" />
-          <h3 className="text-[13px] font-semibold">Active Episodes</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Active Episodes</h3>
           <Badge variant="secondary" className="text-[10px]">{episodes.length}</Badge>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
