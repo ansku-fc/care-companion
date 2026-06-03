@@ -640,8 +640,9 @@ export function PatientOverviewView({
                         </div>
                       </PopoverContent>
                     </Popover>
-
+                  );
                 });
+
               })()}
             </dl>
           )}
