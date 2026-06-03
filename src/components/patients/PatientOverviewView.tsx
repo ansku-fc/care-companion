@@ -866,9 +866,9 @@ export function PatientOverviewView({
 
           {/* Health Dimensions — compact 3-col grid */}
       {/* 4. HEALTH DIMENSIONS — horizontal bar chart */}
-      <Card className="shadow-card">
-        <CardContent className="py-2 px-3">
-          <div className="flex items-center gap-2 mb-1.5">
+      <Card className="shadow-card flex-1 min-h-0 flex flex-col overflow-hidden">
+        <CardContent className="p-4 flex-1 min-h-0 flex flex-col">
+          <div className="flex items-center gap-2 mb-2 shrink-0">
             <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Health Dimensions
             </h3>
@@ -880,7 +880,8 @@ export function PatientOverviewView({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 grid-rows-3 gap-2 flex-1 min-h-0">
+
               {[...HEALTH_TAXONOMY]
                 .map((dim) => ({ dim, score: dimensionScore(dim.key) }))
                 .sort((a, b) => b.score - a.score)
