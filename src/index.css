@@ -145,7 +145,7 @@
 
   /* Status pills — calm, never alarmist */
   .badge-success { background-color: #E6F4F3; color: #0EA5A0; }
-  .badge-warning { background-color: #FCEFD6; color: #F59E0B; }
+  .badge-warning { background-color: #FEF3C7; color: #D97706; }
   .badge-alert   { background-color: #FBE4EA; color: #E8446A; }
-  .badge-neutral { background-color: #F2E8D9; color: #6E5A48; }
+  .badge-neutral { background-color: #F5F0EA; color: #6E5A48; }
 }
