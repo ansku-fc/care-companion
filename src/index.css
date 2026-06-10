@@ -9,93 +9,96 @@
 
 @layer base {
   :root {
-    /* Surfaces — warm cream canvas, white cards */
-    --background: 36 33% 97%;           /* #FAF7F2 cream */
-    --foreground: 25 28% 13%;           /* #2A1F17 espresso text */
+    /* Foundation Clinic — Care Companion espresso ↔ cream tonal axis.
+       No cool greys; every neutral lives on this warm scale. */
+
+    /* Surfaces — cream page, white cards */
+    --background: 34 76% 96%;           /* #FDF6EE espresso-00 cream */
+    --foreground: 25 39% 13%;           /* #2E1F14 espresso-100 */
 
     --card: 0 0% 100%;
-    --card-foreground: 25 28% 13%;
+    --card-foreground: 25 39% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 25 28% 13%;
+    --popover-foreground: 25 39% 13%;
 
-    --primary: 25 28% 13%;              /* espresso */
-    --primary-foreground: 36 33% 97%;
+    --primary: 25 39% 13%;              /* espresso-100 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 36 25% 94%;            /* soft cream */
-    --secondary-foreground: 25 28% 13%;
+    --secondary: 38 49% 90%;            /* espresso-08 */
+    --secondary-foreground: 25 33% 18%; /* espresso-90 */
 
-    --muted: 36 25% 94%;
-    --muted-foreground: 28 10% 45%;
+    --muted: 38 49% 90%;                /* espresso-08 */
+    --muted-foreground: 28 22% 36%;     /* espresso-70 */
 
-    --accent: 36 25% 94%;
-    --accent-foreground: 25 28% 13%;
+    --accent: 38 49% 90%;               /* espresso-08 */
+    --accent-foreground: 25 33% 18%;
 
-    --destructive: 348 78% 59%;         /* #E8446A — status only */
+    --destructive: 348 78% 59%;         /* #E8446A — review */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 178 84% 35%;             /* #0EA5A0 — status only */
+    --success: 178 84% 35%;             /* #0EA5A0 — success */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;              /* #F59E0B — status only */
-    --warning-foreground: 25 28% 13%;
+    --warning: 38 92% 50%;              /* #F59E0B — warning */
+    --warning-foreground: 25 39% 13%;
 
-    --border: 36 18% 90%;
-    --input: 36 18% 90%;
-    --ring: 25 28% 13%;
+    --border: 34 36% 85%;               /* espresso-15 */
+    --input: 34 36% 85%;
+    --ring: 31 25% 73%;                 /* espresso-30 */
 
-    --radius: 0.625rem;
+    --radius: 0.5rem;                   /* 8px standard */
 
-    /* Sidebar — white, espresso active pill */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 25 28% 13%;
-    --sidebar-primary: 25 28% 13%;
-    --sidebar-primary-foreground: 36 33% 97%;
-    --sidebar-accent: 36 25% 94%;
-    --sidebar-accent-foreground: 25 28% 13%;
-    --sidebar-border: 36 18% 90%;
-    --sidebar-ring: 25 28% 13%;
+    /* Sidebar — cream surface, espresso-100 active pill */
+    --sidebar-background: 34 76% 96%;
+    --sidebar-foreground: 28 22% 36%;
+    --sidebar-primary: 25 39% 13%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 38 49% 90%;
+    --sidebar-accent-foreground: 25 33% 18%;
+    --sidebar-border: 34 36% 85%;
+    --sidebar-ring: 31 25% 73%;
 
-    /* Shadows */
-    --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.06);
-    --shadow-card-hover: 0 2px 8px hsl(0 0% 0% / 0.08);
-    --shadow-alert: 0 1px 3px hsl(0 0% 0% / 0.06);
-    --shadow-panel: 0 4px 20px hsl(0 0% 0% / 0.06);
-    --shadow-modal: 0 8px 40px hsl(0 0% 0% / 0.12);
+    /* Shadows — warm-tinted, barely-there */
+    --shadow-card: 0 1px 3px hsl(25 39% 13% / 0.06);
+    --shadow-card-hover: 0 1px 3px hsl(25 39% 13% / 0.06);
+    --shadow-alert: 0 1px 3px hsl(25 39% 13% / 0.06);
+    --shadow-panel: 0 4px 20px hsl(25 39% 13% / 0.06);
+    --shadow-modal: 0 8px 40px hsl(25 39% 13% / 0.12);
   }
 
   .dark {
-    --background: 0 0% 8%;
-    --foreground: 40 11% 96%;
-    --card: 0 0% 12%;
-    --card-foreground: 40 11% 96%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 40 11% 96%;
-    --primary: 40 11% 96%;
-    --primary-foreground: 0 0% 10%;
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 40 11% 96%;
-    --muted: 0 0% 16%;
-    --muted-foreground: 40 8% 60%;
-    --accent: 28 39% 66%;
-    --accent-foreground: 0 0% 10%;
+    --background: 25 39% 8%;
+    --foreground: 34 76% 96%;
+    --card: 25 33% 12%;
+    --card-foreground: 34 76% 96%;
+    --popover: 25 33% 12%;
+    --popover-foreground: 34 76% 96%;
+    --primary: 34 76% 96%;
+    --primary-foreground: 25 39% 13%;
+    --secondary: 25 33% 18%;
+    --secondary-foreground: 34 76% 96%;
+    --muted: 25 33% 18%;
+    --muted-foreground: 28 16% 53%;
+    --accent: 25 33% 18%;
+    --accent-foreground: 34 76% 96%;
     --destructive: 348 78% 59%;
     --destructive-foreground: 0 0% 100%;
     --success: 178 84% 35%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 10%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 28 39% 66%;
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 40 11% 96%;
-    --sidebar-primary: 0 0% 16%;
-    --sidebar-primary-foreground: 40 11% 96%;
-    --sidebar-accent: 0 0% 16%;
-    --sidebar-accent-foreground: 40 11% 96%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 28 39% 66%;
+    --warning-foreground: 25 39% 13%;
+    --border: 25 33% 22%;
+    --input: 25 33% 22%;
+    --ring: 31 25% 73%;
+    --sidebar-background: 25 39% 8%;
+    --sidebar-foreground: 34 76% 96%;
+    --sidebar-primary: 34 76% 96%;
+    --sidebar-primary-foreground: 25 39% 13%;
+    --sidebar-accent: 25 33% 18%;
+    --sidebar-accent-foreground: 34 76% 96%;
+    --sidebar-border: 25 33% 22%;
+    --sidebar-ring: 31 25% 73%;
   }
 }
 
@@ -108,23 +111,18 @@
     @apply bg-background text-foreground;
     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
     font-weight: 400;
-    letter-spacing: 0.005em;
+    letter-spacing: 0;
     line-height: 1.55;
   }
 
-  h1, h2, h3 {
-    font-family: 'Belleza', ui-serif, Georgia, serif;
-    font-weight: 400;
-    letter-spacing: 0;
-    line-height: 1.2;
-    color: hsl(var(--foreground));
-  }
-
-  h4, h5, h6 {
+  /* Clinical dashboard UI — sentence-case Plus Jakarta everywhere.
+     Belleza is reserved for patient-facing surfaces (use .font-serif-display). */
+  h1, h2, h3, h4, h5, h6 {
     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
     font-weight: 500;
     letter-spacing: -0.01em;
     line-height: 1.3;
+    color: hsl(var(--foreground));
   }
 
   hr {
@@ -135,7 +133,8 @@
 
 @layer utilities {
   .section-label {
-    @apply text-[11px] font-medium uppercase text-muted-foreground;
+    @apply text-[11px] font-medium uppercase;
+    color: #6E5A48;                    /* espresso-70 */
     letter-spacing: 0.08em;
     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   }
@@ -143,10 +142,12 @@
   .font-serif-display {
     font-family: 'Belleza', ui-serif, Georgia, serif;
     font-weight: 400;
+    letter-spacing: -0.005em;
   }
 
-  .badge-success { background-color: #E6F5F4; color: #0F5F5C; }
-  .badge-warning { background-color: #FEF3C7; color: #92400E; }
-  .badge-alert   { background-color: #FFF0F3; color: #BE123C; }
-  .badge-neutral { background-color: #F0EEE9; color: #6B6860; }
+  /* Status pills — calm, never alarmist */
+  .badge-success { background-color: #E6F4F3; color: #0EA5A0; }
+  .badge-warning { background-color: #FCEFD6; color: #F59E0B; }
+  .badge-alert   { background-color: #FBE4EA; color: #E8446A; }
+  .badge-neutral { background-color: #F2E8D9; color: #6E5A48; }
 }
