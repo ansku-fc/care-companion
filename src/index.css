@@ -9,62 +9,60 @@
 
 @layer base {
   :root {
-    /* Foundation Clinic — Care Companion espresso ↔ cream tonal axis.
-       No cool greys; every neutral lives on this warm scale. */
+    /* Foundation Clinic — Care Companion espresso ↔ ivory tonal axis.
+       Page is near-neutral ivory; cards are pure white. */
 
-    /* Surfaces — cream page, white cards */
-    --background: 34 76% 96%;           /* #FDF6EE espresso-00 cream */
-    --foreground: 25 39% 13%;           /* #2E1F14 espresso-100 */
+    --background: 40 20% 97%;           /* #F9F7F4 ivory */
+    --foreground: 22 39% 13%;           /* #2E1F14 espresso-100 */
 
     --card: 0 0% 100%;
-    --card-foreground: 25 39% 13%;
+    --card-foreground: 22 39% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 25 39% 13%;
+    --popover-foreground: 22 39% 13%;
 
-    --primary: 25 39% 13%;              /* espresso-100 */
+    --primary: 22 39% 13%;              /* espresso-100 — text + ONE CTA */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 38 49% 90%;            /* espresso-08 */
-    --secondary-foreground: 25 33% 18%; /* espresso-90 */
+    --secondary: 33 33% 94%;            /* espresso-08 #F5F0EA */
+    --secondary-foreground: 22 33% 18%; /* espresso-90 */
 
-    --muted: 38 49% 90%;                /* espresso-08 */
-    --muted-foreground: 28 22% 36%;     /* espresso-70 */
+    --muted: 33 33% 94%;
+    --muted-foreground: 24 21% 36%;     /* espresso-70 #6E5A48 */
 
-    --accent: 38 49% 90%;               /* espresso-08 */
-    --accent-foreground: 25 33% 18%;
+    --accent: 33 33% 94%;
+    --accent-foreground: 22 33% 18%;
 
     --destructive: 348 78% 59%;         /* #E8446A — review */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 178 84% 35%;             /* #0EA5A0 — success */
+    --success: 178 84% 35%;             /* #0EA5A0 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;              /* #F59E0B — warning */
-    --warning-foreground: 25 39% 13%;
+    --warning: 28 92% 44%;              /* #D97706 */
+    --warning-foreground: 48 96% 89%;   /* #FEF3C7 pill bg */
 
-    --border: 34 36% 85%;               /* espresso-15 */
-    --input: 34 36% 85%;
-    --ring: 31 25% 73%;                 /* espresso-30 */
+    --border: 34 41% 85%;               /* espresso-15 #E7DCCD */
+    --input: 34 41% 85%;
+    --ring: 31 27% 73%;                 /* espresso-30 #C9BBA9 */
 
-    --radius: 0.5rem;                   /* 8px standard */
+    --radius: 0.5rem;
 
-    /* Sidebar — cream surface, espresso-100 active pill */
-    --sidebar-background: 34 76% 96%;
-    --sidebar-foreground: 28 22% 36%;
-    --sidebar-primary: 25 39% 13%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 38 49% 90%;
-    --sidebar-accent-foreground: 25 33% 18%;
-    --sidebar-border: 34 36% 85%;
-    --sidebar-ring: 31 25% 73%;
+    /* Sidebar — transparent (inherits ivory). Active = espresso-08 light pill. */
+    --sidebar-background: 40 20% 97%;
+    --sidebar-foreground: 24 21% 36%;
+    --sidebar-primary: 33 33% 94%;          /* light active bg */
+    --sidebar-primary-foreground: 22 39% 13%;
+    --sidebar-accent: 33 33% 94%;
+    --sidebar-accent-foreground: 22 33% 18%;
+    --sidebar-border: 34 41% 85%;
+    --sidebar-ring: 31 27% 73%;
 
-    /* Shadows — warm-tinted, barely-there */
-    --shadow-card: 0 1px 3px hsl(25 39% 13% / 0.06);
-    --shadow-card-hover: 0 1px 3px hsl(25 39% 13% / 0.06);
-    --shadow-alert: 0 1px 3px hsl(25 39% 13% / 0.06);
-    --shadow-panel: 0 4px 20px hsl(25 39% 13% / 0.06);
-    --shadow-modal: 0 8px 40px hsl(25 39% 13% / 0.12);
+    --shadow-card: 0 1px 3px hsl(22 39% 13% / 0.05);
+    --shadow-card-hover: 0 1px 3px hsl(22 39% 13% / 0.05);
+    --shadow-alert: 0 1px 3px hsl(22 39% 13% / 0.05);
+    --shadow-panel: 0 4px 20px hsl(22 39% 13% / 0.06);
+    --shadow-modal: 0 8px 40px hsl(22 39% 13% / 0.12);
   }
 
   .dark {
