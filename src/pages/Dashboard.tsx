@@ -405,26 +405,35 @@ const Dashboard = () => {
               )}
               {todaySchedule.map((appt) => {
                 const s = typeStyle(appt.appointmentType);
+                const isCompleted = appt.status === "completed";
                 return (
-                  <div key={appt.id} className={cn("group flex items-center gap-4 p-3 rounded-lg transition-colors hover:brightness-95", s.bg)}>
-                    <span className="text-sm font-mono text-muted-foreground w-14 tabular-nums">{appt.time}</span>
-                    <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(appt.status))} />
+                  <div
+                    key={appt.id}
+                    className={cn(
+                      "group flex items-center gap-4 p-3 rounded-lg border-b border-[#F5F0EA] last:border-b-0 transition-colors",
+                      isCompleted ? "bg-[#F9F7F4]" : "bg-white hover:bg-[#F9F7F4]",
+                    )}
+                  >
+                    <span className={cn("text-sm font-mono w-14 tabular-nums", isCompleted ? "text-[#9B8775]" : "text-[#6E5A48]")}>{appt.time}</span>
+                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", s.bg.replace("bg-", "bg-"))} style={{ backgroundColor: s.bg.match(/#[0-9A-F]{6}/i)?.[0] }} />
                     <div className="flex-1 min-w-0">
-                      <button onClick={() => goToPatient(appt.name, "overview")} className="text-sm font-medium hover:underline truncate block text-left">
+                      <button onClick={() => goToPatient(appt.name, "overview")} className={cn("text-sm font-medium hover:underline truncate block text-left", isCompleted && "text-[#9B8775]")}>
                         {appt.name}
                       </button>
-                      <p className={cn("text-xs truncate font-medium", s.text)}>{s.label}</p>
+                      <span className={cn("inline-flex items-center mt-1 px-1.5 py-0.5 rounded-[4px] text-[11px] font-medium", s.bg, s.text)}>
+                        {s.label}
+                      </span>
                     </div>
                     <span className={cn(
                       "text-[11px] font-medium uppercase tracking-wide",
                       appt.status === "in_progress" && "text-success",
-                      appt.status === "completed" && "text-muted-foreground",
-                      appt.status === "upcoming" && "text-foreground/70",
+                      appt.status === "completed" && "text-[#9B8775]",
+                      appt.status === "upcoming" && "text-[#6E5A48]",
                     )}>{statusLabelText(appt.status)}</span>
                     <button
                       type="button"
                       onClick={() => createTaskForAppt(appt)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-background/60"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-muted/40"
                       aria-label="Create follow-up task"
                       title="Create follow-up task"
                     >
