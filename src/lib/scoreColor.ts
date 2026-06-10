@@ -65,6 +65,19 @@ export function scoreBorderColor(score: ScoreInput): string {
   }
 }
 
+/** Desaturated rgba fill for risk bars — quiet indicator, never an alarm. */
+export function scoreBarFillColor(score: ScoreInput): string {
+  switch (scoreTone(score)) {
+    case "green": return "rgba(14, 165, 160, 0.55)";   // #0EA5A0
+    case "amber": return "rgba(201, 162, 39, 0.55)";   // #C9A227
+    case "red":   return "rgba(232, 68, 106, 0.45)";   // #E8446A
+    default:      return "rgba(155, 135, 117, 0.30)";  // espresso-50
+  }
+}
+
+/** Warm-light track colour for risk bars. */
+export const RISK_BAR_TRACK = "#F0EBE4";
+
 /** Tinted background + text combo for pill/badge style score chips. */
 export function scoreBadgeClass(score: ScoreInput): string {
   switch (scoreTone(score)) {
