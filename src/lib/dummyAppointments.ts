@@ -3,15 +3,15 @@
 // appointments for the given month.
 
 export const TYPE_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  onboarding:     { bg: "bg-[#C8A98A]",     text: "text-[#2E1F14]", border: "border-transparent",            label: "Onboarding" },
-  acute:          { bg: "bg-[#E8446A]",     text: "text-[#7A1530]", border: "border-transparent",            label: "Acute" },
-  consultation:   { bg: "bg-[#5A3E2B]",     text: "text-[#FDF6EE]", border: "border-transparent",            label: "Consultation" },
-  follow_up:      { bg: "bg-[#0EA5A0]",     text: "text-[#04342C]", border: "border-transparent",            label: "Follow-up" },
-  check_up:       { bg: "bg-[#D4A847]",     text: "text-[#4A2E05]", border: "border-transparent",            label: "Check-up" },
-  procedure:      { bg: "bg-[#8C7B6E]",     text: "text-[#2E1F14]", border: "border-transparent",            label: "Procedure" },
-  urgent:         { bg: "bg-[#E8446A]",     text: "text-[#7A1530]", border: "border-transparent",            label: "Urgent" },
-  working_time:   { bg: "bg-[#E8E0D5]",     text: "text-[#5A3E2B]", border: "border-transparent",            label: "Working Time" },
-  doctor_meeting: { bg: "bg-[#FDF6EE]",     text: "text-[#2E1F14]", border: "border-[#C8A98A]",            label: "Doctor Meeting" },
+  onboarding:     { bg: "bg-[#F0F9F0]", text: "text-[#3D8B47]", border: "border-transparent", label: "Onboarding" },
+  acute:          { bg: "bg-[#FEE2E2]", text: "text-[#B91C1C]", border: "border-transparent", label: "Acute" },
+  consultation:   { bg: "bg-[#FEF3C7]", text: "text-[#92400E]", border: "border-transparent", label: "Consultation" },
+  follow_up:      { bg: "bg-[#E0F2FE]", text: "text-[#0369A1]", border: "border-transparent", label: "Follow-up" },
+  check_up:       { bg: "bg-[#F5F0EA]", text: "text-[#6E5A48]", border: "border-transparent", label: "Check-up" },
+  procedure:      { bg: "bg-[#EDE9FE]", text: "text-[#5B21B6]", border: "border-transparent", label: "Procedure" },
+  urgent:         { bg: "bg-[#FBE4EA]", text: "text-[#C0274A]", border: "border-transparent", label: "Urgent" },
+  working_time:   { bg: "bg-[#F5F5F4]", text: "text-[#78716C]", border: "border-transparent", label: "Working Time" },
+  doctor_meeting: { bg: "bg-[#F5F5F4]", text: "text-[#78716C]", border: "border-transparent", label: "Doctor Meeting" },
 };
 
 export const typeStyle = (type: string) => TYPE_STYLES[type] ?? TYPE_STYLES.consultation;

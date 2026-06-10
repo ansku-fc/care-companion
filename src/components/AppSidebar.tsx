@@ -51,16 +51,16 @@ export function AppSidebar() {
       <NavLink
         to={item.url}
         end={item.url === "/"}
-        className="relative rounded-none border-l-2 border-transparent text-foreground hover:bg-sidebar-accent transition-colors [&>svg]:text-muted-foreground"
-        activeClassName="bg-sidebar-primary border-l-accent text-foreground font-medium [&>svg]:text-foreground"
+        className="relative rounded-md border-l-[3px] border-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors [&>svg]:text-muted-foreground"
+        activeClassName="bg-sidebar-primary border-l-ring text-foreground font-medium [&>svg]:text-foreground"
       >
         <item.icon className={collapsed ? "h-[18px] w-[18px]" : "mr-3 h-[18px] w-[18px]"} />
         {!collapsed && <span className="text-[14px]">{item.title}</span>}
       </NavLink>
     );
     return (
-      <SidebarMenuItem key={item.title} className="px-0 py-0.5">
-        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-none px-4">
+      <SidebarMenuItem key={item.title} className="px-2 py-0.5">
+        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-md px-3">
           {link}
         </SidebarMenuButton>
       </SidebarMenuItem>
