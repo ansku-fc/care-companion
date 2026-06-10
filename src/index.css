@@ -9,52 +9,52 @@
 
 @layer base {
   :root {
-    /* Surfaces — minimal white */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
+    /* Surfaces — warm cream canvas, white cards */
+    --background: 36 33% 97%;           /* #FAF7F2 cream */
+    --foreground: 25 28% 13%;           /* #2A1F17 espresso text */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 25 28% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 25 28% 13%;
 
-    --primary: 0 0% 10%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 25 28% 13%;              /* espresso */
+    --primary-foreground: 36 33% 97%;
 
-    --secondary: 0 0% 97%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 36 25% 94%;            /* soft cream */
+    --secondary-foreground: 25 28% 13%;
 
-    --muted: 0 0% 97%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 36 25% 94%;
+    --muted-foreground: 28 10% 45%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 36 25% 94%;
+    --accent-foreground: 25 28% 13%;
 
-    --destructive: 348 78% 59%;         /* #E8446A review pink */
+    --destructive: 348 78% 59%;         /* #E8446A — status only */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 178 84% 35%;             /* #0EA5A0 */
+    --success: 178 84% 35%;             /* #0EA5A0 — status only */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;              /* #F59E0B */
-    --warning-foreground: 0 0% 10%;
+    --warning: 38 92% 50%;              /* #F59E0B — status only */
+    --warning-foreground: 25 28% 13%;
 
-    --border: 0 0% 92%;
-    --input: 0 0% 92%;
-    --ring: 0 0% 80%;
+    --border: 36 18% 90%;
+    --input: 36 18% 90%;
+    --ring: 25 28% 13%;
 
     --radius: 0.625rem;
 
-    /* Sidebar — white */
+    /* Sidebar — white, espresso active pill */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 0 0% 96%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 92%;
-    --sidebar-ring: 0 0% 80%;
+    --sidebar-foreground: 25 28% 13%;
+    --sidebar-primary: 25 28% 13%;
+    --sidebar-primary-foreground: 36 33% 97%;
+    --sidebar-accent: 36 25% 94%;
+    --sidebar-accent-foreground: 25 28% 13%;
+    --sidebar-border: 36 18% 90%;
+    --sidebar-ring: 25 28% 13%;
 
     /* Shadows */
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.06);
