@@ -9,52 +9,52 @@
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 40 11% 96%;           /* #F5F4F2 canvas */
-    --foreground: 0 0% 10%;             /* #1A1A1A */
+    /* Surfaces — minimal white */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
 
-    --card: 0 0% 100%;                  /* white */
+    --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    --primary: 25 39% 13%;              /* #2E1F14 espresso */
+    --primary: 0 0% 10%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 13% 91%;            /* #ECEAE6 */
-    --secondary-foreground: 25 39% 13%;
+    --secondary: 0 0% 97%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 40 17% 92%;                /* #F0EEE9 */
-    --muted-foreground: 40 8% 40%;      /* #6B6860 */
+    --muted: 0 0% 97%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 28 39% 66%;               /* #C8A98A sand */
-    --accent-foreground: 25 39% 13%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 10%;
 
-    --destructive: 348 78% 59%;
+    --destructive: 348 78% 59%;         /* #E8446A review pink */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 178 84% 35%;
+    --success: 178 84% 35%;             /* #0EA5A0 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 25 39% 13%;
+    --warning: 38 92% 50%;              /* #F59E0B */
+    --warning-foreground: 0 0% 10%;
 
-    --border: 40 14% 89%;               /* #E8E6E1 */
-    --input: 40 14% 89%;
-    --ring: 28 39% 66%;                 /* sand focus */
+    --border: 0 0% 92%;
+    --input: 0 0% 92%;
+    --ring: 0 0% 80%;
 
-    --radius: 0.625rem;                 /* 10px */
+    --radius: 0.625rem;
 
-    /* Sidebar — warm grey */
-    --sidebar-background: 40 13% 91%;   /* #ECEAE6 */
-    --sidebar-foreground: 25 39% 13%;
-    --sidebar-primary: 32 79% 96%;      /* #FDF6EE cream active pill */
-    --sidebar-primary-foreground: 25 39% 13%;
-    --sidebar-accent: 32 79% 96%;       /* hover cream */
-    --sidebar-accent-foreground: 25 39% 13%;
-    --sidebar-border: 40 14% 89%;
-    --sidebar-ring: 28 39% 66%;
+    /* Sidebar — white */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 0 0% 96%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 92%;
+    --sidebar-ring: 0 0% 80%;
 
     /* Shadows */
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.06);
