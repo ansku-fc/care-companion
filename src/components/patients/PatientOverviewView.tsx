@@ -887,7 +887,7 @@ export function PatientOverviewView({
                 .map(({ dim, score }) => {
                   const Icon = dim.icon;
                   const widthPct = Math.max(2, (score / 10) * 100);
-                  const barColor = scoreBorderColor(score);
+                  const barColor = scoreBarFillColor(score);
                   return (
                     <button
                       key={dim.key}
@@ -899,7 +899,7 @@ export function PatientOverviewView({
                       <span className="text-[11px] font-medium text-foreground w-44 shrink-0 text-left whitespace-nowrap">
                         {dim.label}
                       </span>
-                      <div className="flex-1 min-w-0 h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                      <div className="flex-1 min-w-0 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: RISK_BAR_TRACK }}>
                         <div
                           className="h-full rounded-full transition-all group-hover:opacity-80"
                           style={{ width: `${widthPct}%`, backgroundColor: barColor }}
