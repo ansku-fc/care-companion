@@ -415,7 +415,7 @@ const Dashboard = () => {
                     )}
                   >
                     <span className={cn("text-sm font-mono w-14 tabular-nums", isCompleted ? "text-[#9B8775]" : "text-[#6E5A48]")}>{appt.time}</span>
-                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", s.bg.replace("bg-", "bg-"))} style={{ backgroundColor: s.bg.match(/#[0-9A-F]{6}/i)?.[0] }} />
+                    <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: s.text.match(/#[0-9A-F]{6}/i)?.[0] }} />
                     <div className="flex-1 min-w-0">
                       <button onClick={() => goToPatient(appt.name, "overview")} className={cn("text-sm font-medium hover:underline truncate block text-left", isCompleted && "text-[#9B8775]")}>
                         {appt.name}
