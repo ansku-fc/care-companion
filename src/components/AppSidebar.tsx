@@ -51,16 +51,16 @@ export function AppSidebar() {
       <NavLink
         to={item.url}
         end={item.url === "/"}
-        className="relative rounded-md border-l-[3px] border-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors [&>svg]:text-muted-foreground"
-        activeClassName="bg-sidebar-primary border-l-ring text-foreground font-medium [&>svg]:text-foreground"
+        className="relative rounded-[9px] text-[var(--fg-2)] hover:bg-[var(--app-hover)] hover:text-[var(--fg-1)] transition-colors [&>svg]:text-[var(--fg-3)]"
+        activeClassName="text-[var(--fg-1)] font-medium [&>svg]:text-[var(--fg-1)] [&::before]:content-[''] [&::before]:absolute [&::before]:left-[-16px] [&::before]:top-2 [&::before]:bottom-2 [&::before]:w-[3px] [&::before]:rounded-r-[3px] [&::before]:bg-[var(--espresso)]"
       >
-        <item.icon className={collapsed ? "h-[18px] w-[18px]" : "mr-3 h-[18px] w-[18px]"} />
-        {!collapsed && <span className="text-[14px]">{item.title}</span>}
+        <item.icon className={collapsed ? "h-[17px] w-[17px]" : "mr-3 h-[17px] w-[17px]"} strokeWidth={1.6} />
+        {!collapsed && <span className="text-[13.5px]">{item.title}</span>}
       </NavLink>
     );
     return (
-      <SidebarMenuItem key={item.title} className="px-2 py-0.5">
-        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-10 rounded-md px-3">
+      <SidebarMenuItem key={item.title} className="px-2 py-px">
+        <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined} className="h-9 rounded-[9px] px-2.5">
           {link}
         </SidebarMenuButton>
       </SidebarMenuItem>
