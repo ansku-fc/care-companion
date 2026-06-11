@@ -194,49 +194,54 @@ export function MarkerDetailChart({
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 8, right: 56, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                <CartesianGrid strokeDasharray="2 3" stroke={HAIR} vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: INK_FAINT }} axisLine={{ stroke: HAIR_STRONG }} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: INK_FAINT }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "12px",
+                    backgroundColor: "#FFFFFF",
+                    border: `1px solid ${HAIR_STRONG}`,
+                    borderRadius: 6,
+                    fontSize: 11,
+                    color: ESPRESSO,
+                    boxShadow: "0 4px 12px rgba(46,31,20,0.08)",
                   }}
+                  labelStyle={{ color: INK_DIM, fontSize: 10 }}
                 />
 
                 {(refLow !== undefined || refHigh !== undefined) && (
                   <ReferenceArea
                     y1={refLow ?? 0}
                     y2={refHigh ?? 9999}
-                    fill="hsl(142 70% 45%)"
-                    fillOpacity={0.1}
+                    fill={TEAL_INK}
+                    fillOpacity={0.08}
                   />
                 )}
                 {refLow !== undefined && (
                   <ReferenceLine
                     y={refLow}
-                    stroke="hsl(142 60% 40%)"
-                    strokeDasharray="4 3"
+                    stroke={TEAL_INK}
+                    strokeOpacity={0.35}
+                    strokeDasharray="3 3"
                     label={{
-                      value: `Low ${refLow}`,
+                      value: `${refLow}`,
                       position: "right",
                       fontSize: 9,
-                      fill: "hsl(var(--muted-foreground))",
+                      fill: INK_FAINT,
                     }}
                   />
                 )}
                 {refHigh !== undefined && (
                   <ReferenceLine
                     y={refHigh}
-                    stroke="hsl(142 60% 40%)"
-                    strokeDasharray="4 3"
+                    stroke={TEAL_INK}
+                    strokeOpacity={0.35}
+                    strokeDasharray="3 3"
                     label={{
-                      value: `High ${refHigh}`,
+                      value: `${refHigh}`,
                       position: "right",
                       fontSize: 9,
-                      fill: "hsl(var(--muted-foreground))",
+                      fill: INK_FAINT,
                     }}
                   />
                 )}
@@ -244,13 +249,14 @@ export function MarkerDetailChart({
                 {secondaryRefValues?.high !== undefined && (
                   <ReferenceLine
                     y={secondaryRefValues.high}
-                    stroke="hsl(142 50% 55%)"
-                    strokeDasharray="4 3"
+                    stroke={TEAL_INK}
+                    strokeOpacity={0.2}
+                    strokeDasharray="3 3"
                     label={{
-                      value: `High ${secondaryRefValues.high}`,
+                      value: `${secondaryRefValues.high}`,
                       position: "right",
                       fontSize: 9,
-                      fill: "hsl(var(--muted-foreground))",
+                      fill: INK_FAINT,
                     }}
                   />
                 )}
@@ -260,18 +266,19 @@ export function MarkerDetailChart({
                   dataKey="value"
                   name={label}
                   stroke={PRIMARY_LINE}
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   dot={renderDot as any}
-                  activeDot={{ r: 5 }}
+                  activeDot={{ r: 5, fill: BLUSH, stroke: "#FFFFFF", strokeWidth: 1.5 }}
                 />
                 {secondarySeries && (
                   <Line
                     type="monotone"
                     dataKey="value2"
                     name={secondaryLabel}
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "hsl(var(--muted-foreground))", stroke: "hsl(var(--background))", strokeWidth: 1 }}
+                    stroke={INK_DIM}
+                    strokeWidth={1.25}
+                    strokeDasharray="4 3"
+                    dot={{ r: 2.5, fill: INK_DIM, stroke: "#FFFFFF", strokeWidth: 1 }}
                     activeDot={{ r: 4 }}
                     connectNulls
                   />
