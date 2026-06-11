@@ -10,13 +10,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <TaskProvider>
         <div className="min-h-screen flex w-full">
           <AppSidebar />
-          <main className="flex-1 flex flex-col min-w-0">
-            <header className="h-12 flex items-center justify-between border-b border-border px-4 bg-card">
+          <main className="flex-1 flex flex-col min-w-0 bg-[var(--app-canvas)]">
+            <header className="h-14 flex items-center justify-between border-b border-[var(--app-line)] px-8 bg-[var(--app-header)]">
               <div className="md:hidden"><SidebarTrigger /></div>
               <div className="flex-1" />
               <NotificationBell />
             </header>
-            <div className="flex-1 px-6 md:px-10 lg:px-12 py-8 overflow-auto">
+            <div className="flex-1 px-8 md:px-10 py-8 overflow-auto">
               {children}
             </div>
           </main>
