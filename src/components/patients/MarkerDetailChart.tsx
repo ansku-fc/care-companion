@@ -57,7 +57,16 @@ interface MarkerDetailChartProps {
   onCreateTask?: () => void;
 }
 
-const PRIMARY_LINE = "hsl(var(--foreground))";
+// Care Companion chart tokens (warm tonal axis, status palette only)
+const ESPRESSO = "#2E1F14";
+const BLUSH = "#B0455F";        // latest dot
+const TEAL_INK = "#0E8A85";     // optimal band ink
+const AMBER_INK = "#A86A1A";    // out-of-range dot
+const HAIR = "#E8E0D4";
+const HAIR_STRONG = "#D9CFBE";
+const INK_DIM = "#6B5E51";
+const INK_FAINT = "#9A8D7E";
+const PRIMARY_LINE = ESPRESSO;
 
 export function MarkerDetailChart({
   label,
