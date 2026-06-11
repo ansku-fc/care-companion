@@ -134,56 +134,79 @@ export function DraggableReferenceChart({
           margin={{ top: 10, right: 50, left: 0, bottom: 10 }}
           onMouseMove={handleChartUpdate}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <CartesianGrid strokeDasharray="2 3" stroke="#E8E0D4" vertical={false} />
           <XAxis
             dataKey="date"
-            tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: 11, fill: "#9A8D7E" }}
+            axisLine={{ stroke: "#D9CFBE" }}
+            tickLine={false}
             angle={-45}
             textAnchor="end"
             height={60}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: 11, fill: "#9A8D7E" }}
+            axisLine={false}
+            tickLine={false}
             domain={[yMin, yMax]}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--background))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: "8px",
-              fontSize: "12px",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D9CFBE",
+              borderRadius: 6,
+              fontSize: 12,
+              color: "#2E1F14",
+              boxShadow: "0 4px 12px rgba(46,31,20,0.08)",
             }}
-          />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="hsl(var(--primary))"
-            strokeWidth={2}
-            dot={{ fill: "hsl(var(--primary))", r: 4 }}
-            activeDot={{ r: 6 }}
+            labelStyle={{ color: "#6B5E51", fontSize: 10 }}
           />
           {/* Shaded normal range */}
           {(low != null || high != null) && (
             <ReferenceArea
               y1={low ?? yMin}
               y2={high ?? yMax}
-              fill="hsl(142 71% 45%)"
-              fillOpacity={0.1}
+              fill="#0E8A85"
+              fillOpacity={0.08}
               ifOverflow="extendDomain"
             />
           )}
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#2E1F14"
+            strokeWidth={1.5}
+            dot={(props: any) => {
+              const { cx, cy, index } = props;
+              if (cx == null || cy == null) return null;
+              const isLatest = index === chartData.length - 1;
+              return (
+                <circle
+                  key={`d-${index}`}
+                  cx={cx}
+                  cy={cy}
+                  r={isLatest ? 4.5 : 3}
+                  fill={isLatest ? "#B0455F" : "#2E1F14"}
+                  stroke="#FFFFFF"
+                  strokeWidth={isLatest ? 1.5 : 1}
+                />
+              );
+            }}
+            activeDot={{ r: 6, fill: "#B0455F", stroke: "#FFFFFF", strokeWidth: 1.5 }}
+          />
           {/* High reference line - draggable */}
           {high != null && (
             <ReferenceLine
               y={high}
-              stroke="hsl(var(--destructive))"
-              strokeWidth={2}
-              strokeDasharray="6 3"
+              stroke="#0E8A85"
+              strokeOpacity={0.6}
+              strokeWidth={1.25}
+              strokeDasharray="4 3"
               label={{
-                value: `▲ High: ${high}`,
+                value: `High ${high}`,
                 position: "right",
                 fontSize: 11,
-                fill: "hsl(var(--destructive))",
+                fill: "#0E8A85",
                 fontWeight: 600,
               }}
             />
@@ -192,14 +215,15 @@ export function DraggableReferenceChart({
           {low != null && (
             <ReferenceLine
               y={low}
-              stroke="hsl(45 93% 47%)"
-              strokeWidth={2}
-              strokeDasharray="6 3"
+              stroke="#0E8A85"
+              strokeOpacity={0.6}
+              strokeWidth={1.25}
+              strokeDasharray="4 3"
               label={{
-                value: `▼ Low: ${low}`,
+                value: `Low ${low}`,
                 position: "right",
                 fontSize: 11,
-                fill: "hsl(45 93% 47%)",
+                fill: "#0E8A85",
                 fontWeight: 600,
               }}
             />
@@ -213,7 +237,7 @@ export function DraggableReferenceChart({
           value={high}
           scale={yScale}
           containerRef={containerRef}
-          color="hsl(var(--destructive))"
+          color="#0E8A85"
           onMouseDown={handleMouseDown("high")}
           label="Drag to adjust high"
         />
@@ -223,15 +247,15 @@ export function DraggableReferenceChart({
           value={low}
           scale={yScale}
           containerRef={containerRef}
-          color="hsl(45 93% 47%)"
+          color="#0E8A85"
           onMouseDown={handleMouseDown("low")}
           label="Drag to adjust low"
         />
       )}
 
       {(low != null || high != null) && (
-        <div className="absolute top-2 left-12 flex items-center gap-2 text-[10px] text-muted-foreground bg-background/80 rounded px-2 py-1">
-          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "hsl(142 71% 45%)", opacity: 0.3 }} />
+        <div className="absolute top-2 left-12 flex items-center gap-2 text-[10px] text-[#6B5E51] bg-white/85 rounded px-2 py-1 border border-[#E8E0D4]">
+          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0E8A85", opacity: 0.18 }} />
           Normal range — drag lines to adjust
         </div>
       )}
