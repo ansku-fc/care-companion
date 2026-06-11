@@ -79,15 +79,9 @@ export function BiometricMiniChart({ label, unit, decimals, series }: Props) {
       <div className="px-2 pt-1 pb-1 h-40">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 16, right: 14, left: 6, bottom: 4 }}>
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="hsl(270 70% 60%)" />
-                <stop offset="100%" stopColor="hsl(180 70% 45%)" />
-              </linearGradient>
-            </defs>
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fontSize: 9, fill: "#9A8D7E" }}
               interval="preserveStartEnd"
               tickLine={false}
               axisLine={false}
@@ -95,12 +89,15 @@ export function BiometricMiniChart({ label, unit, decimals, series }: Props) {
             <YAxis hide domain={["auto", "auto"]} />
             <RTooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #D9CFBE",
                 borderRadius: 6,
                 fontSize: 11,
                 padding: "4px 8px",
+                color: "#2E1F14",
+                boxShadow: "0 4px 12px rgba(46,31,20,0.08)",
               }}
+              labelStyle={{ color: "#6B5E51", fontSize: 10 }}
               formatter={(v: number) => [
                 `${(+v).toFixed(decimals)}${unit ? " " + unit : ""}`,
                 label,
@@ -109,16 +106,31 @@ export function BiometricMiniChart({ label, unit, decimals, series }: Props) {
             <Line
               type="monotone"
               dataKey="value"
-              stroke={`url(#${gradId})`}
-              strokeWidth={2}
-              dot={{ r: 3, fill: "hsl(270 70% 55%)", strokeWidth: 0 }}
-              activeDot={{ r: 4 }}
+              stroke="#2E1F14"
+              strokeWidth={1.5}
+              dot={(props: any) => {
+                const { cx, cy, index } = props;
+                if (cx == null || cy == null) return null;
+                const isLatest = index === data.length - 1;
+                return (
+                  <circle
+                    key={`d-${index}`}
+                    cx={cx}
+                    cy={cy}
+                    r={isLatest ? 4 : 2.5}
+                    fill={isLatest ? "#B0455F" : "#2E1F14"}
+                    stroke="#FFFFFF"
+                    strokeWidth={isLatest ? 1.5 : 1}
+                  />
+                );
+              }}
+              activeDot={{ r: 5, fill: "#B0455F", stroke: "#FFFFFF", strokeWidth: 1.5 }}
             >
               <LabelList
                 dataKey="value"
                 position="top"
                 offset={8}
-                style={{ fontSize: 9, fill: "hsl(var(--foreground))", fontWeight: 500 }}
+                style={{ fontSize: 9, fill: "#6B5E51", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}
                 formatter={(v: number) => `${(+v).toFixed(decimals)}`}
               />
             </Line>
