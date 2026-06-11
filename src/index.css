@@ -298,3 +298,59 @@
     border-left: 3px solid var(--risk-med);
   }
 }
+
+/* =========================================================
+   Care OS — Report Editor (full-screen overlay)
+   Dark warm chrome wrapping a white printed sheet.
+   ========================================================= */
+.rpt {
+  --rpt-chrome: #1E1813;
+  --rpt-panel:  #262019;
+  --rpt-stage:  #342D25;
+  --rpt-ink:    rgba(253,246,238,0.92);
+  --rpt-dim:    rgba(253,246,238,0.55);
+  --rpt-faint:  rgba(253,246,238,0.35);
+  --rpt-line:   rgba(253,246,238,0.10);
+  --rpt-field:  #15110D;
+  --rpt-accent: #C0793F;
+  background: var(--rpt-stage);
+  color: var(--rpt-ink);
+  font-family: var(--font-body);
+}
+.rpt-top    { background: var(--rpt-chrome); border-bottom: 1px solid var(--rpt-line); color: var(--rpt-ink); }
+.rpt-pages  { background: var(--rpt-panel);  border-right:  1px solid var(--rpt-line); color: var(--rpt-dim); }
+.rpt-edit   { background: var(--rpt-panel);  border-left:   1px solid var(--rpt-line); color: var(--rpt-ink); }
+.rpt-stage  { background: var(--rpt-stage); }
+
+.rpt-label  { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--rpt-faint); font-weight: 600; }
+.rpt-dim    { color: var(--rpt-dim); }
+.rpt-faint  { color: var(--rpt-faint); }
+
+.rpt-pageitem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  font-size: 13px; color: var(--rpt-dim); cursor: pointer;
+  width: 100%; border: 0; background: none; text-align: left;
+  font-family: var(--font-body);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.rpt-pageitem:hover { background: rgba(253,246,238,0.05); color: var(--rpt-ink); }
+.rpt-pageitem.on    { background: rgba(253,246,238,0.09); color: var(--rpt-ink); }
+.rpt-num            { font-variant-numeric: tabular-nums; color: var(--rpt-faint); width: 18px; flex: 0 0 18px; font-size: 12px; }
+
+.rpt-input { width: 100%; background: var(--rpt-field); border: 1px solid var(--rpt-line); border-radius: 9px; color: var(--rpt-ink); font-family: var(--font-body); font-size: 13px; padding: 10px 12px; outline: none; transition: border-color 140ms, box-shadow 140ms; }
+.rpt-input::placeholder { color: var(--rpt-faint); }
+.rpt-input:focus { border-color: rgba(200,169,138,0.6); box-shadow: 0 0 0 3px rgba(200,169,138,0.16); }
+
+.rpt-btn         { font-family: var(--font-body); font-size: 13px; font-weight: 500; padding: 8px 13px; border-radius: 9px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1px solid transparent; color: var(--rpt-ink); background: none; transition: background var(--dur-fast) var(--ease-out); }
+.rpt-btn--ghost  { border-color: var(--rpt-line); }
+.rpt-btn--ghost:hover { background: rgba(253,246,238,0.06); }
+.rpt-btn--primary{ background: var(--rpt-accent); color: #fff; }
+.rpt-btn--primary:hover { background: #B06E37; }
+.rpt-btn--icon   { padding: 8px; color: var(--rpt-dim); }
+.rpt-btn--icon:hover { background: rgba(253,246,238,0.06); color: var(--rpt-ink); }
+
+.rpt-divider { height: 1px; background: var(--rpt-line); margin: 22px 0; border: 0; }
+
+/* The white printed sheet sitting on the dark stage */
+.rpt-sheet  { background: #ffffff; color: var(--fg-1); width: 600px; max-width: 100%; min-height: 820px; box-shadow: 0 24px 70px rgba(0,0,0,0.45); border-radius: 3px; overflow: hidden; }
