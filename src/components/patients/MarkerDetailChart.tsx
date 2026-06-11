@@ -119,18 +119,20 @@ export function MarkerDetailChart({
     const { cx, cy, payload, index } = props;
     if (cx == null || cy == null) return null;
     const v = payload?.value;
+    const isLatest = index === data.length - 1;
     const out =
       typeof v === "number" &&
       ((refHigh !== undefined && v > refHigh) || (refLow !== undefined && v < refLow));
+    const fill = isLatest ? BLUSH : out ? AMBER_INK : PRIMARY_LINE;
     return (
       <circle
         key={`dot-${index}`}
         cx={cx}
         cy={cy}
-        r={4}
-        fill={out ? "hsl(var(--destructive))" : PRIMARY_LINE}
-        stroke="hsl(var(--background))"
-        strokeWidth={1}
+        r={isLatest ? 4.5 : 3}
+        fill={fill}
+        stroke="#FFFFFF"
+        strokeWidth={isLatest ? 1.5 : 1}
       />
     );
   };
