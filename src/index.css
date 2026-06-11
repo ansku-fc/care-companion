@@ -1,68 +1,153 @@
-@import url('https://fonts.googleapis.com/css2?family=Belleza&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Belleza&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Foundation Clinic — Claude-inspired light neutral palette.
-   All colors MUST be HSL. */
+/* =========================================================
+   Foundation Clinic — Care OS
+   White-first clinical surfaces. Cream/sand = accent only.
+   All shadcn tokens are HSL; raw design tokens are hex/rgba.
+   ========================================================= */
 
 @layer base {
   :root {
-    /* Foundation Clinic — Care Companion espresso ↔ ivory tonal axis.
-       Page is near-neutral ivory; cards are pure white. */
+    /* ---------- Raw brand tokens ---------- */
+    --espresso: #2E1F14;
+    --bark:     #5A3E2B;
+    --sand:     #C8A98A;
+    --cream:    #FDF6EE;
+    --ivory:    #FDFAF7;
 
-    --background: 40 20% 97%;           /* #F9F7F4 ivory */
-    --foreground: 22 39% 13%;           /* #2E1F14 espresso-100 */
+    --teal:  #0EA5A0;
+    --blush: #E8446A;
+    --amber: #F59E0B;
 
+    --espresso-90: #3D2C1F;
+    --espresso-70: #6E5A48;
+    --espresso-50: #9B8775;
+    --espresso-30: #C9BBA9;
+    --espresso-15: #E7DCCD;
+    --espresso-08: #F2E8D9;
+
+    /* Foregrounds */
+    --fg-1: #2E1F14;
+    --fg-2: #5A4736;
+    --fg-3: #8C7866;
+    --fg-4: #B5A18C;
+    --fg-inverse: #FDF6EE;
+
+    /* App surfaces — white-first */
+    --app-canvas:      #FCFBF9;
+    --app-rail:        #FBF9F6;
+    --app-panel:       #FFFFFF;
+    --app-panel-quiet: #FAF8F4;
+    --app-header:      #FFFFFF;
+    --app-hover:       rgba(46,31,20,0.035);
+    --app-selected:    rgba(46,31,20,0.06);
+    --app-selected-ink:#2E1F14;
+    --app-line:        rgba(46,31,20,0.07);
+    --app-line-strong: rgba(46,31,20,0.13);
+    --app-focus:       rgba(200,169,138,0.55);
+
+    /* Risk scale */
+    --risk-low:  #0EA5A0;  --risk-low-bg:  #E6F4F3;  --risk-low-ink:  #0E5F5C;
+    --risk-med:  #F59E0B;  --risk-med-bg:  #FCEFD6;  --risk-med-ink:  #7A4D02;
+    --risk-high: #E8446A;  --risk-high-bg: #FBE4EA;  --risk-high-ink: #8C1F38;
+
+    /* Priority */
+    --prio-urgent: #E8446A;
+    --prio-soon:   #F59E0B;
+    --prio-normal: #9B8775;
+
+    /* Episode chips */
+    --epi-treatment: #2F8A5B;  --epi-treatment-bg: #E5F1EA;
+    --epi-referral:  #9B5BA5;  --epi-referral-bg:  #F1E9F3;
+    --epi-monitoring:#4A6FA5;  --epi-monitoring-bg:#E8EEF6;
+    --epi-onboarding:#C77D3A;  --epi-onboarding-bg:#F7ECE0;
+
+    /* Data viz */
+    --dv-1: #0EA5A0;
+    --dv-2: #2E1F14;
+    --dv-3: #F59E0B;
+    --dv-4: #4A6FA5;
+    --dv-5: #E8446A;
+    --dv-6: #8C6A4A;
+    --dv-other: #B5A18C;
+    --dv-grid:   rgba(46,31,20,0.08);
+    --dv-axis:   rgba(46,31,20,0.28);
+    --dv-target: rgba(46,31,20,0.45);
+    --dv-band:   rgba(14,165,160,0.08);
+    --dv-ref-bg: rgba(200,169,138,0.18);
+
+    /* Type families */
+    --font-display: 'Belleza', 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+
+    /* Motion */
+    --ease-out: cubic-bezier(0.2,0.7,0.2,1);
+    --dur-fast: 140ms;
+    --dur: 220ms;
+    --dur-slow: 360ms;
+
+    /* ---------- Shadcn HSL tokens (mapped to new system) ---------- */
+    /* Canvas = #FCFBF9 ivory-white */
+    --background: 40 25% 98%;
+    --foreground: 22 39% 13%;
+
+    /* Cards = pure white */
     --card: 0 0% 100%;
     --card-foreground: 22 39% 13%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 22 39% 13%;
 
-    --primary: 22 39% 13%;              /* espresso-100 — text + ONE CTA */
+    /* Primary = espresso (one solid CTA per view) */
+    --primary: 22 39% 13%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 33 33% 94%;            /* espresso-08 #F5F0EA */
-    --secondary-foreground: 22 33% 18%; /* espresso-90 */
+    /* Secondary = quiet panel */
+    --secondary: 36 33% 96%;
+    --secondary-foreground: 22 33% 18%;
 
-    --muted: 33 33% 94%;
-    --muted-foreground: 24 21% 36%;     /* espresso-70 #6E5A48 */
+    --muted: 36 33% 96%;
+    --muted-foreground: 24 21% 36%;
 
-    --accent: 33 33% 94%;
+    --accent: 36 33% 96%;
     --accent-foreground: 22 33% 18%;
 
-    --destructive: 348 78% 59%;         /* #E8446A — review */
+    --destructive: 348 78% 59%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 178 84% 35%;             /* #0EA5A0 */
+    --success: 178 84% 35%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 28 92% 44%;              /* #D97706 */
-    --warning-foreground: 48 96% 89%;   /* #FEF3C7 pill bg */
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
 
-    --border: 34 41% 85%;               /* espresso-15 #E7DCCD */
-    --input: 34 41% 85%;
-    --ring: 31 27% 73%;                 /* espresso-30 #C9BBA9 */
+    /* Borders = warm hairline 13% */
+    --border: 22 39% 13% / 0.13;
+    --input: 22 39% 13% / 0.13;
+    --ring: 31 38% 66%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    /* Sidebar — transparent (inherits ivory). Active = espresso-08 light pill. */
-    --sidebar-background: 40 20% 97%;
+    /* Sidebar = #FBF9F6 rail */
+    --sidebar-background: 36 33% 97%;
     --sidebar-foreground: 24 21% 36%;
-    --sidebar-primary: 33 33% 94%;          /* light active bg */
+    --sidebar-primary: 33 33% 94%;
     --sidebar-primary-foreground: 22 39% 13%;
     --sidebar-accent: 33 33% 94%;
     --sidebar-accent-foreground: 22 33% 18%;
-    --sidebar-border: 34 41% 85%;
-    --sidebar-ring: 31 27% 73%;
+    --sidebar-border: 34 41% 88%;
+    --sidebar-ring: 31 38% 66%;
 
-    --shadow-card: 0 1px 3px hsl(22 39% 13% / 0.05);
-    --shadow-card-hover: 0 1px 3px hsl(22 39% 13% / 0.05);
-    --shadow-alert: 0 1px 3px hsl(22 39% 13% / 0.05);
-    --shadow-panel: 0 4px 20px hsl(22 39% 13% / 0.06);
-    --shadow-modal: 0 8px 40px hsl(22 39% 13% / 0.12);
+    --shadow-card: 0 1px 2px rgba(46,31,20,0.05), 0 1px 1px rgba(46,31,20,0.03);
+    --shadow-card-hover: 0 2px 6px rgba(46,31,20,0.06), 0 4px 14px rgba(46,31,20,0.05);
+    --shadow-alert: 0 1px 2px rgba(46,31,20,0.05);
+    --shadow-panel: 0 6px 16px rgba(46,31,20,0.07), 0 14px 32px rgba(46,31,20,0.06);
+    --shadow-modal: 0 16px 40px rgba(46,31,20,0.10), 0 32px 64px rgba(46,31,20,0.08);
   }
 
   .dark {
@@ -101,51 +186,115 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-family: var(--font-body);
     font-weight: 400;
     letter-spacing: 0;
     line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Clinical dashboard UI — sentence-case Plus Jakarta everywhere.
-     Belleza is reserved for patient-facing surfaces (use .font-serif-display). */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1.3;
-    color: hsl(var(--foreground));
+  /* Editorial moments — Belleza. Patient names, big numerals, page/section titles. */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1.15;
+    color: var(--fg-1);
+    text-wrap: balance;
+    margin: 0;
   }
+  h1 { font-size: 2.25rem; line-height: 1.1; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.375rem; line-height: 1.2; }
+
+  /* Smaller headings stay in Jakarta — UI, not editorial. */
+  h4, h5, h6 {
+    font-family: var(--font-body);
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 1.3;
+    color: var(--fg-1);
+    margin: 0;
+  }
+  h4 { font-size: 1.125rem; }
+  h5 { font-size: 1rem; }
+  h6 { font-size: 0.875rem; }
 
   hr {
-    border-color: hsl(var(--border));
+    border-color: var(--app-line);
     border-top-width: 1px;
+  }
+
+  /* Data-shaped text */
+  code, kbd {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer utilities {
-  .section-label {
-    @apply text-[11px] font-medium uppercase;
-    color: #6E5A48;                    /* espresso-70 */
-    letter-spacing: 0.08em;
-    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-  }
-
-  .font-serif-display {
-    font-family: 'Belleza', ui-serif, Georgia, serif;
+  /* Editorial display — patient names, big metric numerals */
+  .font-serif-display,
+  .font-display {
+    font-family: var(--font-display);
     font-weight: 400;
     letter-spacing: -0.005em;
   }
 
-  /* Status pills — calm, never alarmist */
-  .badge-success { background-color: #E6F4F3; color: #0EA5A0; }
-  .badge-warning { background-color: #FEF3C7; color: #D97706; }
-  .badge-alert   { background-color: #FBE4EA; color: #E8446A; }
-  .badge-neutral { background-color: #F5F0EA; color: #6E5A48; }
+  .font-mono-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* Uppercase micro-label — card headers, eyebrows */
+  .section-label,
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+
+  /* Surfaces */
+  .surface-canvas { background-color: var(--app-canvas); }
+  .surface-rail   { background-color: var(--app-rail); }
+  .surface-panel  { background-color: var(--app-panel); }
+  .surface-quiet  { background-color: var(--app-panel-quiet); }
+
+  /* Hairlines */
+  .border-hair        { border: 1px solid var(--app-line); }
+  .border-hair-strong { border: 1px solid var(--app-line-strong); }
+
+  /* Status pills — light bg + dark ink, always calm */
+  .badge-success { background-color: var(--risk-low-bg);  color: var(--risk-low-ink); }
+  .badge-warning { background-color: var(--risk-med-bg);  color: var(--risk-med-ink); }
+  .badge-alert   { background-color: var(--risk-high-bg); color: var(--risk-high-ink); }
+  .badge-neutral { background-color: var(--app-panel-quiet); color: var(--fg-2); }
+
+  /* Episode chips — dot + tinted pill */
+  .chip-treatment  { background: var(--epi-treatment-bg);  color: var(--epi-treatment); }
+  .chip-referral   { background: var(--epi-referral-bg);   color: var(--epi-referral); }
+  .chip-monitoring { background: var(--epi-monitoring-bg); color: var(--epi-monitoring); }
+  .chip-onboarding { background: var(--epi-onboarding-bg); color: var(--epi-onboarding); }
+
+  /* Patient safety bar — the one permitted full-width tinted band */
+  .safety-bar {
+    background: var(--risk-high-bg);
+    color: var(--risk-high-ink);
+    border-left: 3px solid var(--risk-high);
+  }
+  .safety-bar-moderate {
+    background: var(--risk-med-bg);
+    color: var(--risk-med-ink);
+    border-left: 3px solid var(--risk-med);
+  }
 }
