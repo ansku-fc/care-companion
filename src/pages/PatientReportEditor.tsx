@@ -3,15 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Tables } from "@/integrations/supabase/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ZoomIn, ZoomOut, Printer, Save, X, Upload, FileText, Loader2 } from "lucide-react";
+import { ZoomIn, ZoomOut, Printer, Save, X, Upload, FileText, Loader2, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceArea, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import { HEALTH_TAXONOMY } from "@/lib/healthDimensions";
@@ -19,12 +14,11 @@ import { dimensionScore as computeDimensionScore } from "@/lib/dimensionScores";
 import { scoreTone } from "@/lib/scoreColor";
 import { cn } from "@/lib/utils";
 import coverBg from "@/assets/report-cover-bg.jpg";
-import logoFull from "@/assets/foundation-clinic-logo.png";
 import logoIcon from "@/assets/foundation-clinic-icon.png";
 import { getRiskFactorsForDimension } from "@/lib/reportRiskFactors";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Lab marker definitions per dimension (id → patient_lab_results column)
+// Lab marker definitions per dimension
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Marker = {
@@ -37,7 +31,6 @@ type Marker = {
   optHigh?: number;
 };
 
-// Master marker registry — keyed by patient_lab_results column name
 const MARKER_DEFS: Record<string, Marker> = {
   ldl_mmol_l: { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refLow: 0, refHigh: 3.0, optLow: 0, optHigh: 2.6 },
   blood_pressure_systolic: { key: "blood_pressure_systolic", label: "BP Systolic", unit: "mmHg", refLow: 90, refHigh: 140, optLow: 100, optHigh: 120 },
@@ -69,15 +62,13 @@ const MARKER_DEFS: Record<string, Marker> = {
   pef_percent: { key: "pef_percent", label: "PEF", unit: "%", refLow: 80 },
 };
 
-// Report sub-pages (in display order) — each maps to one or more parent dimensions
-// for risk-factor extraction and to a list of marker columns for lab data.
 type ReportPage = {
   id: string;
   label: string;
-  parents: string[];          // dimension keys passed to getRiskFactorsForDimension
-  markerKeys: string[];       // resolved against MARKER_DEFS + lab data
-  hideLabs?: boolean;         // hide lab table + graphs entirely
-  riskKeywords?: string[];    // if set, filter risk strings to those containing one of these (case-insensitive)
+  parents: string[];
+  markerKeys: string[];
+  hideLabs?: boolean;
+  riskKeywords?: string[];
 };
 
 const REPORT_PAGES: ReportPage[] = [
@@ -135,24 +126,39 @@ function markersForPage(pageId: string): Marker[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Risk factor extraction per dimension (from onboarding)
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Risk factor extraction is now provided by getRiskFactorsForDimension
-// in src/lib/reportRiskFactors.ts (see PART 1 of the spec).
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
+// Helpers / tokens
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DIMENSIONS = HEALTH_TAXONOMY.map((d) => ({ key: d.key, label: d.label }));
 const A4_W = 794;
 const A4_H = 1123;
-const RISK_LABEL = (s: number) => (s < 4 ? "LOW" : s < 7 ? "MEDIUM" : "HIGH");
-const TONE_HEX = (t: ReturnType<typeof scoreTone>) =>
-  t === "green" ? "#0EA5A0" : t === "amber" ? "#D97706" : t === "red" ? "#E8446A" : "#9CA3AF";
 
-type PageId = string; // "cover" | "overview" | "objectives" | dim.key | "annual"
+const RISK_LABEL = (s: number) => (s < 4 ? "Low" : s < 7 ? "Moderate" : "High");
+
+// Status colors (the only allowed status palette)
+const STATUS = {
+  green: { ink: "#0E8A85", bg: "#E6F4F2", band: "rgba(14,138,133,0.10)" },
+  amber: { ink: "#A86A1A", bg: "#FAEFDD", band: "rgba(168,106,26,0.10)" },
+  red:   { ink: "#B0455F", bg: "#F6E0E5", band: "rgba(176,69,95,0.10)" },
+  gray:  { ink: "#7C6F62", bg: "#F1EBE2", band: "rgba(124,111,98,0.10)" },
+};
+const statusFor = (s: number) => {
+  const t = scoreTone(s);
+  return STATUS[(t as keyof typeof STATUS) ?? "gray"] ?? STATUS.gray;
+};
+
+// Editorial palette (sheet)
+const INK = "#1F1812";
+const INK_DIM = "#6B5E51";
+const INK_FAINT = "#9A8D7E";
+const HAIR = "#E8E0D4";
+const ESPRESSO = "#2E1F14";
+
+const SERIF: React.CSSProperties = { fontFamily: 'Belleza, Georgia, serif', fontWeight: 400 };
+const SANS: React.CSSProperties = { fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' };
+const MONO: React.CSSProperties = { fontFamily: '"JetBrains Mono", ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' };
+
+type PageId = string;
 
 interface DimState {
   index: number;
@@ -187,7 +193,6 @@ export default function PatientReportEditor() {
   const [activePage, setActivePage] = useState<PageId>("cover");
   const [saving, setSaving] = useState(false);
 
-  // Editable cover/global state
   const [reportTitle, setReportTitle] = useState("Health Report");
   const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
   const [doctorName, setDoctorName] = useState("");
@@ -196,13 +201,11 @@ export default function PatientReportEditor() {
   const [objectives, setObjectives] = useState("");
   const [annualPlan, setAnnualPlan] = useState("");
 
-  // Per-dimension state
   const [dimState, setDimState] = useState<Record<string, DimState>>({});
 
   const pagesScrollRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // ─── Load data ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
@@ -230,7 +233,6 @@ export default function PatientReportEditor() {
     return () => { cancelled = true; };
   }, [id]);
 
-  // Doctor name from logged-in profile
   useEffect(() => {
     if (profile?.full_name) {
       const n = profile.full_name.trim();
@@ -238,12 +240,10 @@ export default function PatientReportEditor() {
     }
   }, [profile]);
 
-  // Initialize per-page state once data is loaded
   useEffect(() => {
     if (!patient) return;
     const ctx = { patientId: patient.id, onboarding, labResults, healthCategories };
     const riskCtx = { onboarding, allergies, familyHistory, moles, patient };
-    // Pre-compute score per parent dimension key (cached)
     const dimScoreCache: Record<string, number> = {};
     const getDimScore = (k: string) =>
       dimScoreCache[k] ?? (dimScoreCache[k] = computeDimensionScore(k, ctx));
@@ -255,8 +255,6 @@ export default function PatientReportEditor() {
         : 0;
       const cat = healthCategories.find((h) => h.category.toLowerCase() === p.label.toLowerCase());
       const allMarkers = p.markerKeys;
-
-      // Aggregate risk strings from all parents, dedupe, then optional keyword filter
       const allRisks = Array.from(
         new Set(p.parents.flatMap((k) => getRiskFactorsForDimension(riskCtx, k))),
       );
@@ -280,17 +278,13 @@ export default function PatientReportEditor() {
     setAnnualPlan(patient.health_recommendations ?? "");
   }, [patient, onboarding, labResults, healthCategories, allergies, familyHistory, moles]);
 
-  // ─── Page list ─────────────────────────────────────────────────────────
   const pageList = useMemo(() => {
     return [
-      { id: "cover", label: "Cover", color: "#1f2937" },
-      { id: "overview", label: "Health Overview", color: "#3b82f6" },
-      { id: "objectives", label: "Your Objectives", color: "#8b5cf6" },
-      ...REPORT_PAGES.map((p) => {
-        const s = dimState[p.id]?.index ?? 0;
-        return { id: p.id, label: p.label, color: TONE_HEX(scoreTone(s)) };
-      }),
-      { id: "annual", label: "Annual Plan", color: "#10b981" },
+      { id: "cover", label: "Cover" },
+      { id: "overview", label: "Health overview" },
+      { id: "objectives", label: "Your objectives" },
+      ...REPORT_PAGES.map((p) => ({ id: p.id, label: p.label, score: dimState[p.id]?.index ?? 0 })),
+      { id: "annual", label: "Annual plan" },
     ];
   }, [dimState]);
 
@@ -302,7 +296,6 @@ export default function PatientReportEditor() {
     setActivePage(pid);
   };
 
-  // ─── Save ──────────────────────────────────────────────────────────────
   const handlePublish = async (exit = false) => {
     if (!user || !patient) return;
     setSaving(true);
@@ -321,7 +314,6 @@ export default function PatientReportEditor() {
     if (exit) navigate(`/patients/${patient.id}`);
   };
 
-  // ─── Print ─────────────────────────────────────────────────────────────
   const handlePreviewPdf = () => {
     const style = document.createElement("style");
     style.id = "report-print-style";
@@ -357,11 +349,10 @@ export default function PatientReportEditor() {
     setTimeout(cleanup, 2000);
   };
 
-  // ─── Render ────────────────────────────────────────────────────────────
   if (loading || !patient) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#1a1a1a] flex items-center justify-center text-white">
-        <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="rpt fixed inset-0 z-50 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "rgba(253,246,238,0.6)" }} />
       </div>
     );
   }
@@ -371,82 +362,85 @@ export default function PatientReportEditor() {
   const isDimensionPage = !!ds && !!PAGE_BY_ID[activePage];
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#2a2a2a] flex flex-col text-white">
+    <div className="rpt fixed inset-0 z-50 flex flex-col" style={SANS}>
       {/* TOP BAR */}
-      <div className="h-12 shrink-0 flex items-center justify-between px-4 bg-[#1a1a1a] border-b border-black/40">
+      <div className="rpt-top h-[52px] shrink-0 flex items-center justify-between px-5">
         <div className="flex items-center gap-3 min-w-0">
-          <FileText className="h-4 w-4 text-white/70" />
-          <h1 className="text-sm font-medium truncate">
-            {reportTitle} — {patient.full_name}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-white/5 rounded">
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10" onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}>
-              <ZoomOut className="h-3.5 w-3.5" />
-            </Button>
-            <Select value={String(Math.round(zoom * 100))} onValueChange={(v) => setZoom(Number(v) / 100)}>
-              <SelectTrigger className="h-7 w-[68px] bg-transparent border-none text-xs text-white/80 focus:ring-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="50">50%</SelectItem>
-                <SelectItem value="75">75%</SelectItem>
-                <SelectItem value="100">100%</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10" onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))}>
-              <ZoomIn className="h-3.5 w-3.5" />
-            </Button>
+          <FileText className="h-4 w-4" style={{ color: "rgba(253,246,238,0.55)" }} />
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span style={{ ...SERIF, fontSize: 17, color: "rgba(253,246,238,0.95)" }} className="truncate">
+              {reportTitle}
+            </span>
+            <span className="rpt-faint" style={{ fontSize: 12 }}>·</span>
+            <span className="rpt-dim truncate" style={{ fontSize: 13 }}>{patient.full_name}</span>
           </div>
-          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5 text-white/80 hover:text-white hover:bg-white/10" onClick={handlePreviewPdf}>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center" style={{ background: "rgba(253,246,238,0.04)", borderRadius: 9, padding: 2 }}>
+            <button className="rpt-btn rpt-btn--icon" onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))} aria-label="Zoom out">
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <span className="rpt-dim px-2" style={{ ...MONO, fontSize: 12, minWidth: 44, textAlign: "center" }}>
+              {Math.round(zoom * 100)}%
+            </span>
+            <button className="rpt-btn rpt-btn--icon" onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))} aria-label="Zoom in">
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <button className="rpt-btn rpt-btn--ghost" onClick={handlePreviewPdf}>
             <Printer className="h-3.5 w-3.5" /> Preview PDF
-          </Button>
-          <Button size="sm" className="h-7 text-xs gap-1.5 bg-primary hover:bg-primary/90" onClick={() => handlePublish(false)} disabled={saving}>
+          </button>
+          <button className="rpt-btn rpt-btn--ghost" onClick={() => handlePublish(true)} disabled={saving}>
+            <Save className="h-3.5 w-3.5" /> Save & exit
+          </button>
+          <button className="rpt-btn rpt-btn--primary" onClick={() => handlePublish(false)} disabled={saving}>
             <Upload className="h-3.5 w-3.5" /> Publish
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 bg-transparent text-white border-white/30 hover:bg-white/10 hover:text-white" onClick={() => handlePublish(true)} disabled={saving}>
-            <Save className="h-3.5 w-3.5" /> Save & Exit
-          </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10" onClick={() => navigate(`/patients/${patient.id}`)}>
+          </button>
+          <button className="rpt-btn rpt-btn--icon" onClick={() => navigate(`/patients/${patient.id}`)} aria-label="Close">
             <X className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* BODY */}
       <div className="flex-1 flex min-h-0">
-        {/* LEFT — page list */}
-        <div className="w-[220px] shrink-0 bg-[#1f1f1f] border-r border-black/40 flex flex-col">
-          <div className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-white/50">Pages</div>
+        {/* LEFT — pages rail */}
+        <aside className="rpt-pages w-[232px] shrink-0 flex flex-col">
+          <div className="px-4 pt-5 pb-3 rpt-label">Report</div>
           <ScrollArea className="flex-1">
-            <div className="px-2 pb-4 space-y-0.5">
-              {pageList.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() => scrollToPage(p.id)}
-                  className={cn(
-                    "w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-xs text-left transition-colors",
-                    activePage === p.id ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90",
-                  )}
-                >
-                  <span className="h-2 w-2 rounded-full shrink-0" style={{ background: p.color }} />
-                  <span className="truncate">{i + 1}. {p.label}</span>
-                </button>
-              ))}
+            <div className="px-2 pb-6 space-y-px">
+              {pageList.map((p, i) => {
+                const sc = (p as any).score as number | undefined;
+                const st = sc != null ? statusFor(sc) : null;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => scrollToPage(p.id)}
+                    className={cn("rpt-pageitem", activePage === p.id && "on")}
+                  >
+                    <span className="rpt-num">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="truncate flex-1">{p.label}</span>
+                    {st && (
+                      <span style={{
+                        width: 6, height: 6, borderRadius: 999, background: st.ink,
+                        opacity: activePage === p.id ? 1 : 0.7,
+                      }} />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </ScrollArea>
-        </div>
+        </aside>
 
-        {/* CENTER — preview */}
-        <div ref={pagesScrollRef} className="flex-1 overflow-auto bg-[#3a3a3a]">
+        {/* CENTER — stage */}
+        <main ref={pagesScrollRef} className="rpt-stage flex-1 overflow-auto">
           <div
             id="report-print-area"
             ref={printRef}
-            className="flex flex-col items-center py-8"
+            className="flex flex-col items-center py-10"
             style={{ transform: `scale(${zoom})`, transformOrigin: "top center", minWidth: A4_W }}
           >
-            {/* COVER */}
             <CoverPage
               patient={patient}
               title={reportTitle}
@@ -457,18 +451,19 @@ export default function PatientReportEditor() {
               active={activePage === "cover"}
             />
 
-            {/* OVERVIEW */}
             <OverviewPage
               patient={patient}
               dimState={dimState}
+              date={formattedDate}
+              doctor={doctorName}
               onClick={() => setActivePage("overview")}
               active={activePage === "overview"}
             />
 
-            {/* OBJECTIVES */}
             <FreeTextPage
               id="objectives"
-              title="Your Objectives"
+              eyebrow="03 · Intentions"
+              title="Your objectives"
               subtitle="Personal health goals for the year ahead"
               text={objectives}
               patientName={patient.full_name}
@@ -476,27 +471,25 @@ export default function PatientReportEditor() {
               active={activePage === "objectives"}
             />
 
-            {/* DIMENSION PAGES */}
-            {pageList
-              .filter((p) => !!PAGE_BY_ID[p.id])
-              .map((p) => (
-                <DimensionPage
-                  key={p.id}
-                  dimKey={p.id}
-                  dimLabel={p.label}
-                  state={dimState[p.id]}
-                  labResults={labResults}
-                  patientName={patient.full_name}
-                  onClick={() => setActivePage(p.id)}
-                  active={activePage === p.id}
-                />
-              ))}
+            {REPORT_PAGES.map((p, idx) => (
+              <DimensionPage
+                key={p.id}
+                dimKey={p.id}
+                dimLabel={p.label}
+                pageNumber={4 + idx}
+                state={dimState[p.id]}
+                labResults={labResults}
+                patientName={patient.full_name}
+                onClick={() => setActivePage(p.id)}
+                active={activePage === p.id}
+              />
+            ))}
 
-            {/* ANNUAL PLAN */}
             <FreeTextPage
               id="annual"
-              title="Annual Plan"
-              subtitle="Care timeline & follow-up checklist"
+              eyebrow={`${String(4 + REPORT_PAGES.length).padStart(2, "0")} · Cadence`}
+              title="Annual plan"
+              subtitle="Care timeline and follow-up checklist"
               text={annualPlan}
               patientName={patient.full_name}
               variant="checklist"
@@ -504,15 +497,18 @@ export default function PatientReportEditor() {
               active={activePage === "annual"}
             />
           </div>
-        </div>
+        </main>
 
         {/* RIGHT — editor */}
-        <div className="w-[280px] shrink-0 bg-[#1f1f1f] border-l border-black/40 flex flex-col text-white/90">
-          <div className="px-4 py-3 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-white/50">
-            Edit page
+        <aside className="rpt-edit w-[296px] shrink-0 flex flex-col">
+          <div className="px-5 pt-5 pb-3 rpt-label flex items-center justify-between">
+            <span>Edit page</span>
+            <span style={{ ...MONO, fontSize: 11, color: "rgba(253,246,238,0.35)" }}>
+              {pageList.findIndex((p) => p.id === activePage) + 1} / {pageList.length}
+            </span>
           </div>
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-4 text-xs">
+            <div className="px-5 pb-8 space-y-5">
               {activePage === "cover" && (
                 <CoverEditor
                   reportTitle={reportTitle} setReportTitle={setReportTitle}
@@ -524,15 +520,15 @@ export default function PatientReportEditor() {
                 />
               )}
               {activePage === "overview" && (
-                <p className="text-white/60 leading-relaxed">
-                  Overview is auto-generated from each dimension's index score. Edit individual dimension pages to update risk levels.
+                <p className="rpt-dim" style={{ fontSize: 12.5, lineHeight: 1.6 }}>
+                  The overview composes itself from each dimension's index score. Edit any dimension page to change a risk level here.
                 </p>
               )}
               {activePage === "objectives" && (
-                <FieldText label="Objectives" value={objectives} onChange={setObjectives} rows={14} placeholder="Write the patient's personal health goals…" />
+                <FieldText label="Objectives" value={objectives} onChange={setObjectives} rows={16} placeholder="Write the patient's personal health goals…" />
               )}
               {activePage === "annual" && (
-                <FieldText label="Annual care plan" value={annualPlan} onChange={setAnnualPlan} rows={14} placeholder="Describe the annual plan…" />
+                <FieldText label="Annual care plan" value={annualPlan} onChange={setAnnualPlan} rows={16} placeholder="Describe the annual plan…" />
               )}
               {isDimensionPage && ds && (
                 <DimensionEditor
@@ -544,41 +540,63 @@ export default function PatientReportEditor() {
               )}
             </div>
           </ScrollArea>
-        </div>
+        </aside>
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Right-panel editors
+// Editor fields
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FieldText({ label, value, onChange, rows = 4, placeholder }: { label: string; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] text-white/70">{label}</Label>
-      <Textarea
+      <div className="rpt-label">{label}</div>
+      <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
         placeholder={placeholder}
-        className="bg-white/5 border-white/15 text-white placeholder:text-white/30 text-xs resize-none focus-visible:ring-white/30"
+        className="rpt-input resize-none"
+        style={{ lineHeight: 1.55 }}
       />
     </div>
   );
 }
 
-function FieldInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+function FieldInput({ label, value, onChange, type = "text", disabled }: { label: string; value: string; onChange?: (v: string) => void; type?: string; disabled?: boolean }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] text-white/70">{label}</Label>
-      <Input
+      <div className="rpt-label">{label}</div>
+      <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-8 bg-white/5 border-white/15 text-white placeholder:text-white/30 text-xs focus-visible:ring-white/30"
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.value)}
+        className="rpt-input"
+        style={disabled ? { opacity: 0.55 } : undefined}
       />
+    </div>
+  );
+}
+
+function FieldSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="rpt-label">{label}</div>
+      <div style={{ position: "relative" }}>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="rpt-input"
+          style={{ appearance: "none", paddingRight: 32 }}
+        >
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <ChevronDown className="h-3.5 w-3.5" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "rgba(253,246,238,0.45)", pointerEvents: "none" }} />
+      </div>
     </div>
   );
 }
@@ -592,28 +610,22 @@ function CoverEditor(props: {
   language: "en" | "fi" | "sv"; setLanguage: (v: "en" | "fi" | "sv") => void;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <FieldInput label="Report title" value={props.reportTitle} onChange={props.setReportTitle} />
-      <div className="space-y-1.5">
-        <Label className="text-[11px] text-white/70">Patient name</Label>
-        <Input value={props.patientName} disabled className="h-8 bg-white/5 border-white/10 text-white/60 text-xs" />
-      </div>
+      <FieldInput label="Patient name" value={props.patientName} disabled />
       <FieldInput label="Report date" value={props.reportDate} onChange={props.setReportDate} type="date" />
       <FieldInput label="Doctor" value={props.doctorName} onChange={props.setDoctorName} />
       <FieldInput label="Clinic" value={props.clinicName} onChange={props.setClinicName} />
-      <div className="space-y-1.5">
-        <Label className="text-[11px] text-white/70">Language</Label>
-        <Select value={props.language} onValueChange={(v) => props.setLanguage(v as any)}>
-          <SelectTrigger className="h-8 bg-white/5 border-white/15 text-white text-xs focus:ring-white/30">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">English</SelectItem>
-            <SelectItem value="fi">Finnish</SelectItem>
-            <SelectItem value="sv">Swedish</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <FieldSelect
+        label="Language"
+        value={props.language}
+        onChange={(v) => props.setLanguage(v as any)}
+        options={[
+          { value: "en", label: "English" },
+          { value: "fi", label: "Finnish" },
+          { value: "sv", label: "Swedish" },
+        ]}
+      />
     </div>
   );
 }
@@ -632,7 +644,7 @@ function DimensionEditor({
   const availableMarkers = markers.filter((m) => labResults.some((l) => (l as any)[m.key] != null));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <FieldInput
         label="Index value (0–10)"
         value={String(state.index)}
@@ -641,26 +653,26 @@ function DimensionEditor({
       />
 
       <div className="flex items-center justify-between">
-        <Label className="text-[11px] text-white/70">Show risk factors</Label>
+        <span className="rpt-label">Show risk factors</span>
         <Switch checked={state.showRisk} onCheckedChange={(v) => onChange({ showRisk: v })} />
       </div>
 
       {state.showRisk && (
-        <FieldText label="Risk factors" value={state.riskFactors} onChange={(v) => onChange({ riskFactors: v })} rows={5} />
+        <FieldText label="Risk factors" value={state.riskFactors} onChange={(v) => onChange({ riskFactors: v })} rows={6} />
       )}
 
       {!hideLabs && (
         <>
-          <div className="space-y-1.5">
-            <Label className="text-[11px] text-white/70">Graphs to include</Label>
+          <div className="space-y-2">
+            <div className="rpt-label">Graphs to include</div>
             {availableMarkers.length === 0 ? (
-              <p className="text-[11px] text-white/40 italic">No lab data for this dimension</p>
+              <p className="rpt-faint" style={{ fontSize: 12, fontStyle: "italic" }}>No lab data for this dimension</p>
             ) : (
-              <div className="space-y-1.5 rounded border border-white/10 p-2 bg-white/5">
+              <div className="space-y-2 p-3" style={{ background: "rgba(253,246,238,0.03)", border: "1px solid rgba(253,246,238,0.08)", borderRadius: 9 }}>
                 {availableMarkers.map((m) => {
                   const checked = state.selectedMarkers.includes(m.key);
                   return (
-                    <label key={m.key} className="flex items-center gap-2 cursor-pointer text-[11px]">
+                    <label key={m.key} className="flex items-center gap-2.5 cursor-pointer" style={{ fontSize: 12.5, color: "rgba(253,246,238,0.88)" }}>
                       <Checkbox
                         checked={checked}
                         onCheckedChange={(v) =>
@@ -670,7 +682,7 @@ function DimensionEditor({
                               : state.selectedMarkers.filter((k) => k !== m.key),
                           })
                         }
-                        className="border-white/40 data-[state=checked]:bg-primary"
+                        style={{ borderColor: "rgba(253,246,238,0.35)" }}
                       />
                       <span>{m.label}</span>
                     </label>
@@ -681,20 +693,20 @@ function DimensionEditor({
           </div>
 
           {availableMarkers.length > 0 && (
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+            <div className="space-y-2.5">
+              <label className="flex items-center gap-2.5 cursor-pointer" style={{ fontSize: 12.5, color: "rgba(253,246,238,0.88)" }}>
                 <Checkbox
                   checked={state.showRefIntervals}
                   onCheckedChange={(v) => onChange({ showRefIntervals: !!v })}
-                  className="border-white/40 data-[state=checked]:bg-primary"
+                  style={{ borderColor: "rgba(253,246,238,0.35)" }}
                 />
                 Show reference intervals
               </label>
-              <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+              <label className="flex items-center gap-2.5 cursor-pointer" style={{ fontSize: 12.5, color: "rgba(253,246,238,0.88)" }}>
                 <Checkbox
                   checked={state.showOptIntervals}
                   onCheckedChange={(v) => onChange({ showOptIntervals: !!v })}
-                  className="border-white/40 data-[state=checked]:bg-primary"
+                  style={{ borderColor: "rgba(253,246,238,0.35)" }}
                 />
                 Show optimal intervals
               </label>
@@ -703,50 +715,76 @@ function DimensionEditor({
         </>
       )}
 
-      <FieldText label="Summary" value={state.summary} onChange={(v) => onChange({ summary: v })} rows={5} placeholder="Doctor's interpretation…" />
-      <FieldText label="Recommendations" value={state.recommendations} onChange={(v) => onChange({ recommendations: v })} rows={5} placeholder="Next steps…" />
+      <FieldText label="Summary" value={state.summary} onChange={(v) => onChange({ summary: v })} rows={6} placeholder="Doctor's interpretation…" />
+      <FieldText label="Recommendations" value={state.recommendations} onChange={(v) => onChange({ recommendations: v })} rows={6} placeholder="Next steps…" />
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Page components (preview)
+// Sheet pages
 // ─────────────────────────────────────────────────────────────────────────────
 
-const pageBase: React.CSSProperties = {
+const sheetBase: React.CSSProperties = {
   width: A4_W,
   minHeight: A4_H,
-  background: "white",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.35)",
-  marginBottom: 24,
-  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  color: "#1a1a1a",
+  background: "#FFFFFF",
+  boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
+  marginBottom: 28,
+  color: INK,
   position: "relative",
   overflow: "hidden",
+  ...SANS,
 };
 
-function PageFrame({ id, active, onClick, children, padding = "60px 64px" }: { id: string; active: boolean; onClick: () => void; children: React.ReactNode; padding?: string }) {
+function Sheet({ id, active, onClick, children, padding = "72px 80px 56px" }: { id: string; active: boolean; onClick: () => void; children: React.ReactNode; padding?: string }) {
   return (
     <div
       data-page={id}
       onClick={onClick}
-      style={{ ...pageBase, padding, outline: active ? "3px solid #3b82f6" : "none", outlineOffset: 2, cursor: "pointer" }}
+      style={{
+        ...sheetBase,
+        padding,
+        outline: active ? `2px solid ${STATUS.amber.ink}` : "none",
+        outlineOffset: 4,
+        cursor: "pointer",
+      }}
     >
       {children}
     </div>
   );
 }
 
-function PageFooter({ patientName, pageNumber }: { patientName: string; pageNumber?: number }) {
+function SheetFooter({ patientName, pageNumber }: { patientName: string; pageNumber?: number | string }) {
   return (
-    <div style={{ position: "absolute", bottom: 24, left: 64, right: 64, display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #eee", paddingTop: 10, fontSize: 9, color: "#999" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <img src={logoIcon} alt="" style={{ height: 14, width: "auto" }} />
-        <span>Foundation Clinic</span>
+    <div style={{
+      position: "absolute", bottom: 32, left: 80, right: 80,
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      borderTop: `1px solid ${HAIR}`, paddingTop: 12,
+      fontSize: 9.5, color: INK_FAINT, letterSpacing: 0.4,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+        <img src={logoIcon} alt="" style={{ height: 12, width: "auto", opacity: 0.65 }} />
+        <span style={{ textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 600 }}>Foundation Clinic</span>
       </div>
-      <span>{patientName} — Health Report</span>
-      {pageNumber != null && <span>p. {pageNumber}</span>}
+      <span>{patientName}</span>
+      {pageNumber != null && <span style={MONO}>{String(pageNumber).padStart(2, "0")}</span>}
     </div>
+  );
+}
+
+function StatusPill({ score }: { score: number }) {
+  const st = statusFor(score);
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "3px 10px 3px 8px", borderRadius: 999,
+      background: st.bg, color: st.ink,
+      fontSize: 10, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase",
+    }}>
+      <span style={{ width: 5, height: 5, borderRadius: 999, background: st.ink }} />
+      {RISK_LABEL(score)}
+    </span>
   );
 }
 
@@ -760,30 +798,45 @@ function CoverPage({
     <div
       data-page="cover"
       onClick={onClick}
-      style={{ ...pageBase, padding: 0, outline: active ? "3px solid #3b82f6" : "none", outlineOffset: 2, cursor: "pointer" }}
+      style={{ ...sheetBase, padding: 0, outline: active ? `2px solid ${STATUS.amber.ink}` : "none", outlineOffset: 4, cursor: "pointer" }}
     >
-      <div style={{ position: "relative", width: "100%", height: A4_H, overflow: "hidden" }}>
-        <img src={coverBg} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)" }} />
+      {/* Full-bleed image */}
+      <div style={{ position: "absolute", inset: 0 }}>
+        <img src={coverBg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(31,24,18,0.10) 0%, rgba(31,24,18,0.02) 38%, rgba(31,24,18,0.70) 100%)" }} />
+      </div>
 
-        {/* Top left — clinic logo + name */}
-        <div style={{ position: "absolute", top: 40, left: 48, display: "flex", alignItems: "center", gap: 10, color: "white" }}>
-          <img src={logoIcon} alt="" style={{ height: 28, filter: "brightness(0) invert(1)" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: 0.5 }}>FOUNDATION CLINIC</span>
+      {/* White editorial card bottom-left */}
+      <div style={{
+        position: "absolute", left: 56, right: 56, bottom: 56,
+        background: "#FFFFFF", padding: "40px 44px",
+        borderRadius: 2,
+        boxShadow: "0 18px 50px rgba(31,24,18,0.20)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 28 }}>
+          <img src={logoIcon} alt="" style={{ height: 18 }} />
+          <span style={{ ...SANS, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: INK }}>Foundation Clinic</span>
         </div>
 
-        {/* Top right — logo mark */}
-        <div style={{ position: "absolute", top: 40, right: 48 }}>
-          <img src={logoIcon} alt="" style={{ height: 32, filter: "brightness(0) invert(1)", opacity: 0.85 }} />
+        <div style={{ ...SANS, fontSize: 9.5, fontWeight: 600, letterSpacing: 2.5, textTransform: "uppercase", color: INK_FAINT, marginBottom: 14 }}>
+          {title}
         </div>
 
-        {/* Bottom left — title block */}
-        <div style={{ position: "absolute", bottom: 56, left: 48, right: 48, color: "white" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.85, marginBottom: 14, textTransform: "uppercase" }}>{title}</div>
-          <h1 style={{ fontSize: 42, fontWeight: 300, lineHeight: 1.1, margin: 0, marginBottom: 24 }}>{patient.full_name}</h1>
-          <div style={{ fontSize: 12, opacity: 0.9, lineHeight: 1.7 }}>
+        <h1 style={{ ...SERIF, fontSize: 52, lineHeight: 1.02, margin: 0, color: INK, letterSpacing: -0.5 }}>
+          {patient.full_name}
+        </h1>
+
+        <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${HAIR}`, display: "flex", gap: 36, ...SANS, fontSize: 11.5, color: INK_DIM }}>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 4 }}>Issued</div>
             <div>{date}</div>
-            <div>{doctor}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 4 }}>Clinician</div>
+            <div>{doctor || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 4 }}>Clinic</div>
             <div>{clinic}</div>
           </div>
         </div>
@@ -793,178 +846,229 @@ function CoverPage({
 }
 
 function OverviewPage({
-  patient, dimState, active, onClick,
+  patient, dimState, date, doctor, active, onClick,
 }: {
   patient: Tables<"patients">; dimState: Record<string, DimState>;
+  date: string; doctor: string;
   active: boolean; onClick: () => void;
 }) {
+  const scores = DIMENSIONS.map((d) => dimState[d.key]?.index ?? 0);
+  const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const highest = scores.length ? Math.max(...scores) : 0;
+  const highestDim = DIMENSIONS[scores.indexOf(highest)]?.label ?? "—";
+
   return (
-    <PageFrame id="overview" active={active} onClick={onClick}>
-      <h2 style={{ fontSize: 22, fontWeight: 600, margin: 0, marginBottom: 4 }}>Health Overview</h2>
-      <p style={{ fontSize: 12, color: "#666", marginBottom: 28 }}>
-        Summary of {patient.full_name}'s health across nine clinical dimensions.
+    <Sheet id="overview" active={active} onClick={onClick}>
+      {/* Eyebrow + headline */}
+      <div style={{ ...SANS, fontSize: 9.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: INK_FAINT, marginBottom: 12 }}>
+        02 · Composite
+      </div>
+      <h2 style={{ ...SERIF, fontSize: 38, lineHeight: 1.05, margin: 0, color: INK, letterSpacing: -0.3 }}>
+        Health overview
+      </h2>
+      <p style={{ ...SANS, fontSize: 12, color: INK_DIM, marginTop: 10, marginBottom: 32, maxWidth: 520, lineHeight: 1.55 }}>
+        A composed reading of {patient.full_name.split(",")[1]?.trim() || patient.full_name}'s health across nine clinical dimensions, drawn from baseline onboarding, lab results, and clinical assessment.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+      {/* Summary strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderTop: `1px solid ${HAIR}`, borderBottom: `1px solid ${HAIR}`, marginBottom: 32 }}>
+        {[
+          { l: "Composite index", v: avg.toFixed(1), s: "of 10" },
+          { l: "Highest watch", v: highestDim, s: highest.toFixed(1) + " · " + RISK_LABEL(highest).toLowerCase() },
+          { l: "Issued", v: date, s: doctor || "—" },
+        ].map((c, i) => (
+          <div key={i} style={{ padding: "18px 22px", borderLeft: i === 0 ? "none" : `1px solid ${HAIR}` }}>
+            <div style={{ ...SANS, fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 6 }}>{c.l}</div>
+            <div style={{ ...SERIF, fontSize: 24, color: INK, lineHeight: 1.1 }}>{c.v}</div>
+            <div style={{ ...SANS, fontSize: 10.5, color: INK_DIM, marginTop: 3 }}>{c.s}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Dimension grid */}
+      <div style={{ ...SANS, fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 12 }}>
+        Nine dimensions
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: HAIR, border: `1px solid ${HAIR}` }}>
         {DIMENSIONS.map((d) => {
           const s = dimState[d.key]?.index ?? 0;
-          const tone = scoreTone(s);
-          const color = TONE_HEX(tone);
-          const risk = RISK_LABEL(s);
+          const st = statusFor(s);
           return (
-            <div key={d.key} style={{ border: "1px solid #e5e5e5", borderRadius: 10, padding: 16, background: "#fafafa", position: "relative" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: color, borderTopLeftRadius: 10, borderTopRightRadius: 10 }} />
-              <div style={{ fontSize: 11, color: "#444", fontWeight: 500, marginTop: 6, marginBottom: 14, lineHeight: 1.3, minHeight: 28 }}>{d.label}</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontSize: 28, fontWeight: 700, color }}>{s.toFixed(1)}</span>
-                <span style={{ fontSize: 10, color: "#888" }}>/ 10</span>
+            <div key={d.key} style={{ background: "#FFFFFF", padding: "18px 16px", position: "relative", minHeight: 110 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ ...SANS, fontSize: 11, fontWeight: 600, color: INK, lineHeight: 1.3, paddingRight: 8 }}>{d.label}</div>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: st.ink }} />
               </div>
-              <div style={{ marginTop: 6, display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 9, fontWeight: 700, letterSpacing: 0.6, background: `${color}22`, color }}>
-                {risk}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 18 }}>
+                <span style={{ ...SERIF, fontSize: 30, color: INK, lineHeight: 1 }}>{s.toFixed(1)}</span>
+                <span style={{ ...SANS, fontSize: 10, color: INK_FAINT }}>/ 10</span>
+              </div>
+              <div style={{ marginTop: 8, ...SANS, fontSize: 9.5, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", color: st.ink }}>
+                {RISK_LABEL(s)}
               </div>
             </div>
           );
         })}
       </div>
 
-      <PageFooter patientName={patient.full_name} pageNumber={2} />
-    </PageFrame>
+      <SheetFooter patientName={patient.full_name} pageNumber={2} />
+    </Sheet>
   );
 }
 
 function FreeTextPage({
-  id, title, subtitle, text, patientName, variant, active, onClick,
+  id, eyebrow, title, subtitle, text, patientName, variant, active, onClick,
 }: {
-  id: string; title: string; subtitle: string; text: string; patientName: string;
+  id: string; eyebrow: string; title: string; subtitle: string; text: string; patientName: string;
   variant?: "checklist"; active: boolean; onClick: () => void;
 }) {
-  const lines = text.split(/\n+/).filter(Boolean);
+  const lines = text.split(/\n+/).map((l) => l.replace(/^[•\-\d.\s]+/, "").trim()).filter(Boolean);
   return (
-    <PageFrame id={id} active={active} onClick={onClick}>
-      <h2 style={{ fontSize: 22, fontWeight: 600, margin: 0, marginBottom: 4 }}>{title}</h2>
-      <p style={{ fontSize: 12, color: "#666", marginBottom: 28 }}>{subtitle}</p>
+    <Sheet id={id} active={active} onClick={onClick}>
+      <div style={{ ...SANS, fontSize: 9.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: INK_FAINT, marginBottom: 12 }}>
+        {eyebrow}
+      </div>
+      <h2 style={{ ...SERIF, fontSize: 38, lineHeight: 1.05, margin: 0, color: INK, letterSpacing: -0.3 }}>{title}</h2>
+      <p style={{ ...SANS, fontSize: 12, color: INK_DIM, marginTop: 10, marginBottom: 36, maxWidth: 520, lineHeight: 1.55 }}>{subtitle}</p>
 
       {variant === "checklist" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {lines.length === 0 ? (
-            <p style={{ fontSize: 12, color: "#bbb", fontStyle: "italic" }}>Use the right panel to write the annual plan.</p>
-          ) : (
-            lines.map((l, i) => (
-              <div key={i} style={{ display: "flex", gap: 10, padding: "10px 14px", border: "1px solid #e5e5e5", borderRadius: 8 }}>
-                <div style={{ width: 16, height: 16, borderRadius: 4, border: "1.5px solid #d0d0d0", flexShrink: 0, marginTop: 1 }} />
-                <span style={{ fontSize: 12, color: "#1a1a1a", lineHeight: 1.5 }}>{l}</span>
+        lines.length === 0 ? (
+          <p style={{ ...SANS, fontSize: 12, color: INK_FAINT, fontStyle: "italic" }}>Use the right panel to write the annual plan.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {lines.map((l, i) => (
+              <div key={i} style={{ display: "flex", gap: 16, padding: "14px 0", borderBottom: `1px solid ${HAIR}` }}>
+                <div style={{ ...MONO, fontSize: 10, color: INK_FAINT, width: 24, paddingTop: 3 }}>{String(i + 1).padStart(2, "0")}</div>
+                <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${HAIR}`, flexShrink: 0, marginTop: 2 }} />
+                <span style={{ ...SANS, fontSize: 12.5, color: INK, lineHeight: 1.55, flex: 1 }}>{l}</span>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )
       ) : lines.length === 0 ? (
-        <p style={{ fontSize: 12, color: "#bbb", fontStyle: "italic" }}>Use the right panel to write objectives.</p>
+        <p style={{ ...SANS, fontSize: 12, color: INK_FAINT, fontStyle: "italic" }}>Use the right panel to write objectives.</p>
       ) : (
-        <div style={{ fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "#1a1a1a" }}>{text}</div>
+        <div style={{ ...SERIF, fontSize: 17, lineHeight: 1.55, color: INK, columnCount: 1, maxWidth: 560 }}>
+          {text.split(/\n\n+/).map((para, i) => (
+            <p key={i} style={{ margin: i === 0 ? 0 : "14px 0 0" }}>{para}</p>
+          ))}
+        </div>
       )}
 
-      <PageFooter patientName={patientName} />
-    </PageFrame>
+      <SheetFooter patientName={patientName} />
+    </Sheet>
   );
 }
 
 function DimensionPage({
-  dimKey, dimLabel, state, labResults, patientName, active, onClick,
+  dimKey, dimLabel, pageNumber, state, labResults, patientName, active, onClick,
 }: {
-  dimKey: string; dimLabel: string; state?: DimState;
+  dimKey: string; dimLabel: string; pageNumber: number; state?: DimState;
   labResults: Tables<"patient_lab_results">[]; patientName: string;
   active: boolean; onClick: () => void;
 }) {
   if (!state) return null;
-  const tone = scoreTone(state.index);
-  const color = TONE_HEX(tone);
+  const st = statusFor(state.index);
   const hideLabs = PAGE_BY_ID[dimKey]?.hideLabs ?? false;
   const allMarkers = hideLabs ? [] : markersForPage(dimKey);
   const selected = allMarkers.filter((m) => state.selectedMarkers.includes(m.key));
 
-  // Latest values per marker
   const latestRows = allMarkers.map((m) => {
     const row = labResults.find((l) => (l as any)[m.key] != null);
     return {
       label: m.label,
-      value: row ? `${(row as any)[m.key]} ${m.unit}` : "—",
+      value: row ? String((row as any)[m.key]) : "—",
+      unit: m.unit,
       ref: m.refLow != null || m.refHigh != null ? `${m.refLow ?? ""}–${m.refHigh ?? ""}`.replace(/^–|–$/, "") : "—",
       date: row?.result_date ?? "—",
     };
   }).filter((r) => r.value !== "—");
 
+  const riskItems = (state.riskFactors || "").split("\n").map((l) => l.replace(/^•\s*/, "").trim()).filter(Boolean);
+
   return (
-    <PageFrame id={dimKey} active={active} onClick={onClick}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #e5e5e5", paddingBottom: 12, marginBottom: 18 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>{dimLabel}</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.6, padding: "3px 8px", borderRadius: 10, background: `${color}22`, color }}>
-            {RISK_LABEL(state.index)}
-          </span>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-            <span style={{ fontSize: 24, fontWeight: 700, color }}>{state.index.toFixed(1)}</span>
-            <span style={{ fontSize: 10, color: "#888" }}>/10</span>
+    <Sheet id={dimKey} active={active} onClick={onClick}>
+      {/* Header band */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+        <div>
+          <div style={{ ...SANS, fontSize: 9.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: INK_FAINT, marginBottom: 10 }}>
+            {String(pageNumber).padStart(2, "0")} · Dimension
           </div>
+          <h2 style={{ ...SERIF, fontSize: 34, lineHeight: 1.05, margin: 0, color: INK, letterSpacing: -0.3 }}>{dimLabel}</h2>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end", gap: 4 }}>
+            <span style={{ ...SERIF, fontSize: 48, color: INK, lineHeight: 1 }}>{state.index.toFixed(1)}</span>
+            <span style={{ ...SANS, fontSize: 11, color: INK_FAINT }}>/ 10</span>
+          </div>
+          <div style={{ marginTop: 8 }}><StatusPill score={state.index} /></div>
         </div>
       </div>
 
-      {state.summary && (
-        <div style={{ marginBottom: 14, padding: 12, background: "#f8f9fb", borderRadius: 6, borderLeft: `3px solid ${color}` }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Summary</div>
-          <div style={{ fontSize: 11.5, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{state.summary}</div>
-        </div>
-      )}
-      {state.recommendations && (
-        <div style={{ marginBottom: 16, padding: 12, background: "#fffaf5", borderRadius: 6, borderLeft: `3px solid #D97706` }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Recommendations</div>
-          <div style={{ fontSize: 11.5, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{state.recommendations}</div>
+      {/* Status band */}
+      <div style={{ height: 3, background: HAIR, position: "relative", marginBottom: 28 }}>
+        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.min(100, state.index * 10)}%`, background: st.ink }} />
+      </div>
+
+      {/* Summary + Recommendations as two-column editorial */}
+      {(state.summary || state.recommendations) && (
+        <div style={{ display: "grid", gridTemplateColumns: state.summary && state.recommendations ? "1fr 1fr" : "1fr", gap: 32, marginBottom: 28 }}>
+          {state.summary && (
+            <div>
+              <div style={{ ...SANS, fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 8 }}>Summary</div>
+              <div style={{ ...SERIF, fontSize: 14, lineHeight: 1.55, color: INK, whiteSpace: "pre-wrap" }}>{state.summary}</div>
+            </div>
+          )}
+          {state.recommendations && (
+            <div>
+              <div style={{ ...SANS, fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 8 }}>Recommendations</div>
+              <div style={{ ...SANS, fontSize: 12, lineHeight: 1.6, color: INK, whiteSpace: "pre-wrap" }}>{state.recommendations}</div>
+            </div>
+          )}
         </div>
       )}
 
-      {state.showRisk && (() => {
-        const items = (state.riskFactors || "")
-          .split("\n")
-          .map((l) => l.replace(/^•\s*/, "").trim())
-          .filter(Boolean);
-        return (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Risk Factors</div>
-            {items.length === 0 ? (
-              <div style={{ fontSize: 10.5, lineHeight: 1.5, color: "#888", fontStyle: "italic", padding: "6px 10px", background: "#f8f9fb", borderRadius: 4 }}>
-                No lifestyle or examination risk factors identified for this dimension.
-              </div>
-            ) : (
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                {items.map((it, i) => (
-                  <li key={i} style={{ fontSize: 11, lineHeight: 1.5, color: "#2c2c2c", borderLeft: "3px solid #D97706", padding: "4px 10px", background: "#fffaf3", borderRadius: 2 }}>
-                    {it}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        );
-      })()}
+      {/* Risk factors */}
+      {state.showRisk && (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ ...SANS, fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 10 }}>Risk factors</div>
+          {riskItems.length === 0 ? (
+            <p style={{ ...SANS, fontSize: 11.5, color: INK_FAINT, fontStyle: "italic" }}>None identified for this dimension.</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}>
+              {riskItems.map((it, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, padding: "6px 0", borderTop: i < 2 ? "none" : `1px solid ${HAIR}` }}>
+                  <span style={{ width: 4, height: 4, borderRadius: 999, background: STATUS.amber.ink, marginTop: 8, flexShrink: 0 }} />
+                  <span style={{ ...SANS, fontSize: 11.5, lineHeight: 1.5, color: INK }}>{it}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* Lab table */}
       {latestRows.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Lab Values</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ ...SANS, fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 10 }}>Laboratory</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", ...SANS, fontSize: 11.5 }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #e5e5e5" }}>
-                <th style={{ textAlign: "left", padding: "6px 4px", fontSize: 9, color: "#888", fontWeight: 600, textTransform: "uppercase" }}>Factor</th>
-                <th style={{ textAlign: "left", padding: "6px 4px", fontSize: 9, color: "#888", fontWeight: 600, textTransform: "uppercase" }}>Value</th>
-                <th style={{ textAlign: "left", padding: "6px 4px", fontSize: 9, color: "#888", fontWeight: 600, textTransform: "uppercase" }}>Reference</th>
-                <th style={{ textAlign: "left", padding: "6px 4px", fontSize: 9, color: "#888", fontWeight: 600, textTransform: "uppercase" }}>Date</th>
+              <tr style={{ borderTop: `1px solid ${HAIR}`, borderBottom: `1px solid ${HAIR}` }}>
+                <th style={{ textAlign: "left", padding: "8px 8px 8px 0", fontSize: 9, color: INK_FAINT, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Marker</th>
+                <th style={{ textAlign: "right", padding: "8px", fontSize: 9, color: INK_FAINT, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Value</th>
+                <th style={{ textAlign: "left", padding: "8px", fontSize: 9, color: INK_FAINT, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Unit</th>
+                <th style={{ textAlign: "left", padding: "8px", fontSize: 9, color: INK_FAINT, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Reference</th>
+                <th style={{ textAlign: "right", padding: "8px 0 8px 8px", fontSize: 9, color: INK_FAINT, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Date</th>
               </tr>
             </thead>
             <tbody>
               {latestRows.map((r, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #f4f4f4" }}>
-                  <td style={{ padding: "6px 4px" }}>{r.label}</td>
-                  <td style={{ padding: "6px 4px", fontWeight: 600 }}>{r.value}</td>
-                  <td style={{ padding: "6px 4px", color: "#666" }}>{r.ref}</td>
-                  <td style={{ padding: "6px 4px", color: "#666" }}>{r.date}</td>
+                <tr key={i} style={{ borderBottom: `1px solid ${HAIR}` }}>
+                  <td style={{ padding: "10px 8px 10px 0", color: INK }}>{r.label}</td>
+                  <td style={{ padding: "10px 8px", textAlign: "right", ...MONO, fontSize: 12, color: INK, fontWeight: 600 }}>{r.value}</td>
+                  <td style={{ padding: "10px 8px", color: INK_DIM }}>{r.unit}</td>
+                  <td style={{ padding: "10px 8px", ...MONO, color: INK_DIM, fontSize: 11 }}>{r.ref}</td>
+                  <td style={{ padding: "10px 0 10px 8px", textAlign: "right", ...MONO, color: INK_DIM, fontSize: 10.5 }}>{r.date}</td>
                 </tr>
               ))}
             </tbody>
@@ -972,26 +1076,31 @@ function DimensionPage({
         </div>
       )}
 
+      {/* Trend charts */}
       {selected.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-          {selected.map((m) => (
-            <MiniChart
-              key={m.key}
-              marker={m}
-              labResults={labResults}
-              showRef={state.showRefIntervals}
-              showOpt={state.showOptIntervals}
-            />
-          ))}
+        <div>
+          <div style={{ ...SANS, fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: INK_FAINT, marginBottom: 10 }}>Trends</div>
+          <div style={{ display: "grid", gridTemplateColumns: selected.length > 2 ? "1fr 1fr 1fr" : "1fr 1fr", gap: 16 }}>
+            {selected.map((m) => (
+              <MiniChart
+                key={m.key}
+                marker={m}
+                labResults={labResults}
+                showRef={state.showRefIntervals}
+                showOpt={state.showOptIntervals}
+                tone={st.ink}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      <PageFooter patientName={patientName} />
-    </PageFrame>
+      <SheetFooter patientName={patientName} pageNumber={pageNumber} />
+    </Sheet>
   );
 }
 
-function MiniChart({ marker, labResults, showRef, showOpt }: { marker: Marker; labResults: Tables<"patient_lab_results">[]; showRef: boolean; showOpt: boolean }) {
+function MiniChart({ marker, labResults, showRef, showOpt, tone }: { marker: Marker; labResults: Tables<"patient_lab_results">[]; showRef: boolean; showOpt: boolean; tone: string }) {
   const data = useMemo(() => {
     return [...labResults]
       .filter((l) => (l as any)[marker.key] != null)
@@ -1000,24 +1109,36 @@ function MiniChart({ marker, labResults, showRef, showOpt }: { marker: Marker; l
   }, [labResults, marker.key]);
 
   if (data.length === 0) return null;
+  const latest = data[data.length - 1]?.value;
 
   return (
-    <div style={{ border: "1px solid #e5e5e5", borderRadius: 6, padding: 8 }}>
-      <div style={{ fontSize: 10, color: "#444", fontWeight: 600, marginBottom: 2 }}>{marker.label}</div>
-      <div style={{ fontSize: 9, color: "#888", marginBottom: 4 }}>{marker.unit}</div>
-      <div style={{ height: 90 }}>
+    <div style={{ borderTop: `1px solid ${HAIR}`, paddingTop: 12 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 2 }}>
+        <div style={{ ...SANS, fontSize: 10.5, color: INK, fontWeight: 600 }}>{marker.label}</div>
+        <div style={{ ...MONO, fontSize: 11, color: INK, fontWeight: 600 }}>
+          {latest}<span style={{ ...SANS, fontSize: 9, color: INK_FAINT, fontWeight: 400, marginLeft: 3 }}>{marker.unit}</span>
+        </div>
+      </div>
+      <div style={{ height: 70, marginTop: 4 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="2 2" stroke="#f0f0f0" />
-            <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#888" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 8, fill: "#888" }} axisLine={false} tickLine={false} width={24} />
+          <LineChart data={data} margin={{ top: 6, right: 4, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="2 3" stroke={HAIR} vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 8, fill: INK_FAINT }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 8, fill: INK_FAINT }} axisLine={false} tickLine={false} width={22} />
             {showRef && marker.refLow != null && marker.refHigh != null && (
-              <ReferenceArea y1={marker.refLow} y2={marker.refHigh} fill="#0EA5A0" fillOpacity={0.08} />
+              <ReferenceArea y1={marker.refLow} y2={marker.refHigh} fill={STATUS.green.ink} fillOpacity={0.05} />
             )}
             {showOpt && marker.optLow != null && marker.optHigh != null && (
-              <ReferenceArea y1={marker.optLow} y2={marker.optHigh} fill="#0EA5A0" fillOpacity={0.18} />
+              <ReferenceArea y1={marker.optLow} y2={marker.optHigh} fill={STATUS.green.ink} fillOpacity={0.14} />
             )}
-            <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={ESPRESSO}
+              strokeWidth={1.25}
+              dot={{ r: 2, fill: ESPRESSO, stroke: "none" }}
+              activeDot={{ r: 3, fill: tone, stroke: "none" }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
