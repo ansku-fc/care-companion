@@ -1493,6 +1493,94 @@ function ReviewScreen(props: ReviewProps) {
               </ReviewCard>
             </section>
 
+            {/* Section 2b — Dimension scores (only when ≥1 flagged) */}
+            {flaggedDims.length > 0 && (
+              <section>
+                <ReviewSectionLabel>Dimension Scores</ReviewSectionLabel>
+                <p className="text-[12px] italic text-[#9B8775] -mt-1 mb-2">
+                  Review and confirm risk scores for flagged dimensions. Unflagged dimensions are unchanged.
+                </p>
+                <ReviewCard onEdit={onBack}>
+                  <div>
+                    {flaggedDims.map((d, i) => {
+                      const cur = findCurrentDimension(d);
+                      const currentBand: Band | null = cur ? scoreToBand(cur.score) : null;
+                      const selected = scoreBands[d];
+                      const changed = !!(currentBand && selected && selected !== currentBand);
+                      const direction =
+                        currentBand && selected
+                          ? BAND_MIDPOINT[selected] > BAND_MIDPOINT[currentBand]
+                            ? "up"
+                            : "down"
+                          : null;
+                      return (
+                        <div
+                          key={d}
+                          className="flex items-center gap-4 min-h-[48px] py-2"
+                          style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
+                        >
+                          <div className="min-w-0 w-[180px] shrink-0">
+                            <div className="text-[14px] font-medium text-[#2E1F14] truncate">{d}</div>
+                            <div className="text-[12px] text-[#9B8775]">
+                              {cur
+                                ? `Currently ${cur.score.toFixed(1)} · ${cur.band}`
+                                : "New dimension"}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 flex-1">
+                            {(["LOW", "MEDIUM", "HIGH"] as Band[]).map((b) => {
+                              const active = selected === b;
+                              const sel = {
+                                LOW: { bg: "#E6F4F3", fg: "#0EA5A0" },
+                                MEDIUM: { bg: "#FEF3C7", fg: "#D97706" },
+                                HIGH: { bg: "#FBE4EA", fg: "#E8446A" },
+                              }[b];
+                              const range = { LOW: "0–4", MEDIUM: "4–7", HIGH: "7–10" }[b];
+                              return (
+                                <button
+                                  key={b}
+                                  type="button"
+                                  onClick={() => onChangeBand(d, b)}
+                                  className="rounded-[6px] text-[12px] font-medium px-2.5 py-1 transition-colors"
+                                  style={{
+                                    background: active ? sel.bg : "#F5F0EA",
+                                    color: active ? sel.fg : "#9B8775",
+                                  }}
+                                >
+                                  {b} {range}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="w-[120px] shrink-0 text-right">
+                            {changed ? (
+                              <span
+                                className="text-[11px] font-medium"
+                                style={{ color: "#D97706" }}
+                              >
+                                {direction === "up" ? "↑" : "↓"} Will update to {BAND_LABEL[selected]}
+                              </span>
+                            ) : (
+                              <span className="text-[11px]" style={{ color: "#C9BBA9" }}>
+                                No change
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p
+                    className="text-[11px] italic mt-3 pt-3"
+                    style={{ color: "#9B8775", borderTop: "0.5px solid #F0EBE4" }}
+                  >
+                    Scores reflect clinical judgement and are visible in the patient health overview.
+                    Lab results update scores automatically when imported.
+                  </p>
+                </ReviewCard>
+              </section>
+            )}
+
             {/* Section 3 — Tasks */}
             <section>
               <ReviewSectionLabel>Tasks to Create</ReviewSectionLabel>
