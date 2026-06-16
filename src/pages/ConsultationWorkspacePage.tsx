@@ -1083,6 +1083,65 @@ export default function ConsultationWorkspacePage() {
                     + Add measurement
                   </button>
                 </div>
+
+                {/* Structured data panels */}
+                <div className="mt-5 pt-4 border-t border-[#F0EBE4]">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-[#9B8775]">
+                    Structured Data
+                  </div>
+                  <p className="mt-1 text-[12px] italic text-[#9B8775]">
+                    Add structured data collection relevant to this visit.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(["vitals", "sleep", "mental", "activity", "nutrition"] as PanelId[]).map((p) => {
+                      const active = selectedPanels.has(p);
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => togglePanel(p)}
+                          className="rounded-full text-[12px] font-medium px-3 py-1 transition-colors duration-150"
+                          style={
+                            active
+                              ? { background: "#2E1F14", color: "#FFFFFF", border: "1px solid #2E1F14" }
+                              : { background: "#F5F0EA", color: "#9B8775", border: "1px solid #E7DCCD" }
+                          }
+                        >
+                          {PANEL_LABELS[p]}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Active panels */}
+                  <div className="mt-4 space-y-4">
+                    {selectedPanels.has("vitals") && (
+                      <PanelShell title="Vitals">
+                        <VitalsPanel value={vitalsData} onChange={(u) => setVitalsData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("sleep") && (
+                      <PanelShell title="Sleep">
+                        <SleepPanel value={sleepData} onChange={(u) => setSleepData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("mental") && (
+                      <PanelShell title="Mental Health">
+                        <MentalHealthPanel value={mentalData} onChange={(u) => setMentalData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("activity") && (
+                      <PanelShell title="Activity">
+                        <ActivityPanel value={activityData} onChange={(u) => setActivityData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("nutrition") && (
+                      <PanelShell title="Nutrition">
+                        <NutritionPanel value={nutritionData} onChange={(u) => setNutritionData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                  </div>
+                </div>
               </Card>
 
 
