@@ -442,7 +442,7 @@ const Dashboard = () => {
                 );
               })}
             </CardContent>
-            <div className="px-6 pb-3 pt-1 shrink-0 border-t border-border/60">
+            <div className="px-6 pb-3 pt-1 shrink-0 [border-top:1px_solid_#F0EBE4]">
               <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => navigate("/calendar")}>
                 View full calendar <ArrowRight className="h-3.5 w-3.5" />
               </Button>
