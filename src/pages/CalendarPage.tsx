@@ -220,13 +220,23 @@ const CalendarPage = () => {
                   <button
                     key={key}
                     onClick={() => setSelectedDate(day)}
-                    className={`min-h-[80px] p-1 flex flex-col items-start text-left transition-colors
-                      ${inMonth ? "bg-card" : "bg-muted/30"}
-                      ${selected ? "ring-2 ring-primary ring-inset" : ""}
-                      hover:bg-accent/30`}
+                    className={cn(
+                      "min-h-[80px] p-1 flex flex-col items-start text-left transition-colors",
+                      inMonth ? "bg-card" : "bg-muted/30",
+                      selected ? "[box-shadow:inset_0_0_0_1.5px_#C9BBA9]" : "",
+                      "hover:bg-accent/30",
+                    )}
                   >
-                    <span className={`text-xs font-medium mb-0.5 px-1.5 py-0.5 rounded-full border
-                      ${today ? "bg-[#FDF6EE] text-[#2E1F14] border-[#C8A98A]" : inMonth ? "text-foreground border-transparent" : "text-muted-foreground border-transparent"}`}>
+                    <span
+                      className={cn(
+                        "text-xs font-medium mb-0.5 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full",
+                        today
+                          ? "text-[#2E1F14] [border:1.5px_solid_#C9BBA9]"
+                          : inMonth
+                          ? "text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {format(day, "d")}
                     </span>
                     <div className="w-full space-y-0.5 overflow-hidden">
@@ -236,7 +246,14 @@ const CalendarPage = () => {
                           ? (a.title ?? a.other_doctor_name ?? "Doctor Meeting")
                           : (a.patient_name?.split(",")[0] ?? a.title?.split("–")[0]);
                         return (
-                          <div key={a.id} className={`text-[10px] leading-tight truncate px-1 py-0.5 rounded border ${s.bg} ${s.text} ${s.border}`}>
+                          <div
+                            key={a.id}
+                            className={cn(
+                              "text-[11px] leading-[18px] h-[22px] truncate rounded-[4px] flex items-center",
+                              s.bg, s.text,
+                            )}
+                            style={{ padding: "2px 6px" }}
+                          >
                             {format(parseISO(a.start_time), "HH:mm")} {displayName}
                           </div>
                         );
@@ -248,6 +265,7 @@ const CalendarPage = () => {
                   </button>
                 );
               })}
+
             </div>
           </CardContent>
         </Card>
@@ -283,26 +301,36 @@ const CalendarPage = () => {
                   {dayAppointments.map((a: any) => {
                     const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
                     return (
-                      <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${s.bg} ${s.border}`}>
+                      <div
+                        key={a.id}
+                        className="rounded-[12px] p-3 space-y-2 bg-white [border:1px_solid_#E7DCCD]"
+                      >
                         {/* Time & type */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <Clock className={`h-3.5 w-3.5 ${s.text}`} />
-                            <span className="text-sm font-mono font-medium">
+                            <Clock className="h-3.5 w-3.5 text-[#6E5A48]" />
+                            <span className="text-[14px] font-mono font-medium text-[#6E5A48]">
                               {format(parseISO(a.start_time), "HH:mm")}–{format(parseISO(a.end_time), "HH:mm")}
                             </span>
                           </div>
-                          <Badge variant="outline" className={`text-[10px] ${s.text} border-current`}>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-[4px] text-[11px] font-medium leading-none",
+                              s.bg, s.text,
+                            )}
+                            style={{ padding: "3px 6px" }}
+                          >
                             {s.label}
-                          </Badge>
+                          </span>
                         </div>
 
                         {/* Title */}
-                        <p className="text-sm font-semibold">
+                        <p className="text-[16px] font-medium text-[#2E1F14]">
                           {a.isWorkingTime || a.appointment_type === "doctor_meeting"
                             ? a.title
                             : (a.patient_name ?? a.title)}
                         </p>
+
 
                         {/* Modality badges */}
                         {!a.isWorkingTime && (
@@ -339,7 +367,7 @@ const CalendarPage = () => {
 
                         {/* Notes preview */}
                         {a.notes && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{a.notes}</p>
+                          <p className="text-[14px] font-normal text-[#6E5A48] line-clamp-2">{a.notes}</p>
                         )}
 
                         {/* Action buttons */}
