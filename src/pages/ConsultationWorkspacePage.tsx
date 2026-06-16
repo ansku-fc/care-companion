@@ -1006,9 +1006,24 @@ export default function ConsultationWorkspacePage() {
                   <VitalInput label="Weight" suffix="kg" value={weight} onChange={setWeight} />
                   <VitalInput label="Temp" suffix="°C" value={temp} onChange={setTemp} />
                 </div>
-                <div className="mt-3">
+                <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }} ref={labsRef}>
+                  <SectionLabel>Recent Lab Results</SectionLabel>
+                  <p className="text-[12px] italic text-[#9B8775] mt-0.5 mb-3">
+                    From the last 90 days — review and add to findings as needed.
+                  </p>
+                  <LabResultsBlock
+                    groups={LAB_GROUPS}
+                    included={labsIncluded}
+                    onToggleInclude={(id) =>
+                      setLabsIncluded((p) => ({ ...p, [id]: !p[id] }))
+                    }
+                  />
+                </div>
+
+                <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }}>
+                  <SectionLabel>Doctor's Observations</SectionLabel>
                   <AutoTextarea
-                    placeholder="Note any lab values discussed or physical findings..."
+                    placeholder="Additional observations, physical findings, vitals noted during visit..."
                     minHeight={60}
                     value={labs}
                     onChange={setLabs}
@@ -1019,6 +1034,65 @@ export default function ConsultationWorkspacePage() {
 
               <Card>
                 <SectionLabel>Assessment</SectionLabel>
+                {(() => {
+                  // Smart suggestion: flagged labs whose dimension isn't yet selected
+                  const missing = Array.from(
+                    new Set(
+                      LAB_GROUPS[0].rows
+                        .filter((r) => r.flagged && r.dimension && !findings[r.dimension!])
+                        .map((r) => r.dimension as string),
+                    ),
+                  );
+                  const flaggedMarkers = LAB_GROUPS[0].rows
+                    .filter((r) => r.flagged && r.dimension && missing.includes(r.dimension!))
+                    .map((r) => r.marker.replace(" Cholesterol", ""));
+                  const uniqueMarkers = Array.from(new Set(flaggedMarkers)).slice(0, 3);
+                  if (suggestionDismissed || missing.length === 0) return null;
+                  return (
+                    <div
+                      className="flex items-start justify-between gap-3 animate-fade-in"
+                      style={{
+                        background: "#FEF3C7",
+                        borderRadius: 6,
+                        padding: "8px 12px",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <p className="text-[12px] text-[#6E5A48] leading-snug">
+                        <span style={{ color: "#D97706" }}>↑</span>{" "}
+                        {uniqueMarkers.join(" and ")}{" "}
+                        {uniqueMarkers.length === 1 ? "is" : "are"} flagged — consider tagging{" "}
+                        {missing.join(" and ")}.
+                      </p>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            missing.forEach((d) => {
+                              if (!findings[d]) {
+                                setFindings((prev) => ({
+                                  ...prev,
+                                  [d]: { text: "", flagged: false },
+                                }));
+                                setOrder((prev) => (prev.includes(d) ? prev : [...prev, d]));
+                              }
+                            });
+                          }}
+                          className="text-[12px] font-medium text-[#2E1F14] hover:underline"
+                        >
+                          Add both
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSuggestionDismissed(true)}
+                          className="text-[12px] text-[#9B8775] hover:text-[#2E1F14] transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <p className="text-[12px] italic text-[#9B8775]">
                   Select the health dimensions relevant to this visit, then add your findings for each.
                 </p>
