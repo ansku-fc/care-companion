@@ -2715,18 +2715,21 @@ function HealthDimensionView({
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
+  const [familyHistoryDb, setFamilyHistoryDb] = useState<any[]>([]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [d, m, a] = await Promise.all([
-        supabase.from("patient_diagnoses").select("diagnosis,icd_code").eq("patient_id", patient.id).eq("status", "active"),
+      const [d, m, a, fh] = await Promise.all([
+        supabase.from("patient_diagnoses").select("diagnosis,icd_code,status,diagnosed_date,notes").eq("patient_id", patient.id),
         supabase.from("patient_medications").select("medication_name,indication").eq("patient_id", patient.id).eq("status", "active"),
         supabase.from("patient_allergies" as any).select("allergen").eq("patient_id", patient.id).eq("status", "active"),
+        supabase.from("patient_family_history" as any).select("relative,illness_name,icd_code,age_at_diagnosis,notes").eq("patient_id", patient.id),
       ]);
       if (cancelled) return;
       setDiagnoses(d.data || []);
       setMedications(m.data || []);
       setAllergies((a as any).data || []);
+      setFamilyHistoryDb(((fh as any).data || []) as any[]);
     })();
     return () => { cancelled = true; };
   }, [patient.id]);
@@ -2814,7 +2817,16 @@ function HealthDimensionView({
 
     // ── Family-history filtering by ICD prefix ──────────────────────
     type FH = { relative?: string; icd_code?: string; illness_name?: string; age_at_diagnosis?: number | null };
-    const allFamilyHistory: FH[] = Array.isArray(extra.family_history) ? extra.family_history : [];
+    const allFamilyHistoryOnboarding: FH[] = Array.isArray(extra.family_history) ? extra.family_history : [];
+    // Merge onboarding family history with patient_family_history table.
+    // DB row wins on conflict (key = relative|icd_code|illness_name).
+    const fhKey = (f: FH) => `${(f.relative ?? "").toLowerCase()}|${(f.icd_code ?? "").toUpperCase()}|${(f.illness_name ?? "").toLowerCase()}`;
+    const allFamilyHistory: FH[] = (() => {
+      const byKey = new Map<string, FH>();
+      allFamilyHistoryOnboarding.forEach((f) => byKey.set(fhKey(f), f));
+      (familyHistoryDb as FH[]).forEach((f) => byKey.set(fhKey(f), f));
+      return Array.from(byKey.values());
+    })();
     const familyByPrefix = (matcher: (icd: string) => boolean): FH[] =>
       allFamilyHistory.filter((f) => matcher(String(f.icd_code ?? "").toUpperCase()));
     const isCardioIcd = (c: string) => /^I\d/.test(c);
@@ -3221,8 +3233,31 @@ function HealthDimensionView({
         const tags: string[] = Array.isArray(row.dimensions) ? row.dimensions : [];
         return tags.some((t) => TAG_TO_MAIN_DIM[t] === famKey);
       };
-      const currentForDim = allCurrentIllnesses.filter(matchesThisDim);
-      const previousForDim = allPreviousIllnesses.filter(matchesThisDim);
+      // Pull diagnoses from patient_diagnoses table, filtered by this dim's ICD prefix.
+      const icdMatcher = FAMILY_ICD_MATCHERS[famKey];
+      const diagForDim = icdMatcher
+        ? diagnoses.filter((d) => icdMatcher(String(d.icd_code ?? "").toUpperCase()))
+        : [];
+      const diagToRow = (d: any) => ({
+        icd_code: d.icd_code,
+        illness_name: d.diagnosis,
+        onset_year: d.diagnosed_date ? new Date(d.diagnosed_date).getFullYear() : null,
+        resolved_year: d.status === "resolved" && d.diagnosed_date
+          ? new Date(d.diagnosed_date).getFullYear()
+          : null,
+        notes: d.notes ?? undefined,
+      });
+      const dbCurrent = diagForDim.filter((d) => d.status === "active").map(diagToRow);
+      const dbPrevious = diagForDim.filter((d) => d.status === "resolved").map(diagToRow);
+      // Merge by ICD code; DB row wins on conflict.
+      const mergeIllness = (db: any[], onboard: any[]) => {
+        const byKey = new Map<string, any>();
+        onboard.forEach((r) => byKey.set(String(r.icd_code ?? `__${r.illness_name}`).toUpperCase(), r));
+        db.forEach((r) => byKey.set(String(r.icd_code ?? `__${r.illness_name}`).toUpperCase(), r));
+        return Array.from(byKey.values());
+      };
+      const currentForDim = mergeIllness(dbCurrent, allCurrentIllnesses.filter(matchesThisDim));
+      const previousForDim = mergeIllness(dbPrevious, allPreviousIllnesses.filter(matchesThisDim));
       const currentIllnessGroup: GroupSpec = {
         key: `${famKey}__current_illnesses`,
         title: "Current Illnesses",
