@@ -132,7 +132,7 @@ const PAST: PastVisit[] = [
     dimensions: [
       { label: "Cardiovascular Health", tone: "rose" },
       { label: "Metabolic Health", tone: "amber" },
-      { label: "Digestion / Liver", tone: "rose" },
+      { label: "Digestion", tone: "rose" },
     ],
     labs: [
       { name: "LDL", value: "4.9 mmol/l", status: "high" },
