@@ -2817,7 +2817,16 @@ function HealthDimensionView({
 
     // ── Family-history filtering by ICD prefix ──────────────────────
     type FH = { relative?: string; icd_code?: string; illness_name?: string; age_at_diagnosis?: number | null };
-    const allFamilyHistory: FH[] = Array.isArray(extra.family_history) ? extra.family_history : [];
+    const allFamilyHistoryOnboarding: FH[] = Array.isArray(extra.family_history) ? extra.family_history : [];
+    // Merge onboarding family history with patient_family_history table.
+    // DB row wins on conflict (key = relative|icd_code|illness_name).
+    const fhKey = (f: FH) => `${(f.relative ?? "").toLowerCase()}|${(f.icd_code ?? "").toUpperCase()}|${(f.illness_name ?? "").toLowerCase()}`;
+    const allFamilyHistory: FH[] = (() => {
+      const byKey = new Map<string, FH>();
+      allFamilyHistoryOnboarding.forEach((f) => byKey.set(fhKey(f), f));
+      (familyHistoryDb as FH[]).forEach((f) => byKey.set(fhKey(f), f));
+      return Array.from(byKey.values());
+    })();
     const familyByPrefix = (matcher: (icd: string) => boolean): FH[] =>
       allFamilyHistory.filter((f) => matcher(String(f.icd_code ?? "").toUpperCase()));
     const isCardioIcd = (c: string) => /^I\d/.test(c);
