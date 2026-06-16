@@ -984,17 +984,26 @@ export default function ConsultationWorkspacePage() {
                 </div>
                 <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }} ref={labsRef}>
                   <SectionLabel>Recent Lab Results</SectionLabel>
-                  <p className="text-[12px] italic text-[#9B8775] mt-0.5 mb-3">
-                    From the last 90 days — review and add to findings as needed.
-                  </p>
-                  <LabResultsBlock
-                    groups={LAB_GROUPS}
-                    included={labsIncluded}
-                    onToggleInclude={(id) =>
-                      setLabsIncluded((p) => ({ ...p, [id]: !p[id] }))
-                    }
-                  />
+                  {LAB_GROUPS.length === 0 ? (
+                    <p className="text-[12px] italic text-[#9B8775] mt-2">
+                      No lab results in the last 90 days.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-[12px] italic text-[#9B8775] mt-0.5 mb-3">
+                        From the last 90 days — review and add to findings as needed.
+                      </p>
+                      <LabResultsBlock
+                        groups={LAB_GROUPS}
+                        included={labsIncluded}
+                        onToggleInclude={(id) =>
+                          setLabsIncluded((p) => ({ ...p, [id]: !p[id] }))
+                        }
+                      />
+                    </>
+                  )}
                 </div>
+
 
                 <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }}>
                   <SectionLabel>Doctor's Observations</SectionLabel>
