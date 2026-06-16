@@ -719,6 +719,7 @@ export type Database = {
           fvc_percent: number | null
           gt_u_l: number | null
           hba1c_mmol_mol: number | null
+          hdl_mmol_l: number | null
           holotranscobalamin_pmol_l: number | null
           id: string
           iron_serum_umol_l: number | null
@@ -735,10 +736,12 @@ export type Database = {
           source: string
           source_filename: string | null
           testosterone_estrogen_abnormal: boolean | null
+          total_cholesterol_mmol_l: number | null
           total_protein_g_l: number | null
           transferrin_g_l: number | null
           transferrin_receptor_mg_l: number | null
           transferrin_saturation_pct: number | null
+          triglycerides_mmol_l: number | null
           tsh_mu_l: number | null
           u_alb_krea_abnormal: boolean | null
           updated_at: string
@@ -769,6 +772,7 @@ export type Database = {
           fvc_percent?: number | null
           gt_u_l?: number | null
           hba1c_mmol_mol?: number | null
+          hdl_mmol_l?: number | null
           holotranscobalamin_pmol_l?: number | null
           id?: string
           iron_serum_umol_l?: number | null
@@ -785,10 +789,12 @@ export type Database = {
           source?: string
           source_filename?: string | null
           testosterone_estrogen_abnormal?: boolean | null
+          total_cholesterol_mmol_l?: number | null
           total_protein_g_l?: number | null
           transferrin_g_l?: number | null
           transferrin_receptor_mg_l?: number | null
           transferrin_saturation_pct?: number | null
+          triglycerides_mmol_l?: number | null
           tsh_mu_l?: number | null
           u_alb_krea_abnormal?: boolean | null
           updated_at?: string
@@ -819,6 +825,7 @@ export type Database = {
           fvc_percent?: number | null
           gt_u_l?: number | null
           hba1c_mmol_mol?: number | null
+          hdl_mmol_l?: number | null
           holotranscobalamin_pmol_l?: number | null
           id?: string
           iron_serum_umol_l?: number | null
@@ -835,10 +842,12 @@ export type Database = {
           source?: string
           source_filename?: string | null
           testosterone_estrogen_abnormal?: boolean | null
+          total_cholesterol_mmol_l?: number | null
           total_protein_g_l?: number | null
           transferrin_g_l?: number | null
           transferrin_receptor_mg_l?: number | null
           transferrin_saturation_pct?: number | null
+          triglycerides_mmol_l?: number | null
           tsh_mu_l?: number | null
           u_alb_krea_abnormal?: boolean | null
           updated_at?: string
