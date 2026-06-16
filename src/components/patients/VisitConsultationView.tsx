@@ -68,6 +68,7 @@ const defaultVisitForm: VisitFormData = {
   visit_reason_other: "",
   chief_complaint: "",
   doctor_notes: "",
+  objective_notes: "",
   blood_pressure_systolic: null,
   blood_pressure_diastolic: null,
   heart_rate: null,
