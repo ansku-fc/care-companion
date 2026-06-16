@@ -547,8 +547,7 @@ const CalendarPage = () => {
                         className="flex-1 gap-1"
                         onClick={() => {
                           setDetailAppt(null);
-                          if (!detailAppt.isDummy) navigate(`/patients/${detailAppt.patient_id}`);
-                          else toast({ title: "Demo mode", description: "This is a demo appointment." });
+                          navigate("/consultation");
                         }}
                       >
                         <Play className="h-4 w-4" />
