@@ -168,6 +168,7 @@ export function VisitConsultationView({ patient, appointment, onBack, onSaved }:
           bmi: form.bmi,
           symptoms: form.new_symptoms,
           symptom_notes: form.symptom_notes,
+          objective_notes: form.objective_notes || null,
           lifestyle: {
             exercise_met_hours: form.exercise_met_hours,
             smoking: form.smoking || null,
