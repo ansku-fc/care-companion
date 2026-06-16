@@ -1,7 +1,34 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag, X, ArrowUpRight } from "lucide-react";
+import {
+  SleepPanel, defaultSleepData, type SleepData,
+  MentalHealthPanel, defaultMentalHealthData, type MentalHealthData,
+  ActivityPanel, defaultActivityData, type ActivityData,
+  NutritionPanel, defaultNutritionData, type NutritionData,
+  VitalsPanel, defaultVitalsData, type VitalsData,
+} from "@/components/patients/panels";
+
+type PanelId = "vitals" | "sleep" | "mental" | "activity" | "nutrition";
+
+const PANEL_LABELS: Record<PanelId, string> = {
+  vitals: "Vitals",
+  sleep: "Sleep",
+  mental: "Mental Health",
+  activity: "Activity",
+  nutrition: "Nutrition",
+};
+
+function suggestPanelsFromText(text: string): Set<PanelId> {
+  const t = text.toLowerCase();
+  const out = new Set<PanelId>();
+  if (/(sleep|fatigue|tired)/.test(t)) { out.add("sleep"); out.add("vitals"); }
+  if (/(anxiety|depression|stress|mood)/.test(t)) out.add("mental");
+  if (/(weight|bmi)/.test(t)) { out.add("vitals"); out.add("nutrition"); }
+  if (/(blood pressure|hypertension)/.test(t)) out.add("vitals");
+  return out;
+}
 
 
 type Tone = "rose" | "amber" | "teal";
@@ -100,6 +127,18 @@ function todayPlus(days: number) {
 
 function uid() {
   return Math.random().toString(36).slice(2, 9);
+}
+
+function PanelShell({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-xl border border-[#E7DCCD] bg-[#FAF5EE]/60 px-4 py-4 animate-in fade-in slide-in-from-top-2"
+      style={{ animationDuration: "220ms" }}
+    >
+      <div className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#9B8775]">{title}</div>
+      {children}
+    </div>
+  );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -673,6 +712,43 @@ export default function ConsultationWorkspacePage() {
   const labsRef = useRef<HTMLDivElement>(null);
   const [measurements, setMeasurements] = useState<{ name: string; value: string }[]>([]);
 
+  // Structured data panels (context-aware data collection)
+  const [selectedPanels, setSelectedPanels] = useState<Set<PanelId>>(new Set());
+  const [seenSuggestions, setSeenSuggestions] = useState<Set<PanelId>>(new Set());
+  const [vitalsData, setVitalsData] = useState<VitalsData>({ ...defaultVitalsData });
+  const [sleepData, setSleepData] = useState<SleepData>({ ...defaultSleepData });
+  const [mentalData, setMentalData] = useState<MentalHealthData>({ ...defaultMentalHealthData });
+  const [activityData, setActivityData] = useState<ActivityData>({ ...defaultActivityData });
+  const [nutritionData, setNutritionData] = useState<NutritionData>({ ...defaultNutritionData });
+
+  const suggested = useMemo(() => suggestPanelsFromText(subjective), [subjective]);
+  useEffect(() => {
+    // Auto-add newly suggested panels the first time they're suggested.
+    // Once a panel has been "seen", user toggles win.
+    const toAdd: PanelId[] = [];
+    suggested.forEach((p) => { if (!seenSuggestions.has(p)) toAdd.push(p); });
+    if (toAdd.length === 0) return;
+    setSelectedPanels((prev) => {
+      const next = new Set(prev);
+      toAdd.forEach((p) => next.add(p));
+      return next;
+    });
+    setSeenSuggestions((prev) => {
+      const next = new Set(prev);
+      toAdd.forEach((p) => next.add(p));
+      return next;
+    });
+  }, [suggested, seenSuggestions]);
+
+  const togglePanel = (p: PanelId) => {
+    setSeenSuggestions((prev) => new Set(prev).add(p));
+    setSelectedPanels((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p); else next.add(p);
+      return next;
+    });
+  };
+
   // View mode + save state
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
@@ -1018,6 +1094,65 @@ export default function ConsultationWorkspacePage() {
                   >
                     + Add measurement
                   </button>
+                </div>
+
+                {/* Structured data panels */}
+                <div className="mt-5 pt-4 border-t border-[#F0EBE4]">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-[#9B8775]">
+                    Structured Data
+                  </div>
+                  <p className="mt-1 text-[12px] italic text-[#9B8775]">
+                    Add structured data collection relevant to this visit.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(["vitals", "sleep", "mental", "activity", "nutrition"] as PanelId[]).map((p) => {
+                      const active = selectedPanels.has(p);
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => togglePanel(p)}
+                          className="rounded-full text-[12px] font-medium px-3 py-1 transition-colors duration-150"
+                          style={
+                            active
+                              ? { background: "#2E1F14", color: "#FFFFFF", border: "1px solid #2E1F14" }
+                              : { background: "#F5F0EA", color: "#9B8775", border: "1px solid #E7DCCD" }
+                          }
+                        >
+                          {PANEL_LABELS[p]}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Active panels */}
+                  <div className="mt-4 space-y-4">
+                    {selectedPanels.has("vitals") && (
+                      <PanelShell title="Vitals">
+                        <VitalsPanel value={vitalsData} onChange={(u) => setVitalsData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("sleep") && (
+                      <PanelShell title="Sleep">
+                        <SleepPanel value={sleepData} onChange={(u) => setSleepData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("mental") && (
+                      <PanelShell title="Mental Health">
+                        <MentalHealthPanel value={mentalData} onChange={(u) => setMentalData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("activity") && (
+                      <PanelShell title="Activity">
+                        <ActivityPanel value={activityData} onChange={(u) => setActivityData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("nutrition") && (
+                      <PanelShell title="Nutrition">
+                        <NutritionPanel value={nutritionData} onChange={(u) => setNutritionData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                  </div>
                 </div>
               </Card>
 
