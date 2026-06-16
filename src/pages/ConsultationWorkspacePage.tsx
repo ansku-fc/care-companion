@@ -1539,6 +1539,7 @@ type ReviewProps = {
   weight: string;
   temp: string;
   plan: string;
+  includedLabGroups: LabGroup[];
   selectedDims: string[];
   findings: Record<string, Finding>;
   tasks: Task[];
