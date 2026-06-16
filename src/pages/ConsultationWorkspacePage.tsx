@@ -1119,27 +1119,96 @@ export default function ConsultationWorkspacePage() {
             </div>
 
             <div className="space-y-2">
+              {/* Card 1 — REPORTED SYMPTOMS */}
               <Card>
-                <SectionLabel>Subjective</SectionLabel>
+                <SectionLabel>Reported Symptoms</SectionLabel>
                 <AutoTextarea
                   placeholder="What does the patient report? Symptoms, concerns, changes since last visit..."
                   value={subjective}
                   onChange={setSubjective}
+                  minHeight={80}
+                />
+                <DimensionTagBlock
+                  tags={symptomsTags}
+                  onToggle={(d) => toggleTag("symptoms", d)}
+                  onUpdateNote={(d, n) => updateTagNote("symptoms", d, n)}
                 />
               </Card>
 
+              {/* Card 2 — STRUCTURED DATA */}
               <Card>
-                <SectionLabel>Objective</SectionLabel>
-                <div className="mt-2" ref={labsRef}>
+                <SectionLabel>Structured Data</SectionLabel>
+                <p className="text-[12px] italic text-[#9B8775]">
+                  Add structured data collection relevant to this visit.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(["vitals", "sleep", "mental", "activity", "nutrition", "moles"] as PanelId[]).map((p) => {
+                    const active = selectedPanels.has(p);
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => togglePanel(p)}
+                        className="rounded-full text-[12px] font-medium px-3 py-1 transition-colors duration-150"
+                        style={
+                          active
+                            ? { background: "#2E1F14", color: "#FFFFFF", border: "1px solid #2E1F14" }
+                            : { background: "#F5F0EA", color: "#9B8775", border: "1px solid #E7DCCD" }
+                        }
+                      >
+                        {PANEL_LABELS[p]}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  {selectedPanels.has("vitals") && (
+                    <PanelShell title="Vitals">
+                      <VitalsPanel value={vitalsData} onChange={(u) => setVitalsData((v) => ({ ...v, ...u }))} />
+                    </PanelShell>
+                  )}
+                  {selectedPanels.has("sleep") && (
+                    <PanelShell title="Sleep">
+                      <SleepPanel value={sleepData} onChange={(u) => setSleepData((v) => ({ ...v, ...u }))} />
+                    </PanelShell>
+                  )}
+                  {selectedPanels.has("mental") && (
+                    <PanelShell title="Mental Health">
+                      <MentalHealthPanel value={mentalData} onChange={(u) => setMentalData((v) => ({ ...v, ...u }))} />
+                    </PanelShell>
+                  )}
+                  {selectedPanels.has("activity") && (
+                    <PanelShell title="Activity">
+                      <ActivityPanel value={activityData} onChange={(u) => setActivityData((v) => ({ ...v, ...u }))} />
+                    </PanelShell>
+                  )}
+                  {selectedPanels.has("nutrition") && (
+                    <PanelShell title="Nutrition">
+                      <NutritionPanel value={nutritionData} onChange={(u) => setNutritionData((v) => ({ ...v, ...u }))} />
+                    </PanelShell>
+                  )}
+                  {selectedPanels.has("moles") && (
+                    <PanelShell title="Moles">
+                      <MolesPanel moles={molesData} onChange={setMolesData} />
+                    </PanelShell>
+                  )}
+                </div>
+              </Card>
+
+              {/* Card 3 — CLINICAL OBSERVATIONS */}
+              <Card>
+                <SectionLabel>Clinical Observations</SectionLabel>
+                <div ref={labsRef}>
                   <AutoTextarea
-                    placeholder="Observations, physical findings, measurements..."
-                    minHeight={80}
+                    placeholder="Physical findings, examination notes, clinical observations..."
+                    minHeight={72}
                     value={labs}
                     onChange={setLabs}
                   />
                 </div>
 
-                <div className="mt-3 space-y-1.5">
+                <div className="mt-2 space-y-1.5">
                   {measurements.map((m, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-[13px] text-[#1F1611]">
                       <input
@@ -1167,9 +1236,7 @@ export default function ConsultationWorkspacePage() {
                       />
                       <button
                         type="button"
-                        onClick={() =>
-                          setMeasurements((prev) => prev.filter((_, i) => i !== idx))
-                        }
+                        onClick={() => setMeasurements((prev) => prev.filter((_, i) => i !== idx))}
                         className="text-[#9B8775] hover:text-[#2E1F14] transition-colors shrink-0"
                         aria-label="Remove measurement"
                       >
@@ -1179,189 +1246,88 @@ export default function ConsultationWorkspacePage() {
                   ))}
                   <button
                     type="button"
-                    onClick={() =>
-                      setMeasurements((prev) => [...prev, { name: "", value: "" }])
-                    }
+                    onClick={() => setMeasurements((prev) => [...prev, { name: "", value: "" }])}
                     className="text-[12px] text-[#6E5A48] hover:text-[#2E1F14] transition-colors mt-1"
                   >
                     + Add measurement
                   </button>
                 </div>
 
-                {/* Structured data panels */}
-                <div className="mt-5 pt-4 border-t border-[#F0EBE4]">
-                  <div className="text-[11px] font-medium uppercase tracking-wider text-[#9B8775]">
-                    Structured Data
-                  </div>
-                  <p className="mt-1 text-[12px] italic text-[#9B8775]">
-                    Add structured data collection relevant to this visit.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(["vitals", "sleep", "mental", "activity", "nutrition", "moles"] as PanelId[]).map((p) => {
-                      const active = selectedPanels.has(p);
-                      return (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => togglePanel(p)}
-                          className="rounded-full text-[12px] font-medium px-3 py-1 transition-colors duration-150"
-                          style={
-                            active
-                              ? { background: "#2E1F14", color: "#FFFFFF", border: "1px solid #2E1F14" }
-                              : { background: "#F5F0EA", color: "#9B8775", border: "1px solid #E7DCCD" }
-                          }
-                        >
-                          {PANEL_LABELS[p]}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Active panels */}
-                  <div className="mt-4 space-y-4">
-                    {selectedPanels.has("vitals") && (
-                      <PanelShell title="Vitals">
-                        <VitalsPanel value={vitalsData} onChange={(u) => setVitalsData((v) => ({ ...v, ...u }))} />
-                      </PanelShell>
-                    )}
-                    {selectedPanels.has("sleep") && (
-                      <PanelShell title="Sleep">
-                        <SleepPanel value={sleepData} onChange={(u) => setSleepData((v) => ({ ...v, ...u }))} />
-                      </PanelShell>
-                    )}
-                    {selectedPanels.has("mental") && (
-                      <PanelShell title="Mental Health">
-                        <MentalHealthPanel value={mentalData} onChange={(u) => setMentalData((v) => ({ ...v, ...u }))} />
-                      </PanelShell>
-                    )}
-                    {selectedPanels.has("activity") && (
-                      <PanelShell title="Activity">
-                        <ActivityPanel value={activityData} onChange={(u) => setActivityData((v) => ({ ...v, ...u }))} />
-                      </PanelShell>
-                    )}
-                    {selectedPanels.has("nutrition") && (
-                      <PanelShell title="Nutrition">
-                        <NutritionPanel value={nutritionData} onChange={(u) => setNutritionData((v) => ({ ...v, ...u }))} />
-                      </PanelShell>
-                    )}
-                    {selectedPanels.has("moles") && (
-                      <PanelShell title="Moles">
-                        <MolesPanel moles={molesData} onChange={setMolesData} />
-                      </PanelShell>
-                    )}
-                  </div>
-                </div>
+                <DimensionTagBlock
+                  tags={observationsTags}
+                  onToggle={(d) => toggleTag("observations", d)}
+                  onUpdateNote={(d, n) => updateTagNote("observations", d, n)}
+                />
               </Card>
 
-
-
+              {/* Card 4 — DIAGNOSES & MEDICATIONS */}
               <Card>
-                <SectionLabel>Assessment</SectionLabel>
-                {(() => {
-                  // Smart suggestion: flagged labs whose dimension isn't yet selected
-                  const missing = Array.from(
-                    new Set(
-                      (LAB_GROUPS[0]?.rows ?? [])
-                        .filter((r) => r.flagged && r.dimension && !findings[r.dimension!])
-                        .map((r) => r.dimension as string),
-                    ),
-                  );
-                  const flaggedMarkers = (LAB_GROUPS[0]?.rows ?? [])
-                    .filter((r) => r.flagged && r.dimension && missing.includes(r.dimension!))
-                    .map((r) => r.marker.replace(" Cholesterol", ""));
-                  const uniqueMarkers = Array.from(new Set(flaggedMarkers)).slice(0, 3);
-                  if (suggestionDismissed || missing.length === 0) return null;
-                  return (
-                    <div
-                      className="flex items-start justify-between gap-3 animate-fade-in"
-                      style={{
-                        background: "#FEF3C7",
-                        borderRadius: 6,
-                        padding: "8px 12px",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <p className="text-[12px] text-[#6E5A48] leading-snug">
-                        <span style={{ color: "#D97706" }}>↑</span>{" "}
-                        {uniqueMarkers.join(" and ")}{" "}
-                        {uniqueMarkers.length === 1 ? "is" : "are"} flagged — consider tagging{" "}
-                        {missing.join(" and ")}.
-                      </p>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            missing.forEach((d) => {
-                              if (!findings[d]) {
-                                setFindings((prev) => ({
-                                  ...prev,
-                                  [d]: { text: "", flagged: false },
-                                }));
-                                setOrder((prev) => (prev.includes(d) ? prev : [...prev, d]));
-                              }
-                            });
-                          }}
-                          className="text-[12px] font-medium text-[#2E1F14] hover:underline"
-                        >
-                          Add both
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSuggestionDismissed(true)}
-                          className="text-[12px] text-[#9B8775] hover:text-[#2E1F14] transition-colors"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-                <p className="text-[12px] italic text-[#9B8775]">
-                  Select the health dimensions relevant to this visit, then add your findings for each.
-                </p>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {ALL_DIMENSIONS.map((d) => {
-                    const active = !!findings[d];
-                    return (
-                      <button
-                        key={d}
-                        onClick={() => toggleDim(d)}
-                        className="rounded-full text-[11px] font-medium"
-                        style={{
-                          padding: "4px 10px",
-                          background: active ? "#2E1F14" : "#F5F0EA",
-                          color: active ? "#FFFFFF" : "#9B8775",
-                          border: active ? "1px solid #2E1F14" : "1px solid #E7DCCD",
-                          transition:
-                            "background-color 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out",
-                        }}
-                      >
-                        {d}
-                      </button>
-                    );
-                  })}
+                <SectionLabel>Diagnoses & Medications</SectionLabel>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <GhostButton onClick={() => setDxFormOpen(true)}>+ Add diagnosis</GhostButton>
+                  <GhostButton onClick={() => setRxFormOpen(true)}>+ Prescribe</GhostButton>
                 </div>
 
-                {selectedDims.length > 0 && (
-                  <div className="mt-3 space-y-3">
-                    {selectedDims.map((d) => (
-                      <FindingBlock
-                        key={d}
-                        dimension={d}
-                        finding={findings[d]}
-                        pendingRemoval={pendingRemove === d}
-                        onChange={(text) => updateFinding(d, { text })}
-                        onFlag={(flagged) => updateFinding(d, { flagged })}
-                        onRequestRemove={() => {
-                          if (findings[d].text.trim()) setPendingRemove(d);
-                          else removeDim(d);
-                        }}
-                        onConfirmRemove={() => removeDim(d)}
-                        onCancelRemove={() => setPendingRemove(null)}
-                      />
+                {(diagnoses.length > 0 || medications.length > 0) && (
+                  <div className="mt-3 space-y-1">
+                    {diagnoses.map((d) => (
+                      <div key={d.id} className="group flex items-center gap-2 text-[13px] text-[#1F1611] py-1">
+                        <span className="text-[#9B8775]">⊕</span>
+                        <span className="font-semibold tabular-nums text-[#2E1F14]">{d.code}</span>
+                        <span className="truncate">{d.name}</span>
+                        <span className="text-[#9B8775]">·</span>
+                        <span className="text-[12px] text-[#6E5A48] capitalize">{d.status}</span>
+                        {d.year && <><span className="text-[#9B8775]">·</span><span className="text-[12px] text-[#6E5A48]">{d.year}</span></>}
+                        <button
+                          onClick={() => setDiagnoses((p) => p.filter((x) => x.id !== d.id))}
+                          className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Remove"
+                        >
+                          <X className="h-3.5 w-3.5 text-[#C9BBA9]" />
+                        </button>
+                      </div>
+                    ))}
+                    {medications.map((m) => (
+                      <div key={m.id} className="group flex items-center gap-2 text-[13px] text-[#1F1611] py-1">
+                        <span>💊</span>
+                        <span className="font-medium">{m.name}</span>
+                        {m.dose && <><span className="text-[#9B8775]">·</span><span className="text-[12px] text-[#6E5A48]">{m.dose}</span></>}
+                        {m.frequency && <><span className="text-[#9B8775]">·</span><span className="text-[12px] text-[#6E5A48]">{m.frequency}</span></>}
+                        {m.time && <><span className="text-[#9B8775]">·</span><span className="text-[12px] text-[#6E5A48]">{m.time}</span></>}
+                        <button
+                          onClick={() => setMedications((p) => p.filter((x) => x.id !== m.id))}
+                          className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Remove"
+                        >
+                          <X className="h-3.5 w-3.5 text-[#C9BBA9]" />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
+
+                {dxFormOpen && (
+                  <div className="mt-3">
+                    <DiagnosisForm
+                      onSave={(d) => { setDiagnoses((p) => [...p, d]); setDxFormOpen(false); }}
+                      onCancel={() => setDxFormOpen(false)}
+                    />
+                  </div>
+                )}
+                {rxFormOpen && (
+                  <div className="mt-3">
+                    <PrescriptionForm
+                      onSave={(m) => { setMedications((p) => [...p, m]); setRxFormOpen(false); }}
+                      onCancel={() => setRxFormOpen(false)}
+                    />
+                  </div>
+                )}
+
+                <DimensionTagBlock
+                  tags={diagnosesTags}
+                  onToggle={(d) => toggleTag("diagnoses", d)}
+                  onUpdateNote={(d, n) => updateTagNote("diagnoses", d, n)}
+                />
               </Card>
 
               {showValidation && (
@@ -1373,9 +1339,15 @@ export default function ConsultationWorkspacePage() {
                 </div>
               )}
 
+              {/* Card 5 — PLAN & ACTIONS */}
               <Card>
-                <SectionLabel>Plan</SectionLabel>
-                <AutoTextarea placeholder="Overall plan, patient instructions, follow-up..." value={plan} onChange={setPlan} />
+                <SectionLabel>Plan & Actions</SectionLabel>
+                <AutoTextarea
+                  placeholder="Overall plan, patient instructions, follow-up notes..."
+                  value={plan}
+                  onChange={setPlan}
+                  minHeight={72}
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   <GhostButton onClick={() => setOpenForm("task")}>+ Add task</GhostButton>
                   <GhostButton onClick={() => setOpenForm("referral")}>+ Referral</GhostButton>
@@ -1386,6 +1358,7 @@ export default function ConsultationWorkspacePage() {
             </div>
           </div>
         </main>
+
 
         {/* RIGHT */}
         <aside
