@@ -61,7 +61,7 @@ const UPCOMING: UpcomingVisit[] = [
     dimensions: [
       { label: "Cardiovascular Health" },
       { label: "Metabolic Health" },
-      { label: "Liver Function" },
+      { label: "Digestion" },
     ],
     plan: "Review trended cardio-metabolic markers since March visit. Confirm tolerance of recent Atorvastatin titration. Assess liver enzyme trajectory and decide on continued Warfarin therapy.",
     preparation: "Fasting required (10h). Bring current medication list. INR self-test if available.",
@@ -96,7 +96,17 @@ const UPCOMING: UpcomingVisit[] = [
     location: "Helsinki, Bulevardi",
     mode: "In-Person",
     note: "Full-year review. All health dimensions assessed. Care plan updated for 2027.",
-    dimensions: [{ label: "All dimensions" }],
+    dimensions: [
+      { label: "Cardiovascular Health" },
+      { label: "Metabolic Health" },
+      { label: "Brain & Mental Health" },
+      { label: "Exercise & Functional Capacity" },
+      { label: "Digestion" },
+      { label: "Cancer Risk" },
+      { label: "Respiratory & Immune Health" },
+      { label: "Skin, Oral & Mucosal Health" },
+      { label: "Reproductive & Sexual Health" },
+    ],
     plan: "Comprehensive annual review across all nine health dimensions. Update long-term care plan for 2027, including any new screening, lifestyle goals, and medication changes.",
     preparation: "Fasting required. Allow 90 minutes. Bring updated symptom diary and any specialist letters since the last annual review.",
     openTasks: [
@@ -122,7 +132,7 @@ const PAST: PastVisit[] = [
     dimensions: [
       { label: "Cardiovascular Health", tone: "rose" },
       { label: "Metabolic Health", tone: "amber" },
-      { label: "Digestion / Liver", tone: "rose" },
+      { label: "Digestion", tone: "rose" },
     ],
     labs: [
       { name: "LDL", value: "4.9 mmol/l", status: "high" },
