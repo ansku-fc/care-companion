@@ -697,6 +697,13 @@ export default function ConsultationWorkspacePage() {
   const [labs, setLabs] = useState("");
   const [plan, setPlan] = useState("");
 
+  // Lab inclusion: first group included by default
+  const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({
+    [LAB_GROUPS[0].id]: true,
+  });
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+  const labsRef = useRef<HTMLDivElement>(null);
+
   // View mode + save state
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
