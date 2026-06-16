@@ -507,11 +507,11 @@ export function PatientVisitsView({ patient, onDataChanged }: Props) {
           </div>
 
           {tab === "upcoming" ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {UPCOMING.map((v) => <UpcomingCard key={v.id} v={v} onOpen={() => setOpenUpcoming(v)} />)}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {PAST.map((v) => <PastCard key={v.id} v={v} onOpen={() => setOpenPast(v)} />)}
             </div>
           )}
