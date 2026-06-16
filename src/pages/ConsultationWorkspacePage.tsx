@@ -59,32 +59,7 @@ type LabRow = {
 };
 type LabGroup = { id: string; date: string; label: string; rows: LabRow[] };
 
-const LAB_GROUPS: LabGroup[] = [
-  {
-    id: "g1",
-    date: "10 Jun 2026",
-    label: "Fasting panel",
-    rows: [
-      { marker: "LDL Cholesterol", value: "4.9", unit: "mmol/l", status: "Above target", trend: "up", severity: "rose", flagged: true, dimension: "Cardiovascular Health" },
-      { marker: "HbA1c", value: "57", unit: "mmol/mol", status: "Stable", trend: "flat", severity: "neutral", flagged: false, dimension: "Metabolic Health" },
-      { marker: "ALAT", value: "62", unit: "U/l", status: "Above reference", trend: "up", severity: "rose", flagged: true, dimension: "Digestion" },
-      { marker: "Fasting Glucose", value: "6.1", unit: "mmol/l", status: "Trending", trend: "up", severity: "amber", flagged: true, dimension: "Metabolic Health" },
-      { marker: "Total Cholesterol", value: "6.2", unit: "mmol/l", status: "Above target", trend: "up", severity: "rose", flagged: true, dimension: "Cardiovascular Health" },
-      { marker: "HDL", value: "1.3", unit: "mmol/l", status: "Within range", trend: "flat", severity: "neutral", flagged: false, dimension: "Cardiovascular Health" },
-    ],
-  },
-  {
-    id: "g2",
-    date: "18 Mar 2026",
-    label: "Routine check",
-    rows: [
-      { marker: "HbA1c", value: "59", unit: "mmol/mol", status: "Above target", trend: "up", severity: "amber", flagged: true, dimension: "Metabolic Health" },
-      { marker: "LDL", value: "4.3", unit: "mmol/l", status: "Monitoring", trend: "flat", severity: "neutral", flagged: false, dimension: "Cardiovascular Health" },
-    ],
-  },
-];
-
-const LAB_FLAGGED_TOTAL = LAB_GROUPS[0].rows.filter((r) => r.flagged).length;
+const LAB_GROUPS: LabGroup[] = [];
 
 const ALL_DIMENSIONS = [
   "Cardiovascular Health",
