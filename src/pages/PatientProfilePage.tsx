@@ -47,6 +47,7 @@ import {
   CARTER_DIAGNOSES,
   getDiagnosesForDimension,
   fmtClinicalDate,
+  isCarter,
   type ClinicalDimensionKey,
 } from "@/lib/patientClinicalData";
 import {
