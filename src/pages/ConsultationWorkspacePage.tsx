@@ -924,16 +924,11 @@ export default function ConsultationWorkspacePage() {
 
           <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Last Labs</div>
-            <button
-              onClick={() =>
-                labsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-              className="text-[12px] text-[#6E5A48] hover:text-[#2E1F14] text-left transition-colors inline-flex items-center gap-1.5"
-            >
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#E8446A" }} />
-              10 Jun 2026 · {LAB_FLAGGED_TOTAL} flagged values
-            </button>
+            <div className="text-[12px] italic text-[#9B8775]">
+              No lab results in the last 90 days.
+            </div>
           </section>
+
 
           <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Last Visit</div>
