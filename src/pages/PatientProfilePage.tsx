@@ -4055,9 +4055,26 @@ function GenericDimensionView({
         </CardHeader>
         {showRiskHistory && (
           <CardContent className="pt-0">
-            <p className="text-sm text-muted-foreground text-center py-6">
-              Historical trend for this dimension will appear here once enough data points are available.
-            </p>
+            {riskHistory.length > 1 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={riskHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(value: number) => [`${value}/10`, "Risk Index"]} />
+                    <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} />
+                    <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} />
+                    <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} />
+                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} activeDot={{ r: 7 }} name="Risk Index" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Historical trend for this dimension will appear here once enough data points are available.
+              </p>
+            )}
           </CardContent>
         )}
       </Card>
