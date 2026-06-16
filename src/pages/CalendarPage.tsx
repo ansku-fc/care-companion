@@ -367,7 +367,7 @@ const CalendarPage = () => {
 
                         {/* Notes preview */}
                         {a.notes && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{a.notes}</p>
+                          <p className="text-[14px] font-normal text-[#6E5A48] line-clamp-2">{a.notes}</p>
                         )}
 
                         {/* Action buttons */}
