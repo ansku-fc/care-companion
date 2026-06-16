@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag, X, ArrowUpRight } from "lucide-react";
+import { LabResultsStep, defaultLabResults } from "@/components/patients/LabResultsStep";
 
 type Tone = "rose" | "amber" | "teal";
 
@@ -670,6 +671,7 @@ export default function ConsultationWorkspacePage() {
   const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({});
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const labsRef = useRef<HTMLDivElement>(null);
+  const [labResults, setLabResults] = useState({ ...defaultLabResults });
 
   // View mode + save state
   const [view, setView] = useState<"workspace" | "review">("workspace");
@@ -960,49 +962,13 @@ export default function ConsultationWorkspacePage() {
 
               <Card>
                 <SectionLabel>Objective</SectionLabel>
-                <div className="flex flex-wrap gap-x-6 gap-y-3 mt-1">
-                  <div className="inline-flex items-baseline gap-1.5 text-[13px] text-[#6E5A48]">
-                    <span className="uppercase tracking-wide text-[11px] text-[#9B8775]">BP</span>
-                    <input
-                      value={bpSys}
-                      onChange={(e) => setBpSys(e.target.value)}
-                      className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
-                      style={{ borderBottom: "1px solid #E7DCCD" }}
-                    />
-                    <span className="text-[#9B8775]">/</span>
-                    <input
-                      value={bpDia}
-                      onChange={(e) => setBpDia(e.target.value)}
-                      className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
-                      style={{ borderBottom: "1px solid #E7DCCD" }}
-                    />
-                    <span className="text-[11px] text-[#9B8775]">mmHg</span>
-                  </div>
-                  <VitalInput label="HR" suffix="bpm" value={hr} onChange={setHr} />
-                  <VitalInput label="Weight" suffix="kg" value={weight} onChange={setWeight} />
-                  <VitalInput label="Temp" suffix="°C" value={temp} onChange={setTemp} />
+                <div className="mt-3" ref={labsRef}>
+                  <p className="text-[12px] italic text-[#9B8775] mb-3">
+                    Fill in only what was measured or reviewed during this visit — leave all other fields empty.
+                  </p>
+                  <LabResultsStep data={labResults} onChange={setLabResults} />
                 </div>
-                <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }} ref={labsRef}>
-                  <SectionLabel>Recent Lab Results</SectionLabel>
-                  {LAB_GROUPS.length === 0 ? (
-                    <p className="text-[12px] italic text-[#9B8775] mt-2">
-                      No lab results in the last 90 days.
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-[12px] italic text-[#9B8775] mt-0.5 mb-3">
-                        From the last 90 days — review and add to findings as needed.
-                      </p>
-                      <LabResultsBlock
-                        groups={LAB_GROUPS}
-                        included={labsIncluded}
-                        onToggleInclude={(id) =>
-                          setLabsIncluded((p) => ({ ...p, [id]: !p[id] }))
-                        }
-                      />
-                    </>
-                  )}
-                </div>
+
 
 
                 <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }}>
