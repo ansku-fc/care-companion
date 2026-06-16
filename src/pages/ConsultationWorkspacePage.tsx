@@ -743,7 +743,12 @@ export default function ConsultationWorkspacePage() {
     setSaving(true);
     setTimeout(() => {
       const parts: string[] = ["Consultation saved"];
-      if (flaggedCount > 0) parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
+      scoreChanges.forEach((c) => {
+        parts.push(`${c.dim} updated to ${BAND_LABEL[c.to]}`);
+      });
+      if (scoreChanges.length === 0 && flaggedCount > 0) {
+        parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
+      }
       if (tasks.length > 0) parts.push(`${tasks.length} task${tasks.length === 1 ? "" : "s"} created`);
       toast.success(parts.join(" · "), {
         duration: 4000,
@@ -781,6 +786,10 @@ export default function ConsultationWorkspacePage() {
         referrals={referrals}
         followUp={followUp}
         flaggedCount={flaggedCount}
+        flaggedDims={flaggedDims}
+        scoreBands={scoreBands}
+        onChangeBand={(d, b) => setScoreBands((p) => ({ ...p, [d]: b }))}
+        scoreChanges={scoreChanges}
         saving={saving}
         onBack={() => setView("workspace")}
         onSave={onSaveAndClose}
