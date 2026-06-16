@@ -723,6 +723,7 @@ export default function ConsultationWorkspacePage() {
   const [mentalData, setMentalData] = useState<MentalHealthData>({ ...defaultMentalHealthData });
   const [activityData, setActivityData] = useState<ActivityData>({ ...defaultActivityData });
   const [nutritionData, setNutritionData] = useState<NutritionData>({ ...defaultNutritionData });
+  const [molesData, setMolesData] = useState<MoleEntry[]>([...defaultMolesData]);
 
   const suggested = useMemo(() => suggestPanelsFromText(subjective), [subjective]);
   useEffect(() => {
@@ -1108,7 +1109,7 @@ export default function ConsultationWorkspacePage() {
                     Add structured data collection relevant to this visit.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {(["vitals", "sleep", "mental", "activity", "nutrition"] as PanelId[]).map((p) => {
+                    {(["vitals", "sleep", "mental", "activity", "nutrition", "moles"] as PanelId[]).map((p) => {
                       const active = selectedPanels.has(p);
                       return (
                         <button
@@ -1153,6 +1154,11 @@ export default function ConsultationWorkspacePage() {
                     {selectedPanels.has("nutrition") && (
                       <PanelShell title="Nutrition">
                         <NutritionPanel value={nutritionData} onChange={(u) => setNutritionData((v) => ({ ...v, ...u }))} />
+                      </PanelShell>
+                    )}
+                    {selectedPanels.has("moles") && (
+                      <PanelShell title="Moles">
+                        <MolesPanel moles={molesData} onChange={setMolesData} />
                       </PanelShell>
                     )}
                   </div>
