@@ -843,7 +843,11 @@ export default function ConsultationWorkspacePage() {
             <div className="space-y-2">
               <Card>
                 <SectionLabel>Subjective</SectionLabel>
-                <AutoTextarea placeholder="What does the patient report? Symptoms, concerns, changes since last visit..." />
+                <AutoTextarea
+                  placeholder="What does the patient report? Symptoms, concerns, changes since last visit..."
+                  value={subjective}
+                  onChange={setSubjective}
+                />
               </Card>
 
               <Card>
@@ -852,27 +856,34 @@ export default function ConsultationWorkspacePage() {
                   <div className="inline-flex items-baseline gap-1.5 text-[13px] text-[#6E5A48]">
                     <span className="uppercase tracking-wide text-[11px] text-[#9B8775]">BP</span>
                     <input
+                      value={bpSys}
+                      onChange={(e) => setBpSys(e.target.value)}
                       className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
                       style={{ borderBottom: "1px solid #E7DCCD" }}
                     />
                     <span className="text-[#9B8775]">/</span>
                     <input
+                      value={bpDia}
+                      onChange={(e) => setBpDia(e.target.value)}
                       className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
                       style={{ borderBottom: "1px solid #E7DCCD" }}
                     />
                     <span className="text-[11px] text-[#9B8775]">mmHg</span>
                   </div>
-                  <VitalInput label="HR" suffix="bpm" />
-                  <VitalInput label="Weight" suffix="kg" />
-                  <VitalInput label="Temp" suffix="°C" />
+                  <VitalInput label="HR" suffix="bpm" value={hr} onChange={setHr} />
+                  <VitalInput label="Weight" suffix="kg" value={weight} onChange={setWeight} />
+                  <VitalInput label="Temp" suffix="°C" value={temp} onChange={setTemp} />
                 </div>
                 <div className="mt-3">
                   <AutoTextarea
                     placeholder="Note any lab values discussed or physical findings..."
                     minHeight={60}
+                    value={labs}
+                    onChange={setLabs}
                   />
                 </div>
               </Card>
+
 
               <Card>
                 <SectionLabel>Assessment</SectionLabel>
