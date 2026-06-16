@@ -405,10 +405,7 @@ const CalendarPage = () => {
                               <Button
                                 size="sm"
                                 className="h-7 text-xs gap-1"
-                                onClick={() => {
-                                  if (!a.isDummy) navigate(`/patients/${a.patient_id}`);
-                                  else toast({ title: "Demo mode", description: "This is a demo appointment." });
-                                }}
+                                onClick={() => navigate("/consultation")}
                               >
                                 <Play className="h-3 w-3" />
                                 Start Consultation
