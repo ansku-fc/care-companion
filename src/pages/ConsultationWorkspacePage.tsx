@@ -683,7 +683,62 @@ function FollowUpForm({
   );
 }
 
+function DimensionTagBlock({
+  tags,
+  onToggle,
+  onUpdateNote,
+}: {
+  tags: Record<string, string>;
+  onToggle: (dim: string) => void;
+  onUpdateNote: (dim: string, note: string) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <p className="text-[12px] italic text-[#9B8775]">Tag relevant dimensions:</p>
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
+        {ALL_DIMENSIONS.map((d) => {
+          const active = d in tags;
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => onToggle(d)}
+              className="rounded-full text-[12px] font-medium"
+              style={{
+                padding: "4px 10px",
+                background: active ? "#2E1F14" : "#F5F0EA",
+                color: active ? "#FFFFFF" : "#9B8775",
+                border: active ? "1px solid #2E1F14" : "1px solid #E7DCCD",
+                transition:
+                  "background-color 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out",
+              }}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+      {Object.keys(tags).length > 0 && (
+        <div className="mt-3 space-y-2">
+          {Object.entries(tags).map(([dim, note]) => (
+            <input
+              key={dim}
+              value={note}
+              onChange={(e) => onUpdateNote(dim, e.target.value)}
+              placeholder={`Finding or note for ${dim}...`}
+              className="w-full bg-transparent outline-none text-[12px] text-[#6E5A48] placeholder:text-[#C9BBA9] py-1"
+              style={{ borderBottom: "1px solid #E7DCCD" }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Main page ---------- */
+
+
 
 export default function ConsultationWorkspacePage() {
   const navigate = useNavigate();
