@@ -32,10 +32,9 @@ const VISIT_REASONS = [
 
 const VISIT_STEPS = [
   "Visit Reason",
-  "Basic Information",
+  "Objective",
   "Lifestyle Update",
   "Current Symptoms",
-  "Lab Results",
   "Summary & Notes",
 ];
 
@@ -44,6 +43,7 @@ type VisitFormData = {
   visit_reason_other: string;
   chief_complaint: string;
   doctor_notes: string;
+  objective_notes: string;
   // Vitals
   blood_pressure_systolic: number | null;
   blood_pressure_diastolic: number | null;
@@ -68,6 +68,7 @@ const defaultVisitForm: VisitFormData = {
   visit_reason_other: "",
   chief_complaint: "",
   doctor_notes: "",
+  objective_notes: "",
   blood_pressure_systolic: null,
   blood_pressure_diastolic: null,
   heart_rate: null,
@@ -167,6 +168,7 @@ export function VisitConsultationView({ patient, appointment, onBack, onSaved }:
           bmi: form.bmi,
           symptoms: form.new_symptoms,
           symptom_notes: form.symptom_notes,
+          objective_notes: form.objective_notes || null,
           lifestyle: {
             exercise_met_hours: form.exercise_met_hours,
             smoking: form.smoking || null,
@@ -309,22 +311,20 @@ export function VisitConsultationView({ patient, appointment, onBack, onSaved }:
 
       {step === 1 && (
         <Card>
-          <CardHeader><CardTitle className="text-lg">Vitals & Measurements</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Blood Pressure (mmHg)</Label>
-                <div className="flex gap-2 items-center">
-                  <Input type="number" placeholder="Systolic" value={form.blood_pressure_systolic ?? ""} onChange={(e) => updateField("blood_pressure_systolic", e.target.value === "" ? null : Number(e.target.value))} />
-                  <span className="text-muted-foreground">/</span>
-                  <Input type="number" placeholder="Diastolic" value={form.blood_pressure_diastolic ?? ""} onChange={(e) => updateField("blood_pressure_diastolic", e.target.value === "" ? null : Number(e.target.value))} />
-                </div>
-              </div>
-              <NumField label="Heart Rate" suffix="bpm" value={form.heart_rate} onChange={(v) => updateField("heart_rate", v)} min={0} />
-              <NumField label="Temperature" suffix="°C" value={form.temperature} onChange={(v) => updateField("temperature", v)} min={30} max={45} step={0.1} />
-              <NumField label="Weight" suffix="kg" value={form.weight_kg} onChange={(v) => updateField("weight_kg", v)} min={0} />
-              <NumField label="Height" suffix="cm" value={form.height_cm} onChange={(v) => updateField("height_cm", v)} min={0} />
-              <NumField label="BMI" value={form.bmi} onChange={(v) => updateField("bmi", v)} min={0} step={0.1} />
+          <CardHeader><CardTitle className="text-lg">Objective</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs italic text-muted-foreground">
+              Fill in only what was measured or reviewed during this visit — leave all other fields empty.
+            </p>
+            <LabResultsStep data={labResults} onChange={setLabResults} />
+            <div className="space-y-2 pt-2 border-t">
+              <Label>Doctor's Observations</Label>
+              <Textarea
+                value={form.objective_notes}
+                onChange={(e) => updateField("objective_notes", e.target.value)}
+                placeholder="Qualitative findings that don't fit structured fields (e.g. mole 6mm irregular border, left shoulder)..."
+                className="min-h-[120px]"
+              />
             </div>
           </CardContent>
         </Card>
@@ -385,10 +385,6 @@ export function VisitConsultationView({ patient, appointment, onBack, onSaved }:
       )}
 
       {step === 4 && (
-        <LabResultsStep data={labResults} onChange={setLabResults} />
-      )}
-
-      {step === 5 && (
         <Card>
           <CardHeader><CardTitle className="text-lg">Visit Summary</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
