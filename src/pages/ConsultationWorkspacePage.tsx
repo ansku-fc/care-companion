@@ -59,32 +59,7 @@ type LabRow = {
 };
 type LabGroup = { id: string; date: string; label: string; rows: LabRow[] };
 
-const LAB_GROUPS: LabGroup[] = [
-  {
-    id: "g1",
-    date: "10 Jun 2026",
-    label: "Fasting panel",
-    rows: [
-      { marker: "LDL Cholesterol", value: "4.9", unit: "mmol/l", status: "Above target", trend: "up", severity: "rose", flagged: true, dimension: "Cardiovascular Health" },
-      { marker: "HbA1c", value: "57", unit: "mmol/mol", status: "Stable", trend: "flat", severity: "neutral", flagged: false, dimension: "Metabolic Health" },
-      { marker: "ALAT", value: "62", unit: "U/l", status: "Above reference", trend: "up", severity: "rose", flagged: true, dimension: "Digestion" },
-      { marker: "Fasting Glucose", value: "6.1", unit: "mmol/l", status: "Trending", trend: "up", severity: "amber", flagged: true, dimension: "Metabolic Health" },
-      { marker: "Total Cholesterol", value: "6.2", unit: "mmol/l", status: "Above target", trend: "up", severity: "rose", flagged: true, dimension: "Cardiovascular Health" },
-      { marker: "HDL", value: "1.3", unit: "mmol/l", status: "Within range", trend: "flat", severity: "neutral", flagged: false, dimension: "Cardiovascular Health" },
-    ],
-  },
-  {
-    id: "g2",
-    date: "18 Mar 2026",
-    label: "Routine check",
-    rows: [
-      { marker: "HbA1c", value: "59", unit: "mmol/mol", status: "Above target", trend: "up", severity: "amber", flagged: true, dimension: "Metabolic Health" },
-      { marker: "LDL", value: "4.3", unit: "mmol/l", status: "Monitoring", trend: "flat", severity: "neutral", flagged: false, dimension: "Cardiovascular Health" },
-    ],
-  },
-];
-
-const LAB_FLAGGED_TOTAL = LAB_GROUPS[0].rows.filter((r) => r.flagged).length;
+const LAB_GROUPS: LabGroup[] = [];
 
 const ALL_DIMENSIONS = [
   "Cardiovascular Health",
@@ -671,14 +646,8 @@ export default function ConsultationWorkspacePage() {
   const navigate = useNavigate();
   const [medsOpen, setMedsOpen] = useState(false);
 
-  const [findings, setFindings] = useState<Record<string, Finding>>({
-    "Brain & Mental Health": {
-      text:
-        "Persistent migraine, 3rd episode this month. Consider prophylaxis — discuss topiramate or propranolol options with patient.",
-      flagged: true,
-    },
-  });
-  const [order, setOrder] = useState<string[]>(["Brain & Mental Health"]);
+  const [findings, setFindings] = useState<Record<string, Finding>>({});
+  const [order, setOrder] = useState<string[]>([]);
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
   const [showValidation, setShowValidation] = useState(false);
 
@@ -689,18 +658,16 @@ export default function ConsultationWorkspacePage() {
 
   // Consultation note content (lifted so the review screen can read it)
   const [subjective, setSubjective] = useState("");
-  const [bpSys, setBpSys] = useState("138");
-  const [bpDia, setBpDia] = useState("88");
-  const [hr, setHr] = useState("72");
+  const [bpSys, setBpSys] = useState("");
+  const [bpDia, setBpDia] = useState("");
+  const [hr, setHr] = useState("");
   const [weight, setWeight] = useState("");
   const [temp, setTemp] = useState("");
   const [labs, setLabs] = useState("");
   const [plan, setPlan] = useState("");
 
-  // Lab inclusion: first group included by default
-  const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({
-    [LAB_GROUPS[0].id]: true,
-  });
+  // Lab inclusion: empty by default (no recent labs to include)
+  const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({});
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const labsRef = useRef<HTMLDivElement>(null);
 
@@ -957,16 +924,11 @@ export default function ConsultationWorkspacePage() {
 
           <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Last Labs</div>
-            <button
-              onClick={() =>
-                labsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-              className="text-[12px] text-[#6E5A48] hover:text-[#2E1F14] text-left transition-colors inline-flex items-center gap-1.5"
-            >
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#E8446A" }} />
-              10 Jun 2026 · {LAB_FLAGGED_TOTAL} flagged values
-            </button>
+            <div className="text-[12px] italic text-[#9B8775]">
+              No lab results in the last 90 days.
+            </div>
           </section>
+
 
           <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Last Visit</div>
@@ -1022,17 +984,26 @@ export default function ConsultationWorkspacePage() {
                 </div>
                 <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }} ref={labsRef}>
                   <SectionLabel>Recent Lab Results</SectionLabel>
-                  <p className="text-[12px] italic text-[#9B8775] mt-0.5 mb-3">
-                    From the last 90 days — review and add to findings as needed.
-                  </p>
-                  <LabResultsBlock
-                    groups={LAB_GROUPS}
-                    included={labsIncluded}
-                    onToggleInclude={(id) =>
-                      setLabsIncluded((p) => ({ ...p, [id]: !p[id] }))
-                    }
-                  />
+                  {LAB_GROUPS.length === 0 ? (
+                    <p className="text-[12px] italic text-[#9B8775] mt-2">
+                      No lab results in the last 90 days.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-[12px] italic text-[#9B8775] mt-0.5 mb-3">
+                        From the last 90 days — review and add to findings as needed.
+                      </p>
+                      <LabResultsBlock
+                        groups={LAB_GROUPS}
+                        included={labsIncluded}
+                        onToggleInclude={(id) =>
+                          setLabsIncluded((p) => ({ ...p, [id]: !p[id] }))
+                        }
+                      />
+                    </>
+                  )}
                 </div>
+
 
                 <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }}>
                   <SectionLabel>Doctor's Observations</SectionLabel>
@@ -1052,12 +1023,12 @@ export default function ConsultationWorkspacePage() {
                   // Smart suggestion: flagged labs whose dimension isn't yet selected
                   const missing = Array.from(
                     new Set(
-                      LAB_GROUPS[0].rows
+                      (LAB_GROUPS[0]?.rows ?? [])
                         .filter((r) => r.flagged && r.dimension && !findings[r.dimension!])
                         .map((r) => r.dimension as string),
                     ),
                   );
-                  const flaggedMarkers = LAB_GROUPS[0].rows
+                  const flaggedMarkers = (LAB_GROUPS[0]?.rows ?? [])
                     .filter((r) => r.flagged && r.dimension && missing.includes(r.dimension!))
                     .map((r) => r.marker.replace(" Cholesterol", ""));
                   const uniqueMarkers = Array.from(new Set(flaggedMarkers)).slice(0, 3);
