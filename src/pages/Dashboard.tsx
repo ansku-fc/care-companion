@@ -350,11 +350,11 @@ const Dashboard = () => {
     const meta = priorityMeta(task.priority);
     const pname = patientName(task.patient_id);
     const role = task.assignee_name?.toLowerCase().includes("nurse") ? "nurse" : "doctor";
-    const bg = tone === "destructive" ? "bg-card hover:bg-muted/60 border-destructive"
+    const bg = tone === "destructive" ? "bg-card hover:bg-muted/60 border-[#E8446A]/70"
       : tone === "warning" ? "bg-card hover:bg-muted/60 border-warning"
       : "bg-card hover:bg-muted/60 border-muted-foreground/20";
     return (
-      <div className={cn("group relative w-full flex items-start gap-2 p-2.5 rounded-md border-l-4 transition-colors", bg)}>
+      <div className={cn("group relative w-full flex items-start gap-2 p-2.5 border-l-2 transition-colors", bg)}>
         <button onClick={() => openTask(task)} className="flex-1 text-left flex items-start gap-2 min-w-0">
           <ActorIcon actor={role} />
           <div className="flex-1 min-w-0">
@@ -536,7 +536,7 @@ function Section({ icon, label, tone, count, children }: { icon: React.ReactNode
           </span>
         )}
       </p>
-      <div className="space-y-2">{children}</div>
+      <div className="[&>*+*]:border-t-[0.5px] [&>*+*]:border-[#F0EBE4]">{children}</div>
     </div>
   );
 }
