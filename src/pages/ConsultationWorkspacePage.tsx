@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag, X, ArrowUpRight } from "lucide-react";
-import { LabResultsStep, defaultLabResults } from "@/components/patients/LabResultsStep";
+
 
 type Tone = "rose" | "amber" | "teal";
 
@@ -671,7 +671,7 @@ export default function ConsultationWorkspacePage() {
   const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({});
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const labsRef = useRef<HTMLDivElement>(null);
-  const [labResults, setLabResults] = useState({ ...defaultLabResults });
+  const [measurements, setMeasurements] = useState<{ name: string; value: string }[]>([]);
 
   // View mode + save state
   const [view, setView] = useState<"workspace" | "review">("workspace");
@@ -962,25 +962,65 @@ export default function ConsultationWorkspacePage() {
 
               <Card>
                 <SectionLabel>Objective</SectionLabel>
-                <div className="mt-3" ref={labsRef}>
-                  <p className="text-[12px] italic text-[#9B8775] mb-3">
-                    Fill in only what was measured or reviewed during this visit — leave all other fields empty.
-                  </p>
-                  <LabResultsStep data={labResults} onChange={setLabResults} />
-                </div>
-
-
-
-                <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }}>
-                  <SectionLabel>Doctor's Observations</SectionLabel>
+                <div className="mt-2" ref={labsRef}>
                   <AutoTextarea
-                    placeholder="Additional observations, physical findings, vitals noted during visit..."
-                    minHeight={60}
+                    placeholder="Observations, physical findings, measurements..."
+                    minHeight={80}
                     value={labs}
                     onChange={setLabs}
                   />
                 </div>
+
+                <div className="mt-3 space-y-1.5">
+                  {measurements.map((m, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-[13px] text-[#1F1611]">
+                      <input
+                        value={m.name}
+                        onChange={(e) =>
+                          setMeasurements((prev) =>
+                            prev.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)),
+                          )
+                        }
+                        placeholder="Measurement name..."
+                        className="flex-1 min-w-0 bg-transparent outline-none text-[13px] text-[#1F1611] placeholder:text-[#C9BBA9] py-1"
+                        style={{ borderBottom: "1px solid #F0EBE4" }}
+                      />
+                      <span className="text-[#9B8775]">·</span>
+                      <input
+                        value={m.value}
+                        onChange={(e) =>
+                          setMeasurements((prev) =>
+                            prev.map((x, i) => (i === idx ? { ...x, value: e.target.value } : x)),
+                          )
+                        }
+                        placeholder="Value + unit..."
+                        className="flex-1 min-w-0 bg-transparent outline-none text-[13px] text-[#1F1611] placeholder:text-[#C9BBA9] py-1"
+                        style={{ borderBottom: "1px solid #F0EBE4" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMeasurements((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        className="text-[#9B8775] hover:text-[#2E1F14] transition-colors shrink-0"
+                        aria-label="Remove measurement"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMeasurements((prev) => [...prev, { name: "", value: "" }])
+                    }
+                    className="text-[12px] text-[#6E5A48] hover:text-[#2E1F14] transition-colors mt-1"
+                  >
+                    + Add measurement
+                  </button>
+                </div>
               </Card>
+
 
 
               <Card>
