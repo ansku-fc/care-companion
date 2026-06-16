@@ -931,7 +931,7 @@ export default function ConsultationWorkspacePage() {
         parts.push(`${c.dim} updated to ${BAND_LABEL[c.to]}`);
       });
       if (scoreChanges.length === 0 && (flaggedCount as number) > 0) {
-        parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
+        parts.push(`${flaggedCount} dimension${(flaggedCount as number) === 1 ? "" : "s"} flagged`);
       }
       if (tasks.length > 0) parts.push(`${tasks.length} task${tasks.length === 1 ? "" : "s"} created`);
       toast.success(parts.join(" · "), {
