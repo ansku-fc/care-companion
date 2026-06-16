@@ -646,14 +646,8 @@ export default function ConsultationWorkspacePage() {
   const navigate = useNavigate();
   const [medsOpen, setMedsOpen] = useState(false);
 
-  const [findings, setFindings] = useState<Record<string, Finding>>({
-    "Brain & Mental Health": {
-      text:
-        "Persistent migraine, 3rd episode this month. Consider prophylaxis — discuss topiramate or propranolol options with patient.",
-      flagged: true,
-    },
-  });
-  const [order, setOrder] = useState<string[]>(["Brain & Mental Health"]);
+  const [findings, setFindings] = useState<Record<string, Finding>>({});
+  const [order, setOrder] = useState<string[]>([]);
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
   const [showValidation, setShowValidation] = useState(false);
 
@@ -664,18 +658,16 @@ export default function ConsultationWorkspacePage() {
 
   // Consultation note content (lifted so the review screen can read it)
   const [subjective, setSubjective] = useState("");
-  const [bpSys, setBpSys] = useState("138");
-  const [bpDia, setBpDia] = useState("88");
-  const [hr, setHr] = useState("72");
+  const [bpSys, setBpSys] = useState("");
+  const [bpDia, setBpDia] = useState("");
+  const [hr, setHr] = useState("");
   const [weight, setWeight] = useState("");
   const [temp, setTemp] = useState("");
   const [labs, setLabs] = useState("");
   const [plan, setPlan] = useState("");
 
-  // Lab inclusion: first group included by default
-  const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({
-    [LAB_GROUPS[0].id]: true,
-  });
+  // Lab inclusion: empty by default (no recent labs to include)
+  const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({});
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const labsRef = useRef<HTMLDivElement>(null);
 
