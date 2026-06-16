@@ -2715,18 +2715,21 @@ function HealthDimensionView({
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
+  const [familyHistoryDb, setFamilyHistoryDb] = useState<any[]>([]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [d, m, a] = await Promise.all([
-        supabase.from("patient_diagnoses").select("diagnosis,icd_code").eq("patient_id", patient.id).eq("status", "active"),
+      const [d, m, a, fh] = await Promise.all([
+        supabase.from("patient_diagnoses").select("diagnosis,icd_code,status,diagnosed_date,notes").eq("patient_id", patient.id),
         supabase.from("patient_medications").select("medication_name,indication").eq("patient_id", patient.id).eq("status", "active"),
         supabase.from("patient_allergies" as any).select("allergen").eq("patient_id", patient.id).eq("status", "active"),
+        supabase.from("patient_family_history" as any).select("relative,illness_name,icd_code,age_at_diagnosis,notes").eq("patient_id", patient.id),
       ]);
       if (cancelled) return;
       setDiagnoses(d.data || []);
       setMedications(m.data || []);
       setAllergies((a as any).data || []);
+      setFamilyHistoryDb(((fh as any).data || []) as any[]);
     })();
     return () => { cancelled = true; };
   }, [patient.id]);
