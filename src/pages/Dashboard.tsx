@@ -350,11 +350,10 @@ const Dashboard = () => {
     const meta = priorityMeta(task.priority);
     const pname = patientName(task.patient_id);
     const role = task.assignee_name?.toLowerCase().includes("nurse") ? "nurse" : "doctor";
-    const bg = tone === "destructive" ? "bg-card hover:bg-muted/60 border-[#E8446A]/70"
-      : tone === "warning" ? "bg-card hover:bg-muted/60 border-warning"
-      : "bg-card hover:bg-muted/60 border-muted-foreground/20";
+    const bg = "bg-card hover:bg-muted/60";
     return (
-      <div className={cn("group relative w-full flex items-start gap-2 p-2.5 border-l-2 transition-colors", bg)}>
+      <div className={cn("group relative w-full overflow-hidden flex items-start gap-2 p-2.5 transition-colors", bg)}>
+        {tone === "destructive" && <span aria-hidden className="absolute left-0 top-0 h-full w-[2px] bg-[rgba(232,68,106,0.7)]" />}
         <button onClick={() => openTask(task)} className="flex-1 text-left flex items-start gap-2 min-w-0">
           <ActorIcon actor={role} />
           <div className="flex-1 min-w-0">
@@ -470,7 +469,7 @@ const Dashboard = () => {
                 {completedToday.length === 0 ? <Empty text="No tasks completed yet" /> : completedToday.map((t) => <ActionRow key={t.id} task={t} tone="muted" />)}
               </Section>
             </CardContent>
-            <div className="px-6 pb-3 pt-1 shrink-0 border-t border-border/60">
+            <div className="px-6 pb-3 pt-1 shrink-0 [border-top:1px_solid_#F0EBE4]">
               <Button variant="ghost" size="sm" className="w-full gap-1 text-primary" onClick={() => navigate("/tasks")}>
                 Open all tasks <ArrowRight className="h-3.5 w-3.5" />
               </Button>
@@ -536,7 +535,7 @@ function Section({ icon, label, tone, count, children }: { icon: React.ReactNode
           </span>
         )}
       </p>
-      <div className="[&>*+*]:[border-top:0.5px_solid_#F0EBE4]">{children}</div>
+      <div className="[&>*+*]:[border-top:1px_solid_#F0EBE4]">{children}</div>
     </div>
   );
 }
