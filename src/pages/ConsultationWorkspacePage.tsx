@@ -140,11 +140,23 @@ function AutoTextarea({
   );
 }
 
-function VitalInput({ label, suffix }: { label: string; suffix: string }) {
+function VitalInput({
+  label,
+  suffix,
+  value,
+  onChange,
+}: {
+  label: string;
+  suffix: string;
+  value?: string;
+  onChange?: (v: string) => void;
+}) {
   return (
     <div className="inline-flex items-baseline gap-1.5 text-[13px] text-[#6E5A48]">
       <span className="uppercase tracking-wide text-[11px] text-[#9B8775]">{label}</span>
       <input
+        value={value ?? ""}
+        onChange={(e) => onChange?.(e.target.value)}
         className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
         style={{ borderBottom: "1px solid #E7DCCD" }}
       />
