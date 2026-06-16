@@ -627,7 +627,22 @@ export default function ConsultationWorkspacePage() {
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const [openForm, setOpenForm] = useState<OpenForm>(null);
 
+  // Consultation note content (lifted so the review screen can read it)
+  const [subjective, setSubjective] = useState("");
+  const [bpSys, setBpSys] = useState("138");
+  const [bpDia, setBpDia] = useState("88");
+  const [hr, setHr] = useState("72");
+  const [weight, setWeight] = useState("");
+  const [temp, setTemp] = useState("");
+  const [labs, setLabs] = useState("");
+  const [plan, setPlan] = useState("");
+
+  // View mode + save state
+  const [view, setView] = useState<"workspace" | "review">("workspace");
+  const [saving, setSaving] = useState(false);
+
   const selectedDims = order;
+  const flaggedCount = selectedDims.filter((d) => findings[d]?.flagged).length;
 
   // Scroll the right column to the form when it opens
   const rightColRef = useRef<HTMLDivElement>(null);
@@ -668,7 +683,28 @@ export default function ConsultationWorkspacePage() {
       setShowValidation(true);
       return;
     }
-    navigate(-1);
+    setView("review");
+    window.scrollTo?.({ top: 0 });
+  };
+
+  const onSaveAndClose = () => {
+    setSaving(true);
+    setTimeout(() => {
+      const parts: string[] = ["Consultation saved"];
+      if (flaggedCount > 0) parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
+      if (tasks.length > 0) parts.push(`${tasks.length} task${tasks.length === 1 ? "" : "s"} created`);
+      toast.success(parts.join(" · "), {
+        duration: 4000,
+        style: {
+          background: "#E6F4F3",
+          color: "#0EA5A0",
+          border: "none",
+          borderRadius: "8px",
+          padding: "12px 16px",
+        },
+      });
+      navigate("/patients");
+    }, 700);
   };
 
   const formatDue = (iso: string) => {
