@@ -17,6 +17,26 @@ const DIMENSIONS: { label: string; score: number; band: "HIGH" | "MEDIUM" | "LOW
   { label: "Reproductive & Sexual", score: 2.8, band: "LOW", tone: "teal" },
 ];
 
+type Band = "LOW" | "MEDIUM" | "HIGH";
+
+const BAND_LABEL: Record<Band, string> = { LOW: "Low", MEDIUM: "Medium", HIGH: "High" };
+const BAND_MIDPOINT: Record<Band, number> = { LOW: 2.5, MEDIUM: 5.5, HIGH: 8.0 };
+
+function scoreToBand(score: number): Band {
+  if (score < 4) return "LOW";
+  if (score < 7) return "MEDIUM";
+  return "HIGH";
+}
+
+function findCurrentDimension(label: string) {
+  // labels in DIMENSIONS may be shortened (e.g. "Respiratory & Immune" vs "Respiratory & Immune Health")
+  return (
+    DIMENSIONS.find((d) => d.label === label) ||
+    DIMENSIONS.find((d) => label.startsWith(d.label) || d.label.startsWith(label)) ||
+    null
+  );
+}
+
 const MEDICATIONS = [
   "Lisinopril · 10mg · Morning",
   "Atorvastatin · 20mg · Evening",
