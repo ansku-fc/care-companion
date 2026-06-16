@@ -32,10 +32,9 @@ const VISIT_REASONS = [
 
 const VISIT_STEPS = [
   "Visit Reason",
-  "Basic Information",
+  "Objective",
   "Lifestyle Update",
   "Current Symptoms",
-  "Lab Results",
   "Summary & Notes",
 ];
 
