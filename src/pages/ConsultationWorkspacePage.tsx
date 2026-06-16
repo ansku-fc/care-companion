@@ -1427,55 +1427,52 @@ export default function ConsultationWorkspacePage() {
               <p className="text-[12px] text-[#9B8775] mt-1">Tasks and actions from this consultation</p>
             </div>
 
-            {/* Dimensions tagged — live */}
+            {/* Dimensions tagged — live, aggregated across sections */}
             <section className="space-y-2">
               <SectionLabel>Dimensions Tagged</SectionLabel>
-              {selectedDims.length === 0 ? (
+              {aggregatedTags.length === 0 ? (
                 <div
                   className="rounded-[8px] flex flex-col items-center justify-center text-center py-6 px-4"
                   style={{ border: "1px dashed #E7DCCD", background: "#FFFFFF" }}
                 >
                   <ClipboardList className="h-7 w-7 mb-2" style={{ color: "#E7DCCD" }} />
                   <p className="text-[12px] text-[#9B8775]">
-                    Tag dimensions in the Assessment to see them here.
+                    Tag dimensions in the centre column to see them here.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {selectedDims.map((d) => {
-                    const f = findings[d];
-                    return (
-                      <div
-                        key={d}
-                        className="rounded-[8px] p-3 bg-white animate-fade-in"
-                        style={{ border: "1px solid #E7DCCD" }}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span
-                              className="h-2 w-2 rounded-full shrink-0"
-                              style={{ background: f.flagged ? "#E8446A" : "#C9BBA9" }}
-                            />
-                            <span className="text-[12px] font-medium text-[#2E1F14] truncate">{d}</span>
-                          </div>
-                          {f.flagged && (
-                            <span
-                              className="text-[10px] font-medium uppercase tracking-wide shrink-0"
-                              style={{ color: "#E8446A" }}
-                            >
-                              Flagged
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[12px] text-[#6E5A48] truncate">
-                          {f.text.trim() ? f.text : <span className="italic text-[#C9BBA9]">No findings yet</span>}
-                        </p>
+                  {aggregatedTags.map((entry) => (
+                    <div
+                      key={entry.dim}
+                      className="rounded-[8px] p-3 bg-white animate-fade-in"
+                      style={{ border: "1px solid #E7DCCD" }}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0 mb-1.5">
+                        <span
+                          className="h-2 w-2 rounded-full shrink-0"
+                          style={{ background: "#C9BBA9" }}
+                        />
+                        <span className="text-[12px] font-medium text-[#2E1F14] truncate">{entry.dim}</span>
                       </div>
-                    );
-                  })}
+                      <div className="space-y-1.5 pl-3.5">
+                        {entry.sources.map((s, i) => (
+                          <div key={i}>
+                            <div className="text-[10px] uppercase tracking-wide text-[#9B8775]">
+                              from {s.source}
+                            </div>
+                            <p className="text-[12px] text-[#6E5A48]">
+                              {s.note.trim() ? `"${s.note}"` : <span className="italic text-[#C9BBA9]">No note</span>}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </section>
+
 
             {/* TASKS */}
             <section className="space-y-2">
