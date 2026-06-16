@@ -15,6 +15,7 @@ import PatientReportEditor from "./pages/PatientReportEditor";
 import NewLabResultsPage from "./pages/NewLabResultsPage";
 import ClinicalHoursPage from "./pages/ClinicalHoursPage";
 import NotesPage from "./pages/NotesPage";
+import ConsultationWorkspacePage from "./pages/ConsultationWorkspacePage";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
