@@ -536,7 +536,7 @@ function Section({ icon, label, tone, count, children }: { icon: React.ReactNode
           </span>
         )}
       </p>
-      <div className="space-y-2">{children}</div>
+      <div className="[&>*+*]:border-t-[0.5px] [&>*+*]:border-[#F0EBE4]">{children}</div>
     </div>
   );
 }
