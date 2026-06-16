@@ -4897,6 +4897,18 @@ function CardiovascularDimensionView({
 
   // Compute CV risk score history over time using each lab result date
   const riskHistory = useMemo(() => {
+    // Carter: hardcoded clinically-curated upward trajectory matching the
+    // deteriorating lab values (LDL, HbA1c, BP all worsening 2022→2024).
+    if (isCarter(patient.id, patient.full_name)) {
+      return [
+        { date: "2022-08-10", score: 7.2 },
+        { date: "2023-01-20", score: 7.8 },
+        { date: "2023-06-01", score: 8.1 },
+        { date: "2024-01-15", score: 8.8 },
+        { date: "2024-06-10", score: 9.6 },
+      ];
+    }
+
     const sortedLabs = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
     const computed = sortedLabs.map((lab) => {
       let score = 1;
@@ -4923,7 +4935,7 @@ function CardiovascularDimensionView({
       return [...dummyHistory, ...computed];
     }
     return computed;
-  }, [labResults, onboarding]);
+  }, [labResults, onboarding, patient.id, patient.full_name]);
 
   const sorted = [...labResults].sort((a, b) => a.result_date.localeCompare(b.result_date));
 
