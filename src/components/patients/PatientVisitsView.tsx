@@ -301,7 +301,7 @@ function UpcomingCard({ v, onOpen }: { v: UpcomingVisit; onOpen: () => void }) {
         <div className="flex items-center justify-between gap-3 mt-1">
           <div className="text-[14px] font-semibold text-[#2E1F14] truncate">{v.title}</div>
           <div className="hidden sm:flex flex-wrap gap-1 shrink-0">
-            {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} tone={d.tone} />)}
+            {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} />)}
           </div>
         </div>
         <p className="mt-1.5 text-[13px] text-[#6E5A48] leading-snug max-h-0 overflow-hidden group-hover:max-h-24 transition-all duration-200">
@@ -320,7 +320,7 @@ function PastCard({ v, onOpen }: { v: PastVisit; onOpen: () => void }) {
         <div className="flex items-center justify-between gap-3 mt-1">
           <div className="text-[14px] font-semibold text-[#2E1F14] truncate">{v.title}</div>
           <div className="hidden sm:flex flex-wrap gap-1 shrink-0">
-            {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} tone={d.tone} />)}
+            {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} />)}
           </div>
         </div>
         <p className="mt-1.5 text-[13px] text-[#6E5A48] leading-snug max-h-0 overflow-hidden group-hover:max-h-32 transition-all duration-200">
