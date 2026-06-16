@@ -248,11 +248,8 @@ const CalendarPage = () => {
                         return (
                           <div
                             key={a.id}
-                            className={cn(
-                              "text-[11px] leading-[18px] h-[22px] truncate rounded-[4px] flex items-center",
-                              s.bg, s.text,
-                            )}
-                            style={{ padding: "2px 6px" }}
+                            className="text-[11px] leading-[18px] h-[22px] truncate rounded-[4px] flex items-center"
+                            style={{ padding: "2px 6px", background: "#F5F0EA", color: "#6E5A48" }}
                           >
                             {format(parseISO(a.start_time), "HH:mm")} {displayName}
                           </div>
