@@ -96,17 +96,7 @@ const UPCOMING: UpcomingVisit[] = [
     location: "Helsinki, Bulevardi",
     mode: "In-Person",
     note: "Full-year review. All health dimensions assessed. Care plan updated for 2027.",
-    dimensions: [
-      { label: "Cardiovascular Health" },
-      { label: "Metabolic Health" },
-      { label: "Brain & Mental Health" },
-      { label: "Exercise & Functional Capacity" },
-      { label: "Digestion" },
-      { label: "Cancer Risk" },
-      { label: "Respiratory & Immune Health" },
-      { label: "Skin, Oral & Mucosal Health" },
-      { label: "Reproductive & Sexual Health" },
-    ],
+    dimensions: [{ label: "All dimensions" }],
     plan: "Comprehensive annual review across all nine health dimensions. Update long-term care plan for 2027, including any new screening, lifestyle goals, and medication changes.",
     preparation: "Fasting required. Allow 90 minutes. Bring updated symptom diary and any specialist letters since the last annual review.",
     openTasks: [
