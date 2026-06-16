@@ -825,8 +825,6 @@ export default function ConsultationWorkspacePage() {
   const [diagnosesTags, setDiagnosesTags] = useState<Record<string, string>>({});
 
   // Diagnoses & medications
-  type Diagnosis = { id: string; code: string; name: string; status: "current" | "previous"; year: string };
-  type Medication = { id: string; name: string; dose: string; frequency: string; time: string };
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [dxFormOpen, setDxFormOpen] = useState(false);
