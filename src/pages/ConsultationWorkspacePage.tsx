@@ -1023,12 +1023,12 @@ export default function ConsultationWorkspacePage() {
                   // Smart suggestion: flagged labs whose dimension isn't yet selected
                   const missing = Array.from(
                     new Set(
-                      LAB_GROUPS[0].rows
+                      (LAB_GROUPS[0]?.rows ?? [])
                         .filter((r) => r.flagged && r.dimension && !findings[r.dimension!])
                         .map((r) => r.dimension as string),
                     ),
                   );
-                  const flaggedMarkers = LAB_GROUPS[0].rows
+                  const flaggedMarkers = (LAB_GROUPS[0]?.rows ?? [])
                     .filter((r) => r.flagged && r.dimension && missing.includes(r.dimension!))
                     .map((r) => r.marker.replace(" Cholesterol", ""));
                   const uniqueMarkers = Array.from(new Set(flaggedMarkers)).slice(0, 3);
