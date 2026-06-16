@@ -700,6 +700,43 @@ export default function ConsultationWorkspacePage() {
   const labsRef = useRef<HTMLDivElement>(null);
   const [measurements, setMeasurements] = useState<{ name: string; value: string }[]>([]);
 
+  // Structured data panels (context-aware data collection)
+  const [selectedPanels, setSelectedPanels] = useState<Set<PanelId>>(new Set());
+  const [seenSuggestions, setSeenSuggestions] = useState<Set<PanelId>>(new Set());
+  const [vitalsData, setVitalsData] = useState<VitalsData>({ ...defaultVitalsData });
+  const [sleepData, setSleepData] = useState<SleepData>({ ...defaultSleepData });
+  const [mentalData, setMentalData] = useState<MentalHealthData>({ ...defaultMentalHealthData });
+  const [activityData, setActivityData] = useState<ActivityData>({ ...defaultActivityData });
+  const [nutritionData, setNutritionData] = useState<NutritionData>({ ...defaultNutritionData });
+
+  const suggested = useMemo(() => suggestPanelsFromText(subjective), [subjective]);
+  useEffect(() => {
+    // Auto-add newly suggested panels the first time they're suggested.
+    // Once a panel has been "seen", user toggles win.
+    const toAdd: PanelId[] = [];
+    suggested.forEach((p) => { if (!seenSuggestions.has(p)) toAdd.push(p); });
+    if (toAdd.length === 0) return;
+    setSelectedPanels((prev) => {
+      const next = new Set(prev);
+      toAdd.forEach((p) => next.add(p));
+      return next;
+    });
+    setSeenSuggestions((prev) => {
+      const next = new Set(prev);
+      toAdd.forEach((p) => next.add(p));
+      return next;
+    });
+  }, [suggested, seenSuggestions]);
+
+  const togglePanel = (p: PanelId) => {
+    setSeenSuggestions((prev) => new Set(prev).add(p));
+    setSelectedPanels((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p); else next.add(p);
+      return next;
+    });
+  };
+
   // View mode + save state
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
