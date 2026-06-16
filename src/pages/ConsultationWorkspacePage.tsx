@@ -1643,6 +1643,19 @@ function ReviewScreen(props: ReviewProps) {
                       Temp {temp || "—"}
                       {temp && " °C"}
                     </div>
+                    {includedLabGroups.map((g) => {
+                      const flagged = g.rows.filter((r) => r.flagged);
+                      return (
+                        <div key={g.id} className="text-[13px] text-[#1F1611] mt-2">
+                          <span className="text-[#9B8775]">Labs · {g.date} ({g.label}):</span>{" "}
+                          {flagged.length === 0
+                            ? "no flagged values"
+                            : flagged
+                                .map((r) => `${r.marker} ${r.value} ${r.unit}`)
+                                .join(", ")}
+                        </div>
+                      );
+                    })}
                   </NoteBlock>
                   <NoteBlock label="Plan">
                     {plan.trim() ? plan : <Empty>No plan notes.</Empty>}
