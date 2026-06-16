@@ -713,6 +713,30 @@ export default function ConsultationWorkspacePage() {
     return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   };
 
+  if (view === "review") {
+    return (
+      <ReviewScreen
+        subjective={subjective}
+        bpSys={bpSys}
+        bpDia={bpDia}
+        hr={hr}
+        weight={weight}
+        temp={temp}
+        plan={plan}
+        selectedDims={selectedDims}
+        findings={findings}
+        tasks={tasks}
+        referrals={referrals}
+        followUp={followUp}
+        flaggedCount={flaggedCount}
+        saving={saving}
+        onBack={() => setView("workspace")}
+        onSave={onSaveAndClose}
+        formatDue={formatDue}
+      />
+    );
+  }
+
   return (
     <div
       className="fixed inset-0 flex flex-col"
