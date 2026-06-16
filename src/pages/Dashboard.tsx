@@ -492,7 +492,7 @@ const Dashboard = () => {
           </div>
         </CardHeader>
         <CardContent className="flex-1 min-h-0 overflow-y-auto">
-          <div className="[&>*+*]:border-t-[0.5px] [&>*+*]:border-[#F0EBE4]">
+          <div className="[&>*+*]:[border-top:0.5px_solid_#F0EBE4]">
             {recentActivity.map((a, i) => (
               <button key={i} onClick={() => goToPatient(a.patient, a.section)} className="w-full text-left grid grid-cols-12 gap-3 py-2.5 items-center hover:bg-muted/40 rounded-md px-2 -mx-2 transition-colors">
                 <span className="col-span-2 text-xs text-muted-foreground tabular-nums">{a.time}</span>
