@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag } from "lucide-react";
+import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag, X, ArrowUpRight } from "lucide-react";
 
 type Tone = "rose" | "amber" | "teal";
 
@@ -43,7 +43,27 @@ const TONE_COLOR: Record<Tone, string> = {
   teal: "#0EA5A0",
 };
 
+const ASSIGNEES = ["Dr. Laine", "Nurse Mäkinen", "System"] as const;
+const TASK_TYPES = ["Referral", "Prescription", "Lab order", "Appointment", "Other"] as const;
+const VISIT_TYPES = ["Check-up", "Consultation", "Procedure"] as const;
+const TIMEFRAMES = ["2 weeks", "1 month", "3 months", "6 months", "Custom date"] as const;
+
 type Finding = { text: string; flagged: boolean };
+type Task = { id: string; title: string; assignee: string; due: string; type: typeof TASK_TYPES[number] };
+type Referral = { id: string; specialty: string; referTo: string; assignee: string; due: string; notes: string };
+type FollowUp = { id: string; visitType: typeof VISIT_TYPES[number]; timeframe: string; with: string; notes: string };
+
+type OpenForm = null | "task" | "referral" | "followup";
+
+function todayPlus(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 9);
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -53,9 +73,19 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function GhostButton({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function GhostButton({
+  children,
+  className = "",
+  onClick,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+}) {
   return (
     <button
+      type="button"
+      onClick={onClick}
       className={
         "inline-flex items-center justify-center gap-1.5 rounded-[6px] text-[12px] font-medium text-[#6E5A48] hover:bg-[#F0EBE4] transition-colors h-8 px-3 " +
         className
@@ -220,11 +250,354 @@ function FindingBlock({
   );
 }
 
+/* ---------- Phase 3 form primitives ---------- */
+
+function FormCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="bg-white rounded-[8px] animate-fade-in flex flex-col gap-3"
+      style={{ border: "1px solid #E7DCCD", padding: "12px" }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function TextField({
+  value,
+  onChange,
+  placeholder,
+  size = "md",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  size?: "md" | "sm";
+}) {
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={
+        "w-full bg-transparent outline-none py-1 placeholder:text-[#C9BBA9] " +
+        (size === "md"
+          ? "text-[14px] text-[#1F1611]"
+          : "text-[12px] text-[#6E5A48]")
+      }
+      style={{ borderBottom: "1px solid #E7DCCD" }}
+    />
+  );
+}
+
+function SelectField({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+  placeholder?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full bg-transparent outline-none text-[12px] text-[#6E5A48] py-1 appearance-none cursor-pointer"
+      style={{
+        borderBottom: "1px solid #E7DCCD",
+        backgroundImage:
+          "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239B8775' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>\")",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "right 2px center",
+        paddingRight: 16,
+      }}
+    >
+      {placeholder && (
+        <option value="" disabled>
+          {placeholder}
+        </option>
+      )}
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {o}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <input
+      type="date"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full bg-transparent outline-none text-[12px] text-[#6E5A48] py-1"
+      style={{ borderBottom: "1px solid #E7DCCD" }}
+    />
+  );
+}
+
+function ChipSelector<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly T[];
+  value: T | "";
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {options.map((o) => {
+        const active = o === value;
+        return (
+          <button
+            key={o}
+            type="button"
+            onClick={() => onChange(o)}
+            className="rounded-full text-[11px] font-medium"
+            style={{
+              padding: "3px 8px",
+              background: active ? "#2E1F14" : "#F5F0EA",
+              color: active ? "#FFFFFF" : "#9B8775",
+              border: active ? "1px solid #2E1F14" : "1px solid #E7DCCD",
+              transition:
+                "background-color 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out",
+            }}
+          >
+            {o}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PrimaryButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="h-7 px-3 rounded-[6px] text-[12px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+      style={{ background: "#2E1F14" }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function CancelLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[12px] text-[#9B8775] hover:text-[#2E1F14] transition-colors"
+    >
+      Cancel
+    </button>
+  );
+}
+
+function NeutralChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center rounded-full text-[11px] font-medium"
+      style={{ padding: "2px 8px", background: "#F5F0EA", color: "#6E5A48" }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function RowItem({
+  children,
+  onRemove,
+}: {
+  children: React.ReactNode;
+  onRemove: () => void;
+}) {
+  return (
+    <div
+      className="group relative py-2 pr-6 animate-fade-in"
+      style={{ borderTop: "0.5px solid #F0EBE4" }}
+    >
+      {children}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label="Remove"
+      >
+        <X className="h-3.5 w-3.5" style={{ color: "#C9BBA9" }} />
+      </button>
+    </div>
+  );
+}
+
+/* ---------- Inline forms ---------- */
+
+function TaskForm({ onSave, onCancel }: { onSave: (t: Task) => void; onCancel: () => void }) {
+  const [title, setTitle] = useState("");
+  const [assignee, setAssignee] = useState<string>(ASSIGNEES[0]);
+  const [due, setDue] = useState(todayPlus(3));
+  const [type, setType] = useState<typeof TASK_TYPES[number] | "">("");
+
+  return (
+    <FormCard>
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="What needs to happen..."
+        className="w-full bg-transparent outline-none text-[14px] text-[#1F1611] placeholder:text-[#C9BBA9] py-1"
+        style={{ borderBottom: "1px solid #E7DCCD" }}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <SelectField value={assignee} onChange={setAssignee} options={ASSIGNEES} />
+        <DateField value={due} onChange={setDue} />
+      </div>
+      <ChipSelector options={TASK_TYPES} value={type} onChange={(v) => setType(v)} />
+      <div className="flex items-center justify-end gap-3 pt-1">
+        <CancelLink onClick={onCancel} />
+        <PrimaryButton
+          disabled={!title.trim() || !type}
+          onClick={() =>
+            onSave({
+              id: uid(),
+              title: title.trim(),
+              assignee,
+              due,
+              type: type as typeof TASK_TYPES[number],
+            })
+          }
+        >
+          Add task
+        </PrimaryButton>
+      </div>
+    </FormCard>
+  );
+}
+
+function ReferralForm({
+  onSave,
+  onCancel,
+}: {
+  onSave: (r: Referral) => void;
+  onCancel: () => void;
+}) {
+  const [specialty, setSpecialty] = useState("");
+  const [referTo, setReferTo] = useState("");
+  const [assignee, setAssignee] = useState<string>(ASSIGNEES[1]);
+  const [due, setDue] = useState(todayPlus(7));
+  const [notes, setNotes] = useState("");
+
+  return (
+    <FormCard>
+      <TextField value={specialty} onChange={setSpecialty} placeholder="e.g. Gastroenterology" />
+      <TextField
+        value={referTo}
+        onChange={setReferTo}
+        placeholder="Specific clinic or leave blank"
+        size="sm"
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <SelectField value={assignee} onChange={setAssignee} options={ASSIGNEES} />
+        <DateField value={due} onChange={setDue} />
+      </div>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Reason for referral..."
+        className="w-full bg-transparent outline-none text-[12px] text-[#6E5A48] placeholder:text-[#C9BBA9] py-1 resize-none"
+        style={{ minHeight: 40, borderBottom: "1px solid #E7DCCD" }}
+      />
+      <div className="flex items-center justify-end gap-3 pt-1">
+        <CancelLink onClick={onCancel} />
+        <PrimaryButton
+          disabled={!specialty.trim()}
+          onClick={() =>
+            onSave({
+              id: uid(),
+              specialty: specialty.trim(),
+              referTo: referTo.trim(),
+              assignee,
+              due,
+              notes: notes.trim(),
+            })
+          }
+        >
+          Add referral
+        </PrimaryButton>
+      </div>
+    </FormCard>
+  );
+}
+
+function FollowUpForm({
+  onSave,
+  onCancel,
+}: {
+  onSave: (f: FollowUp) => void;
+  onCancel: () => void;
+}) {
+  const [visitType, setVisitType] = useState<typeof VISIT_TYPES[number] | "">("");
+  const [timeframe, setTimeframe] = useState<string>(TIMEFRAMES[2]);
+  const [withWho, setWithWho] = useState<string>(ASSIGNEES[0]);
+  const [notes, setNotes] = useState("");
+
+  return (
+    <FormCard>
+      <ChipSelector options={VISIT_TYPES} value={visitType} onChange={(v) => setVisitType(v)} />
+      <div className="grid grid-cols-2 gap-3">
+        <SelectField value={timeframe} onChange={setTimeframe} options={TIMEFRAMES} />
+        <SelectField value={withWho} onChange={setWithWho} options={ASSIGNEES.slice(0, 2)} />
+      </div>
+      <TextField
+        value={notes}
+        onChange={setNotes}
+        placeholder="Purpose of follow-up..."
+        size="sm"
+      />
+      <div className="flex items-center justify-end gap-3 pt-1">
+        <CancelLink onClick={onCancel} />
+        <PrimaryButton
+          disabled={!visitType}
+          onClick={() =>
+            onSave({
+              id: uid(),
+              visitType: visitType as typeof VISIT_TYPES[number],
+              timeframe,
+              with: withWho,
+              notes: notes.trim(),
+            })
+          }
+        >
+          Add follow-up
+        </PrimaryButton>
+      </div>
+    </FormCard>
+  );
+}
+
+/* ---------- Main page ---------- */
+
 export default function ConsultationWorkspacePage() {
   const navigate = useNavigate();
   const [medsOpen, setMedsOpen] = useState(false);
 
-  // Pre-populate Brain & Mental Health for Mäkinen, Aino
   const [findings, setFindings] = useState<Record<string, Finding>>({
     "Brain & Mental Health": {
       text:
@@ -232,21 +605,30 @@ export default function ConsultationWorkspacePage() {
       flagged: true,
     },
   });
-  // Preserve insertion order
   const [order, setOrder] = useState<string[]>(["Brain & Mental Health"]);
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
   const [showValidation, setShowValidation] = useState(false);
 
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [followUp, setFollowUp] = useState<FollowUp | null>(null);
+  const [openForm, setOpenForm] = useState<OpenForm>(null);
+
   const selectedDims = order;
+
+  // Scroll the right column to the form when it opens
+  const rightColRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (openForm && rightColRef.current) {
+      const target = rightColRef.current.querySelector(`[data-form="${openForm}"]`);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [openForm]);
 
   const toggleDim = (d: string) => {
     if (findings[d]) {
-      // Trying to deselect
-      if (findings[d].text.trim().length > 0) {
-        setPendingRemove(d);
-      } else {
-        removeDim(d);
-      }
+      if (findings[d].text.trim().length > 0) setPendingRemove(d);
+      else removeDim(d);
     } else {
       setFindings((prev) => ({ ...prev, [d]: { text: "", flagged: false } }));
       setOrder((prev) => [...prev, d]);
@@ -274,6 +656,12 @@ export default function ConsultationWorkspacePage() {
       return;
     }
     navigate(-1);
+  };
+
+  const formatDue = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   };
 
   return (
@@ -455,7 +843,8 @@ export default function ConsultationWorkspacePage() {
                           background: active ? "#2E1F14" : "#F5F0EA",
                           color: active ? "#FFFFFF" : "#9B8775",
                           border: active ? "1px solid #2E1F14" : "1px solid #E7DCCD",
-                          transition: "background-color 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out",
+                          transition:
+                            "background-color 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out",
                         }}
                       >
                         {d}
@@ -499,10 +888,10 @@ export default function ConsultationWorkspacePage() {
                 <SectionLabel>Plan</SectionLabel>
                 <AutoTextarea placeholder="Overall plan, patient instructions, follow-up..." />
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <GhostButton>+ Add task</GhostButton>
-                  <GhostButton>+ Referral</GhostButton>
-                  <GhostButton>+ Lab order</GhostButton>
-                  <GhostButton>+ Follow-up</GhostButton>
+                  <GhostButton onClick={() => setOpenForm("task")}>+ Add task</GhostButton>
+                  <GhostButton onClick={() => setOpenForm("referral")}>+ Referral</GhostButton>
+                  <GhostButton onClick={() => setOpenForm("task")}>+ Lab order</GhostButton>
+                  <GhostButton onClick={() => setOpenForm("followup")}>+ Follow-up</GhostButton>
                 </div>
               </Card>
             </div>
@@ -511,78 +900,219 @@ export default function ConsultationWorkspacePage() {
 
         {/* RIGHT */}
         <aside
-          className="w-[320px] shrink-0 overflow-y-auto p-5 space-y-5"
+          className="w-[320px] shrink-0 flex flex-col"
           style={{ borderLeft: "1px solid #E7DCCD" }}
         >
-          <div>
-            <SectionLabel>Actions</SectionLabel>
-            <p className="text-[12px] text-[#9B8775] mt-1">Tasks and actions from this consultation</p>
+          <div ref={rightColRef} className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
+            <div>
+              <SectionLabel>Actions</SectionLabel>
+              <p className="text-[12px] text-[#9B8775] mt-1">Tasks and actions from this consultation</p>
+            </div>
+
+            {/* Dimensions tagged — live */}
+            <section className="space-y-2">
+              <SectionLabel>Dimensions Tagged</SectionLabel>
+              {selectedDims.length === 0 ? (
+                <div
+                  className="rounded-[8px] flex flex-col items-center justify-center text-center py-6 px-4"
+                  style={{ border: "1px dashed #E7DCCD", background: "#FFFFFF" }}
+                >
+                  <ClipboardList className="h-7 w-7 mb-2" style={{ color: "#E7DCCD" }} />
+                  <p className="text-[12px] text-[#9B8775]">
+                    Tag dimensions in the Assessment to see them here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedDims.map((d) => {
+                    const f = findings[d];
+                    return (
+                      <div
+                        key={d}
+                        className="rounded-[8px] p-3 bg-white animate-fade-in"
+                        style={{ border: "1px solid #E7DCCD" }}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className="h-2 w-2 rounded-full shrink-0"
+                              style={{ background: f.flagged ? "#E8446A" : "#C9BBA9" }}
+                            />
+                            <span className="text-[12px] font-medium text-[#2E1F14] truncate">{d}</span>
+                          </div>
+                          {f.flagged && (
+                            <span
+                              className="text-[10px] font-medium uppercase tracking-wide shrink-0"
+                              style={{ color: "#E8446A" }}
+                            >
+                              Flagged
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-[#6E5A48] truncate">
+                          {f.text.trim() ? f.text : <span className="italic text-[#C9BBA9]">No findings yet</span>}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* TASKS */}
+            <section className="space-y-2">
+              <SectionLabel>Tasks to Create</SectionLabel>
+              {tasks.length > 0 && (
+                <div>
+                  {tasks.map((t) => (
+                    <RowItem key={t.id} onRemove={() => setTasks((p) => p.filter((x) => x.id !== t.id))}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span
+                            className="mt-0.5 h-3 w-3 rounded-full shrink-0"
+                            style={{ border: "1.5px solid #C9BBA9" }}
+                          />
+                          <span className="text-[12px] font-medium text-[#2E1F14] truncate">
+                            {t.title}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#9B8775] shrink-0">
+                          {t.assignee} · {formatDue(t.due)}
+                        </span>
+                      </div>
+                      <div className="mt-1 ml-5">
+                        <NeutralChip>{t.type}</NeutralChip>
+                      </div>
+                    </RowItem>
+                  ))}
+                </div>
+              )}
+              {openForm === "task" ? (
+                <div data-form="task">
+                  <TaskForm
+                    onSave={(t) => {
+                      setTasks((p) => [...p, t]);
+                      setOpenForm(null);
+                    }}
+                    onCancel={() => setOpenForm(null)}
+                  />
+                </div>
+              ) : (
+                <GhostButton className="w-full" onClick={() => setOpenForm("task")}>
+                  + Add task manually
+                </GhostButton>
+              )}
+            </section>
+
+            {/* REFERRALS */}
+            <section className="space-y-2">
+              <SectionLabel>Referrals to Create</SectionLabel>
+              {referrals.length > 0 && (
+                <div>
+                  {referrals.map((r) => (
+                    <RowItem
+                      key={r.id}
+                      onRemove={() => setReferrals((p) => p.filter((x) => x.id !== r.id))}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-[12px] font-medium text-[#2E1F14] truncate">
+                            {r.specialty}
+                            {r.referTo && (
+                              <span className="text-[#9B8775] font-normal"> · {r.referTo}</span>
+                            )}
+                          </div>
+                          {r.notes && (
+                            <div className="text-[11px] text-[#6E5A48] truncate mt-0.5">
+                              "{r.notes}"
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-[#9B8775] shrink-0">
+                          {r.assignee} · {formatDue(r.due)}
+                        </span>
+                      </div>
+                    </RowItem>
+                  ))}
+                </div>
+              )}
+              {openForm === "referral" ? (
+                <div data-form="referral">
+                  <ReferralForm
+                    onSave={(r) => {
+                      setReferrals((p) => [...p, r]);
+                      setOpenForm(null);
+                    }}
+                    onCancel={() => setOpenForm(null)}
+                  />
+                </div>
+              ) : (
+                <GhostButton className="w-full" onClick={() => setOpenForm("referral")}>
+                  + Initiate referral
+                </GhostButton>
+              )}
+            </section>
+
+            {/* FOLLOW-UP */}
+            <section className="space-y-2">
+              <SectionLabel>Follow-up</SectionLabel>
+              {followUp && (
+                <RowItem onRemove={() => setFollowUp(null)}>
+                  <div className="flex items-start gap-2">
+                    <ArrowUpRight
+                      className="h-3.5 w-3.5 mt-0.5 shrink-0"
+                      style={{ color: "#9B8775" }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-medium text-[#2E1F14]">
+                        Follow-up · {followUp.visitType} · In {followUp.timeframe} · {followUp.with}
+                      </div>
+                      {followUp.notes && (
+                        <div className="text-[11px] text-[#6E5A48] mt-0.5">"{followUp.notes}"</div>
+                      )}
+                    </div>
+                  </div>
+                </RowItem>
+              )}
+              {openForm === "followup" ? (
+                <div data-form="followup">
+                  <FollowUpForm
+                    onSave={(f) => {
+                      setFollowUp(f);
+                      setOpenForm(null);
+                    }}
+                    onCancel={() => setOpenForm(null)}
+                  />
+                </div>
+              ) : (
+                !followUp && (
+                  <GhostButton className="w-full" onClick={() => setOpenForm("followup")}>
+                    + Schedule follow-up
+                  </GhostButton>
+                )
+              )}
+            </section>
           </div>
 
-          {/* Dimensions tagged — live */}
-          <section className="space-y-2">
-            <SectionLabel>Dimensions Tagged</SectionLabel>
-            {selectedDims.length === 0 ? (
-              <div
-                className="rounded-[8px] flex flex-col items-center justify-center text-center py-6 px-4"
-                style={{ border: "1px dashed #E7DCCD", background: "#FFFFFF" }}
-              >
-                <ClipboardList className="h-7 w-7 mb-2" style={{ color: "#E7DCCD" }} />
-                <p className="text-[12px] text-[#9B8775]">
-                  Tag dimensions in the Assessment to see them here.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {selectedDims.map((d) => {
-                  const f = findings[d];
-                  return (
-                    <div
-                      key={d}
-                      className="rounded-[8px] p-3 bg-white animate-fade-in"
-                      style={{ border: "1px solid #E7DCCD" }}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span
-                            className="h-2 w-2 rounded-full shrink-0"
-                            style={{ background: f.flagged ? "#E8446A" : "#C9BBA9" }}
-                          />
-                          <span className="text-[12px] font-medium text-[#2E1F14] truncate">{d}</span>
-                        </div>
-                        {f.flagged && (
-                          <span
-                            className="text-[10px] font-medium uppercase tracking-wide shrink-0"
-                            style={{ color: "#E8446A" }}
-                          >
-                            Flagged
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[12px] text-[#6E5A48] truncate">
-                        {f.text.trim() ? f.text : <span className="italic text-[#C9BBA9]">No findings yet</span>}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section className="space-y-2">
-            <SectionLabel>Tasks to Create</SectionLabel>
-            <GhostButton className="w-full">+ Add task manually</GhostButton>
-          </section>
-
-          <section className="space-y-2">
-            <SectionLabel>Referrals</SectionLabel>
-            <GhostButton className="w-full">+ Initiate referral</GhostButton>
-          </section>
-
-          <section className="space-y-2">
-            <SectionLabel>Follow-up Visit</SectionLabel>
-            <GhostButton className="w-full">+ Schedule follow-up</GhostButton>
-          </section>
+          {/* Sticky footer summary */}
+          <div
+            className="shrink-0 px-5 py-3 bg-white space-y-2"
+            style={{ borderTop: "1px solid #E7DCCD" }}
+          >
+            <div className="text-[12px]" style={{ color: "#9B8775" }}>
+              {selectedDims.length} dimension{selectedDims.length === 1 ? "" : "s"} tagged · {tasks.length} task
+              {tasks.length === 1 ? "" : "s"} · {referrals.length} referral
+              {referrals.length === 1 ? "" : "s"}
+              {followUp ? " · 1 follow-up" : ""}
+            </div>
+            <button
+              onClick={onEndConsultation}
+              className="w-full h-9 rounded-[6px] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+              style={{ background: "#2E1F14" }}
+            >
+              End Consultation →
+            </button>
+          </div>
         </aside>
       </div>
     </div>
