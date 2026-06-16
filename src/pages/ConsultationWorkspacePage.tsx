@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag, X, ArrowUpRight } from "lucide-react";
+import { LabResultsStep, defaultLabResults } from "@/components/patients/LabResultsStep";
 
 type Tone = "rose" | "amber" | "teal";
 
