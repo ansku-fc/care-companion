@@ -46,6 +46,46 @@ const MEDICATIONS = [
 
 const ALLERGIES = ["NSAIDs", "Penicillin", "Tree nuts"];
 
+type LabSeverity = "rose" | "amber" | "neutral";
+type LabRow = {
+  marker: string;
+  value: string;
+  unit: string;
+  status: string;
+  trend: "up" | "down" | "flat";
+  severity: LabSeverity;
+  flagged: boolean;
+  dimension?: string; // mapped dimension for the smart suggestion
+};
+type LabGroup = { id: string; date: string; label: string; rows: LabRow[] };
+
+const LAB_GROUPS: LabGroup[] = [
+  {
+    id: "g1",
+    date: "10 Jun 2026",
+    label: "Fasting panel",
+    rows: [
+      { marker: "LDL Cholesterol", value: "4.9", unit: "mmol/l", status: "Above target", trend: "up", severity: "rose", flagged: true, dimension: "Cardiovascular Health" },
+      { marker: "HbA1c", value: "57", unit: "mmol/mol", status: "Stable", trend: "flat", severity: "neutral", flagged: false, dimension: "Metabolic Health" },
+      { marker: "ALAT", value: "62", unit: "U/l", status: "Above reference", trend: "up", severity: "rose", flagged: true, dimension: "Digestion" },
+      { marker: "Fasting Glucose", value: "6.1", unit: "mmol/l", status: "Trending", trend: "up", severity: "amber", flagged: true, dimension: "Metabolic Health" },
+      { marker: "Total Cholesterol", value: "6.2", unit: "mmol/l", status: "Above target", trend: "up", severity: "rose", flagged: true, dimension: "Cardiovascular Health" },
+      { marker: "HDL", value: "1.3", unit: "mmol/l", status: "Within range", trend: "flat", severity: "neutral", flagged: false, dimension: "Cardiovascular Health" },
+    ],
+  },
+  {
+    id: "g2",
+    date: "18 Mar 2026",
+    label: "Routine check",
+    rows: [
+      { marker: "HbA1c", value: "59", unit: "mmol/mol", status: "Above target", trend: "up", severity: "amber", flagged: true, dimension: "Metabolic Health" },
+      { marker: "LDL", value: "4.3", unit: "mmol/l", status: "Monitoring", trend: "flat", severity: "neutral", flagged: false, dimension: "Cardiovascular Health" },
+    ],
+  },
+];
+
+const LAB_FLAGGED_TOTAL = LAB_GROUPS[0].rows.filter((r) => r.flagged).length;
+
 const ALL_DIMENSIONS = [
   "Cardiovascular Health",
   "Metabolic Health",
@@ -657,6 +697,13 @@ export default function ConsultationWorkspacePage() {
   const [labs, setLabs] = useState("");
   const [plan, setPlan] = useState("");
 
+  // Lab inclusion: first group included by default
+  const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({
+    [LAB_GROUPS[0].id]: true,
+  });
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+  const labsRef = useRef<HTMLDivElement>(null);
+
   // View mode + save state
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
@@ -780,6 +827,7 @@ export default function ConsultationWorkspacePage() {
         weight={weight}
         temp={temp}
         plan={plan}
+        includedLabGroups={LAB_GROUPS.filter((g) => labsIncluded[g.id])}
         selectedDims={selectedDims}
         findings={findings}
         tasks={tasks}
@@ -908,6 +956,19 @@ export default function ConsultationWorkspacePage() {
           </section>
 
           <section>
+            <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Last Labs</div>
+            <button
+              onClick={() =>
+                labsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+              className="text-[12px] text-[#6E5A48] hover:text-[#2E1F14] text-left transition-colors inline-flex items-center gap-1.5"
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#E8446A" }} />
+              10 Jun 2026 · {LAB_FLAGGED_TOTAL} flagged values
+            </button>
+          </section>
+
+          <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Last Visit</div>
             <button className="text-[12px] text-[#6E5A48] hover:text-[#2E1F14] text-left transition-colors">
               10 Jun 2026 · Cardiovascular & Liver Review
@@ -959,9 +1020,24 @@ export default function ConsultationWorkspacePage() {
                   <VitalInput label="Weight" suffix="kg" value={weight} onChange={setWeight} />
                   <VitalInput label="Temp" suffix="°C" value={temp} onChange={setTemp} />
                 </div>
-                <div className="mt-3">
+                <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }} ref={labsRef}>
+                  <SectionLabel>Recent Lab Results</SectionLabel>
+                  <p className="text-[12px] italic text-[#9B8775] mt-0.5 mb-3">
+                    From the last 90 days — review and add to findings as needed.
+                  </p>
+                  <LabResultsBlock
+                    groups={LAB_GROUPS}
+                    included={labsIncluded}
+                    onToggleInclude={(id) =>
+                      setLabsIncluded((p) => ({ ...p, [id]: !p[id] }))
+                    }
+                  />
+                </div>
+
+                <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F0EBE4" }}>
+                  <SectionLabel>Doctor's Observations</SectionLabel>
                   <AutoTextarea
-                    placeholder="Note any lab values discussed or physical findings..."
+                    placeholder="Additional observations, physical findings, vitals noted during visit..."
                     minHeight={60}
                     value={labs}
                     onChange={setLabs}
@@ -972,6 +1048,65 @@ export default function ConsultationWorkspacePage() {
 
               <Card>
                 <SectionLabel>Assessment</SectionLabel>
+                {(() => {
+                  // Smart suggestion: flagged labs whose dimension isn't yet selected
+                  const missing = Array.from(
+                    new Set(
+                      LAB_GROUPS[0].rows
+                        .filter((r) => r.flagged && r.dimension && !findings[r.dimension!])
+                        .map((r) => r.dimension as string),
+                    ),
+                  );
+                  const flaggedMarkers = LAB_GROUPS[0].rows
+                    .filter((r) => r.flagged && r.dimension && missing.includes(r.dimension!))
+                    .map((r) => r.marker.replace(" Cholesterol", ""));
+                  const uniqueMarkers = Array.from(new Set(flaggedMarkers)).slice(0, 3);
+                  if (suggestionDismissed || missing.length === 0) return null;
+                  return (
+                    <div
+                      className="flex items-start justify-between gap-3 animate-fade-in"
+                      style={{
+                        background: "#FEF3C7",
+                        borderRadius: 6,
+                        padding: "8px 12px",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <p className="text-[12px] text-[#6E5A48] leading-snug">
+                        <span style={{ color: "#D97706" }}>↑</span>{" "}
+                        {uniqueMarkers.join(" and ")}{" "}
+                        {uniqueMarkers.length === 1 ? "is" : "are"} flagged — consider tagging{" "}
+                        {missing.join(" and ")}.
+                      </p>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            missing.forEach((d) => {
+                              if (!findings[d]) {
+                                setFindings((prev) => ({
+                                  ...prev,
+                                  [d]: { text: "", flagged: false },
+                                }));
+                                setOrder((prev) => (prev.includes(d) ? prev : [...prev, d]));
+                              }
+                            });
+                          }}
+                          className="text-[12px] font-medium text-[#2E1F14] hover:underline"
+                        >
+                          Add both
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSuggestionDismissed(true)}
+                          className="text-[12px] text-[#9B8775] hover:text-[#2E1F14] transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <p className="text-[12px] italic text-[#9B8775]">
                   Select the health dimensions relevant to this visit, then add your findings for each.
                 </p>
@@ -1323,6 +1458,77 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <span className="text-[13px] italic text-[#9B8775]">{children}</span>;
 }
 
+const SEV_COLOR: Record<LabSeverity, string> = {
+  rose: "#E8446A",
+  amber: "#D97706",
+  neutral: "#9B8775",
+};
+
+function TrendArrow({ trend, color }: { trend: "up" | "down" | "flat"; color: string }) {
+  const ch = trend === "up" ? "↑" : trend === "down" ? "↓" : "→";
+  return <span className="text-[12px] font-medium" style={{ color }}>{ch}</span>;
+}
+
+function LabResultsBlock({
+  groups,
+  included,
+  onToggleInclude,
+}: {
+  groups: LabGroup[];
+  included: Record<string, boolean>;
+  onToggleInclude: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {groups.map((g) => (
+        <div key={g.id}>
+          <div className="text-[12px] text-[#9B8775] mb-1">
+            Drawn {g.date} <span className="text-[#C9BBA9]">·</span> {g.label}
+          </div>
+          <div>
+            {g.rows.map((r, i) => (
+              <div
+                key={r.marker + i}
+                className="flex items-center gap-3 h-8"
+                style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
+              >
+                <div className="flex-1 min-w-0 text-[14px] font-normal text-[#6E5A48] truncate">
+                  {r.marker}
+                </div>
+                <div className="w-[120px] shrink-0 text-[14px] font-semibold text-[#1F1611] tabular-nums">
+                  {r.value} <span className="text-[12px] font-normal text-[#9B8775]">{r.unit}</span>
+                </div>
+                <div className="w-[140px] shrink-0">
+                  <span
+                    className="inline-flex items-center rounded-full text-[11px] font-medium"
+                    style={{ padding: "2px 8px", background: "#F5F0EA", color: SEV_COLOR[r.severity] }}
+                  >
+                    {r.status}
+                  </span>
+                </div>
+                <div className="w-[16px] shrink-0 text-right">
+                  <TrendArrow trend={r.trend} color={SEV_COLOR[r.severity]} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <label className="inline-flex items-center gap-2 mt-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={!!included[g.id]}
+              onChange={() => onToggleInclude(g.id)}
+              className="h-3.5 w-3.5 accent-[#2E1F14]"
+            />
+            <span className="text-[12px] text-[#6E5A48]">Include in consultation note</span>
+          </label>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+
 type ScoreChange = { dim: string; from: Band; to: Band };
 
 type ReviewProps = {
@@ -1333,6 +1539,7 @@ type ReviewProps = {
   weight: string;
   temp: string;
   plan: string;
+  includedLabGroups: LabGroup[];
   selectedDims: string[];
   findings: Record<string, Finding>;
   tasks: Task[];
@@ -1358,6 +1565,7 @@ function ReviewScreen(props: ReviewProps) {
     weight,
     temp,
     plan,
+    includedLabGroups,
     selectedDims,
     findings,
     tasks,
@@ -1435,6 +1643,19 @@ function ReviewScreen(props: ReviewProps) {
                       Temp {temp || "—"}
                       {temp && " °C"}
                     </div>
+                    {includedLabGroups.map((g) => {
+                      const flagged = g.rows.filter((r) => r.flagged);
+                      return (
+                        <div key={g.id} className="text-[13px] text-[#1F1611] mt-2">
+                          <span className="text-[#9B8775]">Labs · {g.date} ({g.label}):</span>{" "}
+                          {flagged.length === 0
+                            ? "no flagged values"
+                            : flagged
+                                .map((r) => `${r.marker} ${r.value} ${r.unit}`)
+                                .join(", ")}
+                        </div>
+                      );
+                    })}
                   </NoteBlock>
                   <NoteBlock label="Plan">
                     {plan.trim() ? plan : <Empty>No plan notes.</Empty>}
