@@ -1363,6 +1363,77 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <span className="text-[13px] italic text-[#9B8775]">{children}</span>;
 }
 
+const SEV_COLOR: Record<LabSeverity, string> = {
+  rose: "#E8446A",
+  amber: "#D97706",
+  neutral: "#9B8775",
+};
+
+function TrendArrow({ trend, color }: { trend: "up" | "down" | "flat"; color: string }) {
+  const ch = trend === "up" ? "↑" : trend === "down" ? "↓" : "→";
+  return <span className="text-[12px] font-medium" style={{ color }}>{ch}</span>;
+}
+
+function LabResultsBlock({
+  groups,
+  included,
+  onToggleInclude,
+}: {
+  groups: LabGroup[];
+  included: Record<string, boolean>;
+  onToggleInclude: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {groups.map((g) => (
+        <div key={g.id}>
+          <div className="text-[12px] text-[#9B8775] mb-1">
+            Drawn {g.date} <span className="text-[#C9BBA9]">·</span> {g.label}
+          </div>
+          <div>
+            {g.rows.map((r, i) => (
+              <div
+                key={r.marker + i}
+                className="flex items-center gap-3 h-8"
+                style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
+              >
+                <div className="flex-1 min-w-0 text-[14px] font-normal text-[#6E5A48] truncate">
+                  {r.marker}
+                </div>
+                <div className="w-[120px] shrink-0 text-[14px] font-semibold text-[#1F1611] tabular-nums">
+                  {r.value} <span className="text-[12px] font-normal text-[#9B8775]">{r.unit}</span>
+                </div>
+                <div className="w-[140px] shrink-0">
+                  <span
+                    className="inline-flex items-center rounded-full text-[11px] font-medium"
+                    style={{ padding: "2px 8px", background: "#F5F0EA", color: SEV_COLOR[r.severity] }}
+                  >
+                    {r.status}
+                  </span>
+                </div>
+                <div className="w-[16px] shrink-0 text-right">
+                  <TrendArrow trend={r.trend} color={SEV_COLOR[r.severity]} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <label className="inline-flex items-center gap-2 mt-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={!!included[g.id]}
+              onChange={() => onToggleInclude(g.id)}
+              className="h-3.5 w-3.5 accent-[#2E1F14]"
+            />
+            <span className="text-[12px] text-[#6E5A48]">Include in consultation note</span>
+          </label>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+
 type ScoreChange = { dim: string; from: Band; to: Band };
 
 type ReviewProps = {
