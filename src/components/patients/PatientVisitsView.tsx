@@ -434,7 +434,7 @@ function UpcomingDetailView({ v, onBack }: { v: UpcomingVisit; onBack: () => voi
 type VisitTab = "upcoming" | "history";
 const VISIT_TABS: { key: VisitTab; label: string; count: number }[] = [
   { key: "upcoming", label: "Upcoming", count: UPCOMING.length },
-  { key: "history", label: "History", count: PAST.length },
+  { key: "history", label: "Past", count: PAST.length },
 ];
 
 export function PatientVisitsView({ patient, onDataChanged }: Props) {
