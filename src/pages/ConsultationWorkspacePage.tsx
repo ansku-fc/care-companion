@@ -683,6 +683,64 @@ function FollowUpForm({
   );
 }
 
+type Diagnosis = { id: string; code: string; name: string; status: "current" | "previous"; year: string };
+type Medication = { id: string; name: string; dose: string; frequency: string; time: string };
+
+function DiagnosisForm({ onSave, onCancel }: { onSave: (d: Diagnosis) => void; onCancel: () => void }) {
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [status, setStatus] = useState<"current" | "previous">("current");
+  const [year, setYear] = useState("");
+  return (
+    <FormCard>
+      <div className="grid grid-cols-[100px_1fr] gap-3">
+        <TextField value={code} onChange={setCode} placeholder="ICD code" size="sm" />
+        <TextField value={name} onChange={setName} placeholder="Diagnosis name" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <ChipSelector options={["current", "previous"] as const} value={status} onChange={(v) => setStatus(v)} />
+        <TextField value={year} onChange={setYear} placeholder="Year (e.g. 2022)" size="sm" />
+      </div>
+      <div className="flex items-center justify-end gap-3 pt-1">
+        <CancelLink onClick={onCancel} />
+        <PrimaryButton
+          disabled={!name.trim()}
+          onClick={() => onSave({ id: uid(), code: code.trim(), name: name.trim(), status, year: year.trim() })}
+        >
+          Add diagnosis
+        </PrimaryButton>
+      </div>
+    </FormCard>
+  );
+}
+
+function PrescriptionForm({ onSave, onCancel }: { onSave: (m: Medication) => void; onCancel: () => void }) {
+  const [name, setName] = useState("");
+  const [dose, setDose] = useState("");
+  const [frequency, setFrequency] = useState("");
+  const [time, setTime] = useState("");
+  return (
+    <FormCard>
+      <TextField value={name} onChange={setName} placeholder="Medication name" />
+      <div className="grid grid-cols-3 gap-3">
+        <TextField value={dose} onChange={setDose} placeholder="Dose (e.g. 25mg)" size="sm" />
+        <TextField value={frequency} onChange={setFrequency} placeholder="Frequency" size="sm" />
+        <TextField value={time} onChange={setTime} placeholder="Time of day" size="sm" />
+      </div>
+      <div className="flex items-center justify-end gap-3 pt-1">
+        <CancelLink onClick={onCancel} />
+        <PrimaryButton
+          disabled={!name.trim()}
+          onClick={() => onSave({ id: uid(), name: name.trim(), dose: dose.trim(), frequency: frequency.trim(), time: time.trim() })}
+        >
+          Prescribe
+        </PrimaryButton>
+      </div>
+    </FormCard>
+  );
+}
+
+
 function DimensionTagBlock({
   tags,
   onToggle,
