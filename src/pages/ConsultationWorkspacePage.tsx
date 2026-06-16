@@ -661,8 +661,40 @@ export default function ConsultationWorkspacePage() {
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
 
+  // Score band confirmation (one per flagged dimension). Initialized when entering review.
+  const [scoreBands, setScoreBands] = useState<Record<string, Band>>({});
+
   const selectedDims = order;
-  const flaggedCount = selectedDims.filter((d) => findings[d]?.flagged).length;
+  const flaggedDims = selectedDims.filter((d) => findings[d]?.flagged);
+  const flaggedCount = flaggedDims.length;
+
+  // Initialize bands the first time we open review (or when flagged set changes while in review).
+  useEffect(() => {
+    if (view !== "review") return;
+    setScoreBands((prev) => {
+      const next: Record<string, Band> = {};
+      flaggedDims.forEach((d) => {
+        if (prev[d]) {
+          next[d] = prev[d];
+        } else {
+          const cur = findCurrentDimension(d);
+          next[d] = cur ? scoreToBand(cur.score) : "MEDIUM";
+        }
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, flaggedDims.join("|")]);
+
+  const scoreChanges = flaggedDims
+    .map((d) => {
+      const cur = findCurrentDimension(d);
+      const currentBand: Band | null = cur ? scoreToBand(cur.score) : null;
+      const newBand = scoreBands[d];
+      if (!newBand || !currentBand || newBand === currentBand) return null;
+      return { dim: d, from: currentBand, to: newBand };
+    })
+    .filter((x): x is { dim: string; from: Band; to: Band } => !!x);
 
   // Scroll the right column to the form when it opens
   const rightColRef = useRef<HTMLDivElement>(null);
