@@ -43,6 +43,7 @@ type VisitFormData = {
   visit_reason_other: string;
   chief_complaint: string;
   doctor_notes: string;
+  objective_notes: string;
   // Vitals
   blood_pressure_systolic: number | null;
   blood_pressure_diastolic: number | null;
