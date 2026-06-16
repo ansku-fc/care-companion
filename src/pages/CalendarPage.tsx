@@ -220,13 +220,23 @@ const CalendarPage = () => {
                   <button
                     key={key}
                     onClick={() => setSelectedDate(day)}
-                    className={`min-h-[80px] p-1 flex flex-col items-start text-left transition-colors
-                      ${inMonth ? "bg-card" : "bg-muted/30"}
-                      ${selected ? "ring-2 ring-primary ring-inset" : ""}
-                      hover:bg-accent/30`}
+                    className={cn(
+                      "min-h-[80px] p-1 flex flex-col items-start text-left transition-colors",
+                      inMonth ? "bg-card" : "bg-muted/30",
+                      selected ? "[box-shadow:inset_0_0_0_1.5px_#C9BBA9]" : "",
+                      "hover:bg-accent/30",
+                    )}
                   >
-                    <span className={`text-xs font-medium mb-0.5 px-1.5 py-0.5 rounded-full border
-                      ${today ? "bg-[#FDF6EE] text-[#2E1F14] border-[#C8A98A]" : inMonth ? "text-foreground border-transparent" : "text-muted-foreground border-transparent"}`}>
+                    <span
+                      className={cn(
+                        "text-xs font-medium mb-0.5 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full",
+                        today
+                          ? "text-[#2E1F14] [border:1.5px_solid_#C9BBA9]"
+                          : inMonth
+                          ? "text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {format(day, "d")}
                     </span>
                     <div className="w-full space-y-0.5 overflow-hidden">
@@ -236,7 +246,14 @@ const CalendarPage = () => {
                           ? (a.title ?? a.other_doctor_name ?? "Doctor Meeting")
                           : (a.patient_name?.split(",")[0] ?? a.title?.split("–")[0]);
                         return (
-                          <div key={a.id} className={`text-[10px] leading-tight truncate px-1 py-0.5 rounded border ${s.bg} ${s.text} ${s.border}`}>
+                          <div
+                            key={a.id}
+                            className={cn(
+                              "text-[11px] leading-[18px] h-[22px] truncate rounded-[4px] flex items-center",
+                              s.bg, s.text,
+                            )}
+                            style={{ padding: "2px 6px" }}
+                          >
                             {format(parseISO(a.start_time), "HH:mm")} {displayName}
                           </div>
                         );
@@ -248,6 +265,7 @@ const CalendarPage = () => {
                   </button>
                 );
               })}
+
             </div>
           </CardContent>
         </Card>
