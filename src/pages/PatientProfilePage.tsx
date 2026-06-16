@@ -3950,6 +3950,38 @@ function GenericDimensionView({
   const [showRiskHistory, setShowRiskHistory] = useState(false);
   const [riskTab, setRiskTab] = useState<"risk_factors" | "lab_results">("risk_factors");
 
+  // Historical risk-index trend for this dimension. Carter gets a
+  // clinically-curated trajectory; everyone else gets a per-lab-date estimate.
+  const riskHistory = useMemo<{ date: string; score: number }[]>(() => {
+    const mainKey = mainDim?.key ?? dimensionKey;
+    if (mainKey === "cardiovascular" && isCarter(patient.id, patient.full_name)) {
+      return [
+        { date: "2022-08-10", score: 7.2 },
+        { date: "2023-01-20", score: 7.8 },
+        { date: "2023-06-01", score: 8.1 },
+        { date: "2024-01-15", score: 8.8 },
+        { date: "2024-06-10", score: 9.6 },
+      ];
+    }
+    const sortedLabs = [...labResults].sort((a, b) =>
+      String(a.result_date).localeCompare(String(b.result_date)),
+    );
+    if (sortedLabs.length < 2) return [];
+    return sortedLabs.map((lab) => {
+      let s = 1;
+      if (mainKey === "cardiovascular") {
+        if (onboarding?.illness_cardiovascular) s += 3;
+        if (lab.ldl_mmol_l && Number(lab.ldl_mmol_l) > 3.0) s += 2;
+        if (lab.blood_pressure_systolic && Number(lab.blood_pressure_systolic) > 140) s += 2;
+        if (onboarding?.genetic_cardiovascular) s += 1;
+        if (onboarding?.smoking === "yes") s += 1;
+      } else {
+        s = score;
+      }
+      return { date: String(lab.result_date), score: Math.min(s, 10) };
+    });
+  }, [labResults, onboarding, mainDim?.key, dimensionKey, patient.id, patient.full_name, score]);
+
   // Biomarkers for the Lab Results tab — pulled from the central registry
   // so this view stays in sync with MainDimensionOverview / SubDimensionView.
   const biomarkers = useMemo(() => {
@@ -4023,9 +4055,26 @@ function GenericDimensionView({
         </CardHeader>
         {showRiskHistory && (
           <CardContent className="pt-0">
-            <p className="text-sm text-muted-foreground text-center py-6">
-              Historical trend for this dimension will appear here once enough data points are available.
-            </p>
+            {riskHistory.length > 1 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={riskHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(value: number) => [`${value}/10`, "Risk Index"]} />
+                    <ReferenceArea y1={0} y2={3} fill="hsl(142 76% 36%)" fillOpacity={0.08} />
+                    <ReferenceArea y1={3} y2={6} fill="hsl(48 96% 53%)" fillOpacity={0.08} />
+                    <ReferenceArea y1={6} y2={10} fill="hsl(0 84% 60%)" fillOpacity={0.08} />
+                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} activeDot={{ r: 7 }} name="Risk Index" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Historical trend for this dimension will appear here once enough data points are available.
+              </p>
+            )}
           </CardContent>
         )}
       </Card>
