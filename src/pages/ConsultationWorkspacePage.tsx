@@ -1323,6 +1323,8 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <span className="text-[13px] italic text-[#9B8775]">{children}</span>;
 }
 
+type ScoreChange = { dim: string; from: Band; to: Band };
+
 type ReviewProps = {
   subjective: string;
   bpSys: string;
@@ -1337,6 +1339,10 @@ type ReviewProps = {
   referrals: Referral[];
   followUp: FollowUp | null;
   flaggedCount: number;
+  flaggedDims: string[];
+  scoreBands: Record<string, Band>;
+  onChangeBand: (dim: string, band: Band) => void;
+  scoreChanges: ScoreChange[];
   saving: boolean;
   onBack: () => void;
   onSave: () => void;
@@ -1358,19 +1364,30 @@ function ReviewScreen(props: ReviewProps) {
     referrals,
     followUp,
     flaggedCount,
+    flaggedDims,
+    scoreBands,
+    onChangeBand,
+    scoreChanges,
     saving,
     onBack,
     onSave,
     formatDue,
   } = props;
 
-  const summaryParts: string[] = [];
-  summaryParts.push(
-    `${tasks.length} task${tasks.length === 1 ? "" : "s"}`,
-  );
-  if (referrals.length) summaryParts.push(`${referrals.length} referral${referrals.length === 1 ? "" : "s"}`);
-  if (followUp) summaryParts.push("1 follow-up");
-  const summaryText = `This will save the visit note, create ${summaryParts.join(", ")}, and update the health overview.`;
+  // Footer summary text — varies based on score changes
+  const taskPart = `${tasks.length} task${tasks.length === 1 ? "" : "s"}`;
+  let summaryText: string;
+  if (scoreChanges.length === 0) {
+    const parts: string[] = [taskPart];
+    if (referrals.length) parts.push(`${referrals.length} referral${referrals.length === 1 ? "" : "s"}`);
+    if (followUp) parts.push("1 follow-up");
+    summaryText = `This will save the visit note, create ${parts.join(", ")}, and update the health overview.`;
+  } else {
+    const changesText = scoreChanges
+      .map((c) => `${c.dim} from ${BAND_LABEL[c.from]} to ${BAND_LABEL[c.to]}`)
+      .join(", ");
+    summaryText = `This will save the visit note, create ${taskPart}, update ${changesText}, and flag ${scoreChanges.length === 1 ? "it" : "them"} for review.`;
+  }
 
   return (
     <div
