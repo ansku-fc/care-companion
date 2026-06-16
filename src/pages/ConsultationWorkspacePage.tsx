@@ -827,6 +827,7 @@ export default function ConsultationWorkspacePage() {
         weight={weight}
         temp={temp}
         plan={plan}
+        includedLabGroups={LAB_GROUPS.filter((g) => labsIncluded[g.id])}
         selectedDims={selectedDims}
         findings={findings}
         tasks={tasks}
