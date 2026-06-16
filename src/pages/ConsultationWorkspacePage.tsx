@@ -129,6 +129,18 @@ function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
+function PanelShell({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-xl border border-[#E7DCCD] bg-[#FAF5EE]/60 px-4 py-4 animate-in fade-in slide-in-from-top-2"
+      style={{ animationDuration: "220ms" }}
+    >
+      <div className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#9B8775]">{title}</div>
+      {children}
+    </div>
+  );
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775]">
