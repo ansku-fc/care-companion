@@ -8,9 +8,10 @@ import {
   ActivityPanel, defaultActivityData, type ActivityData,
   NutritionPanel, defaultNutritionData, type NutritionData,
   VitalsPanel, defaultVitalsData, type VitalsData,
+  MolesPanel, defaultMolesData, type MoleEntry,
 } from "@/components/patients/panels";
 
-type PanelId = "vitals" | "sleep" | "mental" | "activity" | "nutrition";
+type PanelId = "vitals" | "sleep" | "mental" | "activity" | "nutrition" | "moles";
 
 const PANEL_LABELS: Record<PanelId, string> = {
   vitals: "Vitals",
@@ -18,6 +19,7 @@ const PANEL_LABELS: Record<PanelId, string> = {
   mental: "Mental Health",
   activity: "Activity",
   nutrition: "Nutrition",
+  moles: "Moles",
 };
 
 function suggestPanelsFromText(text: string): Set<PanelId> {
@@ -27,6 +29,7 @@ function suggestPanelsFromText(text: string): Set<PanelId> {
   if (/(anxiety|depression|stress|mood)/.test(t)) out.add("mental");
   if (/(weight|bmi)/.test(t)) { out.add("vitals"); out.add("nutrition"); }
   if (/(blood pressure|hypertension)/.test(t)) out.add("vitals");
+  if (/(mole|skin|lesion|spot|dermatology)/.test(t)) out.add("moles");
   return out;
 }
 
