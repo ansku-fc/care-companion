@@ -769,9 +769,33 @@ export default function ConsultationWorkspacePage() {
   // Score band confirmation (one per flagged dimension). Initialized when entering review.
   const [scoreBands, setScoreBands] = useState<Record<string, Band>>({});
 
-  const selectedDims = order;
-  const flaggedDims = selectedDims.filter((d) => findings[d]?.flagged);
-  const flaggedCount = flaggedDims.length;
+  // Aggregate dimension tags from all sources for the right column & review screen
+  type AggEntry = { dim: string; sources: { source: string; note: string }[] };
+  const aggregatedTags: AggEntry[] = useMemo(() => {
+    const map = new Map<string, AggEntry>();
+    const order: string[] = [];
+    const add = (dim: string, source: string, note: string) => {
+      if (!map.has(dim)) { map.set(dim, { dim, sources: [] }); order.push(dim); }
+      map.get(dim)!.sources.push({ source, note });
+    };
+    Object.entries(symptomsTags).forEach(([d, n]) => add(d, "Reported Symptoms", n));
+    Object.entries(observationsTags).forEach(([d, n]) => add(d, "Clinical Observations", n));
+    Object.entries(diagnosesTags).forEach(([d, n]) => add(d, "Diagnoses & Medications", n));
+    return order.map((d) => map.get(d)!);
+  }, [symptomsTags, observationsTags, diagnosesTags]);
+
+  const selectedDims = aggregatedTags.map((t) => t.dim);
+  const findings: Record<string, Finding> = Object.fromEntries(
+    aggregatedTags.map((t) => [
+      t.dim,
+      {
+        text: t.sources.map((s) => `${s.source}: ${s.note}`.trim()).filter(Boolean).join("\n"),
+        flagged: false,
+      },
+    ]),
+  );
+  const flaggedDims: string[] = [];
+  const flaggedCount = 0;
 
   // Initialize bands the first time we open review (or when flagged set changes while in review).
   useEffect(() => {
@@ -791,15 +815,7 @@ export default function ConsultationWorkspacePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, flaggedDims.join("|")]);
 
-  const scoreChanges = flaggedDims
-    .map((d) => {
-      const cur = findCurrentDimension(d);
-      const currentBand: Band | null = cur ? scoreToBand(cur.score) : null;
-      const newBand = scoreBands[d];
-      if (!newBand || !currentBand || newBand === currentBand) return null;
-      return { dim: d, from: currentBand, to: newBand };
-    })
-    .filter((x): x is { dim: string; from: Band; to: Band } => !!x);
+  const scoreChanges: { dim: string; from: Band; to: Band }[] = [];
 
   // Scroll the right column to the form when it opens
   const rightColRef = useRef<HTMLDivElement>(null);
@@ -810,29 +826,37 @@ export default function ConsultationWorkspacePage() {
     }
   }, [openForm]);
 
-  const toggleDim = (d: string) => {
-    if (findings[d]) {
-      if (findings[d].text.trim().length > 0) setPendingRemove(d);
-      else removeDim(d);
-    } else {
-      setFindings((prev) => ({ ...prev, [d]: { text: "", flagged: false } }));
-      setOrder((prev) => [...prev, d]);
-      setShowValidation(false);
-    }
-  };
-
-  const removeDim = (d: string) => {
-    setFindings((prev) => {
+  const toggleTag = (
+    section: "symptoms" | "observations" | "diagnoses",
+    dim: string,
+  ) => {
+    const [state, setState] =
+      section === "symptoms"
+        ? [symptomsTags, setSymptomsTags]
+        : section === "observations"
+        ? [observationsTags, setObservationsTags]
+        : [diagnosesTags, setDiagnosesTags];
+    setState((prev) => {
       const next = { ...prev };
-      delete next[d];
+      if (dim in next) delete next[dim];
+      else next[dim] = "";
       return next;
     });
-    setOrder((prev) => prev.filter((x) => x !== d));
-    setPendingRemove(null);
+    setShowValidation(false);
   };
 
-  const updateFinding = (d: string, patch: Partial<Finding>) => {
-    setFindings((prev) => ({ ...prev, [d]: { ...prev[d], ...patch } }));
+  const updateTagNote = (
+    section: "symptoms" | "observations" | "diagnoses",
+    dim: string,
+    note: string,
+  ) => {
+    const setState =
+      section === "symptoms"
+        ? setSymptomsTags
+        : section === "observations"
+        ? setObservationsTags
+        : setDiagnosesTags;
+    setState((prev) => ({ ...prev, [dim]: note }));
   };
 
   const onEndConsultation = () => {
