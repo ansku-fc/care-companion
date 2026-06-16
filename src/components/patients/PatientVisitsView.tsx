@@ -431,17 +431,24 @@ function UpcomingDetailView({ v, onBack }: { v: UpcomingVisit; onBack: () => voi
   );
 }
 
+type VisitTab = "upcoming" | "history";
+const VISIT_TABS: { key: VisitTab; label: string; count: number }[] = [
+  { key: "upcoming", label: "Upcoming", count: UPCOMING.length },
+  { key: "history", label: "History", count: PAST.length },
+];
+
 export function PatientVisitsView({ patient, onDataChanged }: Props) {
   const [newOpen, setNewOpen] = useState(false);
   const [openUpcoming, setOpenUpcoming] = useState<UpcomingVisit | null>(null);
   const [openPast, setOpenPast] = useState<PastVisit | null>(null);
+  const [tab, setTab] = useState<VisitTab>("upcoming");
   const showDemo = isCarter(patient.id, patient.full_name);
 
   if (openUpcoming) return <UpcomingDetailView v={openUpcoming} onBack={() => setOpenUpcoming(null)} />;
   if (openPast) return <PastDetailView v={openPast} onBack={() => setOpenPast(null)} />;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-[#2E1F14]">Visits</h2>
         <Button onClick={() => setNewOpen(true)} className="gap-1.5">
@@ -451,28 +458,40 @@ export function PatientVisitsView({ patient, onDataChanged }: Props) {
 
       {showDemo ? (
         <>
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-[16px] font-semibold text-[#2E1F14]">Upcoming Visits</h3>
-                <span className="text-[12px] text-[#6E5A48]">{UPCOMING.length}</span>
-              </div>
-              <span className="text-[11px] uppercase tracking-wide text-[#6E5A48]">Annual Health Plan 2026</span>
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+              {VISIT_TABS.map((t) => {
+                const active = tab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={
+                      "px-4 py-1.5 rounded-full text-sm font-medium transition-colors " +
+                      (active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground")
+                    }
+                  >
+                    {t.label} <span className="opacity-70 ml-0.5">{t.count}</span>
+                  </button>
+                );
+              })}
             </div>
+            {tab === "upcoming" && (
+              <span className="text-[11px] uppercase tracking-wide text-[#6E5A48]">Annual Health Plan 2026</span>
+            )}
+          </div>
+
+          {tab === "upcoming" ? (
             <div className="space-y-3">
               {UPCOMING.map((v) => <UpcomingCard key={v.id} v={v} onOpen={() => setOpenUpcoming(v)} />)}
             </div>
-          </section>
-
-          <section>
-            <div className="flex items-baseline gap-2 mb-3">
-              <h3 className="text-[16px] font-semibold text-[#2E1F14]">Visit History</h3>
-              <span className="text-[12px] text-[#6E5A48]">{PAST.length}</span>
-            </div>
+          ) : (
             <div className="space-y-3">
               {PAST.map((v) => <PastCard key={v.id} v={v} onOpen={() => setOpenPast(v)} />)}
             </div>
-          </section>
+          )}
         </>
       ) : (
         <div
