@@ -61,7 +61,7 @@ const UPCOMING: UpcomingVisit[] = [
     dimensions: [
       { label: "Cardiovascular Health" },
       { label: "Metabolic Health" },
-      { label: "Liver Function" },
+      { label: "Digestion" },
     ],
     plan: "Review trended cardio-metabolic markers since March visit. Confirm tolerance of recent Atorvastatin titration. Assess liver enzyme trajectory and decide on continued Warfarin therapy.",
     preparation: "Fasting required (10h). Bring current medication list. INR self-test if available.",
