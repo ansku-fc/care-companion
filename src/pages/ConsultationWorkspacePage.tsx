@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Pill, AlertCircle, ClipboardList, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag } from "lucide-react";
 
 type Tone = "rose" | "amber" | "teal";
 
@@ -43,6 +43,8 @@ const TONE_COLOR: Record<Tone, string> = {
   teal: "#0EA5A0",
 };
 
+type Finding = { text: string; flagged: boolean };
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775]">
@@ -78,21 +80,31 @@ function Card({ children }: { children: React.ReactNode }) {
 
 function AutoTextarea({
   placeholder,
+  value,
+  onChange,
   minHeight = 80,
+  bordered = false,
 }: {
   placeholder: string;
+  value?: string;
+  onChange?: (v: string) => void;
   minHeight?: number;
+  bordered?: boolean;
 }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
   return (
     <textarea
+      ref={ref}
       placeholder={placeholder}
-      className="w-full resize-none bg-transparent outline-none text-[14px] font-normal text-[#1F1611] placeholder:text-[#C9BBA9] leading-relaxed"
-      style={{ minHeight, border: "none" }}
-      onInput={(e) => {
+      value={value}
+      onChange={(e) => {
+        onChange?.(e.target.value);
         const el = e.currentTarget;
         el.style.height = "auto";
         el.style.height = el.scrollHeight + "px";
       }}
+      className="w-full resize-none bg-transparent outline-none text-[14px] font-normal text-[#1F1611] placeholder:text-[#C9BBA9] leading-relaxed py-1"
+      style={{ minHeight, border: "none", borderBottom: bordered ? "1px solid #E7DCCD" : "none" }}
     />
   );
 }
@@ -110,25 +122,165 @@ function VitalInput({ label, suffix }: { label: string; suffix: string }) {
   );
 }
 
+function FlagToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!on)}
+      className="inline-flex items-center gap-2 group"
+    >
+      <span
+        className="relative inline-flex items-center w-8 h-[18px] rounded-full transition-colors duration-150"
+        style={{ background: on ? "#E8446A" : "#E7DCCD" }}
+      >
+        <span
+          className="absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-all duration-150"
+          style={{ left: on ? "16px" : "2px" }}
+        />
+      </span>
+      <span className="text-[12px] text-[#6E5A48] inline-flex items-center gap-1">
+        <Flag className="h-3 w-3" style={{ color: on ? "#E8446A" : "#C9BBA9" }} />
+        Flag for review
+      </span>
+    </button>
+  );
+}
+
+function FindingBlock({
+  dimension,
+  finding,
+  pendingRemoval,
+  onChange,
+  onFlag,
+  onRequestRemove,
+  onConfirmRemove,
+  onCancelRemove,
+}: {
+  dimension: string;
+  finding: Finding;
+  pendingRemoval: boolean;
+  onChange: (t: string) => void;
+  onFlag: (v: boolean) => void;
+  onRequestRemove: () => void;
+  onConfirmRemove: () => void;
+  onCancelRemove: () => void;
+}) {
+  return (
+    <div
+      className="animate-accordion-down overflow-hidden pt-2"
+      style={{ borderTop: "1px dashed #F0EBE4" }}
+    >
+      <div className="text-[12px] font-semibold text-[#6E5A48] mb-1 flex items-center justify-between">
+        <span>{dimension}</span>
+        <button
+          type="button"
+          onClick={onRequestRemove}
+          className="text-[11px] text-[#C9BBA9] hover:text-[#E8446A] transition-colors"
+        >
+          Remove
+        </button>
+      </div>
+      <AutoTextarea
+        placeholder="Findings and clinical interpretation..."
+        value={finding.text}
+        onChange={onChange}
+        minHeight={56}
+        bordered
+      />
+      <div className="flex items-center justify-between mt-2">
+        <FlagToggle on={finding.flagged} onChange={onFlag} />
+      </div>
+
+      {pendingRemoval && (
+        <div
+          className="mt-2 rounded-[6px] p-2 flex items-center justify-between gap-3 animate-fade-in"
+          style={{ background: "#FBE4EA" }}
+        >
+          <span className="text-[12px] text-[#6E5A48]">
+            Remove findings for {dimension}? This can't be undone.
+          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onCancelRemove}
+              className="text-[12px] font-medium text-[#6E5A48] hover:text-[#2E1F14] px-2 py-1"
+            >
+              Keep
+            </button>
+            <button
+              onClick={onConfirmRemove}
+              className="text-[12px] font-medium text-white px-2 py-1 rounded-[4px]"
+              style={{ background: "#E8446A" }}
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ConsultationWorkspacePage() {
   const navigate = useNavigate();
   const [medsOpen, setMedsOpen] = useState(false);
-  // Acute migraine visit — pre-select Brain & Mental Health
-  const [selectedDims, setSelectedDims] = useState<Set<string>>(
-    new Set(["Brain & Mental Health"]),
-  );
+
+  // Pre-populate Brain & Mental Health for Mäkinen, Aino
+  const [findings, setFindings] = useState<Record<string, Finding>>({
+    "Brain & Mental Health": {
+      text:
+        "Persistent migraine, 3rd episode this month. Consider prophylaxis — discuss topiramate or propranolol options with patient.",
+      flagged: true,
+    },
+  });
+  // Preserve insertion order
+  const [order, setOrder] = useState<string[]>(["Brain & Mental Health"]);
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
+
+  const selectedDims = order;
 
   const toggleDim = (d: string) => {
-    setSelectedDims((prev) => {
-      const next = new Set(prev);
-      if (next.has(d)) next.delete(d);
-      else next.add(d);
+    if (findings[d]) {
+      // Trying to deselect
+      if (findings[d].text.trim().length > 0) {
+        setPendingRemove(d);
+      } else {
+        removeDim(d);
+      }
+    } else {
+      setFindings((prev) => ({ ...prev, [d]: { text: "", flagged: false } }));
+      setOrder((prev) => [...prev, d]);
+      setShowValidation(false);
+    }
+  };
+
+  const removeDim = (d: string) => {
+    setFindings((prev) => {
+      const next = { ...prev };
+      delete next[d];
       return next;
     });
+    setOrder((prev) => prev.filter((x) => x !== d));
+    setPendingRemove(null);
+  };
+
+  const updateFinding = (d: string, patch: Partial<Finding>) => {
+    setFindings((prev) => ({ ...prev, [d]: { ...prev[d], ...patch } }));
+  };
+
+  const onEndConsultation = () => {
+    if (selectedDims.length === 0) {
+      setShowValidation(true);
+      return;
+    }
+    navigate(-1);
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col" style={{ background: "#F9F7F4", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div
+      className="fixed inset-0 flex flex-col"
+      style={{ background: "#F9F7F4", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+    >
       {/* Header */}
       <header
         className="h-14 shrink-0 flex items-center justify-between px-6 bg-white"
@@ -149,6 +301,7 @@ export default function ConsultationWorkspacePage() {
             Save draft
           </button>
           <button
+            onClick={onEndConsultation}
             className="h-8 px-4 rounded-[6px] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
             style={{ background: "#2E1F14" }}
           >
@@ -157,7 +310,6 @@ export default function ConsultationWorkspacePage() {
         </div>
       </header>
 
-      {/* Three columns */}
       <div className="flex-1 min-h-0 flex">
         {/* LEFT — Patient context */}
         <aside
@@ -166,7 +318,6 @@ export default function ConsultationWorkspacePage() {
         >
           <SectionLabel>Patient Context</SectionLabel>
 
-          {/* Health dimensions */}
           <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Health Dimensions</div>
             <div>
@@ -174,9 +325,7 @@ export default function ConsultationWorkspacePage() {
                 <div
                   key={d.label}
                   className="flex items-center justify-between h-7"
-                  style={{
-                    borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4",
-                  }}
+                  style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
                 >
                   <span className="text-[11px] text-[#9B8775]">{d.label}</span>
                   <div className="flex items-center gap-1.5">
@@ -192,7 +341,6 @@ export default function ConsultationWorkspacePage() {
             </div>
           </section>
 
-          {/* Medications */}
           <section>
             <button
               onClick={() => setMedsOpen((v) => !v)}
@@ -225,7 +373,6 @@ export default function ConsultationWorkspacePage() {
             )}
           </section>
 
-          {/* Allergies */}
           <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Allergies</div>
             <div className="flex flex-wrap gap-2">
@@ -238,7 +385,6 @@ export default function ConsultationWorkspacePage() {
             </div>
           </section>
 
-          {/* Last visit */}
           <section>
             <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">Last Visit</div>
             <button className="text-[12px] text-[#6E5A48] hover:text-[#2E1F14] text-left transition-colors">
@@ -247,22 +393,22 @@ export default function ConsultationWorkspacePage() {
           </section>
         </aside>
 
-        {/* CENTRE — Consultation workspace */}
+        {/* CENTRE */}
         <main className="flex-1 min-w-0 overflow-y-auto px-8 py-6">
           <div className="max-w-[820px] mx-auto">
             <div className="mb-5">
               <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775]">Consultation Note</div>
-              <div className="text-[12px] text-[#9B8775] mt-0.5">Mäkinen, Aino · Tue 17 Jun 2026 · 11:00</div>
+              <div className="text-[12px] text-[#9B8775] mt-0.5">
+                Mäkinen, Aino · Tue 17 Jun 2026 · 11:00
+              </div>
             </div>
 
             <div className="space-y-2">
-              {/* SUBJECTIVE */}
               <Card>
                 <SectionLabel>Subjective</SectionLabel>
                 <AutoTextarea placeholder="What does the patient report? Symptoms, concerns, changes since last visit..." />
               </Card>
 
-              {/* OBJECTIVE */}
               <Card>
                 <SectionLabel>Objective</SectionLabel>
                 <div className="flex flex-wrap gap-x-6 gap-y-3 mt-1">
@@ -291,7 +437,6 @@ export default function ConsultationWorkspacePage() {
                 </div>
               </Card>
 
-              {/* ASSESSMENT */}
               <Card>
                 <SectionLabel>Assessment</SectionLabel>
                 <p className="text-[12px] italic text-[#9B8775]">
@@ -299,16 +444,18 @@ export default function ConsultationWorkspacePage() {
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {ALL_DIMENSIONS.map((d) => {
-                    const active = selectedDims.has(d);
+                    const active = !!findings[d];
                     return (
                       <button
                         key={d}
                         onClick={() => toggleDim(d)}
-                        className="rounded-full text-[11px] font-medium transition-colors"
+                        className="rounded-full text-[11px] font-medium"
                         style={{
                           padding: "4px 10px",
                           background: active ? "#2E1F14" : "#F5F0EA",
                           color: active ? "#FFFFFF" : "#9B8775",
+                          border: active ? "1px solid #2E1F14" : "1px solid #E7DCCD",
+                          transition: "background-color 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out",
                         }}
                       >
                         {d}
@@ -316,22 +463,38 @@ export default function ConsultationWorkspacePage() {
                     );
                   })}
                 </div>
-                {selectedDims.size > 0 && (
+
+                {selectedDims.length > 0 && (
                   <div className="mt-3 space-y-3">
-                    {[...selectedDims].map((d) => (
-                      <div key={d}>
-                        <div className="text-[12px] font-medium text-[#6E5A48] mb-1">{d}</div>
-                        <AutoTextarea
-                          placeholder="Findings and clinical interpretation..."
-                          minHeight={60}
-                        />
-                      </div>
+                    {selectedDims.map((d) => (
+                      <FindingBlock
+                        key={d}
+                        dimension={d}
+                        finding={findings[d]}
+                        pendingRemoval={pendingRemove === d}
+                        onChange={(text) => updateFinding(d, { text })}
+                        onFlag={(flagged) => updateFinding(d, { flagged })}
+                        onRequestRemove={() => {
+                          if (findings[d].text.trim()) setPendingRemove(d);
+                          else removeDim(d);
+                        }}
+                        onConfirmRemove={() => removeDim(d)}
+                        onCancelRemove={() => setPendingRemove(null)}
+                      />
                     ))}
                   </div>
                 )}
               </Card>
 
-              {/* PLAN */}
+              {showValidation && (
+                <div
+                  className="text-[12px] animate-fade-in px-1"
+                  style={{ color: "#D97706" }}
+                >
+                  No dimensions tagged yet — findings won't be linked to the health overview.
+                </div>
+              )}
+
               <Card>
                 <SectionLabel>Plan</SectionLabel>
                 <AutoTextarea placeholder="Overall plan, patient instructions, follow-up..." />
@@ -346,7 +509,7 @@ export default function ConsultationWorkspacePage() {
           </div>
         </main>
 
-        {/* RIGHT — Actions */}
+        {/* RIGHT */}
         <aside
           className="w-[320px] shrink-0 overflow-y-auto p-5 space-y-5"
           style={{ borderLeft: "1px solid #E7DCCD" }}
@@ -356,15 +519,55 @@ export default function ConsultationWorkspacePage() {
             <p className="text-[12px] text-[#9B8775] mt-1">Tasks and actions from this consultation</p>
           </div>
 
-          <div
-            className="rounded-[8px] flex flex-col items-center justify-center text-center py-8 px-4"
-            style={{ border: "1px dashed #E7DCCD", background: "#FFFFFF" }}
-          >
-            <ClipboardList className="h-8 w-8 mb-2" style={{ color: "#E7DCCD" }} />
-            <p className="text-[12px] text-[#9B8775]">
-              Actions added during the consultation will appear here.
-            </p>
-          </div>
+          {/* Dimensions tagged — live */}
+          <section className="space-y-2">
+            <SectionLabel>Dimensions Tagged</SectionLabel>
+            {selectedDims.length === 0 ? (
+              <div
+                className="rounded-[8px] flex flex-col items-center justify-center text-center py-6 px-4"
+                style={{ border: "1px dashed #E7DCCD", background: "#FFFFFF" }}
+              >
+                <ClipboardList className="h-7 w-7 mb-2" style={{ color: "#E7DCCD" }} />
+                <p className="text-[12px] text-[#9B8775]">
+                  Tag dimensions in the Assessment to see them here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {selectedDims.map((d) => {
+                  const f = findings[d];
+                  return (
+                    <div
+                      key={d}
+                      className="rounded-[8px] p-3 bg-white animate-fade-in"
+                      style={{ border: "1px solid #E7DCCD" }}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="h-2 w-2 rounded-full shrink-0"
+                            style={{ background: f.flagged ? "#E8446A" : "#C9BBA9" }}
+                          />
+                          <span className="text-[12px] font-medium text-[#2E1F14] truncate">{d}</span>
+                        </div>
+                        {f.flagged && (
+                          <span
+                            className="text-[10px] font-medium uppercase tracking-wide shrink-0"
+                            style={{ color: "#E8446A" }}
+                          >
+                            Flagged
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[12px] text-[#6E5A48] truncate">
+                        {f.text.trim() ? f.text : <span className="italic text-[#C9BBA9]">No findings yet</span>}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           <section className="space-y-2">
             <SectionLabel>Tasks to Create</SectionLabel>
