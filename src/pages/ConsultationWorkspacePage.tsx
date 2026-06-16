@@ -17,6 +17,26 @@ const DIMENSIONS: { label: string; score: number; band: "HIGH" | "MEDIUM" | "LOW
   { label: "Reproductive & Sexual", score: 2.8, band: "LOW", tone: "teal" },
 ];
 
+type Band = "LOW" | "MEDIUM" | "HIGH";
+
+const BAND_LABEL: Record<Band, string> = { LOW: "Low", MEDIUM: "Medium", HIGH: "High" };
+const BAND_MIDPOINT: Record<Band, number> = { LOW: 2.5, MEDIUM: 5.5, HIGH: 8.0 };
+
+function scoreToBand(score: number): Band {
+  if (score < 4) return "LOW";
+  if (score < 7) return "MEDIUM";
+  return "HIGH";
+}
+
+function findCurrentDimension(label: string) {
+  // labels in DIMENSIONS may be shortened (e.g. "Respiratory & Immune" vs "Respiratory & Immune Health")
+  return (
+    DIMENSIONS.find((d) => d.label === label) ||
+    DIMENSIONS.find((d) => label.startsWith(d.label) || d.label.startsWith(label)) ||
+    null
+  );
+}
+
 const MEDICATIONS = [
   "Lisinopril · 10mg · Morning",
   "Atorvastatin · 20mg · Evening",
@@ -641,8 +661,40 @@ export default function ConsultationWorkspacePage() {
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
 
+  // Score band confirmation (one per flagged dimension). Initialized when entering review.
+  const [scoreBands, setScoreBands] = useState<Record<string, Band>>({});
+
   const selectedDims = order;
-  const flaggedCount = selectedDims.filter((d) => findings[d]?.flagged).length;
+  const flaggedDims = selectedDims.filter((d) => findings[d]?.flagged);
+  const flaggedCount = flaggedDims.length;
+
+  // Initialize bands the first time we open review (or when flagged set changes while in review).
+  useEffect(() => {
+    if (view !== "review") return;
+    setScoreBands((prev) => {
+      const next: Record<string, Band> = {};
+      flaggedDims.forEach((d) => {
+        if (prev[d]) {
+          next[d] = prev[d];
+        } else {
+          const cur = findCurrentDimension(d);
+          next[d] = cur ? scoreToBand(cur.score) : "MEDIUM";
+        }
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, flaggedDims.join("|")]);
+
+  const scoreChanges = flaggedDims
+    .map((d) => {
+      const cur = findCurrentDimension(d);
+      const currentBand: Band | null = cur ? scoreToBand(cur.score) : null;
+      const newBand = scoreBands[d];
+      if (!newBand || !currentBand || newBand === currentBand) return null;
+      return { dim: d, from: currentBand, to: newBand };
+    })
+    .filter((x): x is { dim: string; from: Band; to: Band } => !!x);
 
   // Scroll the right column to the form when it opens
   const rightColRef = useRef<HTMLDivElement>(null);
@@ -691,7 +743,12 @@ export default function ConsultationWorkspacePage() {
     setSaving(true);
     setTimeout(() => {
       const parts: string[] = ["Consultation saved"];
-      if (flaggedCount > 0) parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
+      scoreChanges.forEach((c) => {
+        parts.push(`${c.dim} updated to ${BAND_LABEL[c.to]}`);
+      });
+      if (scoreChanges.length === 0 && flaggedCount > 0) {
+        parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
+      }
       if (tasks.length > 0) parts.push(`${tasks.length} task${tasks.length === 1 ? "" : "s"} created`);
       toast.success(parts.join(" · "), {
         duration: 4000,
@@ -729,6 +786,10 @@ export default function ConsultationWorkspacePage() {
         referrals={referrals}
         followUp={followUp}
         flaggedCount={flaggedCount}
+        flaggedDims={flaggedDims}
+        scoreBands={scoreBands}
+        onChangeBand={(d, b) => setScoreBands((p) => ({ ...p, [d]: b }))}
+        scoreChanges={scoreChanges}
         saving={saving}
         onBack={() => setView("workspace")}
         onSave={onSaveAndClose}
@@ -1262,6 +1323,8 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <span className="text-[13px] italic text-[#9B8775]">{children}</span>;
 }
 
+type ScoreChange = { dim: string; from: Band; to: Band };
+
 type ReviewProps = {
   subjective: string;
   bpSys: string;
@@ -1276,6 +1339,10 @@ type ReviewProps = {
   referrals: Referral[];
   followUp: FollowUp | null;
   flaggedCount: number;
+  flaggedDims: string[];
+  scoreBands: Record<string, Band>;
+  onChangeBand: (dim: string, band: Band) => void;
+  scoreChanges: ScoreChange[];
   saving: boolean;
   onBack: () => void;
   onSave: () => void;
@@ -1297,19 +1364,30 @@ function ReviewScreen(props: ReviewProps) {
     referrals,
     followUp,
     flaggedCount,
+    flaggedDims,
+    scoreBands,
+    onChangeBand,
+    scoreChanges,
     saving,
     onBack,
     onSave,
     formatDue,
   } = props;
 
-  const summaryParts: string[] = [];
-  summaryParts.push(
-    `${tasks.length} task${tasks.length === 1 ? "" : "s"}`,
-  );
-  if (referrals.length) summaryParts.push(`${referrals.length} referral${referrals.length === 1 ? "" : "s"}`);
-  if (followUp) summaryParts.push("1 follow-up");
-  const summaryText = `This will save the visit note, create ${summaryParts.join(", ")}, and update the health overview.`;
+  // Footer summary text — varies based on score changes
+  const taskPart = `${tasks.length} task${tasks.length === 1 ? "" : "s"}`;
+  let summaryText: string;
+  if (scoreChanges.length === 0) {
+    const parts: string[] = [taskPart];
+    if (referrals.length) parts.push(`${referrals.length} referral${referrals.length === 1 ? "" : "s"}`);
+    if (followUp) parts.push("1 follow-up");
+    summaryText = `This will save the visit note, create ${parts.join(", ")}, and update the health overview.`;
+  } else {
+    const changesText = scoreChanges
+      .map((c) => `${c.dim} from ${BAND_LABEL[c.from]} to ${BAND_LABEL[c.to]}`)
+      .join(", ");
+    summaryText = `This will save the visit note, create ${taskPart}, update ${changesText}, and flag ${scoreChanges.length === 1 ? "it" : "them"} for review.`;
+  }
 
   return (
     <div
@@ -1414,6 +1492,94 @@ function ReviewScreen(props: ReviewProps) {
                 )}
               </ReviewCard>
             </section>
+
+            {/* Section 2b — Dimension scores (only when ≥1 flagged) */}
+            {flaggedDims.length > 0 && (
+              <section>
+                <ReviewSectionLabel>Dimension Scores</ReviewSectionLabel>
+                <p className="text-[12px] italic text-[#9B8775] -mt-1 mb-2">
+                  Review and confirm risk scores for flagged dimensions. Unflagged dimensions are unchanged.
+                </p>
+                <ReviewCard onEdit={onBack}>
+                  <div>
+                    {flaggedDims.map((d, i) => {
+                      const cur = findCurrentDimension(d);
+                      const currentBand: Band | null = cur ? scoreToBand(cur.score) : null;
+                      const selected = scoreBands[d];
+                      const changed = !!(currentBand && selected && selected !== currentBand);
+                      const direction =
+                        currentBand && selected
+                          ? BAND_MIDPOINT[selected] > BAND_MIDPOINT[currentBand]
+                            ? "up"
+                            : "down"
+                          : null;
+                      return (
+                        <div
+                          key={d}
+                          className="flex items-center gap-4 min-h-[48px] py-2"
+                          style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
+                        >
+                          <div className="min-w-0 w-[180px] shrink-0">
+                            <div className="text-[14px] font-medium text-[#2E1F14] truncate">{d}</div>
+                            <div className="text-[12px] text-[#9B8775]">
+                              {cur
+                                ? `Currently ${cur.score.toFixed(1)} · ${cur.band}`
+                                : "New dimension"}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 flex-1">
+                            {(["LOW", "MEDIUM", "HIGH"] as Band[]).map((b) => {
+                              const active = selected === b;
+                              const sel = {
+                                LOW: { bg: "#E6F4F3", fg: "#0EA5A0" },
+                                MEDIUM: { bg: "#FEF3C7", fg: "#D97706" },
+                                HIGH: { bg: "#FBE4EA", fg: "#E8446A" },
+                              }[b];
+                              const range = { LOW: "0–4", MEDIUM: "4–7", HIGH: "7–10" }[b];
+                              return (
+                                <button
+                                  key={b}
+                                  type="button"
+                                  onClick={() => onChangeBand(d, b)}
+                                  className="rounded-[6px] text-[12px] font-medium px-2.5 py-1 transition-colors"
+                                  style={{
+                                    background: active ? sel.bg : "#F5F0EA",
+                                    color: active ? sel.fg : "#9B8775",
+                                  }}
+                                >
+                                  {b} {range}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="w-[120px] shrink-0 text-right">
+                            {changed ? (
+                              <span
+                                className="text-[11px] font-medium"
+                                style={{ color: "#D97706" }}
+                              >
+                                {direction === "up" ? "↑" : "↓"} Will update to {BAND_LABEL[selected]}
+                              </span>
+                            ) : (
+                              <span className="text-[11px]" style={{ color: "#C9BBA9" }}>
+                                No change
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p
+                    className="text-[11px] italic mt-3 pt-3"
+                    style={{ color: "#9B8775", borderTop: "0.5px solid #F0EBE4" }}
+                  >
+                    Scores reflect clinical judgement and are visible in the patient health overview.
+                    Lab results update scores automatically when imported.
+                  </p>
+                </ReviewCard>
+              </section>
+            )}
 
             {/* Section 3 — Tasks */}
             <section>
