@@ -536,7 +536,7 @@ function Section({ icon, label, tone, count, children }: { icon: React.ReactNode
           </span>
         )}
       </p>
-      <div className="[&>*+*]:border-t-[0.5px] [&>*+*]:border-[#F0EBE4]">{children}</div>
+      <div className="[&>*+*]:[border-top:0.5px_solid_#F0EBE4]">{children}</div>
     </div>
   );
 }
