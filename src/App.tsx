@@ -69,6 +69,7 @@ const AppRoutes = () => {
       <Route path="/patients/:id/report" element={<Protected><PatientReportEditor /></Protected>} />
       <Route path="/clinical-hours" element={<Protected><ClinicalHoursPage /></Protected>} />
       <Route path="/notes" element={<Protected><NotesPage /></Protected>} />
+      <Route path="/consultation" element={<ProtectedBare><ConsultationWorkspacePage /></ProtectedBare>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
