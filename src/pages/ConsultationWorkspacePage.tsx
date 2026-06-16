@@ -946,7 +946,7 @@ export default function ConsultationWorkspacePage() {
 
               <Card>
                 <SectionLabel>Plan</SectionLabel>
-                <AutoTextarea placeholder="Overall plan, patient instructions, follow-up..." />
+                <AutoTextarea placeholder="Overall plan, patient instructions, follow-up..." value={plan} onChange={setPlan} />
                 <div className="flex flex-wrap gap-2 mt-2">
                   <GhostButton onClick={() => setOpenForm("task")}>+ Add task</GhostButton>
                   <GhostButton onClick={() => setOpenForm("referral")}>+ Referral</GhostButton>
