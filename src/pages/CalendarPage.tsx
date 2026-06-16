@@ -301,26 +301,36 @@ const CalendarPage = () => {
                   {dayAppointments.map((a: any) => {
                     const s = typeStyle(a.appointment_type ?? (a.is_onboarding ? "onboarding" : "consultation"));
                     return (
-                      <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${s.bg} ${s.border}`}>
+                      <div
+                        key={a.id}
+                        className="rounded-[12px] p-3 space-y-2 bg-white [border:1px_solid_#E7DCCD]"
+                      >
                         {/* Time & type */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <Clock className={`h-3.5 w-3.5 ${s.text}`} />
-                            <span className="text-sm font-mono font-medium">
+                            <Clock className="h-3.5 w-3.5 text-[#6E5A48]" />
+                            <span className="text-[14px] font-mono font-medium text-[#6E5A48]">
                               {format(parseISO(a.start_time), "HH:mm")}–{format(parseISO(a.end_time), "HH:mm")}
                             </span>
                           </div>
-                          <Badge variant="outline" className={`text-[10px] ${s.text} border-current`}>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-[4px] text-[11px] font-medium leading-none",
+                              s.bg, s.text,
+                            )}
+                            style={{ padding: "3px 6px" }}
+                          >
                             {s.label}
-                          </Badge>
+                          </span>
                         </div>
 
                         {/* Title */}
-                        <p className="text-sm font-semibold">
+                        <p className="text-[16px] font-medium text-[#2E1F14]">
                           {a.isWorkingTime || a.appointment_type === "doctor_meeting"
                             ? a.title
                             : (a.patient_name ?? a.title)}
                         </p>
+
 
                         {/* Modality badges */}
                         {!a.isWorkingTime && (
