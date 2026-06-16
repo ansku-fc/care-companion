@@ -930,7 +930,7 @@ export default function ConsultationWorkspacePage() {
       scoreChanges.forEach((c) => {
         parts.push(`${c.dim} updated to ${BAND_LABEL[c.to]}`);
       });
-      if (scoreChanges.length === 0 && flaggedCount > 0) {
+      if (scoreChanges.length === 0 && (flaggedCount as number) > 0) {
         parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
       }
       if (tasks.length > 0) parts.push(`${tasks.length} task${tasks.length === 1 ? "" : "s"} created`);
