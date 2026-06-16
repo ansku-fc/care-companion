@@ -3,3 +3,4 @@ export { MentalHealthPanel, defaultMentalHealthData, type MentalHealthData } fro
 export { ActivityPanel, defaultActivityData, type ActivityData } from "./ActivityPanel";
 export { NutritionPanel, defaultNutritionData, type NutritionData } from "./NutritionPanel";
 export { VitalsPanel, defaultVitalsData, type VitalsData, type VitalsBaselines } from "./VitalsPanel";
+export { MolesPanel, defaultMolesData, regionForPin, type MoleEntry } from "./MolesPanel";
