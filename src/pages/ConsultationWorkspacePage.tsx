@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag, X, ArrowUpRight } from "lucide-react";
 
 type Tone = "rose" | "amber" | "teal";
@@ -139,11 +140,23 @@ function AutoTextarea({
   );
 }
 
-function VitalInput({ label, suffix }: { label: string; suffix: string }) {
+function VitalInput({
+  label,
+  suffix,
+  value,
+  onChange,
+}: {
+  label: string;
+  suffix: string;
+  value?: string;
+  onChange?: (v: string) => void;
+}) {
   return (
     <div className="inline-flex items-baseline gap-1.5 text-[13px] text-[#6E5A48]">
       <span className="uppercase tracking-wide text-[11px] text-[#9B8775]">{label}</span>
       <input
+        value={value ?? ""}
+        onChange={(e) => onChange?.(e.target.value)}
         className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
         style={{ borderBottom: "1px solid #E7DCCD" }}
       />
@@ -614,7 +627,22 @@ export default function ConsultationWorkspacePage() {
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const [openForm, setOpenForm] = useState<OpenForm>(null);
 
+  // Consultation note content (lifted so the review screen can read it)
+  const [subjective, setSubjective] = useState("");
+  const [bpSys, setBpSys] = useState("138");
+  const [bpDia, setBpDia] = useState("88");
+  const [hr, setHr] = useState("72");
+  const [weight, setWeight] = useState("");
+  const [temp, setTemp] = useState("");
+  const [labs, setLabs] = useState("");
+  const [plan, setPlan] = useState("");
+
+  // View mode + save state
+  const [view, setView] = useState<"workspace" | "review">("workspace");
+  const [saving, setSaving] = useState(false);
+
   const selectedDims = order;
+  const flaggedCount = selectedDims.filter((d) => findings[d]?.flagged).length;
 
   // Scroll the right column to the form when it opens
   const rightColRef = useRef<HTMLDivElement>(null);
@@ -655,7 +683,28 @@ export default function ConsultationWorkspacePage() {
       setShowValidation(true);
       return;
     }
-    navigate(-1);
+    setView("review");
+    window.scrollTo?.({ top: 0 });
+  };
+
+  const onSaveAndClose = () => {
+    setSaving(true);
+    setTimeout(() => {
+      const parts: string[] = ["Consultation saved"];
+      if (flaggedCount > 0) parts.push(`${flaggedCount} dimension${flaggedCount === 1 ? "" : "s"} flagged`);
+      if (tasks.length > 0) parts.push(`${tasks.length} task${tasks.length === 1 ? "" : "s"} created`);
+      toast.success(parts.join(" · "), {
+        duration: 4000,
+        style: {
+          background: "#E6F4F3",
+          color: "#0EA5A0",
+          border: "none",
+          borderRadius: "8px",
+          padding: "12px 16px",
+        },
+      });
+      navigate("/patients");
+    }, 700);
   };
 
   const formatDue = (iso: string) => {
@@ -663,6 +712,30 @@ export default function ConsultationWorkspacePage() {
     const d = new Date(iso);
     return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   };
+
+  if (view === "review") {
+    return (
+      <ReviewScreen
+        subjective={subjective}
+        bpSys={bpSys}
+        bpDia={bpDia}
+        hr={hr}
+        weight={weight}
+        temp={temp}
+        plan={plan}
+        selectedDims={selectedDims}
+        findings={findings}
+        tasks={tasks}
+        referrals={referrals}
+        followUp={followUp}
+        flaggedCount={flaggedCount}
+        saving={saving}
+        onBack={() => setView("workspace")}
+        onSave={onSaveAndClose}
+        formatDue={formatDue}
+      />
+    );
+  }
 
   return (
     <div
@@ -794,7 +867,11 @@ export default function ConsultationWorkspacePage() {
             <div className="space-y-2">
               <Card>
                 <SectionLabel>Subjective</SectionLabel>
-                <AutoTextarea placeholder="What does the patient report? Symptoms, concerns, changes since last visit..." />
+                <AutoTextarea
+                  placeholder="What does the patient report? Symptoms, concerns, changes since last visit..."
+                  value={subjective}
+                  onChange={setSubjective}
+                />
               </Card>
 
               <Card>
@@ -803,27 +880,34 @@ export default function ConsultationWorkspacePage() {
                   <div className="inline-flex items-baseline gap-1.5 text-[13px] text-[#6E5A48]">
                     <span className="uppercase tracking-wide text-[11px] text-[#9B8775]">BP</span>
                     <input
+                      value={bpSys}
+                      onChange={(e) => setBpSys(e.target.value)}
                       className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
                       style={{ borderBottom: "1px solid #E7DCCD" }}
                     />
                     <span className="text-[#9B8775]">/</span>
                     <input
+                      value={bpDia}
+                      onChange={(e) => setBpDia(e.target.value)}
                       className="w-12 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
                       style={{ borderBottom: "1px solid #E7DCCD" }}
                     />
                     <span className="text-[11px] text-[#9B8775]">mmHg</span>
                   </div>
-                  <VitalInput label="HR" suffix="bpm" />
-                  <VitalInput label="Weight" suffix="kg" />
-                  <VitalInput label="Temp" suffix="°C" />
+                  <VitalInput label="HR" suffix="bpm" value={hr} onChange={setHr} />
+                  <VitalInput label="Weight" suffix="kg" value={weight} onChange={setWeight} />
+                  <VitalInput label="Temp" suffix="°C" value={temp} onChange={setTemp} />
                 </div>
                 <div className="mt-3">
                   <AutoTextarea
                     placeholder="Note any lab values discussed or physical findings..."
                     minHeight={60}
+                    value={labs}
+                    onChange={setLabs}
                   />
                 </div>
               </Card>
+
 
               <Card>
                 <SectionLabel>Assessment</SectionLabel>
@@ -886,7 +970,7 @@ export default function ConsultationWorkspacePage() {
 
               <Card>
                 <SectionLabel>Plan</SectionLabel>
-                <AutoTextarea placeholder="Overall plan, patient instructions, follow-up..." />
+                <AutoTextarea placeholder="Overall plan, patient instructions, follow-up..." value={plan} onChange={setPlan} />
                 <div className="flex flex-wrap gap-2 mt-2">
                   <GhostButton onClick={() => setOpenForm("task")}>+ Add task</GhostButton>
                   <GhostButton onClick={() => setOpenForm("referral")}>+ Referral</GhostButton>
@@ -1114,6 +1198,360 @@ export default function ConsultationWorkspacePage() {
             </button>
           </div>
         </aside>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Phase 4: Review screen ---------- */
+
+function ReviewSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775] mb-2">
+      {children}
+    </div>
+  );
+}
+
+function EditLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[12px] font-medium text-[#6E5A48] hover:text-[#2E1F14] transition-colors"
+    >
+      Edit
+    </button>
+  );
+}
+
+function ReviewCard({
+  children,
+  onEdit,
+}: {
+  children: React.ReactNode;
+  onEdit: () => void;
+}) {
+  return (
+    <div
+      className="bg-white rounded-[8px] relative"
+      style={{ border: "1px solid #E7DCCD", padding: "16px" }}
+    >
+      <div className="absolute top-3 right-4">
+        <EditLink onClick={onEdit} />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function NoteBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775] mb-1">
+        {label}
+      </div>
+      <div className="text-[13px] text-[#1F1611] leading-relaxed whitespace-pre-wrap">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <span className="text-[13px] italic text-[#9B8775]">{children}</span>;
+}
+
+type ReviewProps = {
+  subjective: string;
+  bpSys: string;
+  bpDia: string;
+  hr: string;
+  weight: string;
+  temp: string;
+  plan: string;
+  selectedDims: string[];
+  findings: Record<string, Finding>;
+  tasks: Task[];
+  referrals: Referral[];
+  followUp: FollowUp | null;
+  flaggedCount: number;
+  saving: boolean;
+  onBack: () => void;
+  onSave: () => void;
+  formatDue: (iso: string) => string;
+};
+
+function ReviewScreen(props: ReviewProps) {
+  const {
+    subjective,
+    bpSys,
+    bpDia,
+    hr,
+    weight,
+    temp,
+    plan,
+    selectedDims,
+    findings,
+    tasks,
+    referrals,
+    followUp,
+    flaggedCount,
+    saving,
+    onBack,
+    onSave,
+    formatDue,
+  } = props;
+
+  const summaryParts: string[] = [];
+  summaryParts.push(
+    `${tasks.length} task${tasks.length === 1 ? "" : "s"}`,
+  );
+  if (referrals.length) summaryParts.push(`${referrals.length} referral${referrals.length === 1 ? "" : "s"}`);
+  if (followUp) summaryParts.push("1 follow-up");
+  const summaryText = `This will save the visit note, create ${summaryParts.join(", ")}, and update the health overview.`;
+
+  return (
+    <div
+      className="fixed inset-0 flex flex-col"
+      style={{ background: "#FDF6EE", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+    >
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-[680px] mx-auto px-6 pt-8 pb-32">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-[14px] text-[#6E5A48] hover:text-[#2E1F14] transition-colors mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to consultation
+          </button>
+
+          <h1
+            className="text-[32px] leading-tight text-[#2E1F14] font-serif-display"
+            style={{ fontFamily: "'Belleza', serif" }}
+          >
+            Review & Save
+          </h1>
+          <p className="text-[14px] text-[#9B8775] mt-1">
+            Mäkinen, Aino · Consultation · Tue 17 Jun 2026 · 11:00–11:30
+          </p>
+
+          <div className="mt-8 space-y-6">
+            {/* Section 1 — Consultation note */}
+            <section>
+              <ReviewSectionLabel>Consultation Note</ReviewSectionLabel>
+              <ReviewCard onEdit={onBack}>
+                <div className="space-y-4">
+                  <NoteBlock label="Subjective">
+                    {subjective.trim() ? subjective : <Empty>No subjective notes.</Empty>}
+                  </NoteBlock>
+                  <NoteBlock label="Objective">
+                    <div className="text-[13px] text-[#1F1611]">
+                      BP {bpSys || "—"}/{bpDia || "—"} mmHg
+                      <span className="text-[#9B8775]"> · </span>
+                      HR {hr || "—"} bpm
+                      <span className="text-[#9B8775]"> · </span>
+                      Weight {weight || "—"}
+                      {weight && " kg"}
+                      <span className="text-[#9B8775]"> · </span>
+                      Temp {temp || "—"}
+                      {temp && " °C"}
+                    </div>
+                  </NoteBlock>
+                  <NoteBlock label="Plan">
+                    {plan.trim() ? plan : <Empty>No plan notes.</Empty>}
+                  </NoteBlock>
+                </div>
+              </ReviewCard>
+            </section>
+
+            {/* Section 2 — Dimensions affected */}
+            <section>
+              <ReviewSectionLabel>Dimensions Affected</ReviewSectionLabel>
+              <ReviewCard onEdit={onBack}>
+                {selectedDims.length === 0 ? (
+                  <Empty>No dimensions tagged.</Empty>
+                ) : (
+                  <div>
+                    {selectedDims.map((d, i) => {
+                      const f = findings[d];
+                      return (
+                        <div
+                          key={d}
+                          className="py-2.5"
+                          style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className="h-2 w-2 rounded-full shrink-0"
+                                style={{ background: f.flagged ? "#E8446A" : "#C9BBA9" }}
+                              />
+                              <span className="text-[13px] font-medium text-[#1F1611] truncate">
+                                {d}
+                              </span>
+                            </div>
+                            {f.flagged ? (
+                              <span
+                                className="text-[11px] font-medium shrink-0"
+                                style={{ color: "#E8446A" }}
+                              >
+                                Flagged for review
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-[#9B8775] shrink-0">Noted</span>
+                            )}
+                          </div>
+                          {f.text.trim() && (
+                            <p className="text-[12px] text-[#6E5A48] truncate ml-4 mt-0.5">
+                              "{f.text}"
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </ReviewCard>
+            </section>
+
+            {/* Section 3 — Tasks */}
+            <section>
+              <ReviewSectionLabel>Tasks to Create</ReviewSectionLabel>
+              <ReviewCard onEdit={onBack}>
+                {tasks.length === 0 ? (
+                  <Empty>No tasks added.</Empty>
+                ) : (
+                  <div>
+                    {tasks.map((t, i) => (
+                      <div
+                        key={t.id}
+                        className="py-2.5"
+                        style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span
+                              className="mt-1 h-3 w-3 rounded-full shrink-0"
+                              style={{ border: "1.5px solid #C9BBA9" }}
+                            />
+                            <span className="text-[13px] font-medium text-[#1F1611] truncate">
+                              {t.title}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-[#9B8775] shrink-0">
+                            {t.assignee} · {formatDue(t.due)}
+                          </span>
+                        </div>
+                        <div className="mt-1 ml-5">
+                          <NeutralChip>{t.type}</NeutralChip>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ReviewCard>
+            </section>
+
+            {/* Section 4 — Referrals */}
+            <section>
+              <ReviewSectionLabel>Referrals</ReviewSectionLabel>
+              <ReviewCard onEdit={onBack}>
+                {referrals.length === 0 ? (
+                  <Empty>No referrals added.</Empty>
+                ) : (
+                  <div>
+                    {referrals.map((r, i) => (
+                      <div
+                        key={r.id}
+                        className="py-2.5"
+                        style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <ArrowUpRight
+                              className="h-3.5 w-3.5 mt-0.5 shrink-0"
+                              style={{ color: "#9B8775" }}
+                            />
+                            <span className="text-[13px] font-medium text-[#1F1611] truncate">
+                              {r.specialty}
+                              {r.referTo && (
+                                <span className="text-[#9B8775] font-normal"> — {r.referTo}</span>
+                              )}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-[#9B8775] shrink-0">
+                            {r.assignee} · {formatDue(r.due)}
+                          </span>
+                        </div>
+                        {r.notes && (
+                          <p className="text-[12px] text-[#6E5A48] ml-5 mt-0.5">"{r.notes}"</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ReviewCard>
+            </section>
+
+            {/* Section 5 — Follow-up */}
+            <section>
+              <ReviewSectionLabel>Follow-up</ReviewSectionLabel>
+              <ReviewCard onEdit={onBack}>
+                {!followUp ? (
+                  <Empty>No follow-up scheduled.</Empty>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <ArrowUpRight
+                      className="h-3.5 w-3.5 mt-0.5 shrink-0"
+                      style={{ color: "#9B8775" }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-medium text-[#1F1611]">
+                        {followUp.visitType} · In {followUp.timeframe} · {followUp.with}
+                      </div>
+                      {followUp.notes && (
+                        <p className="text-[12px] text-[#6E5A48] mt-0.5">"{followUp.notes}"</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </ReviewCard>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky bottom bar */}
+      <div
+        className="shrink-0 bg-white px-6 py-4"
+        style={{ borderTop: "1px solid #E7DCCD" }}
+      >
+        <div className="max-w-[680px] mx-auto flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[6px] text-[13px] font-medium text-[#6E5A48] hover:bg-[#F0EBE4] transition-colors"
+            style={{ border: "1px solid #E7DCCD" }}
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to consultation
+          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              className="h-9 px-5 rounded-[6px] text-[13px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ background: "#2E1F14" }}
+            >
+              {saving ? "Saving..." : "Save & Close"}
+            </button>
+            <span className="text-[11px] text-[#9B8775] text-right max-w-[360px]">
+              {summaryText}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
