@@ -1,7 +1,34 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Pill, ClipboardList, ChevronDown, ChevronRight, Flag, X, ArrowUpRight } from "lucide-react";
+import {
+  SleepPanel, defaultSleepData, type SleepData,
+  MentalHealthPanel, defaultMentalHealthData, type MentalHealthData,
+  ActivityPanel, defaultActivityData, type ActivityData,
+  NutritionPanel, defaultNutritionData, type NutritionData,
+  VitalsPanel, defaultVitalsData, type VitalsData,
+} from "@/components/patients/panels";
+
+type PanelId = "vitals" | "sleep" | "mental" | "activity" | "nutrition";
+
+const PANEL_LABELS: Record<PanelId, string> = {
+  vitals: "Vitals",
+  sleep: "Sleep",
+  mental: "Mental Health",
+  activity: "Activity",
+  nutrition: "Nutrition",
+};
+
+function suggestPanelsFromText(text: string): Set<PanelId> {
+  const t = text.toLowerCase();
+  const out = new Set<PanelId>();
+  if (/(sleep|fatigue|tired)/.test(t)) { out.add("sleep"); out.add("vitals"); }
+  if (/(anxiety|depression|stress|mood)/.test(t)) out.add("mental");
+  if (/(weight|bmi)/.test(t)) { out.add("vitals"); out.add("nutrition"); }
+  if (/(blood pressure|hypertension)/.test(t)) out.add("vitals");
+  return out;
+}
 
 
 type Tone = "rose" | "amber" | "teal";
