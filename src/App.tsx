@@ -15,6 +15,7 @@ import PatientReportEditor from "./pages/PatientReportEditor";
 import NewLabResultsPage from "./pages/NewLabResultsPage";
 import ClinicalHoursPage from "./pages/ClinicalHoursPage";
 import NotesPage from "./pages/NotesPage";
+import ConsultationWorkspacePage from "./pages/ConsultationWorkspacePage";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -32,6 +33,19 @@ const Protected = ({ children }: { children: React.ReactNode }) => {
   }
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <AppLayout>{children}</AppLayout>;
+};
+
+const ProtectedBare = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
 };
 
 const AppRoutes = () => {
@@ -55,6 +69,7 @@ const AppRoutes = () => {
       <Route path="/patients/:id/report" element={<Protected><PatientReportEditor /></Protected>} />
       <Route path="/clinical-hours" element={<Protected><ClinicalHoursPage /></Protected>} />
       <Route path="/notes" element={<Protected><NotesPage /></Protected>} />
+      <Route path="/consultation" element={<ProtectedBare><ConsultationWorkspacePage /></ProtectedBare>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
