@@ -689,9 +689,6 @@ export default function ConsultationWorkspacePage() {
   const navigate = useNavigate();
   const [medsOpen, setMedsOpen] = useState(false);
 
-  const [findings, setFindings] = useState<Record<string, Finding>>({});
-  const [order, setOrder] = useState<string[]>([]);
-  const [pendingRemove, setPendingRemove] = useState<string | null>(null);
   const [showValidation, setShowValidation] = useState(false);
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -699,19 +696,31 @@ export default function ConsultationWorkspacePage() {
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const [openForm, setOpenForm] = useState<OpenForm>(null);
 
-  // Consultation note content (lifted so the review screen can read it)
+  // Consultation note content
   const [subjective, setSubjective] = useState("");
-  const [bpSys, setBpSys] = useState("");
-  const [bpDia, setBpDia] = useState("");
-  const [hr, setHr] = useState("");
-  const [weight, setWeight] = useState("");
-  const [temp, setTemp] = useState("");
+  const [bpSys] = useState("");
+  const [bpDia] = useState("");
+  const [hr] = useState("");
+  const [weight] = useState("");
+  const [temp] = useState("");
   const [labs, setLabs] = useState("");
   const [plan, setPlan] = useState("");
 
+  // Per-section dimension tags: dimension label -> finding note
+  const [symptomsTags, setSymptomsTags] = useState<Record<string, string>>({});
+  const [observationsTags, setObservationsTags] = useState<Record<string, string>>({});
+  const [diagnosesTags, setDiagnosesTags] = useState<Record<string, string>>({});
+
+  // Diagnoses & medications
+  type Diagnosis = { id: string; code: string; name: string; status: "current" | "previous"; year: string };
+  type Medication = { id: string; name: string; dose: string; frequency: string; time: string };
+  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [dxFormOpen, setDxFormOpen] = useState(false);
+  const [rxFormOpen, setRxFormOpen] = useState(false);
+
   // Lab inclusion: empty by default (no recent labs to include)
-  const [labsIncluded, setLabsIncluded] = useState<Record<string, boolean>>({});
-  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+  const [labsIncluded] = useState<Record<string, boolean>>({});
   const labsRef = useRef<HTMLDivElement>(null);
   const [measurements, setMeasurements] = useState<{ name: string; value: string }[]>([]);
 
