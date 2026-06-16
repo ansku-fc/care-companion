@@ -247,11 +247,11 @@ function ClickableCard({ children, onClick }: { children: React.ReactNode; onCli
   return (
     <div
       onClick={onClick}
-      className="group relative bg-white rounded-[12px] cursor-pointer transition-colors hover:bg-[#F9F7F4] hover:[border-color:#C9BBA9]"
-      style={{ border: "1px solid #E7DCCD", padding: "20px" }}
+      className="group relative bg-white rounded-[8px] cursor-pointer transition-colors hover:bg-[#F9F7F4] hover:[border-color:#C9BBA9]"
+      style={{ border: "1px solid #E7DCCD", padding: "12px 16px" }}
     >
       <ArrowRight
-        className="absolute top-4 right-4 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-3 right-3 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
         style={{ color: "#C9BBA9" }}
       />
       {children}
@@ -259,26 +259,54 @@ function ClickableCard({ children, onClick }: { children: React.ReactNode; onCli
   );
 }
 
+function MetaLine({
+  date,
+  type,
+  withWhom,
+  location,
+  mode,
+}: {
+  date: string;
+  type: string;
+  withWhom: string;
+  location?: string;
+  mode?: "In-Person" | "Remote";
+}) {
+  const sep = <span className="text-[#C9BBA9]">·</span>;
+  return (
+    <div className="flex items-center gap-1.5 text-[12px] text-[#6E5A48] flex-wrap">
+      <span>{date}</span>
+      {sep}
+      <TypeChip type={type} />
+      {sep}
+      <span className="inline-flex items-center gap-1"><Stethoscope className="h-3 w-3" /> {withWhom}</span>
+      {location && (
+        <>
+          {sep}
+          <span className="inline-flex items-center gap-1">
+            {mode === "Remote" ? <Video className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
+            {location}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
 function UpcomingCard({ v, onOpen }: { v: UpcomingVisit; onOpen: () => void }) {
   return (
     <ClickableCard onClick={onOpen}>
-      <div className="flex items-start justify-between gap-3 pr-6">
-        <div className="min-w-0">
-          <div className="text-[14px] text-[#6E5A48] mb-1.5">{v.date}</div>
-          <div className="text-[16px] font-medium text-[#2E1F14]">{v.title}</div>
+      <div className="pr-6">
+        <MetaLine date={v.date} type={v.type} withWhom={v.withWhom} location={v.location} mode={v.mode} />
+        <div className="flex items-center justify-between gap-3 mt-1">
+          <div className="text-[14px] font-semibold text-[#2E1F14] truncate">{v.title}</div>
+          <div className="hidden sm:flex flex-wrap gap-1 shrink-0">
+            {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} tone={d.tone} />)}
+          </div>
         </div>
-        <TypeChip type={v.type} />
-      </div>
-      <div className="flex items-center gap-3 mt-2 text-[13px] text-[#6E5A48] flex-wrap">
-        <span className="flex items-center gap-1"><Stethoscope className="h-3.5 w-3.5" /> {v.withWhom}</span>
-        <span className="flex items-center gap-1">
-          {v.mode === "Remote" ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
-          {v.location} · {v.mode}
-        </span>
-      </div>
-      <p className="mt-3 text-[14px] text-[#6E5A48] leading-relaxed">{v.note}</p>
-      <div className="flex flex-wrap gap-1.5 mt-4">
-        {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} tone={d.tone} />)}
+        <p className="mt-1.5 text-[13px] text-[#6E5A48] leading-snug max-h-0 overflow-hidden group-hover:max-h-24 transition-all duration-200">
+          {v.note}
+        </p>
       </div>
     </ClickableCard>
   );
@@ -287,27 +315,22 @@ function UpcomingCard({ v, onOpen }: { v: UpcomingVisit; onOpen: () => void }) {
 function PastCard({ v, onOpen }: { v: PastVisit; onOpen: () => void }) {
   return (
     <ClickableCard onClick={onOpen}>
-      <div className="flex items-start justify-between gap-3 pr-6">
-        <div className="min-w-0">
-          <div className="text-[14px] text-[#6E5A48] mb-1.5">{v.date}</div>
-          <div className="text-[16px] font-medium text-[#2E1F14]">{v.title}</div>
+      <div className="pr-6">
+        <MetaLine date={v.date} type={v.type} withWhom={v.withWhom} />
+        <div className="flex items-center justify-between gap-3 mt-1">
+          <div className="text-[14px] font-semibold text-[#2E1F14] truncate">{v.title}</div>
+          <div className="hidden sm:flex flex-wrap gap-1 shrink-0">
+            {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} tone={d.tone} />)}
+          </div>
         </div>
-        <TypeChip type={v.type} />
-      </div>
-      <div className="flex items-center gap-3 mt-2 text-[13px] text-[#6E5A48]">
-        <span className="flex items-center gap-1"><Stethoscope className="h-3.5 w-3.5" /> {v.withWhom}</span>
-      </div>
-      <p className="mt-3 text-[14px] text-[#6E5A48] leading-relaxed">{v.summary}</p>
-      <p className="mt-2 text-[14px] text-[#2E1F14]">
-        <span className="text-[11px] uppercase tracking-wide text-[#6E5A48] mr-2">Outcome</span>
-        {v.outcome}
-      </p>
-      <div className="flex flex-wrap gap-1.5 mt-4">
-        {v.dimensions.map((d) => <DimPill key={d.label} label={d.label} tone={d.tone} />)}
+        <p className="mt-1.5 text-[13px] text-[#6E5A48] leading-snug max-h-0 overflow-hidden group-hover:max-h-32 transition-all duration-200">
+          {v.summary}
+        </p>
       </div>
     </ClickableCard>
   );
 }
+
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
