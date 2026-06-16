@@ -1565,6 +1565,7 @@ function ReviewScreen(props: ReviewProps) {
     weight,
     temp,
     plan,
+    includedLabGroups,
     selectedDims,
     findings,
     tasks,
