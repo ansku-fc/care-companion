@@ -55,6 +55,10 @@ interface MarkerDetailChartProps {
   onSaveAnnotation?: () => void;
   onDeleteAnnotation?: (id: string) => void;
   onCreateTask?: () => void;
+  /** Force Y-axis to start at zero instead of auto-scaling. */
+  yAxisStartFromZero?: boolean;
+  /** Round Y-axis tick labels to this many decimal places. */
+  yAxisTickDecimals?: number;
 }
 
 // Care Companion chart tokens (warm tonal axis, status palette only)
