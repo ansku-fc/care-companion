@@ -202,7 +202,14 @@ export function MarkerDetailChart({
               <LineChart data={data} margin={{ top: 8, right: 56, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 3" stroke={HAIR} vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: INK_FAINT }} axisLine={{ stroke: HAIR_STRONG }} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: INK_FAINT }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
+                <YAxis
+                  tick={{ fontSize: 10, fill: INK_FAINT }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={yAxisStartFromZero ? [0, "auto"] : ["auto", "auto"]}
+                  tickFormatter={yAxisTickDecimals !== undefined ? (v: number) => v.toFixed(yAxisTickDecimals) : undefined}
+                  allowDecimals
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "#FFFFFF",
