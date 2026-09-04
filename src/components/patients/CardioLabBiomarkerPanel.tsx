@@ -879,7 +879,12 @@ export function CardioLabBiomarkerPanel({
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    domain={biomarkerKey === "ldl_mmol_l" ? [0, "auto"] : ["auto", "auto"]}
+                    tickFormatter={biomarkerKey === "ldl_mmol_l" ? (v: number) => v.toFixed(1) : undefined}
+                    allowDecimals
+                  />
                   <Tooltip content={renderTooltip} />
 
                   {(refLow !== undefined || refHigh !== undefined) && (

@@ -55,6 +55,10 @@ interface MarkerDetailChartProps {
   onSaveAnnotation?: () => void;
   onDeleteAnnotation?: (id: string) => void;
   onCreateTask?: () => void;
+  /** Force Y-axis to start at zero instead of auto-scaling. */
+  yAxisStartFromZero?: boolean;
+  /** Round Y-axis tick labels to this many decimal places. */
+  yAxisTickDecimals?: number;
 }
 
 // Care Companion chart tokens (warm tonal axis, status palette only)
@@ -85,6 +89,8 @@ export function MarkerDetailChart({
   onSaveAnnotation,
   onDeleteAnnotation,
   onCreateTask,
+  yAxisStartFromZero = false,
+  yAxisTickDecimals,
 }: MarkerDetailChartProps) {
   const [window, setWindow] = useState<Window>("3y");
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
@@ -196,7 +202,14 @@ export function MarkerDetailChart({
               <LineChart data={data} margin={{ top: 8, right: 56, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 3" stroke={HAIR} vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: INK_FAINT }} axisLine={{ stroke: HAIR_STRONG }} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: INK_FAINT }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
+                <YAxis
+                  tick={{ fontSize: 10, fill: INK_FAINT }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={yAxisStartFromZero ? [0, "auto"] : ["auto", "auto"]}
+                  tickFormatter={yAxisTickDecimals !== undefined ? (v: number) => v.toFixed(yAxisTickDecimals) : undefined}
+                  allowDecimals
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "#FFFFFF",

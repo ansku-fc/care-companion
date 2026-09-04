@@ -5412,7 +5412,7 @@ function CardiovascularDimensionView({
                 refHigh?: number;
                 accentColorVar: string;
               }> = [
-                { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refHigh: 3.0, accentColorVar: "hsl(25 45% 30%)" },
+                { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refHigh: 2.6, accentColorVar: "hsl(25 45% 30%)" },
                 { key: "blood_pressure_systolic", label: "Blood Pressure", sidebarLabel: "Blood Pressure (Systolic / Diastolic)", unit: "mmHg", refLow: 60, refHigh: 140, accentColorVar: "hsl(var(--destructive))" },
                 { key: "alat_u_l", label: "ALAT", unit: "U/L", refHigh: 50, accentColorVar: "hsl(200 70% 40%)" },
                 { key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L", refLow: 35, refHigh: 105, accentColorVar: "hsl(280 50% 45%)" },
@@ -5770,7 +5770,7 @@ const MARKER_DIMENSIONS: Record<string, string[]> = {
 };
 
 const REFERENCE_VALUES: Record<string, { low?: number; high?: number; label: string }> = {
-  ldl_mmol_l: { high: 3.0, label: "LDL" },
+  ldl_mmol_l: { high: 2.6, label: "LDL" },
   hba1c_mmol_mol: { high: 42, label: "HbA1c" },
   blood_pressure_systolic: { high: 140, label: "Systolic BP" },
   blood_pressure_diastolic: { high: 90, label: "Diastolic BP" },
@@ -6258,6 +6258,8 @@ function LabResultsView({ patientId, patientName, labResults, onLabResultsAdded,
                             secondaryLabel={isBp ? "Diastolic" : undefined}
                             secondaryRefValues={diastolicRef}
                             displayOnly
+                            yAxisStartFromZero={dataKey === "ldl_mmol_l"}
+                            yAxisTickDecimals={dataKey === "ldl_mmol_l" ? 1 : undefined}
                           />
                           {!hasData && (
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
