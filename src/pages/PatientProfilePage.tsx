@@ -5412,7 +5412,7 @@ function CardiovascularDimensionView({
                 refHigh?: number;
                 accentColorVar: string;
               }> = [
-                { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refHigh: 3.0, accentColorVar: "hsl(25 45% 30%)" },
+                { key: "ldl_mmol_l", label: "LDL", unit: "mmol/L", refHigh: 2.6, accentColorVar: "hsl(25 45% 30%)" },
                 { key: "blood_pressure_systolic", label: "Blood Pressure", sidebarLabel: "Blood Pressure (Systolic / Diastolic)", unit: "mmHg", refLow: 60, refHigh: 140, accentColorVar: "hsl(var(--destructive))" },
                 { key: "alat_u_l", label: "ALAT", unit: "U/L", refHigh: 50, accentColorVar: "hsl(200 70% 40%)" },
                 { key: "afos_alp_u_l", label: "AFOS/ALP", unit: "U/L", refLow: 35, refHigh: 105, accentColorVar: "hsl(280 50% 45%)" },
