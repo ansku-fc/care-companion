@@ -89,6 +89,8 @@ export function MarkerDetailChart({
   onSaveAnnotation,
   onDeleteAnnotation,
   onCreateTask,
+  yAxisStartFromZero = false,
+  yAxisTickDecimals,
 }: MarkerDetailChartProps) {
   const [window, setWindow] = useState<Window>("3y");
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
