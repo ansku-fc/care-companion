@@ -1263,9 +1263,14 @@ function CareOverviewView({ patient, appointments, visitNotes, healthCategories,
   return (
     <div className="flex gap-6 h-full">
     <div className={`space-y-6 p-1 ${showAllMedications ? "w-1/2 shrink-0" : "flex-1"} overflow-auto`}>
-      <div>
-        <h2 className="text-xl font-semibold">{fmtLastFirst(patient.full_name)}</h2>
-        <p className="text-sm text-muted-foreground">Care Coordination Overview</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">{fmtLastFirst(patient.full_name)}</h2>
+          <p className="text-sm text-muted-foreground">Care Coordination Overview</p>
+        </div>
+        <Button onClick={() => navigate(`/patients/${patient.id}/visit/new`)} className="gap-2 shrink-0">
+          <Stethoscope className="h-4 w-4" /> New visit
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

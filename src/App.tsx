@@ -16,6 +16,7 @@ import NewLabResultsPage from "./pages/NewLabResultsPage";
 import ClinicalHoursPage from "./pages/ClinicalHoursPage";
 import NotesPage from "./pages/NotesPage";
 import ConsultationWorkspacePage from "./pages/ConsultationWorkspacePage";
+import VisitIntakePage from "./pages/VisitIntakePage";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -70,6 +71,8 @@ const AppRoutes = () => {
       <Route path="/clinical-hours" element={<Protected><ClinicalHoursPage /></Protected>} />
       <Route path="/notes" element={<Protected><NotesPage /></Protected>} />
       <Route path="/consultation" element={<ProtectedBare><ConsultationWorkspacePage /></ProtectedBare>} />
+      <Route path="/patients/:id/visit/new" element={<ProtectedBare><VisitIntakePage /></ProtectedBare>} />
+      <Route path="/patients/:id/visit/:visitId" element={<ProtectedBare><VisitIntakePage /></ProtectedBare>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

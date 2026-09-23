@@ -117,6 +117,11 @@ const Dashboard = () => {
   };
   const openTask = (t: Task) => { setDetail(t); setOpen(true); };
 
+  const startVisit = (appt: ScheduleItem) => {
+    const p = findPatient(appt.name);
+    navigate(p ? `/patients/${p.id}/visit/new` : "/patients");
+  };
+
   const createTaskForAppt = (appt: ScheduleItem) => {
     const p = findPatient(appt.name);
     openNewTask({
@@ -429,6 +434,15 @@ const Dashboard = () => {
                       appt.status === "completed" && "text-[#9B8775]",
                       appt.status === "upcoming" && "text-[#6E5A48]",
                     )}>{statusLabelText(appt.status)}</span>
+                    <button
+                      type="button"
+                      onClick={() => startVisit(appt)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-muted/40"
+                      aria-label="Start visit"
+                      title="Start visit"
+                    >
+                      <Stethoscope className="h-3.5 w-3.5" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => createTaskForAppt(appt)}
