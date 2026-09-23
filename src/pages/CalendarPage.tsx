@@ -85,7 +85,7 @@ const CalendarPage = () => {
   const [taskPanelOpen, setTaskPanelOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { tasks, patientName } = useTasks();
+  const { tasks, patients, patientName } = useTasks();
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -120,6 +120,24 @@ const CalendarPage = () => {
 
   const dummyAppointments = useMemo(() => buildDummyAppointments(currentMonth), [currentMonth]);
   const allAppointments = [...realAppointments, ...dummyAppointments];
+
+  // Launch the visit intake flow — same resolution/fallback as the dashboard's
+  // "Start visit": prefer the appointment's real patient_id, fall back to
+  // resolving by name, and fall back to /patients if neither resolves.
+  const findPatient = (display?: string | null) => {
+    if (!display) return undefined;
+    const [last, first] = display.split(",").map((s) => s.trim());
+    const tokens = [last, first].filter(Boolean).map((s) => s.toLowerCase());
+    return patients.find((p) => tokens.every((t) => p.full_name.toLowerCase().includes(t)));
+  };
+  const resolveVisitPatientId = (appt: { patient_id?: string; patient_name?: string | null }) =>
+    appt.patient_id ?? findPatient(appt.patient_name)?.id ?? null;
+  const hasPatientIdentity = (appt: { patient_id?: string; patient_name?: string | null }) =>
+    resolveVisitPatientId(appt) !== null;
+  const startVisit = (appt: { patient_id?: string; patient_name?: string | null }) => {
+    const id = resolveVisitPatientId(appt);
+    navigate(id ? `/patients/${id}/visit/new` : "/patients");
+  };
 
   // Calendar grid
   const monthStart = startOfMonth(currentMonth);
@@ -405,10 +423,11 @@ const CalendarPage = () => {
                               <Button
                                 size="sm"
                                 className="h-7 text-xs gap-1"
-                                onClick={() => navigate("/consultation")}
+                                disabled={!hasPatientIdentity(a)}
+                                onClick={() => startVisit(a)}
                               >
                                 <Play className="h-3 w-3" />
-                                Start Consultation
+                                Start visit
                               </Button>
                               <Button
                                 size="sm"
@@ -545,13 +564,15 @@ const CalendarPage = () => {
                     <>
                       <Button
                         className="flex-1 gap-1"
+                        disabled={!hasPatientIdentity(detailAppt)}
                         onClick={() => {
+                          const appt = detailAppt;
                           setDetailAppt(null);
-                          navigate("/consultation");
+                          startVisit(appt);
                         }}
                       >
                         <Play className="h-4 w-4" />
-                        Start Consultation
+                        Start visit
                       </Button>
                       <Button
                         variant="outline"
