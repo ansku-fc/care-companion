@@ -30,6 +30,19 @@ export interface MedicationChange {
   atc?: string;
   change: MedicationChangeKind;
   detail?: string; // e.g. "10mg → 20mg"
+  dimensions: DimensionKey[]; // doctor-tagged; drives derived scoring
+}
+
+/* ---------------- Diagnoses recorded this visit ---------------- */
+
+export type DiagnosisStatus = "active" | "resolved";
+
+export interface VisitDiagnosis {
+  id: string;
+  name: string;
+  icd10: string;
+  status: DiagnosisStatus;
+  dimensions: DimensionKey[]; // doctor-tagged (auto-suggested from ICD); drives scoring
 }
 
 export interface IntervalHistory {
@@ -56,15 +69,13 @@ export interface VisitMeasurement {
   // NO status / severity / trend — derived vs the prior visit in derive.ts
 }
 
-/* ---------------- Dimension updates touched this visit ---------------- */
-
-export interface DimensionUpdate {
-  dimension: DimensionKey; // canonical key only
-  newScore: number | null; // 1.0–10.0 clinician-set raw value; null = "—"
-  finding: string;
-  flaggedForReview: boolean;
-  // NO tone / band / from→to diff — derived from newScore in derive.ts
-}
+/**
+ * Patient-level raw baseline: the standing 1–10 score per dimension the clinician
+ * carries into a visit. Raw seed data — the starting point for derivation. The
+ * per-visit scores are NOT stored; they are derived from this baseline plus the
+ * visit's tagged inputs (see derive.ts::computeDimensionScores).
+ */
+export type PatientBaseline = Partial<Record<DimensionKey, number>>;
 
 /* ---------------- Plan arising from the visit ---------------- */
 
@@ -121,9 +132,11 @@ export interface ClinicalVisit {
   status: VisitStatus;
   intervalHistory: IntervalHistory;
   measurements: VisitMeasurement[];
-  dimensionUpdates: DimensionUpdate[];
+  diagnoses: VisitDiagnosis[];
   plan: VisitPlan;
   previousVisitId: string | null; // raw link, NOT a computed "latest" flag
+  // NOTE: dimension scores are NOT stored — always derived from the tagged
+  // inputs above (diagnoses, medicationChanges, measurements) via derive.ts.
 }
 
 /** Factory for an empty interval history. */

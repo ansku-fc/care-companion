@@ -12,6 +12,8 @@
 // enumerated tuple in sync at compile time (tsc).
 
 import { HEALTH_TAXONOMY, OLD_TO_NEW_KEY_MAP } from "@/lib/healthDimensions";
+import { getSuggestedDimensionsForIcd } from "@/lib/onboardingTaxonomy";
+import { LAB_MARKERS } from "@/lib/labMarkerCatalog";
 
 /** Canonical MAIN dimension keys — mirror of HEALTH_TAXONOMY[*].key. */
 export type DimensionKey =
@@ -129,4 +131,41 @@ export function fromLabel(label: string): DimensionKey | null {
   if (l.startsWith("skin")) return "skin_oral_mucosal";
   if (l.startsWith("reproductive")) return "reproductive_sexual";
   return null;
+}
+
+/* ---------------- Auto-suggest: clinical input → canonical dimension(s) ---------------- */
+
+/** Suggest dimensions for an ICD-10 code (reuses onboardingTaxonomy's ICD map). */
+export function suggestDimensionsForIcd(icd: string): DimensionKey[] {
+  return getSuggestedDimensionsForIcd(icd)
+    .map(fromKebab)
+    .filter((k): k is DimensionKey => k !== null);
+}
+
+// labMarkerCatalog groups markers under its own dimension vocabulary (e.g.
+// "Liver Function", "Kidney Function"); map those to the 9 canonical MAIN keys.
+const CATALOG_DIM_TO_CANONICAL: Record<string, DimensionKey> = {
+  "cardiovascular health": "cardiovascular",
+  "metabolic health": "metabolic",
+  "endocrine & hormonal health": "metabolic",
+  "kidney function": "metabolic",
+  "liver function": "digestion",
+  "nutrition & vitamins": "metabolic",
+};
+// Short visit-marker names → catalog labels (catalog uses long names).
+const MARKER_ALIASES: Record<string, string> = {
+  ldl: "ldl cholesterol",
+  "systolic bp": "blood pressure (systolic)",
+  "diastolic bp": "blood pressure (diastolic)",
+};
+
+/** Suggest dimension(s) for a measurement marker (reuses labMarkerCatalog). */
+export function suggestDimensionsForMarker(marker: string): DimensionKey[] {
+  const norm = marker.trim().toLowerCase();
+  if (!norm) return [];
+  const label = MARKER_ALIASES[norm] ?? norm;
+  const m = LAB_MARKERS.find((x) => x.label.toLowerCase() === label);
+  if (!m) return [];
+  const canonical = CATALOG_DIM_TO_CANONICAL[m.dimension.toLowerCase()] ?? fromLabel(m.dimension);
+  return canonical ? [canonical] : [];
 }

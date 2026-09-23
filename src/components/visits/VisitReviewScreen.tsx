@@ -7,9 +7,11 @@ import {
   dimensionLabel,
   formatScore,
   scoreBand,
-  dimensionDiff,
+  affectedDimensions,
+  scoringInputsFromVisit,
   measurementTrend,
   type ClinicalVisit,
+  type PatientBaseline,
 } from "@/lib/visits";
 import { scoreColorClass } from "@/lib/scoreColor";
 
@@ -26,6 +28,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 export function VisitReviewScreen({
   draft,
   priorVisits,
+  baseline,
   patientName,
   saving,
   onBack,
@@ -33,6 +36,7 @@ export function VisitReviewScreen({
 }: {
   draft: ClinicalVisit;
   priorVisits: ClinicalVisit[];
+  baseline: PatientBaseline;
   patientName: string;
   saving: boolean;
   onBack: () => void;
@@ -40,13 +44,12 @@ export function VisitReviewScreen({
 }) {
   const prior = priorVisits[0] ?? null;
   const ih = draft.intervalHistory;
-  const flagged = draft.dimensionUpdates.filter((d) => d.flaggedForReview);
+  const affected = affectedDimensions(baseline, scoringInputsFromVisit(draft));
   const summary = [
-    `${draft.dimensionUpdates.length} dimension${draft.dimensionUpdates.length === 1 ? "" : "s"} updated`,
+    `${affected.length} dimension${affected.length === 1 ? "" : "s"} affected`,
     `${draft.plan.tasks.length} task${draft.plan.tasks.length === 1 ? "" : "s"}`,
     `${draft.plan.referrals.length} referral${draft.plan.referrals.length === 1 ? "" : "s"}`,
     draft.plan.followUp ? "1 follow-up" : null,
-    flagged.length ? `${flagged.length} flagged` : null,
   ].filter(Boolean).join(" · ");
 
   return (
@@ -103,35 +106,37 @@ export function VisitReviewScreen({
               </Card>
             </section>
 
-            {/* Dimension updates with diff */}
+            {/* Dimensions affected — derived from tagged inputs */}
             <section>
-              <Label>Dimensions Updated</Label>
+              <Label>Dimensions Affected</Label>
               <Card>
-                {draft.dimensionUpdates.length === 0 ? (
-                  <Empty>No dimensions updated.</Empty>
+                {affected.length === 0 ? (
+                  <Empty>No dimensions affected.</Empty>
                 ) : (
                   <div>
-                    {draft.dimensionUpdates.map((u, i) => {
-                      const diff = dimensionDiff(u, priorVisits);
-                      return (
-                        <div key={u.dimension} className="py-2.5" style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}>
-                          <div className="flex items-center justify-between">
-                            <span className="text-[13px] font-medium text-[#1F1611]">{dimensionLabel(u.dimension)}</span>
-                            <span className="flex items-center gap-2">
-                              <span className={`text-[13px] font-semibold tabular-nums ${scoreColorClass(u.newScore)}`}>{formatScore(u.newScore)}</span>
-                              <span className={`text-[11px] font-medium ${scoreColorClass(u.newScore)}`}>{scoreBand(u.newScore)}</span>
-                              {u.flaggedForReview && <span className="text-[11px] font-medium" style={{ color: "#E8446A" }}>Flagged</span>}
-                            </span>
-                          </div>
-                          {diff.fromScore != null && diff.changed && (
-                            <div className="text-[11px] mt-0.5" style={{ color: "#D97706" }}>
-                              {diff.direction === "up" ? "↑" : "↓"} {diff.fromBand} → {diff.toBand} (was {formatScore(diff.fromScore)})
-                            </div>
-                          )}
-                          {u.finding.trim() && <p className="text-[12px] text-[#6E5A48] mt-0.5">"{u.finding}"</p>}
+                    {affected.map((a, i) => (
+                      <div key={a.dimension} className="py-2.5" style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] font-medium text-[#1F1611]">{dimensionLabel(a.dimension)}</span>
+                          <span className="flex items-center gap-1.5 text-[12px]">
+                            <span className={`tabular-nums ${scoreColorClass(a.from)}`}>{formatScore(a.from)}</span>
+                            <span className="text-[#9B8775]">→</span>
+                            <span className={`font-semibold tabular-nums ${scoreColorClass(a.to)}`}>{formatScore(a.to)}</span>
+                            <span className={`font-medium ${scoreColorClass(a.to)}`}>{scoreBand(a.to)}</span>
+                            {a.delta !== 0 && <span style={{ color: a.delta > 0 ? "#E8446A" : "#0EA5A0" }}>{a.delta > 0 ? "↑" : "↓"}</span>}
+                          </span>
                         </div>
-                      );
-                    })}
+                        <div className="text-[11px] text-[#6E5A48] mt-0.5">
+                          driven by:{" "}
+                          {a.drivers.map((d, di) => (
+                            <span key={di}>
+                              {di > 0 && ", "}
+                              <span style={{ color: d.direction === "up" ? "#E8446A" : "#0EA5A0" }}>{d.label}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </Card>

@@ -6,7 +6,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import type {
   ClinicalVisit,
-  DimensionUpdate,
+  VisitDiagnosis,
   IntervalHistory,
   MedicationChange,
   PlanPrescription,
@@ -33,9 +33,9 @@ type VisitFormContextValue = {
   // Measurements
   addMeasurement: (m: VisitMeasurement) => void;
   removeMeasurement: (id: string) => void;
-  // Dimension updates (keyed by canonical dimension)
-  upsertDimensionUpdate: (u: DimensionUpdate) => void;
-  removeDimensionUpdate: (dimension: DimensionUpdate["dimension"]) => void;
+  // Diagnoses recorded this visit
+  addDiagnosis: (d: VisitDiagnosis) => void;
+  removeDiagnosis: (id: string) => void;
   // Plan
   addTask: (t: PlanTask) => void;
   removeTask: (id: string) => void;
@@ -113,20 +113,11 @@ export function VisitFormProvider({
     setDraft((prev) => ({ ...prev, measurements: prev.measurements.filter((x) => x.id !== id) }));
   }, []);
 
-  const upsertDimensionUpdate = useCallback((u: DimensionUpdate) => {
-    setDraft((prev) => {
-      const exists = prev.dimensionUpdates.some((d) => d.dimension === u.dimension);
-      const dimensionUpdates = exists
-        ? prev.dimensionUpdates.map((d) => (d.dimension === u.dimension ? u : d))
-        : [...prev.dimensionUpdates, u];
-      return { ...prev, dimensionUpdates };
-    });
+  const addDiagnosis = useCallback((d: VisitDiagnosis) => {
+    setDraft((prev) => ({ ...prev, diagnoses: [...prev.diagnoses, d] }));
   }, []);
-  const removeDimensionUpdate = useCallback((dimension: DimensionUpdate["dimension"]) => {
-    setDraft((prev) => ({
-      ...prev,
-      dimensionUpdates: prev.dimensionUpdates.filter((d) => d.dimension !== dimension),
-    }));
+  const removeDiagnosis = useCallback((id: string) => {
+    setDraft((prev) => ({ ...prev, diagnoses: prev.diagnoses.filter((d) => d.id !== id) }));
   }, []);
 
   const addTask = useCallback((t: PlanTask) => {
@@ -155,13 +146,13 @@ export function VisitFormProvider({
     () => ({
       draft, set, patch, hydrate, patchInterval, patchPlan,
       addSymptom, removeSymptom, addMedicationChange, removeMedicationChange,
-      addMeasurement, removeMeasurement, upsertDimensionUpdate, removeDimensionUpdate,
+      addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
     }),
     [
       draft, set, patch, hydrate, patchInterval, patchPlan,
       addSymptom, removeSymptom, addMedicationChange, removeMedicationChange,
-      addMeasurement, removeMeasurement, upsertDimensionUpdate, removeDimensionUpdate,
+      addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
     ],
   );

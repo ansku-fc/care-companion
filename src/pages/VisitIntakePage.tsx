@@ -15,17 +15,22 @@ import {
   getVisits,
   getVisit,
   getLatestVisit,
+  getBaseline,
   createDraftVisit,
   saveVisit,
   type ClinicalVisit,
+  type PatientBaseline,
 } from "@/lib/visits";
 import { VisitFormProvider, useVisitForm } from "@/components/visits/VisitFormProvider";
 import { VisitContextSidebar, type BaselineDiagnosis } from "@/components/visits/VisitContextSidebar";
 import { VisitWorkspace } from "@/components/visits/VisitWorkspace";
+import { VisitActionsRail } from "@/components/visits/VisitActionsRail";
 import { VisitReviewScreen } from "@/components/visits/VisitReviewScreen";
+import { VisitSummaryDialog } from "@/components/visits/VisitSummaryDialog";
 
 type Baseline = {
   lastVisit: ClinicalVisit | null;
+  scores: PatientBaseline;
   meds: string[];
   allergies: string[];
   diagnoses: BaselineDiagnosis[];
@@ -40,7 +45,7 @@ export default function VisitIntakePage() {
   const [patientName, setPatientName] = useState("Patient");
   const [initial, setInitial] = useState<ClinicalVisit | null>(null);
   const [priorVisits, setPriorVisits] = useState<ClinicalVisit[]>([]);
-  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, meds: [], allergies: [], diagnoses: [] });
+  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, scores: {}, meds: [], allergies: [], diagnoses: [] });
 
   useEffect(() => {
     if (!id) return;
@@ -58,6 +63,7 @@ export default function VisitIntakePage() {
       const prior = all.filter((v) => v.id !== draft.id);
       const latest = await getLatestVisit(id);
       const lastVisit = latest && latest.id !== draft.id ? latest : prior[0] ?? null;
+      const scores = await getBaseline(id);
 
       const carter = isCarter(id, name);
       const meds = carter
@@ -75,7 +81,7 @@ export default function VisitIntakePage() {
       if (cancelled) return;
       setPatientName(name);
       setPriorVisits(prior);
-      setBaseline({ lastVisit, meds, allergies, diagnoses });
+      setBaseline({ lastVisit, scores, meds, allergies, diagnoses });
       setInitial(draft);
       setLoading(false);
     })();
@@ -115,6 +121,7 @@ function VisitIntakeInner({
   const f = useVisitForm();
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
+  const [summaryVisit, setSummaryVisit] = useState<ClinicalVisit | null>(null);
   const donePath = `/patients/${patientId}`;
 
   const onSave = async () => {
@@ -135,6 +142,7 @@ function VisitIntakeInner({
       <VisitReviewScreen
         draft={f.draft}
         priorVisits={priorVisits}
+        baseline={baseline.scores}
         patientName={patientName}
         saving={saving}
         onBack={() => setView("workspace")}
@@ -165,17 +173,29 @@ function VisitIntakeInner({
       <div className="flex-1 min-h-0 flex">
         <VisitContextSidebar
           patientName={patientName}
-          lastVisit={baseline.lastVisit}
+          baseline={baseline.scores}
+          visits={priorVisits}
           meds={baseline.meds}
           allergies={baseline.allergies}
           diagnoses={baseline.diagnoses}
+          onOpenVisit={setSummaryVisit}
         />
         <main className="flex-1 min-w-0 overflow-y-auto px-8 py-6">
           <div className="max-w-[860px] mx-auto">
-            <VisitWorkspace priorVisits={priorVisits} />
+            <VisitWorkspace baseline={baseline.scores} />
           </div>
         </main>
+        <VisitActionsRail baseline={baseline.scores} />
       </div>
+
+      <VisitSummaryDialog
+        visit={summaryVisit}
+        allVisits={priorVisits}
+        baseline={baseline.scores}
+        patientName={patientName}
+        open={summaryVisit !== null}
+        onOpenChange={(o) => !o && setSummaryVisit(null)}
+      />
     </div>
   );
 }

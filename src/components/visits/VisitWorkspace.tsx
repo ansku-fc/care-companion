@@ -1,19 +1,22 @@
 // Phase 1: the visit workspace. Interval/delta capture only — baseline lives in
-// the sidebar and is never re-asked here. Reuses the shared clinical forms and
-// the patients/panels structured-data panels; all dimension references are
-// canonical DimensionKeys.
+// the sidebar and is never re-asked here. The doctor tags dimensions ON the
+// clinical inputs (diagnoses, medication changes, measurements); dimension
+// SCORES are never entered — they are derived (see "Dimensions Affected" below
+// and derive.ts). Reuses the shared clinical forms and patients/panels.
 import { useState } from "react";
-import { X } from "lucide-react";
 import { VISIT_TYPE_META, type VisitType } from "@/lib/episodes";
 import {
-  DIMENSION_KEYS,
   dimensionLabel,
   formatScore,
   scoreBand,
-  dimensionDiff,
-  type ClinicalVisit,
+  affectedDimensions,
+  scoringInputsFromVisit,
+  suggestDimensionsForIcd,
+  suggestDimensionsForMarker,
   type DimensionKey,
+  type DiagnosisStatus,
   type MedicationChangeKind,
+  type PatientBaseline,
 } from "@/lib/visits";
 import { scoreColorClass } from "@/lib/scoreColor";
 import {
@@ -25,13 +28,11 @@ import {
   MolesPanel, defaultMolesData, type MoleEntry,
 } from "@/components/patients/panels";
 import {
-  TaskForm, ReferralForm, PrescriptionForm,
-  SelectField, TextField, PrimaryButton, CancelLink, ChipSelector, uid,
+  SelectField, TextField, PrimaryButton, CancelLink, uid,
 } from "@/components/visits/forms";
-import { taskFromForm, referralFromForm, prescriptionFromForm } from "./planAdapters";
 import { DimensionMultiSelect } from "./DimensionMultiSelect";
 import { useVisitForm } from "./VisitFormProvider";
-import { SectionCard, SectionLabel, AutoTextarea, GhostButton, FlagToggle } from "./visitUi";
+import { SectionCard, SectionLabel, GhostButton, Row } from "./visitUi";
 
 const MED_CHANGE_LABELS: Record<MedicationChangeKind, string> = {
   started: "Started",
@@ -42,7 +43,7 @@ const MED_CHANGE_LABELS: Record<MedicationChangeKind, string> = {
 
 const REASON_ENTRIES = Object.entries(VISIT_TYPE_META) as [VisitType, { label: string }][];
 
-export function VisitWorkspace({ priorVisits }: { priorVisits: ClinicalVisit[] }) {
+export function VisitWorkspace({ baseline }: { baseline: PatientBaseline }) {
   const f = useVisitForm();
   const draft = f.draft;
 
@@ -91,11 +92,9 @@ export function VisitWorkspace({ priorVisits }: { priorVisits: ClinicalVisit[] }
       {/* 2 — Interval history */}
       <SectionCard>
         <SectionLabel>Interval History — Since Last Visit</SectionLabel>
-
         <NewSymptoms />
         <MedicationChanges />
         <LifeEvents />
-
         <div className="grid grid-cols-2 gap-4 mt-2">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-[#9B8775] mb-1">Adherence</div>
@@ -120,7 +119,13 @@ export function VisitWorkspace({ priorVisits }: { priorVisits: ClinicalVisit[] }
         </div>
       </SectionCard>
 
-      {/* 3 — Structured data */}
+      {/* 3 — Diagnoses */}
+      <SectionCard>
+        <SectionLabel>Diagnoses</SectionLabel>
+        <Diagnoses />
+      </SectionCard>
+
+      {/* 4 — Structured data */}
       <SectionCard>
         <SectionLabel>Structured Data</SectionLabel>
         <p className="text-[12px] italic text-[#9B8775]">
@@ -152,22 +157,18 @@ export function VisitWorkspace({ priorVisits }: { priorVisits: ClinicalVisit[] }
           {panels.has("nutrition") && <PanelShell title="Nutrition"><NutritionPanel value={nutrition} onChange={(u) => setNutrition((v) => ({ ...v, ...u }))} /></PanelShell>}
           {panels.has("moles") && <PanelShell title="Moles"><MolesPanel moles={moles} onChange={setMoles} /></PanelShell>}
         </div>
-
         <div className="mt-4 pt-3" style={{ borderTop: "0.5px solid #F0EBE4" }}>
           <Measurements />
         </div>
       </SectionCard>
 
-      {/* 4 — Dimension tagging */}
+      {/* 5 — Dimensions affected (derived, read-only) */}
       <SectionCard>
-        <SectionLabel>Dimensions Updated This Visit</SectionLabel>
-        <DimensionTagging priorVisits={priorVisits} />
-      </SectionCard>
-
-      {/* 5 — Plan */}
-      <SectionCard>
-        <SectionLabel>Plan & Actions</SectionLabel>
-        <VisitPlanSection />
+        <SectionLabel>Dimensions Affected This Visit</SectionLabel>
+        <p className="text-[12px] italic text-[#9B8775]">
+          Derived automatically from the tagged diagnoses, medications and measurements above. Not manually set.
+        </p>
+        <DimensionsAffected baseline={baseline} />
       </SectionCard>
     </div>
   );
@@ -218,10 +219,11 @@ function MedicationChanges() {
   const [name, setName] = useState("");
   const [change, setChange] = useState<MedicationChangeKind>("started");
   const [detail, setDetail] = useState("");
+  const [dims, setDims] = useState<DimensionKey[]>([]);
   const save = () => {
     if (!name.trim()) return;
-    f.addMedicationChange({ id: uid(), medicationName: name.trim(), change, detail: detail.trim() || undefined });
-    setName(""); setChange("started"); setDetail(""); setOpen(false);
+    f.addMedicationChange({ id: uid(), medicationName: name.trim(), change, detail: detail.trim() || undefined, dimensions: dims });
+    setName(""); setChange("started"); setDetail(""); setDims([]); setOpen(false);
   };
   return (
     <div className="mt-3">
@@ -229,7 +231,7 @@ function MedicationChanges() {
       {f.draft.intervalHistory.medicationChanges.map((m) => (
         <Row key={m.id} onRemove={() => f.removeMedicationChange(m.id)}>
           <span className="text-[13px] text-[#1F1611] font-medium">{m.medicationName}</span>
-          <span className="text-[11px] text-[#9B8775]"> · {MED_CHANGE_LABELS[m.change]}{m.detail ? ` · ${m.detail}` : ""}</span>
+          <span className="text-[11px] text-[#9B8775]"> · {MED_CHANGE_LABELS[m.change]}{m.detail ? ` · ${m.detail}` : ""}{m.dimensions.length ? ` · ${m.dimensions.map(dimensionLabel).join(", ")}` : ""}</span>
         </Row>
       ))}
       {open ? (
@@ -243,6 +245,10 @@ function MedicationChanges() {
             />
           </div>
           <TextField value={detail} onChange={setDetail} placeholder="Detail (e.g. 10mg → 20mg)" size="sm" />
+          <div>
+            <div className="text-[11px] text-[#9B8775] mb-1">Related dimension(s)</div>
+            <DimensionMultiSelect value={dims} onChange={setDims} />
+          </div>
           <div className="flex items-center justify-end gap-3">
             <CancelLink onClick={() => setOpen(false)} />
             <PrimaryButton disabled={!name.trim()} onClick={save}>Add change</PrimaryButton>
@@ -287,7 +293,61 @@ function LifeEvents() {
   );
 }
 
-/* ---------------- Measurements (canonical, persisted) ---------------- */
+/* ---------------- Diagnoses (tagged input; auto-suggests dimension from ICD) ---------------- */
+
+function Diagnoses() {
+  const f = useVisitForm();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [icd10, setIcd10] = useState("");
+  const [status, setStatus] = useState<DiagnosisStatus>("active");
+  const [dims, setDims] = useState<DimensionKey[]>([]);
+  const save = () => {
+    if (!name.trim()) return;
+    f.addDiagnosis({ id: uid(), name: name.trim(), icd10: icd10.trim(), status, dimensions: dims });
+    setName(""); setIcd10(""); setStatus("active"); setDims([]); setOpen(false);
+  };
+  // Auto-suggest dimensions from the ICD code (doctor can adjust).
+  const onIcdChange = (v: string) => {
+    setIcd10(v);
+    const suggested = suggestDimensionsForIcd(v);
+    if (suggested.length) setDims(suggested);
+  };
+  return (
+    <div>
+      {f.draft.diagnoses.map((d) => (
+        <Row key={d.id} onRemove={() => f.removeDiagnosis(d.id)}>
+          <span className="text-[13px] text-[#1F1611] font-medium">{d.name}</span>
+          {d.icd10 && <span className="ml-1.5 text-[10px] font-mono text-[#9B8775]">{d.icd10}</span>}
+          <span className="text-[11px] text-[#9B8775]"> · {d.status}{d.dimensions.length ? ` · ${d.dimensions.map(dimensionLabel).join(", ")}` : ""}</span>
+        </Row>
+      ))}
+      {open ? (
+        <div className="mt-2 space-y-2">
+          <div className="grid grid-cols-[120px_1fr] gap-3">
+            <TextField value={icd10} onChange={onIcdChange} placeholder="ICD-10 (e.g. I10)" size="sm" />
+            <TextField value={name} onChange={setName} placeholder="Diagnosis name" />
+          </div>
+          <div className="grid grid-cols-[150px_1fr] gap-3 items-center">
+            <SelectField value={status} onChange={(v) => setStatus(v as DiagnosisStatus)} options={["active", "resolved"]} />
+            <div>
+              <div className="text-[11px] text-[#9B8775] mb-1">Related dimension(s)</div>
+              <DimensionMultiSelect value={dims} onChange={setDims} />
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3">
+            <CancelLink onClick={() => setOpen(false)} />
+            <PrimaryButton disabled={!name.trim()} onClick={save}>Add diagnosis</PrimaryButton>
+          </div>
+        </div>
+      ) : (
+        <GhostButton onClick={() => setOpen(true)}>+ Add diagnosis</GhostButton>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Measurements (tagged input; auto-suggests dimension from marker) ---------------- */
 
 function Measurements() {
   const f = useVisitForm();
@@ -303,6 +363,12 @@ function Measurements() {
     f.addMeasurement({ id: uid(), kind, marker: marker.trim(), value, unit: unit.trim(), source, dimensions: dims });
     setMarker(""); setValue(""); setUnit(""); setKind("vital"); setSource("measured_today"); setDims([]); setOpen(false);
   };
+  // Auto-suggest dimension from the marker (doctor can adjust).
+  const onMarkerChange = (v: string) => {
+    setMarker(v);
+    const suggested = suggestDimensionsForMarker(v);
+    if (suggested.length) setDims(suggested);
+  };
   return (
     <div>
       <div className="text-[11px] uppercase tracking-wide text-[#9B8775] mb-1">Recorded Measurements</div>
@@ -310,13 +376,13 @@ function Measurements() {
         <Row key={m.id} onRemove={() => f.removeMeasurement(m.id)}>
           <span className="text-[13px] text-[#1F1611] font-medium">{m.marker}</span>
           <span className="text-[13px] text-[#1F1611]"> {String(m.value)} {m.unit}</span>
-          <span className="text-[11px] text-[#9B8775]"> · {m.kind} · {m.source === "measured_today" ? "measured" : "reviewed"}</span>
+          <span className="text-[11px] text-[#9B8775]"> · {m.kind} · {m.source === "measured_today" ? "measured" : "reviewed"}{m.dimensions.length ? ` · ${m.dimensions.map(dimensionLabel).join(", ")}` : ""}</span>
         </Row>
       ))}
       {open ? (
         <div className="mt-2 space-y-2">
           <div className="grid grid-cols-[1fr_100px_100px] gap-3">
-            <TextField value={marker} onChange={setMarker} placeholder="Marker (e.g. Systolic BP)" />
+            <TextField value={marker} onChange={onMarkerChange} placeholder="Marker (e.g. Systolic BP)" />
             <TextField value={value} onChange={setValue} placeholder="Value" size="sm" />
             <TextField value={unit} onChange={setUnit} placeholder="Unit" size="sm" />
           </div>
@@ -324,7 +390,10 @@ function Measurements() {
             <SelectField value={kind} onChange={(v) => setKind(v as "vital" | "lab")} options={["vital", "lab"]} />
             <SelectField value={source} onChange={(v) => setSource(v as "measured_today" | "reviewed")} options={["measured_today", "reviewed"]} />
           </div>
-          <DimensionMultiSelect value={dims} onChange={setDims} />
+          <div>
+            <div className="text-[11px] text-[#9B8775] mb-1">Related dimension(s)</div>
+            <DimensionMultiSelect value={dims} onChange={setDims} />
+          </div>
           <div className="flex items-center justify-end gap-3">
             <CancelLink onClick={() => setOpen(false)} />
             <PrimaryButton disabled={!marker.trim()} onClick={save}>Add measurement</PrimaryButton>
@@ -337,205 +406,41 @@ function Measurements() {
   );
 }
 
-/* ---------------- Dimension tagging (free 1–10, band derived) ---------------- */
+/* ---------------- Dimensions affected (derived, read-only) ---------------- */
 
-function DimensionTagging({ priorVisits }: { priorVisits: ClinicalVisit[] }) {
+function DimensionsAffected({ baseline }: { baseline: PatientBaseline }) {
   const f = useVisitForm();
-  const updates = f.draft.dimensionUpdates;
-  const used = new Set(updates.map((u) => u.dimension));
-  const available = DIMENSION_KEYS.filter((k) => !used.has(k));
-  const [toAdd, setToAdd] = useState<DimensionKey | "">("");
-
-  const addDimension = () => {
-    if (!toAdd) return;
-    f.upsertDimensionUpdate({ dimension: toAdd, newScore: null, finding: "", flaggedForReview: false });
-    setToAdd("");
-  };
-
+  const affected = affectedDimensions(baseline, scoringInputsFromVisit(f.draft));
+  if (affected.length === 0) {
+    return <p className="text-[12px] italic text-[#9B8775] mt-1">No dimensions affected yet — tag diagnoses, medications or measurements above.</p>;
+  }
   return (
-    <div className="space-y-3">
-      {updates.length === 0 && (
-        <p className="text-[12px] italic text-[#9B8775]">No dimensions updated yet — add the ones this visit touched.</p>
-      )}
-      {updates.map((u) => {
-        const diff = dimensionDiff(u, priorVisits);
-        return (
-          <div key={u.dimension} className="rounded-[8px] p-3" style={{ border: "1px solid #E7DCCD" }}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[13px] font-medium text-[#2E1F14]">{dimensionLabel(u.dimension)}</span>
-              <button type="button" onClick={() => f.removeDimensionUpdate(u.dimension)} aria-label="Remove">
-                <X className="h-3.5 w-3.5 text-[#C9BBA9]" />
-              </button>
-            </div>
-            <div className="flex items-center gap-3 mt-2">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-[#9B8775]">Score</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  step={0.1}
-                  value={u.newScore ?? ""}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    const n = raw === "" ? null : Math.max(1, Math.min(10, parseFloat(raw)));
-                    f.upsertDimensionUpdate({ ...u, newScore: Number.isNaN(n as number) ? null : n });
-                  }}
-                  className="w-16 text-center bg-transparent outline-none text-[14px] text-[#1F1611] py-0.5"
-                  style={{ borderBottom: "1px solid #E7DCCD" }}
-                />
-              </div>
-              <span className={`text-[11px] font-medium ${scoreColorClass(u.newScore)}`}>{scoreBand(u.newScore)}</span>
-              {diff.fromScore != null && diff.changed && (
-                <span className="text-[11px]" style={{ color: "#D97706" }}>
-                  {diff.direction === "up" ? "↑" : "↓"} {diff.fromBand} → {diff.toBand} (was {formatScore(diff.fromScore)})
-                </span>
+    <div className="mt-2 space-y-2">
+      {affected.map((a) => (
+        <div key={a.dimension} className="rounded-[8px] p-3" style={{ border: "1px solid #E7DCCD" }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[13px] font-medium text-[#2E1F14]">{dimensionLabel(a.dimension)}</span>
+            <span className="flex items-center gap-1.5 text-[12px]">
+              <span className={`tabular-nums ${scoreColorClass(a.from)}`}>{formatScore(a.from)}</span>
+              <span className="text-[#9B8775]">→</span>
+              <span className={`font-semibold tabular-nums ${scoreColorClass(a.to)}`}>{formatScore(a.to)}</span>
+              <span className={`font-medium ${scoreColorClass(a.to)}`}>{scoreBand(a.to)}</span>
+              {a.delta !== 0 && (
+                <span style={{ color: a.delta > 0 ? "#E8446A" : "#0EA5A0" }}>{a.delta > 0 ? "↑" : "↓"}</span>
               )}
-            </div>
-            <div className="mt-2">
-              <AutoTextarea
-                placeholder="Finding / clinical interpretation…"
-                value={u.finding}
-                onChange={(v) => f.upsertDimensionUpdate({ ...u, finding: v })}
-                minHeight={44}
-              />
-            </div>
-            <div className="mt-1">
-              <FlagToggle on={u.flaggedForReview} onChange={(on) => f.upsertDimensionUpdate({ ...u, flaggedForReview: on })} />
-            </div>
+            </span>
           </div>
-        );
-      })}
-      {available.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="w-[240px]">
-            <SelectField
-              value={toAdd}
-              onChange={(v) => setToAdd(v as DimensionKey)}
-              options={available}
-              placeholder="Add a dimension…"
-            />
+          <div className="text-[11px] text-[#6E5A48] mt-1">
+            driven by:{" "}
+            {a.drivers.map((d, i) => (
+              <span key={i}>
+                {i > 0 && ", "}
+                <span style={{ color: d.direction === "up" ? "#E8446A" : "#0EA5A0" }}>{d.label}</span>
+              </span>
+            ))}
           </div>
-          <GhostButton onClick={addDimension}>Add</GhostButton>
         </div>
-      )}
-    </div>
-  );
-}
-
-/* ---------------- Plan ---------------- */
-
-type OpenForm = null | "task" | "referral" | "prescription" | "followup";
-
-function VisitPlanSection() {
-  const f = useVisitForm();
-  const plan = f.draft.plan;
-  const [open, setOpen] = useState<OpenForm>(null);
-
-  return (
-    <div className="space-y-4">
-      {/* Tasks */}
-      <PlanGroup label="Tasks">
-        {plan.tasks.map((t) => (
-          <Row key={t.id} onRemove={() => f.removeTask(t.id)}>
-            <span className="text-[13px] text-[#1F1611] font-medium">{t.title}</span>
-            <span className="text-[11px] text-[#9B8775]"> · {t.assignee} · {t.category} · {t.priority}</span>
-          </Row>
-        ))}
-        {open === "task" ? (
-          <TaskForm onSave={(t) => { f.addTask(taskFromForm(t)); setOpen(null); }} onCancel={() => setOpen(null)} />
-        ) : (
-          <GhostButton onClick={() => setOpen("task")}>+ Add task</GhostButton>
-        )}
-      </PlanGroup>
-
-      {/* Referrals */}
-      <PlanGroup label="Referrals">
-        {plan.referrals.map((r) => (
-          <Row key={r.id} onRemove={() => f.removeReferral(r.id)}>
-            <span className="text-[13px] text-[#1F1611] font-medium">{r.specialty}</span>
-            {r.referTo && <span className="text-[11px] text-[#9B8775]"> · {r.referTo}</span>}
-            <span className="text-[11px] text-[#9B8775]"> · {r.assignee}</span>
-          </Row>
-        ))}
-        {open === "referral" ? (
-          <ReferralForm onSave={(r) => { f.addReferral(referralFromForm(r)); setOpen(null); }} onCancel={() => setOpen(null)} />
-        ) : (
-          <GhostButton onClick={() => setOpen("referral")}>+ Initiate referral</GhostButton>
-        )}
-      </PlanGroup>
-
-      {/* Prescriptions */}
-      <PlanGroup label="Prescriptions">
-        {plan.prescriptions.map((p) => (
-          <Row key={p.id} onRemove={() => f.removePrescription(p.id)}>
-            <span className="text-[13px] text-[#1F1611] font-medium">{p.medicationName}</span>
-            <span className="text-[11px] text-[#9B8775]"> · {[p.dose, p.frequency, p.time].filter(Boolean).join(" · ")}</span>
-          </Row>
-        ))}
-        {open === "prescription" ? (
-          <PrescriptionForm onSave={(m) => { f.addPrescription(prescriptionFromForm(m)); setOpen(null); }} onCancel={() => setOpen(null)} />
-        ) : (
-          <GhostButton onClick={() => setOpen("prescription")}>+ Prescribe</GhostButton>
-        )}
-      </PlanGroup>
-
-      {/* Follow-up (canonical VisitType) */}
-      <PlanGroup label="Follow-up">
-        {plan.followUp && (
-          <Row onRemove={() => f.patchPlan({ followUp: null })}>
-            <span className="text-[13px] text-[#1F1611] font-medium">{VISIT_TYPE_META[plan.followUp.visitType].label}</span>
-            <span className="text-[11px] text-[#9B8775]"> · in {plan.followUp.timeframe} · {plan.followUp.with}</span>
-          </Row>
-        )}
-        {open === "followup" ? (
-          <FollowUpPlanForm
-            onSave={(fu) => { f.patchPlan({ followUp: fu }); setOpen(null); }}
-            onCancel={() => setOpen(null)}
-          />
-        ) : (
-          !plan.followUp && <GhostButton onClick={() => setOpen("followup")}>+ Schedule follow-up</GhostButton>
-        )}
-      </PlanGroup>
-    </div>
-  );
-}
-
-function FollowUpPlanForm({
-  onSave,
-  onCancel,
-}: {
-  onSave: (f: import("@/lib/visits").PlanFollowUp) => void;
-  onCancel: () => void;
-}) {
-  const [visitType, setVisitType] = useState<VisitType>("FOLLOWUP_CONSULTATION");
-  const [timeframe, setTimeframe] = useState("3 months");
-  const [withWho, setWithWho] = useState("Dr. Laine");
-  const [notes, setNotes] = useState("");
-  const TIMEFRAMES = ["2 weeks", "1 month", "3 months", "6 months"] as const;
-  return (
-    <div className="rounded-[8px] p-3 space-y-3" style={{ border: "1px solid #E7DCCD" }}>
-      <select
-        value={visitType}
-        onChange={(e) => setVisitType(e.target.value as VisitType)}
-        className="w-full bg-transparent outline-none text-[13px] text-[#1F1611] py-1"
-        style={{ borderBottom: "1px solid #E7DCCD" }}
-      >
-        {REASON_ENTRIES.map(([key, meta]) => (
-          <option key={key} value={key}>{meta.label}</option>
-        ))}
-      </select>
-      <div className="grid grid-cols-2 gap-3">
-        <ChipSelector options={TIMEFRAMES} value={timeframe} onChange={(v) => setTimeframe(v)} />
-        <TextField value={withWho} onChange={setWithWho} placeholder="With…" size="sm" />
-      </div>
-      <TextField value={notes} onChange={setNotes} placeholder="Purpose of follow-up…" size="sm" />
-      <div className="flex items-center justify-end gap-3">
-        <CancelLink onClick={onCancel} />
-        <PrimaryButton onClick={() => onSave({ id: uid(), visitType, timeframe, with: withWho, notes: notes.trim() })}>
-          Add follow-up
-        </PrimaryButton>
-      </div>
+      ))}
     </div>
   );
 }
@@ -547,31 +452,6 @@ function PanelShell({ title, children }: { title: string; children: React.ReactN
     <div className="rounded-xl px-4 py-4" style={{ border: "1px solid #E7DCCD", background: "rgba(250,245,238,0.6)" }}>
       <div className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#9B8775]">{title}</div>
       {children}
-    </div>
-  );
-}
-
-function PlanGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="text-[11px] uppercase tracking-wide text-[#9B8775] mb-1.5">{label}</div>
-      <div className="space-y-1.5">{children}</div>
-    </div>
-  );
-}
-
-function Row({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
-  return (
-    <div className="group relative py-1.5 pr-6" style={{ borderTop: "0.5px solid #F0EBE4" }}>
-      {children}
-      <button
-        type="button"
-        onClick={onRemove}
-        className="absolute top-1.5 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Remove"
-      >
-        <X className="h-3.5 w-3.5" style={{ color: "#C9BBA9" }} />
-      </button>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // Small presentational helpers for the visit-intake surface. Mirrors the warm
 // palette of the consultation prototype so the two flows feel consistent.
 import { useRef, type ReactNode } from "react";
+import { X } from "lucide-react";
 
 export function SectionCard({ children }: { children: ReactNode }) {
   return (
@@ -66,6 +67,23 @@ export function AutoTextarea({
       className="w-full resize-none bg-transparent outline-none text-[14px] font-normal text-[#1F1611] placeholder:text-[#C9BBA9] leading-relaxed py-1"
       style={{ minHeight, border: "none" }}
     />
+  );
+}
+
+/** A removable list row with a hover-reveal delete affordance. */
+export function Row({ children, onRemove }: { children: ReactNode; onRemove: () => void }) {
+  return (
+    <div className="group relative py-1.5 pr-6" style={{ borderTop: "0.5px solid #F0EBE4" }}>
+      {children}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-1.5 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label="Remove"
+      >
+        <X className="h-3.5 w-3.5" style={{ color: "#C9BBA9" }} />
+      </button>
+    </div>
   );
 }
 

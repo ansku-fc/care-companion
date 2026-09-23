@@ -3,9 +3,9 @@
 // function bodies — the async signatures stay the same. The UI imports ONLY
 // this module, never mockVisits directly.
 
-import { MOCK_VISITS } from "./mockVisits";
+import { MOCK_VISITS, PATIENT_BASELINES } from "./mockVisits";
 import { latestVisit as latestOf } from "./derive";
-import { emptyIntervalHistory, emptyVisitPlan, type ClinicalVisit } from "./types";
+import { emptyIntervalHistory, emptyVisitPlan, type ClinicalVisit, type PatientBaseline } from "./types";
 import type { VisitType } from "@/lib/episodes";
 
 // Deep clone so callers can't mutate the seed by reference.
@@ -46,6 +46,11 @@ export async function getLatestVisit(patientId: string): Promise<ClinicalVisit |
   return found ? clone(found) : null;
 }
 
+/** The patient's raw standing dimension baseline (empty if none seeded). */
+export async function getBaseline(patientId: string): Promise<PatientBaseline> {
+  return clone(PATIENT_BASELINES[patientId] ?? {});
+}
+
 /** Upsert a visit (insert if new id, replace otherwise). */
 export async function saveVisit(visit: ClinicalVisit): Promise<ClinicalVisit> {
   warnNotPersisted(`saveVisit(${visit.id})`);
@@ -74,7 +79,7 @@ export async function createDraftVisit(input: {
     status: "draft",
     intervalHistory: emptyIntervalHistory(),
     measurements: [],
-    dimensionUpdates: [],
+    diagnoses: [],
     plan: emptyVisitPlan(),
     previousVisitId: prior?.id ?? null,
   };
