@@ -1,24 +1,32 @@
 // Left rail: baseline the clinician carries into the visit so the form only has
 // to capture the delta. Baseline dimension scores come from the patient's most
 // recent prior visit (via the repository), not from anything typed today.
-import { Pill } from "lucide-react";
-import { dimensionLabel, formatScore, scoreBand, type ClinicalVisit } from "@/lib/visits";
+import { Pill, Stethoscope } from "lucide-react";
+import { dimensionLabel, formatScore, scoreBand, fromLabel, type ClinicalVisit } from "@/lib/visits";
 import { scoreColorClass } from "@/lib/scoreColor";
 import { VISIT_TYPE_META } from "@/lib/episodes";
 import { SectionLabel } from "./visitUi";
+
+/** Raw baseline diagnosis. `dimension` is the legacy label as stored on the
+ *  patient record; the canonical key + colour are derived at render. */
+export type BaselineDiagnosis = { name: string; icd10: string; dimension: string | null };
 
 export function VisitContextSidebar({
   patientName,
   lastVisit,
   meds,
   allergies,
+  diagnoses,
 }: {
   patientName: string;
   lastVisit: ClinicalVisit | null;
   meds: string[];
   allergies: string[];
+  diagnoses: BaselineDiagnosis[];
 }) {
   const baseline = lastVisit?.dimensionUpdates ?? [];
+  // Derived at render: current score per canonical dimension, for colouring.
+  const scoreByDimension = new Map(baseline.map((d) => [d.dimension, d.newScore]));
   return (
     <aside className="w-[280px] shrink-0 overflow-y-auto p-5 space-y-6" style={{ borderRight: "1px solid #E7DCCD" }}>
       <div>
@@ -51,6 +59,38 @@ export function VisitContextSidebar({
                 </span>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">
+          Current Diagnoses · Nykyiset diagnoosit
+        </div>
+        {diagnoses.length === 0 ? (
+          <p className="text-[12px] italic text-[#9B8775]">No current diagnoses recorded.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {diagnoses.map((d) => {
+              const key = d.dimension ? fromLabel(d.dimension) : null;
+              const score = key ? scoreByDimension.get(key) ?? null : null;
+              return (
+                <div key={`${d.name}-${d.icd10}`} className="flex items-start gap-1.5">
+                  <Stethoscope className="h-3 w-3 mt-0.5 text-[#9B8775] shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[12px] text-[#2E1F14]">
+                      {d.name}
+                      <span className="ml-1.5 text-[10px] font-mono text-[#9B8775]">{d.icd10}</span>
+                    </div>
+                    {key && (
+                      <span className={`text-[10px] font-medium ${scoreColorClass(score)}`}>
+                        {dimensionLabel(key)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

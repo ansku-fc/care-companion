@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatLastFirst } from "@/lib/patientName";
 import { VISIT_TYPE_META } from "@/lib/episodes";
-import { isCarter, CARTER_MEDICATIONS } from "@/lib/patientClinicalData";
+import { isCarter, CARTER_MEDICATIONS, CARTER_DIAGNOSES } from "@/lib/patientClinicalData";
 import {
   getVisits,
   getVisit,
@@ -20,11 +20,16 @@ import {
   type ClinicalVisit,
 } from "@/lib/visits";
 import { VisitFormProvider, useVisitForm } from "@/components/visits/VisitFormProvider";
-import { VisitContextSidebar } from "@/components/visits/VisitContextSidebar";
+import { VisitContextSidebar, type BaselineDiagnosis } from "@/components/visits/VisitContextSidebar";
 import { VisitWorkspace } from "@/components/visits/VisitWorkspace";
 import { VisitReviewScreen } from "@/components/visits/VisitReviewScreen";
 
-type Baseline = { lastVisit: ClinicalVisit | null; meds: string[]; allergies: string[] };
+type Baseline = {
+  lastVisit: ClinicalVisit | null;
+  meds: string[];
+  allergies: string[];
+  diagnoses: BaselineDiagnosis[];
+};
 
 export default function VisitIntakePage() {
   const { id, visitId } = useParams<{ id: string; visitId?: string }>();
@@ -35,7 +40,7 @@ export default function VisitIntakePage() {
   const [patientName, setPatientName] = useState("Patient");
   const [initial, setInitial] = useState<ClinicalVisit | null>(null);
   const [priorVisits, setPriorVisits] = useState<ClinicalVisit[]>([]);
-  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, meds: [], allergies: [] });
+  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, meds: [], allergies: [], diagnoses: [] });
 
   useEffect(() => {
     if (!id) return;
@@ -59,11 +64,18 @@ export default function VisitIntakePage() {
         ? CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => `${m.name} · ${m.dose} · ${m.frequency}`)
         : [];
       const allergies = carter ? ["NSAIDs", "Penicillin", "Tree nuts"] : [];
+      const diagnoses: BaselineDiagnosis[] = carter
+        ? CARTER_DIAGNOSES.filter((d) => d.status === "active").map((d) => ({
+            name: d.name,
+            icd10: d.icd10,
+            dimension: d.dimension,
+          }))
+        : [];
 
       if (cancelled) return;
       setPatientName(name);
       setPriorVisits(prior);
-      setBaseline({ lastVisit, meds, allergies });
+      setBaseline({ lastVisit, meds, allergies, diagnoses });
       setInitial(draft);
       setLoading(false);
     })();
@@ -156,6 +168,7 @@ function VisitIntakeInner({
           lastVisit={baseline.lastVisit}
           meds={baseline.meds}
           allergies={baseline.allergies}
+          diagnoses={baseline.diagnoses}
         />
         <main className="flex-1 min-w-0 overflow-y-auto px-8 py-6">
           <div className="max-w-[860px] mx-auto">
