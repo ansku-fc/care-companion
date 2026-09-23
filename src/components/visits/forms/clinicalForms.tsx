@@ -1,7 +1,8 @@
 // Inline clinical action forms (task / referral / follow-up / diagnosis /
-// prescription) shared by the consultation and visit-intake surfaces.
-// Extracted verbatim from ConsultationWorkspacePage — no behaviour change.
+// prescription) used by the visit-intake drawer. Originally extracted from the
+// (now retired) consultation prototype.
 import { useState } from "react";
+import { MEDICATION_LIST } from "@/lib/onboardingTaxonomy";
 import {
   FormCard,
   TextField,
@@ -24,6 +25,14 @@ import {
   type Diagnosis,
   type Medication,
 } from "./shared";
+import { Combobox, type ComboOption } from "../Combobox";
+
+// Searchable medication options sourced from the shared ATC list.
+const MED_OPTIONS: ComboOption[] = MEDICATION_LIST.map((m) => ({
+  value: m.name,
+  label: m.atc ? `${m.name} (${m.atc})` : m.name,
+  searchText: `${m.name} ${m.atc}`,
+}));
 
 export function TaskForm({ onSave, onCancel }: { onSave: (t: Task) => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
@@ -198,12 +207,23 @@ export function DiagnosisForm({ onSave, onCancel }: { onSave: (d: Diagnosis) => 
 
 export function PrescriptionForm({ onSave, onCancel }: { onSave: (m: Medication) => void; onCancel: () => void }) {
   const [name, setName] = useState("");
+  const [atc, setAtc] = useState<string | undefined>(undefined);
   const [dose, setDose] = useState("");
   const [frequency, setFrequency] = useState("");
   const [time, setTime] = useState("");
+  const onPickMed = (value: string) => {
+    setName(value);
+    setAtc(MEDICATION_LIST.find((m) => m.name === value)?.atc || undefined);
+  };
   return (
     <FormCard>
-      <TextField value={name} onChange={setName} placeholder="Medication name" />
+      <Combobox
+        options={MED_OPTIONS}
+        value={name || null}
+        onSelect={onPickMed}
+        placeholder="Search medications…"
+        searchPlaceholder="Search medication or ATC…"
+      />
       <div className="grid grid-cols-3 gap-3">
         <TextField value={dose} onChange={setDose} placeholder="Dose (e.g. 25mg)" size="sm" />
         <TextField value={frequency} onChange={setFrequency} placeholder="Frequency" size="sm" />
@@ -213,7 +233,7 @@ export function PrescriptionForm({ onSave, onCancel }: { onSave: (m: Medication)
         <CancelLink onClick={onCancel} />
         <PrimaryButton
           disabled={!name.trim()}
-          onClick={() => onSave({ id: uid(), name: name.trim(), dose: dose.trim(), frequency: frequency.trim(), time: time.trim() })}
+          onClick={() => onSave({ id: uid(), name: name.trim(), atc, dose: dose.trim(), frequency: frequency.trim(), time: time.trim() })}
         >
           Prescribe
         </PrimaryButton>

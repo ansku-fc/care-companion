@@ -11,7 +11,7 @@ export type Task = { id: string; title: string; assignee: string; due: string; t
 export type Referral = { id: string; specialty: string; referTo: string; assignee: string; due: string; notes: string };
 export type FollowUp = { id: string; visitType: typeof VISIT_TYPES[number]; timeframe: string; with: string; notes: string };
 export type Diagnosis = { id: string; code: string; name: string; status: "current" | "previous"; year: string };
-export type Medication = { id: string; name: string; dose: string; frequency: string; time: string };
+export type Medication = { id: string; name: string; atc?: string; dose: string; frequency: string; time: string };
 
 export function todayPlus(days: number) {
   const d = new Date();

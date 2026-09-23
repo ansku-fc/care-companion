@@ -12,7 +12,7 @@
 // enumerated tuple in sync at compile time (tsc).
 
 import { HEALTH_TAXONOMY, OLD_TO_NEW_KEY_MAP } from "@/lib/healthDimensions";
-import { getSuggestedDimensionsForIcd } from "@/lib/onboardingTaxonomy";
+import { getSuggestedDimensionsForIcd, ICD_MEDICATION_SUGGESTIONS } from "@/lib/onboardingTaxonomy";
 import { LAB_MARKERS } from "@/lib/labMarkerCatalog";
 
 /** Canonical MAIN dimension keys — mirror of HEALTH_TAXONOMY[*].key. */
@@ -158,6 +158,23 @@ const MARKER_ALIASES: Record<string, string> = {
   "systolic bp": "blood pressure (systolic)",
   "diastolic bp": "blood pressure (diastolic)",
 };
+
+/**
+ * Suggest dimension(s) for a medication by name. There is no ATC→dimension map,
+ * so we reuse ICD_MEDICATION_SUGGESTIONS (ICD→meds) in reverse: find the ICD
+ * codes that prescribe this med, then map those to canonical dimensions.
+ */
+export function suggestDimensionsForMedication(name: string): DimensionKey[] {
+  const lower = name.trim().toLowerCase();
+  if (!lower) return [];
+  const dims = new Set<DimensionKey>();
+  for (const [icd, meds] of Object.entries(ICD_MEDICATION_SUGGESTIONS)) {
+    if (meds.some((m) => m.toLowerCase() === lower)) {
+      for (const d of suggestDimensionsForIcd(icd)) dims.add(d);
+    }
+  }
+  return [...dims];
+}
 
 /** Suggest dimension(s) for a measurement marker (reuses labMarkerCatalog). */
 export function suggestDimensionsForMarker(marker: string): DimensionKey[] {

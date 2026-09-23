@@ -50,6 +50,7 @@ export function prescriptionFromForm(m: FormMedication): PlanPrescription {
   return {
     id: m.id,
     medicationName: m.name,
+    atc: m.atc,
     dose: m.dose,
     frequency: m.frequency,
     time: m.time,

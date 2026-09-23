@@ -140,7 +140,7 @@ export interface ScoringInputs {
 export function scoringInputsFromVisit(visit: ClinicalVisit): ScoringInputs {
   return {
     diagnoses: visit.diagnoses,
-    medicationChanges: visit.intervalHistory.medicationChanges,
+    medicationChanges: visit.medicationChanges,
     measurements: visit.measurements,
   };
 }

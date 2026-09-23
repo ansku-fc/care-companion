@@ -13,14 +13,7 @@ import type { DimensionKey } from "./dimensionMapping";
 
 export type VisitStatus = "draft" | "in_review" | "completed";
 
-/* ---------------- Interval history (delta since last visit) ---------------- */
-
-export interface SymptomEntry {
-  id: string;
-  description: string;
-  dimensions: DimensionKey[];
-  onset?: string; // ISO date, optional
-}
+/* ---------------- Medication changes this visit ---------------- */
 
 export type MedicationChangeKind = "started" | "stopped" | "dose_changed" | "continued";
 
@@ -43,14 +36,6 @@ export interface VisitDiagnosis {
   icd10: string;
   status: DiagnosisStatus;
   dimensions: DimensionKey[]; // doctor-tagged (auto-suggested from ICD); drives scoring
-}
-
-export interface IntervalHistory {
-  newSymptoms: SymptomEntry[];
-  medicationChanges: MedicationChange[];
-  lifeEvents: string[];
-  adherenceNote?: string;
-  freeText?: string;
 }
 
 /* ---------------- Measurements taken / reviewed today ---------------- */
@@ -108,6 +93,7 @@ export interface PlanFollowUp {
 export interface PlanPrescription {
   id: string;
   medicationName: string;
+  atc?: string;
   dose: string;
   frequency: string;
   time: string;
@@ -130,18 +116,37 @@ export interface ClinicalVisit {
   reason: VisitType;
   reasonNote?: string;
   status: VisitStatus;
-  intervalHistory: IntervalHistory;
+  medicationChanges: MedicationChange[];
   measurements: VisitMeasurement[];
   diagnoses: VisitDiagnosis[];
   plan: VisitPlan;
+  /**
+   * Free-text clinical narrative (SOAP-style). Subjective captures what the
+   * patient reports — symptoms, concerns, changes and events since last visit
+   * (this replaces the former structured interval-history fields). All optional,
+   * raw stored prose the doctor writes alongside the structured data.
+   */
+  notes: VisitNotes;
   previousVisitId: string | null; // raw link, NOT a computed "latest" flag
   // NOTE: dimension scores are NOT stored — always derived from the tagged
   // inputs above (diagnoses, medicationChanges, measurements) via derive.ts.
 }
 
-/** Factory for an empty interval history. */
-export function emptyIntervalHistory(): IntervalHistory {
-  return { newSymptoms: [], medicationChanges: [], lifeEvents: [] };
+/**
+ * Visit-level free-text notes. Maps to SOAP: Subjective (reported symptoms),
+ * Objective (clinical observations), Assessment (overall summary). Plan prose is
+ * covered by the structured plan; `general` is a catch-all.
+ */
+export interface VisitNotes {
+  subjective?: string; // what the patient reports
+  objective?: string; // physical findings / examination notes
+  assessment?: string; // doctor's overall assessment / summary
+  general?: string; // catch-all
+}
+
+/** Factory for empty visit notes. */
+export function emptyVisitNotes(): VisitNotes {
+  return {};
 }
 
 /** Factory for an empty plan. */

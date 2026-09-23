@@ -24,6 +24,14 @@ function Card({ children }: { children: React.ReactNode }) {
 function Empty({ children }: { children: React.ReactNode }) {
   return <span className="text-[13px] italic text-[#9B8775]">{children}</span>;
 }
+function NoteBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775] mb-1">{label}</div>
+      <p className="text-[13px] text-[#1F1611] leading-relaxed whitespace-pre-wrap">{children}</p>
+    </div>
+  );
+}
 
 export function VisitReviewScreen({
   draft,
@@ -43,7 +51,6 @@ export function VisitReviewScreen({
   onSave: () => void;
 }) {
   const prior = priorVisits[0] ?? null;
-  const ih = draft.intervalHistory;
   const affected = affectedDimensions(baseline, scoringInputsFromVisit(draft));
   const summary = [
     `${affected.length} dimension${affected.length === 1 ? "" : "s"} affected`,
@@ -66,20 +73,34 @@ export function VisitReviewScreen({
           </p>
 
           <div className="mt-8 space-y-6">
-            {/* Reason + interval history */}
+            {/* Reason + medication changes */}
             <section>
-              <Label>Interval History</Label>
+              <Label>Visit</Label>
               <Card>
                 {draft.reasonNote && <p className="text-[13px] text-[#1F1611] mb-3">{draft.reasonNote}</p>}
-                <div className="space-y-2 text-[13px] text-[#1F1611]">
-                  <div><span className="text-[#9B8775]">Symptoms: </span>{ih.newSymptoms.length ? ih.newSymptoms.map((s) => s.description).join("; ") : <Empty>None reported</Empty>}</div>
-                  <div><span className="text-[#9B8775]">Med changes: </span>{ih.medicationChanges.length ? ih.medicationChanges.map((m) => `${m.medicationName} (${m.change.replace("_", " ")})`).join("; ") : <Empty>None</Empty>}</div>
-                  <div><span className="text-[#9B8775]">Life events: </span>{ih.lifeEvents.length ? ih.lifeEvents.join("; ") : <Empty>None</Empty>}</div>
-                  {ih.adherenceNote && <div><span className="text-[#9B8775]">Adherence: </span>{ih.adherenceNote}</div>}
-                  {ih.freeText && <div><span className="text-[#9B8775]">Notes: </span>{ih.freeText}</div>}
+                <div className="text-[13px] text-[#1F1611]">
+                  <span className="text-[#9B8775]">Medication changes: </span>
+                  {draft.medicationChanges.length
+                    ? draft.medicationChanges.map((m) => `${m.medicationName} (${m.change.replace("_", " ")})`).join("; ")
+                    : <Empty>None</Empty>}
                 </div>
               </Card>
             </section>
+
+            {/* Clinical notes (SOAP free text) */}
+            {(draft.notes.subjective || draft.notes.objective || draft.notes.assessment || draft.notes.general) && (
+              <section>
+                <Label>Clinical Notes</Label>
+                <Card>
+                  <div className="space-y-3">
+                    {draft.notes.subjective && <NoteBlock label="Reported Symptoms">{draft.notes.subjective}</NoteBlock>}
+                    {draft.notes.objective && <NoteBlock label="Clinical Observations">{draft.notes.objective}</NoteBlock>}
+                    {draft.notes.assessment && <NoteBlock label="Assessment">{draft.notes.assessment}</NoteBlock>}
+                    {draft.notes.general && <NoteBlock label="General Notes">{draft.notes.general}</NoteBlock>}
+                  </div>
+                </Card>
+              </section>
+            )}
 
             {/* Measurements with trend */}
             <section>

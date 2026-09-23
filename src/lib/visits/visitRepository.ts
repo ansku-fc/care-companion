@@ -5,7 +5,7 @@
 
 import { MOCK_VISITS, PATIENT_BASELINES } from "./mockVisits";
 import { latestVisit as latestOf } from "./derive";
-import { emptyIntervalHistory, emptyVisitPlan, type ClinicalVisit, type PatientBaseline } from "./types";
+import { emptyVisitPlan, emptyVisitNotes, type ClinicalVisit, type PatientBaseline } from "./types";
 import type { VisitType } from "@/lib/episodes";
 
 // Deep clone so callers can't mutate the seed by reference.
@@ -77,10 +77,11 @@ export async function createDraftVisit(input: {
     reason: input.reason,
     reasonNote: "",
     status: "draft",
-    intervalHistory: emptyIntervalHistory(),
+    medicationChanges: [],
     measurements: [],
     diagnoses: [],
     plan: emptyVisitPlan(),
+    notes: emptyVisitNotes(),
     previousVisitId: prior?.id ?? null,
   };
   return draft;

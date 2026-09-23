@@ -26,7 +26,7 @@ import { VisitContextSidebar, type BaselineDiagnosis } from "@/components/visits
 import { VisitWorkspace } from "@/components/visits/VisitWorkspace";
 import { VisitActionsRail } from "@/components/visits/VisitActionsRail";
 import { VisitReviewScreen } from "@/components/visits/VisitReviewScreen";
-import { VisitSummaryDialog } from "@/components/visits/VisitSummaryDialog";
+import { VisitDrawer, type DrawerRequest } from "@/components/visits/VisitDrawer";
 
 type Baseline = {
   lastVisit: ClinicalVisit | null;
@@ -121,7 +121,7 @@ function VisitIntakeInner({
   const f = useVisitForm();
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
-  const [summaryVisit, setSummaryVisit] = useState<ClinicalVisit | null>(null);
+  const [drawer, setDrawer] = useState<DrawerRequest | null>(null);
   const donePath = `/patients/${patientId}`;
 
   const onSave = async () => {
@@ -178,23 +178,22 @@ function VisitIntakeInner({
           meds={baseline.meds}
           allergies={baseline.allergies}
           diagnoses={baseline.diagnoses}
-          onOpenVisit={setSummaryVisit}
+          onOpenVisit={(v) => setDrawer({ kind: "visit-summary", visit: v })}
         />
-        <main className="flex-1 min-w-0 overflow-y-auto px-8 py-6">
-          <div className="max-w-[860px] mx-auto">
-            <VisitWorkspace baseline={baseline.scores} />
+        <main className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
+          <div className="max-w-[880px] mx-auto">
+            <VisitWorkspace baseline={baseline.scores} onOpen={setDrawer} />
           </div>
         </main>
-        <VisitActionsRail baseline={baseline.scores} />
+        <VisitActionsRail onOpen={setDrawer} />
       </div>
 
-      <VisitSummaryDialog
-        visit={summaryVisit}
-        allVisits={priorVisits}
+      <VisitDrawer
+        request={drawer}
+        onClose={() => setDrawer(null)}
         baseline={baseline.scores}
+        allVisits={priorVisits}
         patientName={patientName}
-        open={summaryVisit !== null}
-        onOpenChange={(o) => !o && setSummaryVisit(null)}
       />
     </div>
   );

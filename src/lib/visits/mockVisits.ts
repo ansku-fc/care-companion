@@ -33,22 +33,22 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     reasonNote: "Comprehensive annual check-up (baseline)",
     status: "completed",
     previousVisitId: null,
+    notes: {
+      subjective:
+        "Reports feeling generally well but reduced energy and occasional exertional breathlessness climbing stairs over recent months. Busy, high-travel year with irregular meals and little regular exercise. Baseline visit — new to therapy.",
+      objective:
+        "Overweight with central adiposity. Heart sounds normal, no murmurs. Chest clear. No peripheral oedema. BP elevated on repeat measurement.",
+      assessment:
+        "New diagnoses of essential hypertension and type 2 diabetes; cardiometabolic risk is the priority. Commenced first-line pharmacotherapy alongside structured lifestyle change.",
+    },
     diagnoses: [
       { id: "dx-a1", name: "Essential Hypertension", icd10: "I10", status: "active", dimensions: ["cardiovascular"] },
       { id: "dx-a2", name: "Type 2 Diabetes Mellitus", icd10: "E11", status: "active", dimensions: ["metabolic"] },
     ],
-    intervalHistory: {
-      newSymptoms: [
-        { id: "s-a1", description: "Occasional exertional breathlessness climbing stairs", dimensions: ["cardiovascular"], onset: "2025-04-01" },
-      ],
-      medicationChanges: [
-        { id: "mc-a1", medicationName: "Lisinopril", atc: "C09AA03", change: "started", detail: "New — 10mg once daily", dimensions: ["cardiovascular"] },
-        { id: "mc-a2", medicationName: "Metformin", atc: "A10BA02", change: "started", detail: "New — 500mg twice daily", dimensions: ["metabolic"] },
-      ],
-      lifeEvents: ["High-travel year with irregular meals"],
-      adherenceNote: "N/A — new to therapy.",
-      freeText: "Baseline visit. Hypertension and impaired glucose confirmed on labs.",
-    },
+    medicationChanges: [
+      { id: "mc-a1", medicationName: "Lisinopril", atc: "C09AA03", change: "started", detail: "New — 10mg once daily", dimensions: ["cardiovascular"] },
+      { id: "mc-a2", medicationName: "Metformin", atc: "A10BA02", change: "started", detail: "New — 500mg twice daily", dimensions: ["metabolic"] },
+    ],
     measurements: [
       { id: "m-a1", kind: "vital", marker: "Systolic BP", value: 150, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
       { id: "m-a2", kind: "vital", marker: "Diastolic BP", value: 95, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
@@ -78,20 +78,19 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     reasonNote: "Acute lower respiratory tract infection",
     status: "completed",
     previousVisitId: "visit-carter-2025-06-20",
+    notes: {
+      subjective:
+        "5-day history of productive cough, wheeze and low-grade fever. No chest pain, no haemoptysis, no breathlessness at rest. Good adherence to antihypertensives and metformin.",
+      objective:
+        "Temperature 37.9°C, SpO2 96% on air. Scattered wheeze on auscultation, no focal crepitations. Not systemically unwell.",
+      assessment: "Community-acquired lower respiratory tract infection. Safety-netted; antibiotics started.",
+    },
     diagnoses: [
       { id: "dx-b1", name: "Acute bronchitis", icd10: "J20", status: "active", dimensions: ["respiratory_immune"] },
     ],
-    intervalHistory: {
-      newSymptoms: [
-        { id: "s-b1", description: "Productive cough, wheeze and low-grade fever for 5 days", dimensions: ["respiratory_immune"], onset: "2025-10-03" },
-      ],
-      medicationChanges: [
-        { id: "mc-b1", medicationName: "Amoxicillin", atc: "J01CA04", change: "started", detail: "7-day course", dimensions: ["respiratory_immune"] },
-      ],
-      lifeEvents: [],
-      adherenceNote: "Good adherence to antihypertensives and metformin.",
-      freeText: "No red-flag features; managed as community-acquired LRTI.",
-    },
+    medicationChanges: [
+      { id: "mc-b1", medicationName: "Amoxicillin", atc: "J01CA04", change: "started", detail: "7-day course", dimensions: ["respiratory_immune"] },
+    ],
     measurements: [
       { id: "m-b1", kind: "vital", marker: "Temperature", value: 37.9, unit: "°C", source: "measured_today", dimensions: ["respiratory_immune"] },
       { id: "m-b2", kind: "vital", marker: "SpO2", value: 96, unit: "%", source: "measured_today", dimensions: ["respiratory_immune"] },
@@ -117,18 +116,16 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     reasonNote: "Lipid & glucose results review",
     status: "completed",
     previousVisitId: "visit-carter-2025-10-08",
+    notes: {
+      subjective: "No new symptoms. Chest infection fully resolved. Good adherence reported.",
+      assessment: "Lipids still above target — statin started. Glucose control improving on metformin + lifestyle.",
+    },
     diagnoses: [
       { id: "dx-c1", name: "Hyperlipidaemia", icd10: "E78.5", status: "active", dimensions: ["cardiovascular", "metabolic"] },
     ],
-    intervalHistory: {
-      newSymptoms: [],
-      medicationChanges: [
-        { id: "mc-c1", medicationName: "Atorvastatin", atc: "C10AA05", change: "started", detail: "New — 10mg once daily", dimensions: ["cardiovascular"] },
-      ],
-      lifeEvents: [],
-      adherenceNote: "Good adherence reported.",
-      freeText: "Chest infection fully resolved. Lipids still above target — statin started.",
-    },
+    medicationChanges: [
+      { id: "mc-c1", medicationName: "Atorvastatin", atc: "C10AA05", change: "started", detail: "New — 10mg once daily", dimensions: ["cardiovascular"] },
+    ],
     measurements: [
       { id: "m-c1", kind: "lab", marker: "LDL", value: 3.4, unit: "mmol/L", source: "reviewed", dimensions: ["cardiovascular", "metabolic"] },
       { id: "m-c2", kind: "lab", marker: "HbA1c", value: 53, unit: "mmol/mol", source: "reviewed", dimensions: ["metabolic"] },
@@ -151,16 +148,15 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     reasonNote: "Routine cardiometabolic follow-up",
     status: "completed",
     previousVisitId: "visit-carter-2025-12-15",
-    diagnoses: [],
-    intervalHistory: {
-      newSymptoms: [],
-      medicationChanges: [
-        { id: "mc-1", medicationName: "Atorvastatin", atc: "C10AA05", change: "dose_changed", detail: "10mg → 20mg", dimensions: ["cardiovascular"] },
-      ],
-      lifeEvents: ["Started a new, more sedentary desk role"],
-      adherenceNote: "Good adherence reported.",
-      freeText: "Feeling well overall; no chest pain or palpitations.",
+    notes: {
+      subjective:
+        "Feeling well overall; no chest pain or palpitations. Started a new, more sedentary desk role. Good adherence reported.",
+      assessment: "BP above target on current therapy; statin uptitrated. HbA1c trending up — reinforce lifestyle.",
     },
+    diagnoses: [],
+    medicationChanges: [
+      { id: "mc-1", medicationName: "Atorvastatin", atc: "C10AA05", change: "dose_changed", detail: "10mg → 20mg", dimensions: ["cardiovascular"] },
+    ],
     measurements: [
       { id: "m-1", kind: "vital", marker: "Systolic BP", value: 142, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
       { id: "m-2", kind: "vital", marker: "Diastolic BP", value: 88, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
@@ -187,20 +183,19 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     reasonNote: "Cardiovascular & liver review",
     status: "completed",
     previousVisitId: "visit-carter-2026-03-10",
+    notes: {
+      subjective:
+        "Occasional heartburn after evening meals for ~6 weeks. No dysphagia, weight loss or alarm features; reflux manageable. Admits missing occasional evening statin doses.",
+      objective: "Abdomen soft, non-tender. BP improved versus prior review. Otherwise unremarkable examination.",
+      assessment:
+        "New mild GERD — trial PPI with lifestyle advice. Cardiovascular risk improving; reinforce statin adherence (evening dosing).",
+    },
     diagnoses: [
       { id: "dx-e1", name: "Gastroesophageal Reflux Disease", icd10: "K21.0", status: "active", dimensions: ["digestion"] },
     ],
-    intervalHistory: {
-      newSymptoms: [
-        { id: "s-1", description: "Occasional heartburn after evening meals", dimensions: ["digestion"], onset: "2026-05-01" },
-      ],
-      medicationChanges: [
-        { id: "mc-2", medicationName: "Omeprazole", atc: "A02BC01", change: "continued", dimensions: ["digestion"] },
-      ],
-      lifeEvents: [],
-      adherenceNote: "Missed occasional evening statin doses.",
-      freeText: "Reflux symptoms manageable; no alarm features.",
-    },
+    medicationChanges: [
+      { id: "mc-2", medicationName: "Omeprazole", atc: "A02BC01", change: "continued", dimensions: ["digestion"] },
+    ],
     measurements: [
       { id: "m-5", kind: "vital", marker: "Systolic BP", value: 136, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
       { id: "m-6", kind: "vital", marker: "Diastolic BP", value: 84, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
@@ -225,16 +220,16 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     reasonNote: "Annual check-up",
     status: "completed",
     previousVisitId: "visit-carter-2026-06-16",
-    diagnoses: [],
-    intervalHistory: {
-      newSymptoms: [],
-      medicationChanges: [
-        { id: "mc-d1", medicationName: "Atorvastatin", atc: "C10AA05", change: "continued", dimensions: ["cardiovascular"] },
-      ],
-      lifeEvents: ["Returned to regular gym routine"],
-      adherenceNote: "Excellent adherence; reflux resolved.",
-      freeText: "Best cardiometabolic profile to date. Continue current regimen.",
+    notes: {
+      subjective: "Feeling well, no new concerns. Returned to a regular gym routine. Reflux resolved. Excellent adherence.",
+      objective: "BP at target. Weight down 4 kg since last review. Examination unremarkable.",
+      assessment: "Best cardiometabolic profile to date. Continue current regimen; interim check in 6 months.",
+      general: "Excellent engagement with the lifestyle plan this year.",
     },
+    diagnoses: [],
+    medicationChanges: [
+      { id: "mc-d1", medicationName: "Atorvastatin", atc: "C10AA05", change: "continued", dimensions: ["cardiovascular"] },
+    ],
     measurements: [
       { id: "m-d1", kind: "vital", marker: "Systolic BP", value: 128, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
       { id: "m-d2", kind: "vital", marker: "Diastolic BP", value: 80, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },

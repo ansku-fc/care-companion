@@ -7,13 +7,12 @@ import { createContext, useContext, useState, useCallback, useMemo, type ReactNo
 import type {
   ClinicalVisit,
   VisitDiagnosis,
-  IntervalHistory,
   MedicationChange,
   PlanPrescription,
   PlanReferral,
   PlanTask,
-  SymptomEntry,
   VisitMeasurement,
+  VisitNotes,
   VisitPlan,
 } from "@/lib/visits";
 
@@ -22,11 +21,8 @@ type VisitFormContextValue = {
   set: <K extends keyof ClinicalVisit>(key: K, value: ClinicalVisit[K]) => void;
   patch: (updates: Partial<ClinicalVisit>) => void;
   hydrate: (next: ClinicalVisit) => void;
-  patchInterval: (updates: Partial<IntervalHistory>) => void;
   patchPlan: (updates: Partial<VisitPlan>) => void;
-  // Symptoms
-  addSymptom: (s: SymptomEntry) => void;
-  removeSymptom: (id: string) => void;
+  patchNotes: (updates: Partial<VisitNotes>) => void;
   // Medication changes
   addMedicationChange: (m: MedicationChange) => void;
   removeMedicationChange: (id: string) => void;
@@ -66,44 +62,19 @@ export function VisitFormProvider({
 
   const hydrate = useCallback((next: ClinicalVisit) => setDraft(next), []);
 
-  const patchInterval = useCallback((updates: Partial<IntervalHistory>) => {
-    setDraft((prev) => ({ ...prev, intervalHistory: { ...prev.intervalHistory, ...updates } }));
-  }, []);
-
   const patchPlan = useCallback((updates: Partial<VisitPlan>) => {
     setDraft((prev) => ({ ...prev, plan: { ...prev.plan, ...updates } }));
   }, []);
 
-  const addSymptom = useCallback((s: SymptomEntry) => {
-    setDraft((prev) => ({
-      ...prev,
-      intervalHistory: { ...prev.intervalHistory, newSymptoms: [...prev.intervalHistory.newSymptoms, s] },
-    }));
-  }, []);
-  const removeSymptom = useCallback((id: string) => {
-    setDraft((prev) => ({
-      ...prev,
-      intervalHistory: {
-        ...prev.intervalHistory,
-        newSymptoms: prev.intervalHistory.newSymptoms.filter((x) => x.id !== id),
-      },
-    }));
+  const patchNotes = useCallback((updates: Partial<VisitNotes>) => {
+    setDraft((prev) => ({ ...prev, notes: { ...prev.notes, ...updates } }));
   }, []);
 
   const addMedicationChange = useCallback((m: MedicationChange) => {
-    setDraft((prev) => ({
-      ...prev,
-      intervalHistory: { ...prev.intervalHistory, medicationChanges: [...prev.intervalHistory.medicationChanges, m] },
-    }));
+    setDraft((prev) => ({ ...prev, medicationChanges: [...prev.medicationChanges, m] }));
   }, []);
   const removeMedicationChange = useCallback((id: string) => {
-    setDraft((prev) => ({
-      ...prev,
-      intervalHistory: {
-        ...prev.intervalHistory,
-        medicationChanges: prev.intervalHistory.medicationChanges.filter((x) => x.id !== id),
-      },
-    }));
+    setDraft((prev) => ({ ...prev, medicationChanges: prev.medicationChanges.filter((x) => x.id !== id) }));
   }, []);
 
   const addMeasurement = useCallback((m: VisitMeasurement) => {
@@ -144,14 +115,14 @@ export function VisitFormProvider({
 
   const value = useMemo<VisitFormContextValue>(
     () => ({
-      draft, set, patch, hydrate, patchInterval, patchPlan,
-      addSymptom, removeSymptom, addMedicationChange, removeMedicationChange,
+      draft, set, patch, hydrate, patchPlan, patchNotes,
+      addMedicationChange, removeMedicationChange,
       addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
     }),
     [
-      draft, set, patch, hydrate, patchInterval, patchPlan,
-      addSymptom, removeSymptom, addMedicationChange, removeMedicationChange,
+      draft, set, patch, hydrate, patchPlan, patchNotes,
+      addMedicationChange, removeMedicationChange,
       addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
     ],
