@@ -13,7 +13,7 @@
 // the grouping (diagnosisPrescribing, visit-only) + the current-med linkage and
 // resolution composed here (needs the baseline regimen, which isn't on the draft).
 import { useState } from "react";
-import { Plus, ChevronDown, AlertCircle, AlertTriangle, Check, Activity } from "lucide-react";
+import { Plus, ChevronDown, AlertCircle, AlertTriangle, Check, CheckSquare, Activity } from "lucide-react";
 import { diagnosisPrescribing, type DiagnosisRxGroup, type MedicationChangeKind } from "@/lib/visits";
 import { useVisitForm } from "./VisitFormProvider";
 import { SectionCard, SectionLabel, Row } from "./visitUi";
@@ -403,7 +403,7 @@ function DiagnosisPrompt({
                 return (
                   <div key={med.id} className="flex items-center justify-between gap-2">
                     <div className="min-w-0 text-[12px]">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-[#9B8775]">Current</span>
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-[#9B8775]">Medication</span>
                       <span className="ml-1.5 font-medium text-[#1F1611]">{med.name}</span>
                       <span className="text-[#9B8775]"> {med.dose} · {med.frequency}</span>
                       {conflict && (
@@ -446,9 +446,7 @@ function DiagnosisPrompt({
                 return (
                   <div key={t.id} className="flex items-center justify-between gap-2">
                     <div className="min-w-0 text-[12px]">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-[#9B8775]">
-                        <Activity className="h-3 w-3" /> Treatment
-                      </span>
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-[#9B8775]">Treatment</span>
                       <span className="ml-1.5 font-medium text-[#1F1611]">{t.name}</span>
                       {t.note && <span className="text-[#9B8775]"> · {t.note}</span>}
                     </div>
@@ -606,7 +604,7 @@ function DiagnosisPrompt({
                 </button>
               )}
               <button type="button" onClick={() => setForm({ mode: "treatment" })} className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline">
-                <Activity className="h-3 w-3" /> Add treatment
+                <Plus className="h-3 w-3" /> Add treatment
               </button>
               {!hasCurrentMed && !hasCurrentTreatment && g.changes.length + g.prescriptions.length + g.treatments.length === 0 && (
                 <button type="button" onClick={() => onSetNoMed(true)} className="text-[11px] font-medium text-[#6E5A48] hover:text-[#2E1F14]">
@@ -614,8 +612,8 @@ function DiagnosisPrompt({
                 </button>
               )}
               {g.source === "existing" && !g.markedResolved && (
-                <button type="button" onClick={() => onMarkResolved(true)} className="text-[11px] font-medium text-[#6E5A48] hover:text-[#2E1F14]">
-                  Mark resolved
+                <button type="button" onClick={() => onMarkResolved(true)} className="inline-flex items-center gap-1 text-[11px] font-medium text-[#6E5A48] hover:text-[#2E1F14]">
+                  <CheckSquare className="h-3 w-3" /> Mark resolved
                 </button>
               )}
             </div>
