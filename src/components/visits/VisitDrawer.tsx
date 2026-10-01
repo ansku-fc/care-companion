@@ -3,20 +3,14 @@
 // the same visit draft via useVisitForm; closing returns to the overview with
 // the change reflected. Reuses the extracted form primitives and clinical forms.
 import { useState } from "react";
-import { X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { VISIT_TYPE_META, type VisitType } from "@/lib/episodes";
-import { ICD10_ILLNESSES, MEDICATION_LIST } from "@/lib/onboardingTaxonomy";
-import { LAB_MARKERS } from "@/lib/labMarkerCatalog";
+import { ICD10_ILLNESSES } from "@/lib/onboardingTaxonomy";
 import {
-  dimensionLabel,
   suggestDimensionsForIcd,
-  suggestDimensionsForMarker,
-  suggestDimensionsForMedication,
   type ClinicalVisit,
   type DimensionKey,
   type DiagnosisStatus,
-  type MedicationChangeKind,
   type PatientBaseline,
   type PlanFollowUp,
   type VisitMeasurement,
@@ -35,7 +29,6 @@ import { VisitSummaryContent } from "./VisitSummaryContent";
 export type DrawerRequest =
   | { kind: "reason" }
   | { kind: "notes"; focus?: "subjective" | "objective" | "assessment" | "general" }
-  | { kind: "medication" }
   | { kind: "diagnosis" }
   | { kind: "measurement" }
   | { kind: "task" }
@@ -47,7 +40,6 @@ export type DrawerRequest =
 const TITLES: Record<DrawerRequest["kind"], string> = {
   reason: "Reason for visit",
   notes: "Clinical notes",
-  medication: "Add medication change",
   diagnosis: "Add diagnosis",
   measurement: "Add measurements",
   task: "Add task",
@@ -62,16 +54,6 @@ const ICD_OPTIONS: ComboOption[] = ICD10_ILLNESSES.map((e) => ({
   value: e.code,
   label: `${e.code} — ${e.name}`,
   searchText: `${e.code} ${e.name}`,
-}));
-const MED_OPTIONS: ComboOption[] = MEDICATION_LIST.map((m) => ({
-  value: m.name,
-  label: m.atc ? `${m.name} (${m.atc})` : m.name,
-  searchText: `${m.name} ${m.atc}`,
-}));
-const LAB_OPTIONS: ComboOption[] = LAB_MARKERS.filter((m) => m.type === "number").map((m) => ({
-  value: m.field,
-  label: m.unit ? `${m.label} (${m.unit})` : m.label,
-  searchText: m.label,
 }));
 
 export function VisitDrawer({
@@ -125,8 +107,6 @@ function DrawerBody({
       return <ReasonForm onClose={onClose} />;
     case "notes":
       return <NotesForm onClose={onClose} />;
-    case "medication":
-      return <MedicationChangeForm onClose={onClose} />;
     case "diagnosis":
       return <DiagnosisForm onClose={onClose} />;
     case "measurement":
@@ -206,44 +186,6 @@ function NotesForm({ onClose }: { onClose: () => void }) {
 
 /* ---------------- Add forms (save to draft, close on save) ---------------- */
 
-function MedicationChangeForm({ onClose }: { onClose: () => void }) {
-  const f = useVisitForm();
-  const [name, setName] = useState("");
-  const [atc, setAtc] = useState<string | undefined>(undefined);
-  const [change, setChange] = useState<MedicationChangeKind>("started");
-  const [detail, setDetail] = useState("");
-  const [dims, setDims] = useState<DimensionKey[]>([]);
-  const onPickMed = (value: string) => {
-    setName(value);
-    setAtc(MEDICATION_LIST.find((m) => m.name === value)?.atc || undefined);
-    const s = suggestDimensionsForMedication(value);
-    if (s.length) setDims(s);
-  };
-  const save = () => {
-    if (!name.trim()) return;
-    f.addMedicationChange({ id: uid(), medicationName: name.trim(), atc, change, detail: detail.trim() || undefined, dimensions: dims });
-    onClose();
-  };
-  return (
-    <div className="space-y-3">
-      <div>
-        <div className="text-[11px] text-[#9B8775] mb-1">Medication</div>
-        <Combobox options={MED_OPTIONS} value={name || null} onSelect={onPickMed} placeholder="Search medications…" searchPlaceholder="Search medication or ATC…" />
-      </div>
-      <SelectField value={change} onChange={(v) => setChange(v as MedicationChangeKind)} options={["started", "stopped", "dose_changed", "continued"]} />
-      <TextField value={detail} onChange={setDetail} placeholder="Detail (e.g. 10mg → 20mg)" size="sm" />
-      <div>
-        <div className="text-[11px] text-[#9B8775] mb-1">Related dimension(s)</div>
-        <DimensionMultiSelect value={dims} onChange={setDims} />
-      </div>
-      <div className="flex items-center justify-end gap-3 pt-1">
-        <CancelLink onClick={onClose} />
-        <PrimaryButton disabled={!name.trim()} onClick={save}>Add change</PrimaryButton>
-      </div>
-    </div>
-  );
-}
-
 function DiagnosisForm({ onClose }: { onClose: () => void }) {
   const f = useVisitForm();
   const [icd10, setIcd10] = useState("");
@@ -281,8 +223,8 @@ function DiagnosisForm({ onClose }: { onClose: () => void }) {
 }
 
 /* Common vitals mirror what onboarding captures (BP, HR, weight, height, waist)
- * plus temperature. Dimensions here are auto-assigned (well-known); extra lab
- * markers below carry an adjustable dimension tag. */
+ * plus temperature. Dimensions here are auto-assigned (well-known). Lab markers
+ * are handled by the separate labs-mirror feature, not entered here. */
 const COMMON_VITALS: { marker: string; unit: string; dims: DimensionKey[] }[] = [
   { marker: "Systolic BP", unit: "mmHg", dims: ["cardiovascular"] },
   { marker: "Diastolic BP", unit: "mmHg", dims: ["cardiovascular"] },
@@ -293,24 +235,9 @@ const COMMON_VITALS: { marker: string; unit: string; dims: DimensionKey[] }[] = 
   { marker: "Temperature", unit: "°C", dims: ["respiratory_immune"] },
 ];
 
-type LabRow = { id: string; marker: string; unit: string; value: string; dims: DimensionKey[] };
-
 function MeasurementForm({ onClose }: { onClose: () => void }) {
   const f = useVisitForm();
   const [vitals, setVitals] = useState<Record<string, string>>({});
-  const [labs, setLabs] = useState<LabRow[]>([]);
-
-  const addLab = (field: string) => {
-    const m = LAB_MARKERS.find((x) => x.field === field);
-    if (!m) return;
-    setLabs((prev) => [
-      ...prev,
-      { id: uid(), marker: m.label, unit: m.unit ?? "", value: "", dims: suggestDimensionsForMarker(m.label) },
-    ]);
-  };
-  const updateLab = (id: string, patch: Partial<LabRow>) =>
-    setLabs((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  const removeLab = (id: string) => setLabs((prev) => prev.filter((r) => r.id !== id));
 
   const save = () => {
     const out: VisitMeasurement[] = [];
@@ -318,10 +245,6 @@ function MeasurementForm({ onClose }: { onClose: () => void }) {
       const raw = (vitals[v.marker] ?? "").trim();
       if (!raw) continue;
       out.push({ id: uid(), kind: "vital", marker: v.marker, value: raw, unit: v.unit, source: "measured_today", dimensions: v.dims });
-    }
-    for (const r of labs) {
-      if (!r.value.trim()) continue;
-      out.push({ id: uid(), kind: "lab", marker: r.marker, value: r.value.trim(), unit: r.unit, source: "reviewed", dimensions: r.dims });
     }
     out.forEach((m) => f.addMeasurement(m));
     onClose();
@@ -345,38 +268,6 @@ function MeasurementForm({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </div>
-      </div>
-
-      <div>
-        <div className="text-[11px] uppercase tracking-wide text-[#9B8775] mb-1">Other Lab Markers</div>
-        {labs.map((r) => (
-          <div key={r.id} className="mb-2 rounded-[8px] p-2" style={{ border: "1px solid #E7DCCD" }}>
-            <div className="flex items-center gap-2">
-              <span className="flex-1 text-[13px] text-[#1F1611]">{r.marker}</span>
-              <input
-                value={r.value}
-                onChange={(e) => updateLab(r.id, { value: e.target.value })}
-                placeholder="value"
-                className="w-20 text-right bg-transparent outline-none text-[13px] text-[#1F1611] py-0.5"
-                style={{ borderBottom: "1px solid #E7DCCD" }}
-              />
-              <span className="w-12 text-[11px] text-[#9B8775]">{r.unit}</span>
-              <button type="button" onClick={() => removeLab(r.id)} aria-label="Remove">
-                <X className="h-3.5 w-3.5 text-[#C9BBA9]" />
-              </button>
-            </div>
-            <div className="mt-1.5">
-              <DimensionMultiSelect value={r.dims} onChange={(d) => updateLab(r.id, { dims: d })} />
-            </div>
-          </div>
-        ))}
-        <Combobox
-          options={LAB_OPTIONS}
-          value={null}
-          onSelect={addLab}
-          placeholder="+ Add a lab marker…"
-          searchPlaceholder="Search lab markers…"
-        />
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-1">

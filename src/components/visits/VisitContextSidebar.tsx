@@ -74,7 +74,7 @@ export function VisitContextSidebar({
         <p className="text-[15px] font-semibold text-[#2E1F14] mt-1">{patientName}</p>
       </div>
 
-      <Accordion type="multiple" defaultValue={["baseline", "diagnoses"]} className="border-t border-[#F0EBE4]">
+      <Accordion type="multiple" defaultValue={[]} className="border-t border-[#F0EBE4]">
         {/* Dimension Baseline — all 9, live derived score */}
         <AccordionItem value="baseline" className="border-[#F0EBE4]">
           <AccordionTrigger className="py-2.5 hover:no-underline">

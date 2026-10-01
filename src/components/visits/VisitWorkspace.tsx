@@ -11,20 +11,12 @@ import {
   affectedDimensions,
   scoringInputsFromVisit,
   type DimensionKey,
-  type MedicationChangeKind,
   type PatientBaseline,
 } from "@/lib/visits";
 import { scoreColorClass } from "@/lib/scoreColor";
 import { useVisitForm } from "./VisitFormProvider";
 import { SectionCard, SectionLabel, Row } from "./visitUi";
 import type { DrawerRequest } from "./VisitDrawer";
-
-const MED_CHANGE_LABELS: Record<MedicationChangeKind, string> = {
-  started: "Started",
-  stopped: "Stopped",
-  dose_changed: "Dose changed",
-  continued: "Continued",
-};
 
 export function VisitWorkspace({
   baseline,
@@ -65,24 +57,6 @@ export function VisitWorkspace({
           <NotePreview label="Assessment" text={d.notes.assessment} onClick={() => onOpen({ kind: "notes", focus: "assessment" })} />
           {d.notes.general && <NotePreview label="General" text={d.notes.general} onClick={() => onOpen({ kind: "notes", focus: "general" })} />}
         </div>
-      </SectionCard>
-
-      {/* Medication changes */}
-      <SectionCard>
-        <div className="flex items-center justify-between">
-          <SectionLabel>Medication Changes</SectionLabel>
-          <AddButton onClick={() => onOpen({ kind: "medication" })} />
-        </div>
-        {d.medicationChanges.length === 0 ? (
-          <Empty>No changes recorded</Empty>
-        ) : (
-          d.medicationChanges.map((m) => (
-            <Row key={m.id} onRemove={() => f.removeMedicationChange(m.id)}>
-              <span className="text-[12px] font-medium text-[#1F1611]">{m.medicationName}</span>
-              <span className="text-[11px] text-[#9B8775]"> · {MED_CHANGE_LABELS[m.change]}{m.dimensions.length ? ` · ${m.dimensions.map(dimensionLabel).join(", ")}` : ""}</span>
-            </Row>
-          ))
-        )}
       </SectionCard>
 
       {/* Diagnoses + measurements */}
