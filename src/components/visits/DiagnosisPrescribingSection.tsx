@@ -61,7 +61,10 @@ export function DiagnosisPrescribingSection({
   const dp = diagnosisPrescribing(d);
 
   const [sectionOpen, setSectionOpen] = useState(false);
-  const [subOpen, setSubOpen] = useState<string[]>(["current", "new"]);
+  // Controlled inner-accordion state: both sub-accordions collapsed by default.
+  // Opening the section just reveals the two (collapsed) headers; "Add" opens
+  // only "New". Nothing auto-expands "Current".
+  const [subOpen, setSubOpen] = useState<string[]>([]);
   const [addDxOpen, setAddDxOpen] = useState(false);
 
   const savePrescription: (diagnosisId: string) => SavePrescription = (diagnosisId) => (m, basedOnId) => {
@@ -211,7 +214,7 @@ export function DiagnosisPrescribingSection({
         </button>
         <button
           type="button"
-          onClick={() => { setSectionOpen(true); setSubOpen((s) => (s.includes("new") ? s : [...s, "new"])); setAddDxOpen(true); }}
+          onClick={() => { setSectionOpen(true); setSubOpen(["new"]); setAddDxOpen(true); }}
           className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline shrink-0"
         >
           <Plus className="h-3 w-3" /> Add
