@@ -1,8 +1,11 @@
 // Inline clinical action forms (task / referral / follow-up / diagnosis /
 // prescription) used by the visit-intake drawer. Originally extracted from the
 // (now retired) consultation prototype.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { MEDICATION_LIST } from "@/lib/onboardingTaxonomy";
+import { TREATMENT_CATALOG } from "@/lib/treatmentCatalog";
+import { medicationAllergyConflict } from "@/lib/drugAllergy";
 import {
   FormCard,
   TextField,
@@ -25,7 +28,7 @@ import {
   type Diagnosis,
   type Medication,
 } from "./shared";
-import { Combobox, type ComboOption, type ComboGroup, sortByLabel } from "../Combobox";
+import { Combobox, type ComboOption, sortByLabel } from "../Combobox";
 
 // Searchable medication options sourced from the shared ATC list (A→Z).
 const MED_OPTIONS: ComboOption[] = sortByLabel(
@@ -34,6 +37,11 @@ const MED_OPTIONS: ComboOption[] = sortByLabel(
     label: m.atc ? `${m.name} (${m.atc})` : m.name,
     searchText: `${m.name} ${m.atc}`,
   })),
+);
+
+// Searchable non-medication treatment options (A→Z), from the treatment catalog.
+const TREATMENT_OPTIONS: ComboOption[] = sortByLabel(
+  TREATMENT_CATALOG.map((name) => ({ value: name, label: name, searchText: name })),
 );
 
 export function TaskForm({ onSave, onCancel }: { onSave: (t: Task) => void; onCancel: () => void }) {
@@ -207,6 +215,43 @@ export function DiagnosisForm({ onSave, onCancel }: { onSave: (d: Diagnosis) => 
   );
 }
 
+// Inline form to link a non-medication treatment (device/therapy/intervention)
+// to a diagnosis: a searchable catalog dropdown + an optional free-text note.
+// Mirrors PrescriptionForm's shape (Combobox + fields + confirm), minus drugs.
+export function TreatmentForm({
+  onSave,
+  onCancel,
+}: {
+  onSave: (t: { name: string; note?: string }) => void;
+  onCancel: () => void;
+}) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [note, setNote] = useState("");
+
+  return (
+    <FormCard onClose={onCancel}>
+      <Combobox
+        options={TREATMENT_OPTIONS}
+        value={selected}
+        onSelect={(val) => {
+          setSelected(val);
+          setName(val);
+        }}
+        placeholder="Search treatments…"
+        searchPlaceholder="Search device, therapy or intervention…"
+      />
+      <TextField value={note} onChange={setNote} placeholder="Note (optional) — e.g. pressure, tolerance, plan" size="sm" />
+      <div className="flex items-center justify-end gap-3 pt-1">
+        <CancelLink onClick={onCancel} />
+        <PrimaryButton disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), note: note.trim() || undefined })}>
+          Add treatment
+        </PrimaryButton>
+      </div>
+    </FormCard>
+  );
+}
+
 // A standing medication the patient is already on, for the dropdown's "Current
 // medications" group. Structural subset of the rail's CurrentMed (no circular
 // import); `dimensions` are resolved by the caller when recording the change.
@@ -216,75 +261,114 @@ export function PrescriptionForm({
   onSave,
   onCancel,
   currentMeds = [],
+  changeTarget,
+  allergies = [],
 }: {
   // basedOnCurrentId is the current medication's id when one was picked (→ the
   // caller records a medication change), or null for a brand-new prescription.
   onSave: (m: Medication, basedOnCurrentId: string | null) => void;
   onCancel: () => void;
   currentMeds?: FormCurrentMed[];
+  /** Change mode: the one current medication being changed. It appears ONCE
+   *  (as the item being edited, fields pre-filled); the dropdown below is for
+   *  substituting to a different medication, not re-picking this one. */
+  changeTarget?: FormCurrentMed;
+  /** Patient allergy labels (same source as the left-rail Allergies list) — used
+   *  to flag conflicts in the dropdown and gate confirm behind acknowledge. */
+  allergies?: string[];
 }) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [atc, setAtc] = useState<string | undefined>(undefined);
-  const [dose, setDose] = useState("");
-  const [frequency, setFrequency] = useState("");
-  const [time, setTime] = useState("");
-  const [basedOnId, setBasedOnId] = useState<string | null>(null);
+  const [name, setName] = useState(changeTarget?.name ?? "");
+  const [atc, setAtc] = useState<string | undefined>(changeTarget?.atc);
+  const [dose, setDose] = useState(changeTarget?.dose ?? "");
+  const [frequency, setFrequency] = useState(changeTarget?.frequency ?? "");
+  const [time, setTime] = useState(changeTarget?.time ?? "");
+  const [basedOnId, setBasedOnId] = useState<string | null>(changeTarget ? changeTarget.id : null);
+  const [acknowledged, setAcknowledged] = useState(false);
 
-  const currentOptions: ComboOption[] = sortByLabel(
-    currentMeds.map((c) => ({
-      value: `current:${c.id}`,
-      label: c.name,
-      searchText: c.name,
-      note: `${c.dose} · ${c.frequency}`, // marks it as current + shows the regimen
-    })),
-  );
-  const groups: ComboGroup[] = [
-    ...(currentOptions.length ? [{ heading: "Current medications", options: currentOptions }] : []),
-    { heading: currentOptions.length ? "All medications" : "", options: MED_OPTIONS },
-  ];
+  // Allergy conflict for the medication currently in the form. Hard match →
+  // confirm is gated behind an explicit acknowledge (never accidental).
+  const conflict = medicationAllergyConflict({ name, atc }, allergies);
+  // Reset the acknowledgement whenever the medication changes.
+  useEffect(() => setAcknowledged(false), [name]);
+
+  // Add flow: offer only drugs the patient is NOT already on — adding a
+  // medication they already take makes no sense. (Current meds are acted on via
+  // Change / Stop, not re-added.) Conflicting options carry a ⚠ allergy tag.
+  const alreadyOn = new Set(currentMeds.map((c) => c.name.toLowerCase()));
+  const addOptions: ComboOption[] = MED_OPTIONS.filter((o) => !alreadyOn.has(o.value.toLowerCase())).map((o) => {
+    const optAtc = MEDICATION_LIST.find((m) => m.name === o.value)?.atc;
+    const c = medicationAllergyConflict({ name: o.value, atc: optAtc }, allergies);
+    return c ? { ...o, note: `⚠ ${c.tag}` } : o;
+  });
 
   const onPick = (val: string) => {
+    // Add flow only (change mode has no dropdown): always a catalog → new rx.
     setSelected(val);
-    if (val.startsWith("current:")) {
-      const cm = currentMeds.find((c) => `current:${c.id}` === val);
-      if (cm) {
-        setName(cm.name);
-        setAtc(cm.atc);
-        setDose(cm.dose);
-        setFrequency(cm.frequency);
-        setTime(cm.time ?? "");
-        setBasedOnId(cm.id);
-      }
-    } else {
-      // Catalog pick → new prescription; start from empty regimen fields.
-      setName(val);
-      setAtc(MEDICATION_LIST.find((m) => m.name === val)?.atc || undefined);
-      setDose("");
-      setFrequency("");
-      setTime("");
-      setBasedOnId(null);
-    }
+    setName(val);
+    setAtc(MEDICATION_LIST.find((m) => m.name === val)?.atc || undefined);
+    setDose("");
+    setFrequency("");
+    setTime("");
+    setBasedOnId(null);
   };
+
+  const fields = (
+    <div className="grid grid-cols-3 gap-3">
+      <TextField value={dose} onChange={setDose} placeholder="Dose (e.g. 25mg)" size="sm" />
+      <TextField value={frequency} onChange={setFrequency} placeholder="Frequency" size="sm" />
+      <TextField value={time} onChange={setTime} placeholder="Time of day" size="sm" />
+    </div>
+  );
 
   return (
     <FormCard onClose={onCancel}>
-      <Combobox
-        groups={groups}
-        value={selected}
-        onSelect={onPick}
-        placeholder="Search medications…"
-        searchPlaceholder="Search medication or ATC…"
-      />
-      <div className="grid grid-cols-3 gap-3">
-        <TextField value={dose} onChange={setDose} placeholder="Dose (e.g. 25mg)" size="sm" />
-        <TextField value={frequency} onChange={setFrequency} placeholder="Frequency" size="sm" />
-        <TextField value={time} onChange={setTime} placeholder="Time of day" size="sm" />
-      </div>
+      {changeTarget ? (
+        <>
+          {/* The medication being changed — shown once; edit its dose/frequency/time
+              only. Swapping drugs = Stop + Add another (explicit actions), not here. */}
+          <div className="text-[12px]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9B8775]">Changing</span>
+            <span className="ml-1.5 font-medium text-[#1F1611]">{changeTarget.name}</span>
+          </div>
+          {fields}
+        </>
+      ) : (
+        <>
+          <Combobox
+            options={addOptions}
+            value={selected}
+            onSelect={onPick}
+            placeholder="Search medications…"
+            searchPlaceholder="Search medication or ATC…"
+          />
+          {fields}
+        </>
+      )}
+
+      {/* Hard allergy conflict — unmissable banner; confirm gated behind acknowledge. */}
+      {conflict && (
+        <div
+          className="rounded-[8px] p-2 flex items-start gap-2"
+          style={{ background: "#FBECDD", border: "1px solid #E7C9A8" }}
+        >
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" style={{ color: "#B45309" }} />
+          <div className="min-w-0">
+            <div className="text-[12px] font-medium" style={{ color: "#8A3D09" }}>
+              Patient allergic to {conflict.allergy} — {conflict.reason}
+            </div>
+            <label className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-medium text-[#6E5A48] cursor-pointer">
+              <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
+              I've reviewed the allergy conflict
+            </label>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-end gap-3 pt-1">
         <CancelLink onClick={onCancel} />
         <PrimaryButton
-          disabled={!name.trim()}
+          disabled={!name.trim() || (!!conflict && !acknowledged)}
           onClick={() =>
             onSave(
               { id: uid(), name: name.trim(), atc, dose: dose.trim(), frequency: frequency.trim(), time: time.trim() },

@@ -11,9 +11,28 @@ import {
   scoringInputsFromVisit,
   measurementTrend,
   sortByDateDesc,
+  diagnosisPrescribing,
+  type DiagnosisRxGroup,
   type ClinicalVisit,
   type PatientBaseline,
 } from "@/lib/visits";
+
+/** The medication line for a diagnosis group — changes + new prescriptions only;
+ *  treatments are surfaced on their own sub-line (see below). */
+function groupMedsText(g: DiagnosisRxGroup): string {
+  if (g.noMedication) return "No treatment needed";
+  const meds = [
+    ...g.changes.map((c) => `${c.medicationName} (${c.detail ?? c.change.replace("_", " ")})`),
+    ...g.prescriptions.map((p) => p.medicationName),
+  ];
+  if (meds.length) return meds.join(", ");
+  return g.treatments.length ? "No medication" : "— awaiting decision";
+}
+
+/** The treatment line for a diagnosis group — "CPAP therapy (note), …". */
+function groupTreatmentsText(g: DiagnosisRxGroup): string {
+  return g.treatments.map((t) => (t.note ? `${t.name} (${t.note})` : t.name)).join(", ");
+}
 import { scoreColorClass } from "@/lib/scoreColor";
 
 function Empty({ children }: { children: React.ReactNode }) {
@@ -52,6 +71,7 @@ export function VisitSummaryContent({
   const priorChain = sortByDateDesc(allVisits.filter((v) => v.date < visit.date));
   const prior = priorChain[0] ?? null;
   const affected = affectedDimensions(baseline, scoringInputsFromVisit(visit));
+  const dp = diagnosisPrescribing(visit);
   const trendWidth = compact ? "w-[52px]" : "w-[90px]";
   const rowGap = compact ? "gap-2" : "gap-3";
 
@@ -59,15 +79,23 @@ export function VisitSummaryContent({
     <div className={`${compact ? "space-y-4" : "space-y-5"} text-sm`}>
       {visit.reasonNote && <p className="text-[13px] text-foreground">{visit.reasonNote}</p>}
 
-      <Block label="Medication Changes">
-        {visit.medicationChanges.length === 0 ? (
+      <Block label="Prescriptions &amp; Treatments by Diagnosis">
+        {dp.groups.length === 0 ? (
           <Empty>None.</Empty>
         ) : (
           <div className="space-y-1 text-[13px]">
-            {visit.medicationChanges.map((m) => (
-              <div key={m.id}>
-                <span className="font-medium">{m.medicationName}</span>
-                <span className="text-muted-foreground"> · {m.change.replace("_", " ")}{m.detail ? ` · ${m.detail}` : ""}</span>
+            {dp.groups.map((g) => (
+              <div key={g.id}>
+                <div>
+                  <span className="font-medium">{g.name}</span>
+                  {g.icd10 && <span className="ml-1 text-[11px] font-mono text-muted-foreground">{g.icd10}</span>}
+                  <span className="text-muted-foreground"> — {groupMedsText(g)}</span>
+                </div>
+                {g.treatments.length > 0 && (
+                  <div className="pl-3 text-[12px] text-muted-foreground">
+                    Treatments: {groupTreatmentsText(g)}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -141,7 +169,6 @@ export function VisitSummaryContent({
       <Block label="Plan">
         <div className="space-y-1.5 text-[13px]">
           <div><span className="text-muted-foreground">Referrals: </span>{visit.plan.referrals.length ? visit.plan.referrals.map((r) => r.specialty).join("; ") : <Empty>None</Empty>}</div>
-          <div><span className="text-muted-foreground">Prescriptions: </span>{visit.plan.prescriptions.length ? visit.plan.prescriptions.map((p) => p.medicationName).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Lab orders: </span>{(visit.plan.labOrders ?? []).length ? (visit.plan.labOrders ?? []).map((o) => `${o.markers.map((m) => m.label).join(", ")}${o.fasting ? " (fasting)" : ""}`).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Vaccinations: </span>{(visit.plan.vaccinations ?? []).length ? (visit.plan.vaccinations ?? []).map((v) => `${v.vaccine} (${v.status})`).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Follow-up: </span>{visit.plan.followUp ? `${VISIT_TYPE_META[visit.plan.followUp.visitType].label} in ${visit.plan.followUp.timeframe}` : <Empty>None</Empty>}</div>

@@ -1,52 +1,31 @@
 // Persistent right-hand actions rail — the care-coordination plan arising from
-// this visit. Groups, in order: Referrals · Prescriptions · Lab Orders (stub) ·
-// Vaccinations · Follow-up. Each group owns its own open-state; "+ New" toggles
-// an inline FormCard under the header, committed items list below; up to all
-// groups can be open at once. Prescriptions is two-mode: act on the patient's
-// current medications (Change / Stop → recorded as medication changes) or
-// prescribe something new. Column has its own scroll and a pinned counts footer.
+// this visit. Groups, in order: Referrals · Lab Orders · Vaccinations ·
+// Follow-up · Statements & Certifications (stub). Each group owns its own
+// open-state; "+ New" toggles an inline FormCard under the header, committed
+// items list below; up to all groups can be open at once. Prescriptions /
+// medication changes are NOT here — they are clinical-record documentation and
+// live in the center column (VisitWorkspace). Column has its own scroll + footer.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { VISIT_TYPE_META } from "@/lib/episodes";
-import { type DimensionKey, type MedicationChangeKind } from "@/lib/visits";
 import { useVisitForm } from "./VisitFormProvider";
 import { SectionLabel, Row } from "./visitUi";
-import { ReferralForm, PrescriptionForm, uid } from "@/components/visits/forms";
-import { referralFromForm, prescriptionFromForm } from "./planAdapters";
+import { ReferralForm } from "@/components/visits/forms";
+import { referralFromForm } from "./planAdapters";
 import { FollowUpEntryForm } from "./FollowUpEntryForm";
 import { VaccinationEntryForm } from "./VaccinationEntryForm";
 import { LabOrderEntryForm } from "./LabOrderEntryForm";
 
-/** A standing medication the patient is already on (same source as the left
- *  sidebar Medications accordion). Dimensions feed derived scoring on change. */
-export type CurrentMed = {
-  id: string;
-  name: string;
-  dose: string;
-  frequency: string;
-  dimensions: DimensionKey[];
-};
+type GroupKey = "referrals" | "laborders" | "vaccination" | "followup";
 
-type GroupKey = "referrals" | "prescriptions" | "laborders" | "vaccination" | "followup";
-
-const CHANGE_LABEL: Record<MedicationChangeKind, string> = {
-  started: "Started",
-  stopped: "Stopped",
-  dose_changed: "Dose changed",
-  continued: "Continued",
-};
-
-export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] }) {
+export function VisitActionsRail() {
   const f = useVisitForm();
   const plan = f.draft.plan;
-  const medChanges = f.draft.medicationChanges;
   const vaccinations = plan.vaccinations ?? [];
   const labOrders = plan.labOrders ?? [];
 
   const footer = [
     `${plan.referrals.length} referral${plan.referrals.length === 1 ? "" : "s"}`,
-    `${plan.prescriptions.length} prescription${plan.prescriptions.length === 1 ? "" : "s"}`,
-    medChanges.length ? `${medChanges.length} med change${medChanges.length === 1 ? "" : "s"}` : null,
     labOrders.length ? `${labOrders.length} lab order${labOrders.length === 1 ? "" : "s"}` : null,
     vaccinations.length ? `${vaccinations.length} vaccination${vaccinations.length === 1 ? "" : "s"}` : null,
     plan.followUp ? "1 follow-up" : null,
@@ -67,32 +46,6 @@ export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] })
       next.delete(key);
       return next;
     });
-
-  // Commit a prescription-form submission: a current-med pick (basedOnId set)
-  // becomes a medication change (dose_changed if the regimen was edited, else
-  // continued); a catalog pick becomes a new prescription.
-  const savePrescription = (
-    m: { id: string; name: string; atc?: string; dose: string; frequency: string; time: string },
-    basedOnId: string | null,
-  ) => {
-    if (basedOnId) {
-      const med = currentMeds.find((c) => c.id === basedOnId);
-      const parts: string[] = [];
-      if (med && m.dose && m.dose !== med.dose) parts.push(`${med.dose} → ${m.dose}`);
-      if (med && m.frequency && m.frequency !== med.frequency) parts.push(`${med.frequency} → ${m.frequency}`);
-      f.addMedicationChange({
-        id: uid(),
-        medicationName: m.name,
-        atc: m.atc,
-        change: parts.length ? "dose_changed" : "continued",
-        detail: parts.join(", ") || undefined,
-        dimensions: med?.dimensions ?? [],
-      });
-    } else {
-      f.addPrescription(prescriptionFromForm(m));
-    }
-    close("prescriptions");
-  };
 
   return (
     <aside className="w-[360px] shrink-0 flex flex-col" style={{ borderLeft: "1px solid #E7DCCD" }}>
@@ -126,41 +79,6 @@ export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] })
               <div className="text-[11px] text-[#9B8775]">{r.assignee}</div>
             </Row>
           ))}
-        </PlanGroup>
-
-        {/* Prescriptions — current meds live inside the search dropdown; picking
-            one records a medication change, picking from the catalog is new. */}
-        <PlanGroup
-          label="Prescriptions"
-          count={plan.prescriptions.length + medChanges.length}
-          open={open.has("prescriptions")}
-          onToggle={() => toggle("prescriptions")}
-          form={
-            <PrescriptionForm
-              currentMeds={currentMeds}
-              onSave={savePrescription}
-              onCancel={() => close("prescriptions")}
-            />
-          }
-        >
-          {(medChanges.length > 0 || plan.prescriptions.length > 0) && (
-            <div>
-              {medChanges.map((mc) => (
-                <Row key={mc.id} onRemove={() => f.removeMedicationChange(mc.id)}>
-                  <span className="text-[11px] font-medium text-[#B45309]">{CHANGE_LABEL[mc.change]}</span>
-                  <span className="text-[12px] text-[#2E1F14]"> · {mc.medicationName}</span>
-                  {mc.detail && <span className="text-[11px] text-[#9B8775]"> {mc.detail}</span>}
-                </Row>
-              ))}
-              {plan.prescriptions.map((p) => (
-                <Row key={p.id} onRemove={() => f.removePrescription(p.id)}>
-                  <span className="text-[11px] font-medium text-[#0EA5A0]">New</span>
-                  <span className="text-[12px] text-[#2E1F14]"> · {p.medicationName}</span>
-                  <span className="text-[11px] text-[#9B8775]"> {[p.dose, p.frequency, p.time].filter(Boolean).join(" · ")}</span>
-                </Row>
-              ))}
-            </div>
-          )}
         </PlanGroup>
 
         {/* Lab Orders — order any test from the full catalog (multi-select). */}

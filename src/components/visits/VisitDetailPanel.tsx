@@ -12,11 +12,14 @@ import type { LabSeries } from "@/lib/labs";
 import { SectionLabel } from "./visitUi";
 import { LabChartCard } from "./LabChartCard";
 import { DimensionChartCard } from "./DimensionChartCard";
+import { MedHistoryCard } from "./MedHistoryCard";
 import { VisitSummaryContent } from "./VisitSummaryContent";
+import type { CurrentMed, CurrentTreatment } from "./VisitWorkspace";
 
 export type DetailItem =
   | { id: string; kind: "lab"; markerKey: string }
   | { id: string; kind: "dimension"; dimensionKey: DimensionKey }
+  | { id: string; kind: "medHistory"; icd10: string; diagnosisName: string }
   | { id: string; kind: "visit"; visitId: string };
 
 /** Scrolls itself into view when it mounts — the just-opened (top) card. */
@@ -54,6 +57,9 @@ export function VisitDetailPanel({
   labs,
   visits,
   baseline,
+  currentMeds,
+  currentTreatments,
+  allergies,
 }: {
   items: DetailItem[];
   onClose: (id: string) => void;
@@ -61,6 +67,9 @@ export function VisitDetailPanel({
   labs: LabSeries[];
   visits: ClinicalVisit[];
   baseline: PatientBaseline;
+  currentMeds: CurrentMed[];
+  currentTreatments: CurrentTreatment[];
+  allergies: string[];
 }) {
   return (
     <aside className="w-[320px] xl:w-[360px] shrink-0 flex flex-col" style={{ borderRight: "1px solid #E7DCCD", background: "#F9F7F4" }}>
@@ -93,6 +102,21 @@ export function VisitDetailPanel({
                   dimensionKey={item.dimensionKey}
                   baseline={baseline}
                   visits={visits}
+                  onClose={() => onClose(item.id)}
+                />
+              </ScrollIntoViewOnMount>
+            );
+          }
+          if (item.kind === "medHistory") {
+            return (
+              <ScrollIntoViewOnMount key={item.id}>
+                <MedHistoryCard
+                  icd10={item.icd10}
+                  diagnosisName={item.diagnosisName}
+                  visits={visits}
+                  currentMeds={currentMeds}
+                  currentTreatments={currentTreatments}
+                  allergies={allergies}
                   onClose={() => onClose(item.id)}
                 />
               </ScrollIntoViewOnMount>

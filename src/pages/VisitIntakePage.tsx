@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatLastFirst } from "@/lib/patientName";
 import { VISIT_TYPE_META } from "@/lib/episodes";
-import { isCarter, CARTER_MEDICATIONS, CARTER_DIAGNOSES } from "@/lib/patientClinicalData";
+import { isCarter, CARTER_MEDICATIONS, CARTER_DIAGNOSES, CARTER_TREATMENTS } from "@/lib/patientClinicalData";
 import {
   getVisits,
   getVisit,
@@ -27,8 +27,8 @@ import {
 import { getLabSeries, type LabSeries } from "@/lib/labs";
 import { VisitFormProvider, useVisitForm } from "@/components/visits/VisitFormProvider";
 import { VisitContextSidebar, type BaselineDiagnosis } from "@/components/visits/VisitContextSidebar";
-import { VisitWorkspace } from "@/components/visits/VisitWorkspace";
-import { VisitActionsRail, type CurrentMed } from "@/components/visits/VisitActionsRail";
+import { VisitWorkspace, type CurrentMed, type CurrentTreatment } from "@/components/visits/VisitWorkspace";
+import { VisitActionsRail } from "@/components/visits/VisitActionsRail";
 import { VisitDetailPanel, type DetailItem } from "@/components/visits/VisitDetailPanel";
 import { VisitReviewScreen } from "@/components/visits/VisitReviewScreen";
 
@@ -55,6 +55,7 @@ type Baseline = {
   scores: PatientBaseline;
   meds: string[];
   currentMeds: CurrentMed[];
+  currentTreatments: CurrentTreatment[];
   allergies: string[];
   diagnoses: BaselineDiagnosis[];
   labs: LabSeries[];
@@ -69,7 +70,7 @@ export default function VisitIntakePage() {
   const [patientName, setPatientName] = useState("Patient");
   const [initial, setInitial] = useState<ClinicalVisit | null>(null);
   const [priorVisits, setPriorVisits] = useState<ClinicalVisit[]>([]);
-  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, scores: {}, meds: [], currentMeds: [], allergies: [], diagnoses: [], labs: [] });
+  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, scores: {}, meds: [], currentMeds: [], currentTreatments: [], allergies: [], diagnoses: [], labs: [] });
 
   useEffect(() => {
     if (!id) return;
@@ -95,10 +96,19 @@ export default function VisitIntakePage() {
       const currentMeds: CurrentMed[] = carter
         ? CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => {
             const key = fromLabel(m.dimension);
-            return { id: m.id, name: m.name, dose: m.dose, frequency: m.frequency, dimensions: key ? [key] : [] };
+            return { id: m.id, name: m.name, dose: m.dose, frequency: m.frequency, dimensions: key ? [key] : [], diagnosisIcd10: m.diagnosisIcd10 };
           })
         : [];
       const meds = currentMeds.map((m) => `${m.name} · ${m.dose} · ${m.frequency}`);
+      // Standing non-medication treatments (same source + link model as meds).
+      const currentTreatments: CurrentTreatment[] = carter
+        ? CARTER_TREATMENTS.filter((t) => t.status === "active").map((t) => ({
+            id: t.id,
+            name: t.name,
+            note: t.note,
+            diagnosisIcd10: t.diagnosisIcd10,
+          }))
+        : [];
       const allergies = carter ? ["NSAIDs", "Penicillin", "Tree nuts"] : [];
       const diagnoses: BaselineDiagnosis[] = carter
         ? CARTER_DIAGNOSES.filter((d) => d.status === "active").map((d) => ({
@@ -108,6 +118,18 @@ export default function VisitIntakePage() {
           }))
         : [];
 
+      // On a FRESH draft, pre-pull ALL of the patient's current diagnoses as
+      // prescribing contexts so the center "Current diagnoses" sub-accordion
+      // mirrors the left rail (every current diagnosis is shown + actionable).
+      // Ids use the same `dxctx-<icd10>` convention as the medication links.
+      if (draft.status === "draft" && (draft.prescribingContexts?.length ?? 0) === 0) {
+        draft.prescribingContexts = diagnoses.map((dx) => ({
+          id: `dxctx-${dx.icd10 || dx.name}`,
+          name: dx.name,
+          icd10: dx.icd10,
+        }));
+      }
+
       // Shared lab repository (Carter-gated inside the repo); canonical dummy
       // source for the sidebar labs mirror.
       const labs = await getLabSeries(id, name);
@@ -115,7 +137,7 @@ export default function VisitIntakePage() {
       if (cancelled) return;
       setPatientName(name);
       setPriorVisits(prior);
-      setBaseline({ lastVisit, scores, meds, currentMeds, allergies, diagnoses, labs });
+      setBaseline({ lastVisit, scores, meds, currentMeds, currentTreatments, allergies, diagnoses, labs });
       setInitial(draft);
       setLoading(false);
     })();
@@ -182,6 +204,12 @@ function VisitIntakeInner({
       if (prev.some((i) => i.id === id)) return prev;
       return [{ id, kind: "dimension", dimensionKey }, ...prev];
     });
+  const openMedHistory = (icd10: string, diagnosisName: string) =>
+    setDetailItems((prev) => {
+      const id = `medhx:${icd10 || diagnosisName}`;
+      if (prev.some((i) => i.id === id)) return prev;
+      return [{ id, kind: "medHistory", icd10, diagnosisName }, ...prev];
+    });
   const closeItem = (id: string) => setDetailItems((prev) => prev.filter((i) => i.id !== id));
   const closeAll = () => setDetailItems([]);
   const donePath = `/patients/${patientId}`;
@@ -240,13 +268,14 @@ function VisitIntakeInner({
           patientName={patientName}
           baseline={baseline.scores}
           visits={priorVisits}
-          meds={baseline.meds}
+          currentMeds={baseline.currentMeds}
           allergies={baseline.allergies}
           diagnoses={baseline.diagnoses}
           labs={baseline.labs}
           onOpenLab={openLab}
           onOpenVisit={openVisit}
           onOpenDimension={openDimension}
+          onOpenMedHistory={openMedHistory}
         />
         {detailItems.length > 0 && (
           <VisitDetailPanel
@@ -256,14 +285,24 @@ function VisitIntakeInner({
             labs={baseline.labs}
             visits={priorVisits}
             baseline={baseline.scores}
+            currentMeds={baseline.currentMeds}
+            currentTreatments={baseline.currentTreatments}
+            allergies={baseline.allergies}
           />
         )}
         <main className="flex-1 min-w-[400px] overflow-y-auto px-6 py-5">
           <div className="max-w-[880px] mx-auto">
-            <VisitWorkspace baseline={baseline.scores} />
+            <VisitWorkspace
+              baseline={baseline.scores}
+              currentMeds={baseline.currentMeds}
+              currentTreatments={baseline.currentTreatments}
+              currentDiagnoses={baseline.diagnoses}
+              allergies={baseline.allergies}
+              onOpenMedHistory={openMedHistory}
+            />
           </div>
         </main>
-        <VisitActionsRail currentMeds={baseline.currentMeds} />
+        <VisitActionsRail />
       </div>
     </div>
   );

@@ -46,6 +46,9 @@ export type Medication = {
   renewalDate?: string;
   status: "active" | "past";
   prn?: boolean;
+  /** ICD-10 of the diagnosis this medication treats (raw link to CARTER_DIAGNOSES).
+   *  Which meds surface for a diagnosis is derived by matching on this. */
+  diagnosisIcd10?: string;
 };
 
 export type DrugInteraction = {
@@ -61,19 +64,41 @@ export const CARTER_DIAGNOSES: Diagnosis[] = [
   { id: "d3", name: "Hyperlipidaemia",                   icd10: "E78.5", dimension: "Cardiovascular Health", diagnosedDate: "2022-03-14", status: "active" },
   { id: "d4", name: "Obstructive Sleep Apnoea",          icd10: "G47.3", dimension: "Brain & Mental Health", diagnosedDate: "2023-09-22", status: "active" },
   { id: "d5", name: "Gastroesophageal Reflux Disease",   icd10: "K21.0", dimension: "Digestion",             diagnosedDate: "2020-02-05", status: "active" },
+  // Added so every current medication maps to a diagnosis (synthetic demo data).
+  { id: "d6", name: "Atrial Fibrillation",               icd10: "I48.91", dimension: "Cardiovascular Health",   diagnosedDate: "2022-12-20", status: "active" }, // → Warfarin
+  { id: "d7", name: "Major Depressive Disorder",         icd10: "F32.9",  dimension: "Brain & Mental Health",   diagnosedDate: "2023-10-05", status: "active" }, // → Sertraline
+  { id: "d8", name: "Osteoarthritis",                    icd10: "M19.90", dimension: "Exercise & Functional Health", diagnosedDate: "2019-11-20", status: "active" }, // → Ibuprofen (PRN)
   // Past
   { id: "d-past-1", name: "Acute pericarditis", icd10: "I30.9", dimension: "Cardiovascular Health", diagnosedDate: "2021-06-04", resolvedDate: "2021-09-12", status: "resolved" },
 ];
 
 // ── Carter, Jay-Z — Active medications ─────────────────────────────
 export const CARTER_MEDICATIONS: Medication[] = [
-  { id: "m1", name: "Lisinopril",   dose: "10 mg",  frequency: "Once daily (morning)",   indication: "Hypertension",        dimension: "Cardiovascular Health", startDate: "2022-03-20", remainingPills: 42, totalPills: 90,  renewalDate: "2026-06-02", status: "active" },
-  { id: "m2", name: "Metformin",    dose: "500 mg", frequency: "Twice daily with meals", indication: "Type 2 Diabetes",     dimension: "Metabolic Health",      startDate: "2021-06-15", remainingPills: 6,  totalPills: 180, renewalDate: "2026-04-29", status: "active" },
-  { id: "m3", name: "Atorvastatin", dose: "20 mg",  frequency: "Once daily (evening)",   indication: "Hyperlipidaemia",     dimension: "Cardiovascular Health", startDate: "2022-03-20", remainingPills: 18, totalPills: 90,  renewalDate: "2026-05-08", status: "active" },
-  { id: "m4", name: "Warfarin",     dose: "5 mg",   frequency: "Once daily",             indication: "Cardiovascular risk", dimension: "Cardiovascular Health", startDate: "2023-01-01", remainingPills: 55, totalPills: 90,  renewalDate: "2026-06-15", status: "active" },
-  { id: "m5", name: "Sertraline",   dose: "50 mg",  frequency: "Once daily (morning)",   indication: "Sleep & mood support", dimension: "Brain & Mental Health", startDate: "2023-10-10", remainingPills: 30, totalPills: 90,  renewalDate: "2026-05-20", status: "active" },
-  { id: "m6", name: "Ibuprofen",    dose: "400 mg", frequency: "As needed (PRN)",        indication: "Pain relief",         dimension: "Digestion",             startDate: "2020-01-01", remainingPills: 12, totalPills: 60,  renewalDate: "2026-05-15", status: "active", prn: true },
-  { id: "m7", name: "Omeprazole",   dose: "20 mg",  frequency: "Once daily (fasting)",   indication: "GERD",                dimension: "Digestion",             startDate: "2020-02-10", remainingPills: 28, totalPills: 90,  renewalDate: "2026-05-28", status: "active" },
+  { id: "m1", name: "Lisinopril",   dose: "10 mg",  frequency: "Once daily (morning)",   indication: "Hypertension",        dimension: "Cardiovascular Health", startDate: "2022-03-20", remainingPills: 42, totalPills: 90,  renewalDate: "2026-06-02", status: "active", diagnosisIcd10: "I10" },
+  { id: "m2", name: "Metformin",    dose: "1000 mg", frequency: "Twice daily with meals", indication: "Type 2 Diabetes",     dimension: "Metabolic Health",      startDate: "2021-06-15", remainingPills: 6,  totalPills: 180, renewalDate: "2026-04-29", status: "active", diagnosisIcd10: "E11" },
+  { id: "m3", name: "Atorvastatin", dose: "20 mg",  frequency: "Once daily (evening)",   indication: "Hyperlipidaemia",     dimension: "Cardiovascular Health", startDate: "2022-03-20", remainingPills: 18, totalPills: 90,  renewalDate: "2026-05-08", status: "active", diagnosisIcd10: "E78.5" },
+  { id: "m4", name: "Warfarin",     dose: "5 mg",   frequency: "Once daily",             indication: "Atrial fibrillation", dimension: "Cardiovascular Health", startDate: "2023-01-01", remainingPills: 55, totalPills: 90,  renewalDate: "2026-06-15", status: "active", diagnosisIcd10: "I48.91" },
+  { id: "m5", name: "Sertraline",   dose: "50 mg",  frequency: "Once daily (morning)",   indication: "Depression",          dimension: "Brain & Mental Health", startDate: "2023-10-10", remainingPills: 30, totalPills: 90,  renewalDate: "2026-05-20", status: "active", diagnosisIcd10: "F32.9" },
+  { id: "m6", name: "Ibuprofen",    dose: "400 mg", frequency: "As needed (PRN)",        indication: "Osteoarthritis pain", dimension: "Exercise & Functional Health", startDate: "2020-01-01", remainingPills: 12, totalPills: 60,  renewalDate: "2026-05-15", status: "active", prn: true, diagnosisIcd10: "M19.90" },
+  { id: "m7", name: "Omeprazole",   dose: "20 mg",  frequency: "Once daily (fasting)",   indication: "GERD",                dimension: "Digestion",             startDate: "2020-02-10", remainingPills: 28, totalPills: 90,  renewalDate: "2026-05-28", status: "active", diagnosisIcd10: "K21.0" },
+];
+
+// ── Carter, Jay-Z — Standing non-medication treatments ──────────────
+// Devices / therapies / interventions the patient is already on, linked to a
+// diagnosis by ICD-10 (mirrors CARTER_MEDICATIONS). Seeds the "treatment"
+// second-line + treatment history for the visit flow. Synthetic demo data.
+export type PatientTreatment = {
+  id: string;
+  name: string;
+  note?: string;
+  startDate: string; // ISO yyyy-mm-dd
+  status: "active" | "stopped";
+  diagnosisIcd10?: string;
+};
+
+export const CARTER_TREATMENTS: PatientTreatment[] = [
+  { id: "tx1", name: "CPAP therapy",    note: "Auto-titrating, 8–12 cmH₂O", startDate: "2025-12-15", status: "active", diagnosisIcd10: "G47.3" }, // Obstructive Sleep Apnoea (treatment-only)
+  { id: "tx2", name: "Low-sodium diet", note: "DASH pattern",               startDate: "2022-03-14", status: "active", diagnosisIcd10: "I10" },   // Hypertension (alongside Lisinopril → med + treatment)
 ];
 
 // ── Carter, Jay-Z — Drug interactions ───────────────────────────────

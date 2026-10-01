@@ -1,12 +1,11 @@
-// Center column: the editable visit note. The reason and SOAP notes are
-// always-live inline textareas (patch the draft per keystroke, no Edit button).
-// Diagnoses and Measurements are structured records, so they use expand-in-place
-// inline adders. Dimensions Affected is derived and read-only.
+// Center column: the editable visit note. Reason and SOAP notes are always-live
+// inline textareas (patch the draft per keystroke, no Edit button). Diagnoses &
+// Prescriptions is a diagnosis-driven section (see DiagnosisPrescribingSection).
+// Measurements is an expand-in-place adder. Dimensions Affected is derived.
 //
 // PERF: the derived "Dimensions Affected" is memoized on the SCORING-RELEVANT
 // slices (diagnoses / medicationChanges / measurements) only — never on notes or
-// reason. patchNotes/set spread `prev`, so those slice references stay stable
-// across note keystrokes and the scoring does NOT recompute while typing notes.
+// reason, so typing in the always-live notes does not recompute scoring.
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { VISIT_TYPE_META, type VisitType } from "@/lib/episodes";
@@ -15,17 +14,53 @@ import {
   formatScore,
   scoreBand,
   affectedDimensions,
+  scoringDiagnoses,
   type PatientBaseline,
+  type DimensionKey,
 } from "@/lib/visits";
 import { scoreColorClass } from "@/lib/scoreColor";
 import { useVisitForm } from "./VisitFormProvider";
 import { SectionCard, SectionLabel, Row, AutoTextarea } from "./visitUi";
-import { DiagnosisEntryForm } from "./DiagnosisEntryForm";
 import { MeasurementEntryForm } from "./MeasurementEntryForm";
+import { DiagnosisPrescribingSection } from "./DiagnosisPrescribingSection";
+import type { BaselineDiagnosis } from "./VisitContextSidebar";
 
-type CenterForm = "diagnosis" | "measurement";
+/** A standing medication the patient is already on (same source as the left
+ *  sidebar Medications accordion). Dimensions feed derived scoring on change. */
+export type CurrentMed = {
+  id: string;
+  name: string;
+  dose: string;
+  frequency: string;
+  dimensions: DimensionKey[];
+  /** ICD-10 of the diagnosis this medication treats — links it to a prompt. */
+  diagnosisIcd10?: string;
+};
 
-export function VisitWorkspace({ baseline }: { baseline: PatientBaseline }) {
+/** A standing non-medication treatment the patient is already on (devices,
+ *  therapies). Linked to a diagnosis by ICD-10, same as CurrentMed. */
+export type CurrentTreatment = {
+  id: string;
+  name: string;
+  note?: string;
+  diagnosisIcd10?: string;
+};
+
+export function VisitWorkspace({
+  baseline,
+  currentMeds,
+  currentTreatments,
+  currentDiagnoses,
+  allergies,
+  onOpenMedHistory,
+}: {
+  baseline: PatientBaseline;
+  currentMeds: CurrentMed[];
+  currentTreatments: CurrentTreatment[];
+  currentDiagnoses: BaselineDiagnosis[];
+  allergies: string[];
+  onOpenMedHistory: (icd10: string, diagnosisName: string) => void;
+}) {
   const f = useVisitForm();
   const d = f.draft;
 
@@ -33,27 +68,15 @@ export function VisitWorkspace({ baseline }: { baseline: PatientBaseline }) {
   const affected = useMemo(
     () =>
       affectedDimensions(baseline, {
-        diagnoses: d.diagnoses,
+        // prescribingContexts included: resolving an existing diagnosis feeds scoring.
+        diagnoses: scoringDiagnoses({ diagnoses: d.diagnoses, prescribingContexts: d.prescribingContexts }),
         medicationChanges: d.medicationChanges,
         measurements: d.measurements,
       }),
-    [baseline, d.diagnoses, d.medicationChanges, d.measurements],
+    [baseline, d.diagnoses, d.prescribingContexts, d.medicationChanges, d.measurements],
   );
 
-  const [open, setOpen] = useState<Set<CenterForm>>(new Set());
-  const toggle = (key: CenterForm) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  const close = (key: CenterForm) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
+  const [measureOpen, setMeasureOpen] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -71,7 +94,7 @@ export function VisitWorkspace({ baseline }: { baseline: PatientBaseline }) {
           ))}
         </select>
         <AutoTextarea
-          placeholder="Chief complaint / reason for the visit…"
+          placeholder="Reason for the visit…"
           value={d.reasonNote ?? ""}
           onChange={(v) => f.set("reasonNote", v)}
           minHeight={48}
@@ -87,33 +110,22 @@ export function VisitWorkspace({ baseline }: { baseline: PatientBaseline }) {
         <LiveNote label="General Notes" placeholder="Any additional notes…" value={d.notes.general} onChange={(v) => f.patchNotes({ general: v })} />
       </SectionCard>
 
-      {/* Diagnoses — expand-in-place adder */}
-      <SectionCard>
-        <div className="flex items-center justify-between">
-          <SectionLabel>Diagnoses</SectionLabel>
-          <AddToggle open={open.has("diagnosis")} onClick={() => toggle("diagnosis")} />
-        </div>
-        {open.has("diagnosis") && <DiagnosisEntryForm onClose={() => close("diagnosis")} />}
-        {d.diagnoses.length === 0 ? (
-          <Empty>No diagnoses recorded</Empty>
-        ) : (
-          d.diagnoses.map((dx) => (
-            <Row key={dx.id} onRemove={() => f.removeDiagnosis(dx.id)}>
-              <span className="text-[12px] font-medium text-[#1F1611]">{dx.name}</span>
-              {dx.icd10 && <span className="ml-1 text-[10px] font-mono text-[#9B8775]">{dx.icd10}</span>}
-              <span className="text-[11px] text-[#9B8775]"> · {dx.status}</span>
-            </Row>
-          ))
-        )}
-      </SectionCard>
+      {/* Diagnoses & Prescriptions — diagnosis-driven prescribing */}
+      <DiagnosisPrescribingSection
+        currentDiagnoses={currentDiagnoses}
+        currentMeds={currentMeds}
+        currentTreatments={currentTreatments}
+        allergies={allergies}
+        onOpenMedHistory={onOpenMedHistory}
+      />
 
       {/* Measurements — expand-in-place adder */}
       <SectionCard>
         <div className="flex items-center justify-between">
           <SectionLabel>Measurements</SectionLabel>
-          <AddToggle open={open.has("measurement")} onClick={() => toggle("measurement")} />
+          <AddToggle open={measureOpen} onClick={() => setMeasureOpen((o) => !o)} />
         </div>
-        {open.has("measurement") && <MeasurementEntryForm onClose={() => close("measurement")} />}
+        {measureOpen && <MeasurementEntryForm onClose={() => setMeasureOpen(false)} />}
         {d.measurements.length === 0 ? (
           <Empty>No measurements recorded</Empty>
         ) : (

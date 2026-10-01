@@ -10,10 +10,23 @@ import {
   affectedDimensions,
   scoringInputsFromVisit,
   measurementTrend,
+  diagnosisPrescribing,
+  type DiagnosisRxGroup,
   type ClinicalVisit,
   type PatientBaseline,
 } from "@/lib/visits";
 import { scoreColorClass } from "@/lib/scoreColor";
+
+/** "Lisinopril, CPAP therapy" / "No treatment needed" / "— awaiting decision". */
+function groupMedsText(g: DiagnosisRxGroup): string {
+  if (g.noMedication) return "No treatment needed";
+  const parts = [
+    ...g.changes.map((c) => `${c.medicationName} (${c.detail ?? c.change.replace("_", " ")})`),
+    ...g.prescriptions.map((p) => p.medicationName),
+    ...g.treatments.map((t) => t.name),
+  ];
+  return parts.length ? parts.join(", ") : "— awaiting decision";
+}
 
 function Label({ children }: { children: React.ReactNode }) {
   return <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775] mb-2">{children}</div>;
@@ -54,6 +67,7 @@ export function VisitReviewScreen({
   const affected = affectedDimensions(baseline, scoringInputsFromVisit(draft));
   const vaccinations = draft.plan.vaccinations ?? [];
   const labOrders = draft.plan.labOrders ?? [];
+  const dp = diagnosisPrescribing(draft);
   const summary = [
     `${affected.length} dimension${affected.length === 1 ? "" : "s"} affected`,
     `${draft.plan.referrals.length} referral${draft.plan.referrals.length === 1 ? "" : "s"}`,
@@ -76,17 +90,33 @@ export function VisitReviewScreen({
           </p>
 
           <div className="mt-8 space-y-6">
-            {/* Reason + medication changes */}
+            {/* Reason */}
+            {draft.reasonNote && (
+              <section>
+                <Label>Visit</Label>
+                <Card>
+                  <p className="text-[13px] text-[#1F1611]">{draft.reasonNote}</p>
+                </Card>
+              </section>
+            )}
+
+            {/* Prescriptions grouped by diagnosis (incl. "no medication" decisions) */}
             <section>
-              <Label>Visit</Label>
+              <Label>Prescriptions by Diagnosis</Label>
               <Card>
-                {draft.reasonNote && <p className="text-[13px] text-[#1F1611] mb-3">{draft.reasonNote}</p>}
-                <div className="text-[13px] text-[#1F1611]">
-                  <span className="text-[#9B8775]">Medication changes: </span>
-                  {draft.medicationChanges.length
-                    ? draft.medicationChanges.map((m) => `${m.medicationName} (${m.change.replace("_", " ")})`).join("; ")
-                    : <Empty>None</Empty>}
-                </div>
+                {dp.groups.length === 0 ? (
+                  <Empty>No diagnoses recorded.</Empty>
+                ) : (
+                  <div className="space-y-1.5 text-[13px]">
+                    {dp.groups.map((g) => (
+                      <div key={g.id}>
+                        <span className="font-medium text-[#1F1611]">{g.name}</span>
+                        {g.icd10 && <span className="ml-1 text-[11px] font-mono text-[#9B8775]">{g.icd10}</span>}
+                        <span className="text-[#6E5A48]"> — {groupMedsText(g)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Card>
             </section>
 
@@ -172,7 +202,6 @@ export function VisitReviewScreen({
               <Card>
                 <div className="space-y-2 text-[13px] text-[#1F1611]">
                   <div><span className="text-[#9B8775]">Referrals: </span>{draft.plan.referrals.length ? draft.plan.referrals.map((r) => r.specialty).join("; ") : <Empty>None</Empty>}</div>
-                  <div><span className="text-[#9B8775]">Prescriptions: </span>{draft.plan.prescriptions.length ? draft.plan.prescriptions.map((p) => p.medicationName).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Lab orders: </span>{labOrders.length ? labOrders.map((o) => `${o.markers.map((m) => m.label).join(", ")}${o.fasting ? " (fasting)" : ""}`).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Vaccinations: </span>{vaccinations.length ? vaccinations.map((v) => `${v.vaccine} (${v.status})`).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Follow-up: </span>{draft.plan.followUp ? `${VISIT_TYPE_META[draft.plan.followUp.visitType].label} in ${draft.plan.followUp.timeframe}` : <Empty>None scheduled</Empty>}</div>

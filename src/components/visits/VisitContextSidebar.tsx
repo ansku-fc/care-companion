@@ -5,7 +5,7 @@
 // chart in the Detail panel; clicking a past visit opens its summary there. The
 // richer detail lives in the fourth column (VisitDetailPanel), not here.
 import { useMemo, useState } from "react";
-import { Pill, Stethoscope, ChevronRight } from "lucide-react";
+import { Pill, Stethoscope, ChevronRight, AlertTriangle } from "lucide-react";
 import {
   DIMENSION_KEYS,
   dimensionLabel,
@@ -13,6 +13,7 @@ import {
   scoreBand,
   fromLabel,
   computeDimensionScores,
+  scoringDiagnoses,
   type ClinicalVisit,
   type PatientBaseline,
   type DimensionKey,
@@ -24,6 +25,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { SectionLabel } from "./visitUi";
 import { useVisitForm } from "./VisitFormProvider";
 import { sortByLabel } from "./Combobox";
+import type { CurrentMed } from "./VisitWorkspace";
 import type { LabSeries } from "@/lib/labs";
 
 /** Raw baseline diagnosis. `dimension` is the legacy label as stored on the
@@ -94,38 +96,53 @@ export function VisitContextSidebar({
   patientName,
   baseline,
   visits,
-  meds,
+  currentMeds,
   allergies,
   diagnoses,
   labs,
   onOpenLab,
   onOpenVisit,
   onOpenDimension,
+  onOpenMedHistory,
 }: {
   patientName: string;
   baseline: PatientBaseline;
   visits: ClinicalVisit[];
-  meds: string[];
+  currentMeds: CurrentMed[];
   allergies: string[];
   diagnoses: BaselineDiagnosis[];
   labs: LabSeries[];
   onOpenLab: (markerKey: string) => void;
   onOpenVisit: (visitId: string) => void;
   onOpenDimension: (dimensionKey: DimensionKey) => void;
+  onOpenMedHistory: (icd10: string, diagnosisName: string) => void;
 }) {
   const { draft } = useVisitForm();
   const [showAllVisits, setShowAllVisits] = useState(false);
+  // Bidirectional med↔diagnosis index (raw links from diagnosisIcd10). Derived.
+  const diagNameByIcd = useMemo(() => new Map(diagnoses.map((d) => [d.icd10, d.name])), [diagnoses]);
+  const medsByIcd = useMemo(() => {
+    const m = new Map<string, CurrentMed[]>();
+    for (const med of currentMeds) {
+      if (!med.diagnosisIcd10) continue;
+      const arr = m.get(med.diagnosisIcd10) ?? [];
+      arr.push(med);
+      m.set(med.diagnosisIcd10, arr);
+    }
+    return m;
+  }, [currentMeds]);
   // Live derived scores: patient baseline + this visit's tagged inputs so far.
   // Memoized on the SCORING-RELEVANT slices only, so typing in the center's
   // always-live notes (which don't feed scoring) never recomputes these.
   const scores = useMemo(
     () =>
       computeDimensionScores(baseline, {
-        diagnoses: draft.diagnoses,
+        // prescribingContexts included: resolving an existing diagnosis lifts its score.
+        diagnoses: scoringDiagnoses({ diagnoses: draft.diagnoses, prescribingContexts: draft.prescribingContexts }),
         medicationChanges: draft.medicationChanges,
         measurements: draft.measurements,
       }),
-    [baseline, draft.diagnoses, draft.medicationChanges, draft.measurements],
+    [baseline, draft.diagnoses, draft.prescribingContexts, draft.medicationChanges, draft.measurements],
   );
   const visibleVisits = showAllVisits ? visits : visits.slice(0, 4);
 
@@ -182,25 +199,37 @@ export function VisitContextSidebar({
             {diagnoses.length === 0 ? (
               <p className="text-[12px] italic text-[#9B8775]">No current diagnoses recorded.</p>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-0.5">
                 {diagnoses.map((d) => {
                   const key = d.dimension ? fromLabel(d.dimension) : null;
                   const score = key ? scores[key] : null;
+                  const linkedMeds = medsByIcd.get(d.icd10) ?? [];
                   return (
-                    <div key={`${d.name}-${d.icd10}`} className="flex items-start gap-1.5">
+                    <button
+                      key={`${d.name}-${d.icd10}`}
+                      type="button"
+                      onClick={() => onOpenMedHistory(d.icd10, d.name)}
+                      title="Open medication & treatment history"
+                      className="w-full text-left flex items-start gap-1.5 rounded-md -mx-1.5 px-1.5 py-1 hover:bg-[#F0EBE4] transition-colors"
+                    >
                       <Stethoscope className="h-3 w-3 mt-0.5 text-[#9B8775] shrink-0" />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="text-[12px] text-[#2E1F14]">
                           {d.name}
                           <span className="ml-1.5 text-[10px] font-mono text-[#9B8775]">{d.icd10}</span>
                         </div>
+                        {linkedMeds.length > 0 && (
+                          <div className="text-[10px] text-[#9B8775] truncate">
+                            {linkedMeds.map((m) => m.name).join(", ")}
+                          </div>
+                        )}
                         {key && (
                           <span className={`text-[10px] font-medium ${scoreColorClass(score)}`}>
                             {dimensionLabel(key)}
                           </span>
                         )}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -208,22 +237,43 @@ export function VisitContextSidebar({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Medications */}
+        {/* Medications — each shows the diagnosis it treats; click opens history */}
         <AccordionItem value="meds" className="border-[#F0EBE4]">
           <AccordionTrigger className="py-3 hover:no-underline">
-            <TriggerLabel count={meds.length}>Medications</TriggerLabel>
+            <TriggerLabel count={currentMeds.length}>Medications</TriggerLabel>
           </AccordionTrigger>
           <AccordionContent className="pb-3">
-            {meds.length === 0 ? (
+            {currentMeds.length === 0 ? (
               <p className="text-[12px] italic text-[#9B8775]">No baseline medications recorded.</p>
             ) : (
-              <div className="space-y-1">
-                {meds.map((m) => (
-                  <div key={m} className="text-[12px] text-[#2E1F14] flex items-start gap-1.5">
-                    <Pill className="h-3 w-3 mt-0.5 text-[#9B8775] shrink-0" />
-                    <span>{m}</span>
-                  </div>
-                ))}
+              <div className="space-y-0.5">
+                {currentMeds.map((m) => {
+                  const diagName = m.diagnosisIcd10 ? diagNameByIcd.get(m.diagnosisIcd10) : undefined;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      disabled={!m.diagnosisIcd10}
+                      onClick={() => m.diagnosisIcd10 && onOpenMedHistory(m.diagnosisIcd10, diagName ?? m.name)}
+                      title={m.diagnosisIcd10 ? "Open medication & treatment history" : undefined}
+                      className="w-full text-left flex items-start gap-1.5 rounded-md -mx-1.5 px-1.5 py-1 hover:bg-[#F0EBE4] transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+                    >
+                      <Pill className="h-3 w-3 mt-0.5 text-[#9B8775] shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[12px] text-[#2E1F14] truncate">
+                          {m.name}
+                          <span className="text-[#9B8775]"> {m.dose}</span>
+                        </div>
+                        {diagName && (
+                          <div className="text-[10px] text-[#9B8775] truncate">
+                            — {diagName}
+                            {m.diagnosisIcd10 && <span className="ml-1 font-mono">{m.diagnosisIcd10}</span>}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </AccordionContent>
@@ -238,13 +288,23 @@ export function VisitContextSidebar({
             {allergies.length === 0 ? (
               <p className="text-[12px] italic text-[#9B8775]">No known allergies recorded.</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {allergies.map((a) => (
-                  <div key={a} className="inline-flex items-center gap-1.5 text-[12px] text-[#1F1611]">
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#E8446A" }} />
-                    {a}
+              // Safety-critical: pink fill + red border + ⚠, using the app's danger
+              // token (#E8446A), matching how allergy conflicts flag in prescribing.
+              <div className="rounded-[8px] p-2.5" style={{ background: "#FCEAEE", border: "1px solid #F2B8C2" }}>
+                <div className="flex items-start gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: "#E8446A" }} />
+                  <div className="flex flex-wrap gap-1.5">
+                    {allergies.map((a) => (
+                      <span
+                        key={a}
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                        style={{ background: "#FFFFFF", border: "1px solid #F2B8C2", color: "#8A1B38" }}
+                      >
+                        {a}
+                      </span>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </AccordionContent>

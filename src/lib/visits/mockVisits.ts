@@ -46,8 +46,11 @@ export const MOCK_VISITS: ClinicalVisit[] = [
       { id: "dx-a2", name: "Type 2 Diabetes Mellitus", icd10: "E11", status: "active", dimensions: ["metabolic"] },
     ],
     medicationChanges: [
-      { id: "mc-a1", medicationName: "Lisinopril", atc: "C09AA03", change: "started", detail: "New — 10mg once daily", dimensions: ["cardiovascular"] },
-      { id: "mc-a2", medicationName: "Metformin", atc: "A10BA02", change: "started", detail: "New — 500mg twice daily", dimensions: ["metabolic"] },
+      { id: "mc-a1", medicationName: "Amlodipine", atc: "C08CA01", change: "started", detail: "New — 5mg once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-I10" },
+      { id: "mc-a2", medicationName: "Metformin", atc: "A10BA02", change: "started", detail: "New — 500mg twice daily", dimensions: ["metabolic"], linkedDiagnosisId: "dxctx-E11" },
+    ],
+    treatments: [
+      { id: "tx-a1", name: "Mandibular advancement device", change: "started", note: "Dental device trial for OSA", linkedDiagnosisId: "dxctx-G47.3" },
     ],
     measurements: [
       { id: "m-a1", kind: "vital", marker: "Systolic BP", value: 150, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
@@ -64,7 +67,7 @@ export const MOCK_VISITS: ClinicalVisit[] = [
       ],
       followUp: { id: "f-a1", visitType: "ACUTE_CONSULTATION", timeframe: "3 months", with: "Dr. Laine", notes: "Reassess BP and glucose control." },
       prescriptions: [
-        { id: "p-a1", medicationName: "Lisinopril", dose: "10mg", frequency: "Once daily", time: "Morning" },
+        { id: "p-a1", medicationName: "Amlodipine", dose: "5mg", frequency: "Once daily", time: "Morning" },
         { id: "p-a2", medicationName: "Metformin", dose: "500mg", frequency: "Twice daily", time: "With meals" },
       ],
     },
@@ -80,16 +83,18 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     previousVisitId: "visit-carter-2025-06-20",
     notes: {
       subjective:
-        "5-day history of productive cough, wheeze and low-grade fever. No chest pain, no haemoptysis, no breathlessness at rest. Good adherence to antihypertensives and metformin.",
+        "5-day history of productive cough, wheeze and low-grade fever. No chest pain, no haemoptysis, no breathlessness at rest. Also reports ankle swelling since starting amlodipine. Good adherence to antihypertensives and metformin.",
       objective:
-        "Temperature 37.9°C, SpO2 96% on air. Scattered wheeze on auscultation, no focal crepitations. Not systemically unwell.",
-      assessment: "Community-acquired lower respiratory tract infection. Safety-netted; antibiotics started.",
+        "Temperature 37.9°C, SpO2 96% on air. Scattered wheeze on auscultation, no focal crepitations. Mild bilateral ankle oedema. Not systemically unwell.",
+      assessment: "Community-acquired lower respiratory tract infection. Safety-netted; antibiotics started. Amlodipine discontinued for ankle oedema and switched to ramipril.",
     },
     diagnoses: [
       { id: "dx-b1", name: "Acute bronchitis", icd10: "J20", status: "active", dimensions: ["respiratory_immune"] },
     ],
     medicationChanges: [
       { id: "mc-b1", medicationName: "Amoxicillin", atc: "J01CA04", change: "started", detail: "7-day course", dimensions: ["respiratory_immune"] },
+      { id: "mc-b2", medicationName: "Amlodipine", atc: "C08CA01", change: "stopped", detail: "was 5mg · once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-I10", discontinueReason: "Ankle oedema — switched to ramipril" },
+      { id: "mc-b3", medicationName: "Ramipril", atc: "C09AA05", change: "started", detail: "New — 5mg once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-I10" },
     ],
     measurements: [
       { id: "m-b1", kind: "vital", marker: "Temperature", value: 37.9, unit: "°C", source: "measured_today", dimensions: ["respiratory_immune"] },
@@ -104,6 +109,7 @@ export const MOCK_VISITS: ClinicalVisit[] = [
       followUp: null,
       prescriptions: [
         { id: "p-b1", medicationName: "Amoxicillin", dose: "500mg", frequency: "Three times daily", time: "7 days" },
+        { id: "p-b2", medicationName: "Ramipril", dose: "5mg", frequency: "Once daily", time: "Morning" },
       ],
     },
   },
@@ -117,14 +123,20 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     status: "completed",
     previousVisitId: "visit-carter-2025-10-08",
     notes: {
-      subjective: "No new symptoms. Chest infection fully resolved. Good adherence reported.",
-      assessment: "Lipids still above target — statin started. Glucose control improving on metformin + lifestyle.",
+      subjective: "No new symptoms. Chest infection fully resolved. Ankle swelling settled since stopping amlodipine. Good adherence reported.",
+      assessment: "Lipids still above target — simvastatin started. Ramipril switched to lisinopril to align with the practice formulary. Glucose control improving on metformin + lifestyle.",
     },
     diagnoses: [
       { id: "dx-c1", name: "Hyperlipidaemia", icd10: "E78.5", status: "active", dimensions: ["cardiovascular", "metabolic"] },
     ],
     medicationChanges: [
-      { id: "mc-c1", medicationName: "Atorvastatin", atc: "C10AA05", change: "started", detail: "New — 10mg once daily", dimensions: ["cardiovascular"] },
+      { id: "mc-c1", medicationName: "Simvastatin", atc: "C10AA01", change: "started", detail: "New — 20mg once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-E78.5" },
+      { id: "mc-c2", medicationName: "Ramipril", atc: "C09AA05", change: "stopped", detail: "was 5mg · once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-I10", discontinueReason: "Switched to formulary ACE inhibitor (lisinopril)" },
+      { id: "mc-c3", medicationName: "Lisinopril", atc: "C09AA03", change: "started", detail: "New — 10mg once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-I10" },
+    ],
+    treatments: [
+      { id: "tx-c1", name: "Mandibular advancement device", change: "stopped", note: "was dental device trial", linkedDiagnosisId: "dxctx-G47.3", discontinueReason: "Poor tolerance — ongoing apnoea on device" },
+      { id: "tx-c2", name: "CPAP therapy", change: "started", note: "Auto-titrating, 8–12 cmH₂O", linkedDiagnosisId: "dxctx-G47.3" },
     ],
     measurements: [
       { id: "m-c1", kind: "lab", marker: "LDL", value: 3.4, unit: "mmol/L", source: "reviewed", dimensions: ["cardiovascular", "metabolic"] },
@@ -135,7 +147,8 @@ export const MOCK_VISITS: ClinicalVisit[] = [
       referrals: [],
       followUp: { id: "f-c1", visitType: "FOLLOWUP_CONSULTATION", timeframe: "3 months", with: "Dr. Laine", notes: "Cardiometabolic follow-up." },
       prescriptions: [
-        { id: "p-c1", medicationName: "Atorvastatin", dose: "10mg", frequency: "Once daily", time: "Evening" },
+        { id: "p-c1", medicationName: "Simvastatin", dose: "20mg", frequency: "Once daily", time: "Evening" },
+        { id: "p-c2", medicationName: "Lisinopril", dose: "10mg", frequency: "Once daily", time: "Morning" },
       ],
     },
   },
@@ -151,11 +164,14 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     notes: {
       subjective:
         "Feeling well overall; no chest pain or palpitations. Started a new, more sedentary desk role. Good adherence reported.",
-      assessment: "BP above target on current therapy; statin uptitrated. HbA1c trending up — reinforce lifestyle.",
+      assessment: "BP above target on current therapy. Simvastatin gave insufficient LDL reduction — switched to atorvastatin. HbA1c trending up — metformin uptitrated and gliclazide added; reinforce lifestyle.",
     },
     diagnoses: [],
     medicationChanges: [
-      { id: "mc-1", medicationName: "Atorvastatin", atc: "C10AA05", change: "dose_changed", detail: "10mg → 20mg", dimensions: ["cardiovascular"] },
+      { id: "mc-1", medicationName: "Simvastatin", atc: "C10AA01", change: "stopped", detail: "was 20mg · once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-E78.5", discontinueReason: "Insufficient LDL reduction — switched to atorvastatin" },
+      { id: "mc-1b", medicationName: "Atorvastatin", atc: "C10AA05", change: "started", detail: "New — 20mg once daily", dimensions: ["cardiovascular"], linkedDiagnosisId: "dxctx-E78.5" },
+      { id: "mc-3", medicationName: "Metformin", atc: "A10BA02", change: "dose_changed", detail: "500mg → 1000mg", dimensions: ["metabolic"], linkedDiagnosisId: "dxctx-E11" },
+      { id: "mc-3b", medicationName: "Gliclazide", atc: "A10BB09", change: "started", detail: "New — 40mg once daily", dimensions: ["metabolic"], linkedDiagnosisId: "dxctx-E11" },
     ],
     measurements: [
       { id: "m-1", kind: "vital", marker: "Systolic BP", value: 142, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },
@@ -171,6 +187,7 @@ export const MOCK_VISITS: ClinicalVisit[] = [
       followUp: { id: "f-1", visitType: "FOLLOWUP_CONSULTATION", timeframe: "3 months", with: "Dr. Laine", notes: "Review BP and repeat lipids." },
       prescriptions: [
         { id: "p-1", medicationName: "Atorvastatin", dose: "20mg", frequency: "Once daily", time: "Evening" },
+        { id: "p-1b", medicationName: "Gliclazide", dose: "40mg", frequency: "Once daily", time: "With breakfast" },
       ],
     },
   },
@@ -185,16 +202,17 @@ export const MOCK_VISITS: ClinicalVisit[] = [
     previousVisitId: "visit-carter-2026-03-10",
     notes: {
       subjective:
-        "Occasional heartburn after evening meals for ~6 weeks. No dysphagia, weight loss or alarm features; reflux manageable. Admits missing occasional evening statin doses.",
+        "Occasional heartburn after evening meals for ~6 weeks. No dysphagia, weight loss or alarm features; reflux manageable. Reports a few episodes of sweating and shakiness before lunch since starting gliclazide. Admits missing occasional evening statin doses.",
       objective: "Abdomen soft, non-tender. BP improved versus prior review. Otherwise unremarkable examination.",
       assessment:
-        "New mild GERD — trial PPI with lifestyle advice. Cardiovascular risk improving; reinforce statin adherence (evening dosing).",
+        "New mild GERD — trial PPI with lifestyle advice. Symptomatic hypoglycaemia on gliclazide — discontinued; continue metformin with lifestyle. Cardiovascular risk improving; reinforce statin adherence (evening dosing).",
     },
     diagnoses: [
       { id: "dx-e1", name: "Gastroesophageal Reflux Disease", icd10: "K21.0", status: "active", dimensions: ["digestion"] },
     ],
     medicationChanges: [
       { id: "mc-2", medicationName: "Omeprazole", atc: "A02BC01", change: "continued", dimensions: ["digestion"] },
+      { id: "mc-2b", medicationName: "Gliclazide", atc: "A10BB09", change: "stopped", detail: "was 40mg · once daily", dimensions: ["metabolic"], linkedDiagnosisId: "dxctx-E11", discontinueReason: "Symptomatic hypoglycaemia" },
     ],
     measurements: [
       { id: "m-5", kind: "vital", marker: "Systolic BP", value: 136, unit: "mmHg", source: "measured_today", dimensions: ["cardiovascular"] },

@@ -7,7 +7,9 @@ import { createContext, useContext, useState, useCallback, useMemo, type ReactNo
 import type {
   ClinicalVisit,
   VisitDiagnosis,
+  PrescribingContext,
   MedicationChange,
+  VisitTreatment,
   PlanPrescription,
   PlanReferral,
   PlanTask,
@@ -28,12 +30,20 @@ type VisitFormContextValue = {
   // Medication changes
   addMedicationChange: (m: MedicationChange) => void;
   removeMedicationChange: (id: string) => void;
+  // Non-medication treatments
+  addTreatment: (t: VisitTreatment) => void;
+  removeTreatment: (id: string) => void;
   // Measurements
   addMeasurement: (m: VisitMeasurement) => void;
   removeMeasurement: (id: string) => void;
   // Diagnoses recorded this visit
   addDiagnosis: (d: VisitDiagnosis) => void;
   removeDiagnosis: (id: string) => void;
+  updateDiagnosis: (id: string, patch: Partial<VisitDiagnosis>) => void;
+  // Existing (baseline) diagnoses pulled in for prescribing (not re-scored)
+  addPrescribingContext: (c: PrescribingContext) => void;
+  removePrescribingContext: (id: string) => void;
+  updatePrescribingContext: (id: string, patch: Partial<PrescribingContext>) => void;
   // Plan
   addTask: (t: PlanTask) => void;
   removeTask: (id: string) => void;
@@ -83,6 +93,13 @@ export function VisitFormProvider({
     setDraft((prev) => ({ ...prev, medicationChanges: prev.medicationChanges.filter((x) => x.id !== id) }));
   }, []);
 
+  const addTreatment = useCallback((t: VisitTreatment) => {
+    setDraft((prev) => ({ ...prev, treatments: [...(prev.treatments ?? []), t] }));
+  }, []);
+  const removeTreatment = useCallback((id: string) => {
+    setDraft((prev) => ({ ...prev, treatments: (prev.treatments ?? []).filter((x) => x.id !== id) }));
+  }, []);
+
   const addMeasurement = useCallback((m: VisitMeasurement) => {
     setDraft((prev) => ({ ...prev, measurements: [...prev.measurements, m] }));
   }, []);
@@ -95,6 +112,27 @@ export function VisitFormProvider({
   }, []);
   const removeDiagnosis = useCallback((id: string) => {
     setDraft((prev) => ({ ...prev, diagnoses: prev.diagnoses.filter((d) => d.id !== id) }));
+  }, []);
+  const updateDiagnosis = useCallback((id: string, patch: Partial<VisitDiagnosis>) => {
+    setDraft((prev) => ({
+      ...prev,
+      diagnoses: prev.diagnoses.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+    }));
+  }, []);
+  const addPrescribingContext = useCallback((c: PrescribingContext) => {
+    setDraft((prev) => ({ ...prev, prescribingContexts: [...(prev.prescribingContexts ?? []), c] }));
+  }, []);
+  const removePrescribingContext = useCallback((id: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      prescribingContexts: (prev.prescribingContexts ?? []).filter((c) => c.id !== id),
+    }));
+  }, []);
+  const updatePrescribingContext = useCallback((id: string, patch: Partial<PrescribingContext>) => {
+    setDraft((prev) => ({
+      ...prev,
+      prescribingContexts: (prev.prescribingContexts ?? []).map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
   }, []);
 
   const addTask = useCallback((t: PlanTask) => {
@@ -141,7 +179,9 @@ export function VisitFormProvider({
     () => ({
       draft, set, patch, hydrate, patchPlan, patchNotes,
       addMedicationChange, removeMedicationChange,
-      addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
+      addTreatment, removeTreatment,
+      addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis, updateDiagnosis,
+      addPrescribingContext, removePrescribingContext, updatePrescribingContext,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
       addVaccination, removeVaccination,
       addLabOrder, removeLabOrder,
@@ -149,7 +189,9 @@ export function VisitFormProvider({
     [
       draft, set, patch, hydrate, patchPlan, patchNotes,
       addMedicationChange, removeMedicationChange,
-      addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
+      addTreatment, removeTreatment,
+      addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis, updateDiagnosis,
+      addPrescribingContext, removePrescribingContext, updatePrescribingContext,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
       addVaccination, removeVaccination,
       addLabOrder, removeLabOrder,

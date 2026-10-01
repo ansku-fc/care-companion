@@ -1,19 +1,19 @@
-// Inline diagnosis entry — relocated verbatim from the retired VisitDrawer.
-// Renders in place (expand-in-place) within the center column; wires straight
-// into the visit draft via useVisitForm. ICD combobox + dimension tagging.
-import { useState } from "react";
+// Inline diagnosis entry for the diagnosis-driven prescribing flow. Picking a
+// diagnosis from the ICD-10 catalog immediately records a NEW active
+// VisitDiagnosis (dimensions derived from the ICD→dimension mapping) and closes
+// — adding and prescribing are one motion, no separate "Add diagnosis" step.
+// Diagnoses the patient ALREADY has are excluded from the catalog (you can't
+// newly-diagnose an existing condition; those live in "Current diagnoses").
+import { useMemo } from "react";
 import { ICD10_ILLNESSES } from "@/lib/onboardingTaxonomy";
-import {
-  suggestDimensionsForIcd,
-  type DimensionKey,
-  type DiagnosisStatus,
-} from "@/lib/visits";
-import { FormCard, SelectField, PrimaryButton, CancelLink, uid } from "@/components/visits/forms";
-import { DimensionMultiSelect } from "./DimensionMultiSelect";
+import { suggestDimensionsForIcd } from "@/lib/visits";
+import { FormCard, uid } from "@/components/visits/forms";
 import { Combobox, type ComboOption } from "./Combobox";
 import { useVisitForm } from "./VisitFormProvider";
 
-// Sorted by condition NAME (not code) for predictable scanning.
+type CurrentDiagnosis = { name: string; icd10: string };
+
+// Catalog sorted by condition NAME (not code) for predictable scanning.
 const ICD_OPTIONS: ComboOption[] = [...ICD10_ILLNESSES]
   .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
   .map((e) => ({
@@ -22,37 +22,42 @@ const ICD_OPTIONS: ComboOption[] = [...ICD10_ILLNESSES]
     searchText: `${e.code} ${e.name}`,
   }));
 
-export function DiagnosisEntryForm({ onClose }: { onClose: () => void }) {
+export function DiagnosisEntryForm({
+  onClose,
+  currentDiagnoses = [],
+}: {
+  onClose: () => void;
+  currentDiagnoses?: CurrentDiagnosis[];
+}) {
   const f = useVisitForm();
-  const [icd10, setIcd10] = useState("");
-  const [name, setName] = useState("");
-  const [status, setStatus] = useState<DiagnosisStatus>("active");
-  const [dims, setDims] = useState<DimensionKey[]>([]);
-  const onPickIcd = (code: string) => {
-    setIcd10(code);
-    setName(ICD10_ILLNESSES.find((e) => e.code === code)?.name ?? "");
-    const s = suggestDimensionsForIcd(code);
-    if (s.length) setDims(s);
-  };
-  const save = () => {
-    if (!name.trim()) return;
-    f.addDiagnosis({ id: uid(), name: name.trim(), icd10: icd10.trim(), status, dimensions: dims });
+
+  // Exclude conditions the patient already has (mirrors the medication add flow,
+  // which hides drugs the patient is already on).
+  const options = useMemo(() => {
+    const have = new Set(currentDiagnoses.map((d) => d.icd10));
+    return ICD_OPTIONS.filter((o) => !have.has(o.value));
+  }, [currentDiagnoses]);
+
+  // Pick → record a new active diagnosis straight away; dimensions are derived
+  // from the ICD, never hand-tagged. The prompt then opens in "New diagnoses".
+  const onPick = (code: string) => {
+    const name = ICD10_ILLNESSES.find((e) => e.code === code)?.name ?? "";
+    if (!name) return;
+    f.addDiagnosis({ id: uid(), name, icd10: code, status: "active", dimensions: suggestDimensionsForIcd(code) });
     onClose();
   };
+
   return (
     <FormCard onClose={onClose}>
       <div>
-        <div className="text-[11px] text-[#9B8775] mb-1">Condition (ICD-10)</div>
-        <Combobox options={ICD_OPTIONS} value={icd10 || null} onSelect={onPickIcd} placeholder="Search diagnoses…" searchPlaceholder="Search code or condition…" />
-      </div>
-      <SelectField value={status} onChange={(v) => setStatus(v as DiagnosisStatus)} options={["active", "resolved"]} />
-      <div>
-        <div className="text-[11px] text-[#9B8775] mb-1">Related dimension(s)</div>
-        <DimensionMultiSelect value={dims} onChange={setDims} />
-      </div>
-      <div className="flex items-center justify-end gap-3 pt-1">
-        <CancelLink onClick={onClose} />
-        <PrimaryButton disabled={!name.trim()} onClick={save}>Add diagnosis</PrimaryButton>
+        <div className="text-[11px] text-[#9B8775] mb-1">Diagnosis or ICD-10</div>
+        <Combobox
+          options={options}
+          value={null}
+          onSelect={onPick}
+          placeholder="Search diagnoses…"
+          searchPlaceholder="Search the ICD-10 catalog…"
+        />
       </div>
     </FormCard>
   );

@@ -24,6 +24,31 @@ export interface MedicationChange {
   change: MedicationChangeKind;
   detail?: string; // e.g. "10mg → 20mg"
   dimensions: DimensionKey[]; // doctor-tagged; drives derived scoring
+  /** Diagnosis this change was prescribed for (VisitDiagnosis.id or a
+   *  PrescribingContext.id). Raw link; groupings are derived. */
+  linkedDiagnosisId?: string;
+  /** Free-text reason a medication was discontinued (only on `stopped`). Raw. */
+  discontinueReason?: string;
+}
+
+/* ---------------- Non-medication treatments this visit ---------------- */
+
+export type TreatmentChangeKind = "started" | "stopped" | "continued";
+
+/**
+ * A non-medication treatment linked to a diagnosis — devices, therapies and
+ * interventions (CPAP, compression stockings, physiotherapy, low-carb diet…).
+ * Mirrors MedicationChange but for non-drug management: same `linkedDiagnosisId`
+ * link, same raw `discontinueReason` on a stop. Raw data; grouping/history derived.
+ */
+export interface VisitTreatment {
+  id: string;
+  name: string; // e.g. "CPAP therapy"
+  change: TreatmentChangeKind;
+  note?: string; // optional free-text detail the doctor adds
+  date?: string; // ISO — when started/applied (raw). Optional.
+  linkedDiagnosisId?: string;
+  discontinueReason?: string; // why it was stopped (only on `stopped`)
 }
 
 /* ---------------- Diagnoses recorded this visit ---------------- */
@@ -36,6 +61,24 @@ export interface VisitDiagnosis {
   icd10: string;
   status: DiagnosisStatus;
   dimensions: DimensionKey[]; // doctor-tagged (auto-suggested from ICD); drives scoring
+  /** Explicit "no medication needed" decision for this diagnosis (raw). A
+   *  prompt resolves when this is true OR ≥1 medication is linked to it. */
+  noMedication?: boolean;
+}
+
+/**
+ * An EXISTING (baseline) diagnosis pulled into this visit solely to prescribe
+ * against it — NOT re-recorded as a new diagnosis, so it does not feed derived
+ * dimension scoring (it's an established condition, not newly diagnosed).
+ */
+export interface PrescribingContext {
+  id: string; // synthesized, e.g. "dxctx-<icd10>"
+  name: string;
+  icd10: string;
+  noMedication?: boolean;
+  /** Clinician marked this existing condition resolved THIS visit (raw). Feeds
+   *  derived scoring as a resolved diagnosis (lifts the dimension's drag). */
+  resolved?: boolean;
 }
 
 /* ---------------- Measurements taken / reviewed today ---------------- */
@@ -97,6 +140,8 @@ export interface PlanPrescription {
   dose: string;
   frequency: string;
   time: string;
+  /** Diagnosis this was prescribed for (VisitDiagnosis.id or PrescribingContext.id). */
+  linkedDiagnosisId?: string;
 }
 
 export type VaccinationStatus = "given" | "ordered";
@@ -140,8 +185,15 @@ export interface ClinicalVisit {
   reasonNote?: string;
   status: VisitStatus;
   medicationChanges: MedicationChange[];
+  /** Non-medication treatments linked to diagnoses this visit. Optional so
+   *  existing/legacy visit literals stay valid; new drafts seed []. */
+  treatments?: VisitTreatment[];
   measurements: VisitMeasurement[];
   diagnoses: VisitDiagnosis[];
+  /** Existing (baseline) diagnoses pulled in this visit to prescribe against,
+   *  without re-recording them as new diagnoses. Optional so mock/legacy visit
+   *  literals stay valid; new drafts seed []. */
+  prescribingContexts?: PrescribingContext[];
   plan: VisitPlan;
   /**
    * Free-text clinical narrative (SOAP-style). Subjective captures what the

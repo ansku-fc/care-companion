@@ -6,13 +6,16 @@
 
 import { scoreTone, formatScore, type ScoreTone } from "@/lib/scoreColor";
 import { LAB_MARKERS } from "@/lib/labMarkerCatalog";
-import { DIMENSION_KEYS, type DimensionKey } from "./dimensionMapping";
+import { DIMENSION_KEYS, suggestDimensionsForIcd, type DimensionKey } from "./dimensionMapping";
 import type {
   ClinicalVisit,
   MedicationChange,
+  MedicationChangeKind,
   PatientBaseline,
+  PlanPrescription,
   VisitDiagnosis,
   VisitMeasurement,
+  VisitTreatment,
 } from "./types";
 
 /* ---------------- Score bands (via scoreColor.ts) ---------------- */
@@ -139,10 +142,30 @@ export interface ScoringInputs {
 
 export function scoringInputsFromVisit(visit: ClinicalVisit): ScoringInputs {
   return {
-    diagnoses: visit.diagnoses,
+    diagnoses: scoringDiagnoses(visit),
     medicationChanges: visit.medicationChanges,
     measurements: visit.measurements,
   };
+}
+
+/**
+ * Diagnoses that feed scoring: the diagnoses recorded this visit PLUS any
+ * existing (baseline) diagnosis the clinician marked resolved this visit —
+ * synthesized as a resolved diagnosis on its ICD-derived dimension(s). Active
+ * existing diagnoses are NOT scored (already reflected in the patient baseline);
+ * only the resolution event contributes (lifting the dimension's drag). Derived.
+ */
+export function scoringDiagnoses(visit: Pick<ClinicalVisit, "diagnoses" | "prescribingContexts">): VisitDiagnosis[] {
+  const resolvedExisting: VisitDiagnosis[] = (visit.prescribingContexts ?? [])
+    .filter((c) => c.resolved === true)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      icd10: c.icd10,
+      status: "resolved" as const,
+      dimensions: suggestDimensionsForIcd(c.icd10),
+    }));
+  return [...visit.diagnoses, ...resolvedExisting];
 }
 
 function medDelta(change: MedicationChange["change"]): number {
@@ -230,6 +253,95 @@ export function deriveVisitScores(baseline: PatientBaseline, visit: ClinicalVisi
   return computeDimensionScores(baseline, scoringInputsFromVisit(visit));
 }
 
+/* ---------------- Diagnosis-driven prescribing (derived) ---------------- */
+
+/** One diagnosis prompt with its linked medications and resolution state. */
+export interface DiagnosisRxGroup {
+  id: string;
+  name: string;
+  icd10: string;
+  source: "new" | "existing"; // new = diagnosed this visit; existing = baseline
+  noMedication: boolean;
+  prescriptions: PlanPrescription[]; // new prescriptions linked to this diagnosis
+  changes: MedicationChange[]; // medication changes linked to this diagnosis
+  treatments: VisitTreatment[]; // non-medication treatments linked to this diagnosis
+  /** Resolved once ≥1 medication OR treatment is linked, OR "no treatment
+   *  needed" is set (the noMedication flag, now broader than drugs). */
+  resolved: boolean;
+  /** Clinician marked this (existing) diagnosis clinically resolved this visit.
+   *  Distinct from `resolved` (which is about the prescribing decision). */
+  markedResolved: boolean;
+}
+
+export interface DiagnosisPrescribing {
+  groups: DiagnosisRxGroup[];
+  /** Count of unresolved prompts — drives the "needs attention" badge. */
+  pendingCount: number;
+  /** Medications not linked to any diagnosis (defensive; empty in the normal flow). */
+  unlinkedPrescriptions: PlanPrescription[];
+  unlinkedChanges: MedicationChange[];
+}
+
+/**
+ * Group this visit's prescriptions + medication changes under the diagnosis each
+ * was prescribed for (new VisitDiagnoses and pulled-in PrescribingContexts), and
+ * derive each prompt's resolution + the pending count. Purely derived from the
+ * raw links (linkedDiagnosisId) and resolution flags (noMedication).
+ */
+export function diagnosisPrescribing(visit: ClinicalVisit): DiagnosisPrescribing {
+  const prescriptions = visit.plan.prescriptions ?? [];
+  const changes = visit.medicationChanges ?? [];
+  const treatments = visit.treatments ?? [];
+  const rxFor = (id: string) => prescriptions.filter((p) => p.linkedDiagnosisId === id);
+  const chFor = (id: string) => changes.filter((c) => c.linkedDiagnosisId === id);
+  const txFor = (id: string) => treatments.filter((t) => t.linkedDiagnosisId === id);
+
+  const fromNew: DiagnosisRxGroup[] = visit.diagnoses.map((d) => {
+    const rx = rxFor(d.id);
+    const ch = chFor(d.id);
+    const tx = txFor(d.id);
+    return {
+      id: d.id,
+      name: d.name,
+      icd10: d.icd10,
+      source: "new" as const,
+      noMedication: d.noMedication === true,
+      prescriptions: rx,
+      changes: ch,
+      treatments: tx,
+      resolved: d.noMedication === true || rx.length + ch.length + tx.length > 0,
+      markedResolved: d.status === "resolved",
+    };
+  });
+
+  const fromExisting: DiagnosisRxGroup[] = (visit.prescribingContexts ?? []).map((c) => {
+    const rx = rxFor(c.id);
+    const ch = chFor(c.id);
+    const tx = txFor(c.id);
+    return {
+      id: c.id,
+      name: c.name,
+      icd10: c.icd10,
+      source: "existing" as const,
+      noMedication: c.noMedication === true,
+      prescriptions: rx,
+      changes: ch,
+      treatments: tx,
+      resolved: c.noMedication === true || rx.length + ch.length + tx.length > 0,
+      markedResolved: c.resolved === true,
+    };
+  });
+
+  const groups = [...fromNew, ...fromExisting];
+  const linkedIds = new Set(groups.map((g) => g.id));
+  return {
+    groups,
+    pendingCount: groups.filter((g) => !g.resolved).length,
+    unlinkedPrescriptions: prescriptions.filter((p) => !p.linkedDiagnosisId || !linkedIds.has(p.linkedDiagnosisId)),
+    unlinkedChanges: changes.filter((c) => !c.linkedDiagnosisId || !linkedIds.has(c.linkedDiagnosisId)),
+  };
+}
+
 /* ---------------- Dimension longitudinal trend (derived) ---------------- */
 
 export interface DimensionTrendPoint {
@@ -251,4 +363,79 @@ export function dimensionTrend(
   return [...visits]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((v) => ({ date: v.date, score: computeDimensionScores(baseline, scoringInputsFromVisit(v))[dimension] }));
+}
+
+/* ---------------- Medication history for a diagnosis (derived) ---------------- */
+
+export interface MedHistoryEntry {
+  date: string; // visit date (ISO)
+  medicationName: string; // medication OR treatment name
+  change: MedicationChangeKind; // treatments only ever use started/stopped/continued
+  detail?: string;
+  discontinueReason?: string; // why it was stopped, if recorded
+  isTreatment?: boolean; // true for non-medication treatment entries
+}
+
+export interface DiagnosisMedHistory {
+  current: { name: string; dose: string; frequency: string }[];
+  currentTreatments: { name: string; note?: string }[];
+  timeline: MedHistoryEntry[]; // chronological ascending (meds + treatments intermixed)
+}
+
+/**
+ * Medication history for a diagnosis (by ICD-10): the current regimen (current
+ * meds linked to the diagnosis) plus every past medication change belonging to
+ * it, ordered by visit date. Belonging is matched by linkedDiagnosisId where
+ * present; older mock changes predate that link, so they fall back to
+ * medication-name ↔ diagnosis-current-med correlation (gap: a historical change
+ * for a med no longer in the current regimen won't be attributed). Derived only.
+ */
+export function medicationHistoryForDiagnosis(
+  icd10: string,
+  visits: ClinicalVisit[],
+  currentMeds: { name: string; dose: string; frequency: string; diagnosisIcd10?: string }[],
+  currentTreatments: { name: string; note?: string; diagnosisIcd10?: string }[] = [],
+): DiagnosisMedHistory {
+  const current = currentMeds
+    .filter((m) => m.diagnosisIcd10 === icd10)
+    .map((m) => ({ name: m.name, dose: m.dose, frequency: m.frequency }));
+  const dxMedNames = new Set(current.map((m) => m.name.toLowerCase()));
+
+  const currentTx = currentTreatments
+    .filter((t) => t.diagnosisIcd10 === icd10)
+    .map((t) => ({ name: t.name, note: t.note }));
+  const dxTxNames = new Set(currentTx.map((t) => t.name.toLowerCase()));
+
+  const timeline: MedHistoryEntry[] = [];
+  for (const v of [...visits].sort((a, b) => a.date.localeCompare(b.date))) {
+    for (const c of v.medicationChanges) {
+      const byLink = c.linkedDiagnosisId ? c.linkedDiagnosisId.includes(icd10) : false;
+      const byName = dxMedNames.has(c.medicationName.toLowerCase());
+      if (byLink || byName) {
+        timeline.push({
+          date: v.date,
+          medicationName: c.medicationName,
+          change: c.change,
+          detail: c.detail,
+          discontinueReason: c.discontinueReason,
+        });
+      }
+    }
+    // Non-medication treatments — same linkedDiagnosisId / name-fallback rules.
+    for (const t of v.treatments ?? []) {
+      const byLink = t.linkedDiagnosisId ? t.linkedDiagnosisId.includes(icd10) : false;
+      const byName = dxTxNames.has(t.name.toLowerCase());
+      if (byLink || byName) {
+        timeline.push({
+          date: v.date,
+          medicationName: t.name,
+          change: t.change,
+          detail: t.note,
+          discontinueReason: t.discontinueReason,
+          isTreatment: true,
+        });
+      }
+    }
+  }
+  return { current, currentTreatments: currentTx, timeline };
 }
