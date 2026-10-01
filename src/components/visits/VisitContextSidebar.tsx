@@ -1,10 +1,11 @@
-// Left rail: baseline the clinician carries into the visit so the form only has
-// to capture the delta. The Dimension Baseline shows ALL 9 canonical dimensions
-// with their CURRENT derived score (patient baseline + this visit's tagged
-// inputs so far) — nothing is manually scored or stored. Sections are collapsible
-// accordions; "Visit History" opens a read-only summary.
+// Left rail — now a compact INDEX of triggers only (no inline charts/summaries).
+// Patient-context accordions (Dimension Baseline, Diagnoses, Medications,
+// Allergies), a searchable Labs marker list, and a Visit History list — all
+// collapsible accordions, collapsed by default. Clicking a lab marker opens its
+// chart in the Detail panel; clicking a past visit opens its summary there. The
+// richer detail lives in the fourth column (VisitDetailPanel), not here.
 import { useMemo, useState } from "react";
-import { Pill, Stethoscope, ChevronRight, X } from "lucide-react";
+import { Pill, Stethoscope, ChevronRight } from "lucide-react";
 import {
   DIMENSION_KEYS,
   dimensionLabel,
@@ -14,13 +15,16 @@ import {
   computeDimensionScores,
   type ClinicalVisit,
   type PatientBaseline,
+  type DimensionKey,
 } from "@/lib/visits";
 import { scoreColorClass } from "@/lib/scoreColor";
 import { VISIT_TYPE_META } from "@/lib/episodes";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { SectionLabel } from "./visitUi";
 import { useVisitForm } from "./VisitFormProvider";
-import { VisitSummaryContent } from "./VisitSummaryContent";
+import { sortByLabel } from "./Combobox";
+import type { LabSeries } from "@/lib/labs";
 
 /** Raw baseline diagnosis. `dimension` is the legacy label as stored on the
  *  patient record; the canonical key + colour are derived at render. */
@@ -37,10 +41,52 @@ function CountBadge({ n }: { n: number }) {
 
 function TriggerLabel({ children, count }: { children: React.ReactNode; count?: number }) {
   return (
-    <span className="flex items-center text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775]">
+    // Radix Accordion.Header renders an <h3>, which the global h1–h3 rule styles
+    // in the display font (Belleza). Force the body font (Plus Jakarta Sans) so
+    // these eyebrow headers match the right rail's exactly.
+    <span
+      className="flex items-center text-[11px] font-medium uppercase tracking-[0.08em] text-[#9B8775]"
+      style={{ fontFamily: "var(--font-body)" }}
+    >
       {children}
       {typeof count === "number" && <CountBadge n={count} />}
     </span>
+  );
+}
+
+/** Searchable marker list (cmdk). Clicking a row opens that marker's chart in
+ *  the Detail panel. Sorted alphabetically by label. */
+function LabsSearchList({ labs, onOpenLab }: { labs: LabSeries[]; onOpenLab: (markerKey: string) => void }) {
+  if (labs.length === 0) return <p className="text-[12px] italic text-[#9B8775]">No lab data recorded.</p>;
+  return (
+    <Command className="rounded-[8px] border border-[#E7DCCD] bg-white">
+      <CommandInput placeholder="Search markers…" className="h-9 text-[12px]" />
+      <CommandList className="max-h-[220px]">
+        <CommandEmpty className="py-4 text-center text-[12px] text-[#9B8775]">No markers.</CommandEmpty>
+        <CommandGroup>
+          {sortByLabel(labs).map((s) => {
+            const pts = [...s.points].sort((a, b) => a.date.localeCompare(b.date));
+            const latest = pts.length ? pts[pts.length - 1] : null;
+            return (
+              <CommandItem
+                key={s.key}
+                value={s.label}
+                onSelect={() => onOpenLab(s.key)}
+                className="text-[12px] cursor-pointer flex items-center justify-between gap-2"
+              >
+                <span className="truncate text-[#2E1F14]">{s.label}</span>
+                {latest && (
+                  <span className="shrink-0 text-[11px] tabular-nums text-[#9B8775]">
+                    {latest.value}
+                    {s.unit ? ` ${s.unit}` : ""}
+                  </span>
+                )}
+              </CommandItem>
+            );
+          })}
+        </CommandGroup>
+      </CommandList>
+    </Command>
   );
 }
 
@@ -51,6 +97,10 @@ export function VisitContextSidebar({
   meds,
   allergies,
   diagnoses,
+  labs,
+  onOpenLab,
+  onOpenVisit,
+  onOpenDimension,
 }: {
   patientName: string;
   baseline: PatientBaseline;
@@ -58,11 +108,13 @@ export function VisitContextSidebar({
   meds: string[];
   allergies: string[];
   diagnoses: BaselineDiagnosis[];
+  labs: LabSeries[];
+  onOpenLab: (markerKey: string) => void;
+  onOpenVisit: (visitId: string) => void;
+  onOpenDimension: (dimensionKey: DimensionKey) => void;
 }) {
   const { draft } = useVisitForm();
   const [showAllVisits, setShowAllVisits] = useState(false);
-  // Which past visit's summary is expanded inline (one at a time; no overlay).
-  const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
   // Live derived scores: patient baseline + this visit's tagged inputs so far.
   // Memoized on the SCORING-RELEVANT slices only, so typing in the center's
   // always-live notes (which don't feed scoring) never recomputes these.
@@ -79,25 +131,30 @@ export function VisitContextSidebar({
 
   return (
     <aside className="w-[280px] shrink-0 overflow-y-auto p-5 space-y-5" style={{ borderRight: "1px solid #E7DCCD" }}>
-      <div>
+      {/* Equal-height intro band so the first accordion header lines up with the
+          right rail's first group header across the page. */}
+      <div className="min-h-[44px]">
         <SectionLabel>Patient Context</SectionLabel>
         <p className="text-[15px] font-semibold text-[#2E1F14] mt-1">{patientName}</p>
       </div>
 
       <Accordion type="multiple" defaultValue={[]} className="border-t border-[#F0EBE4]">
-        {/* Dimension Baseline — all 9, live derived score */}
+        {/* Dimensions — all 9, live derived score; click a row to open its trend */}
         <AccordionItem value="baseline" className="border-[#F0EBE4]">
-          <AccordionTrigger className="py-2.5 hover:no-underline">
-            <TriggerLabel>Dimension Baseline</TriggerLabel>
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <TriggerLabel>Dimensions</TriggerLabel>
           </AccordionTrigger>
           <AccordionContent className="pb-3">
             <div>
               {DIMENSION_KEYS.map((key, i) => {
                 const score = scores[key];
                 return (
-                  <div
+                  <button
                     key={key}
-                    className="flex items-center justify-between h-7"
+                    type="button"
+                    onClick={() => onOpenDimension(key)}
+                    title="Open trend"
+                    className="w-full text-left flex items-center justify-between h-7 rounded-md -mx-1.5 px-1.5 hover:bg-[#F0EBE4] transition-colors"
                     style={{ borderTop: i === 0 ? "none" : "0.5px solid #F0EBE4" }}
                   >
                     <span className="text-[11px] text-[#9B8775] truncate">{dimensionLabel(key)}</span>
@@ -109,7 +166,7 @@ export function VisitContextSidebar({
                         {scoreBand(score)}
                       </span>
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -118,7 +175,7 @@ export function VisitContextSidebar({
 
         {/* Current Diagnoses */}
         <AccordionItem value="diagnoses" className="border-[#F0EBE4]">
-          <AccordionTrigger className="py-2.5 hover:no-underline">
+          <AccordionTrigger className="py-3 hover:no-underline">
             <TriggerLabel count={diagnoses.length}>Current Diagnoses</TriggerLabel>
           </AccordionTrigger>
           <AccordionContent className="pb-3">
@@ -153,7 +210,7 @@ export function VisitContextSidebar({
 
         {/* Medications */}
         <AccordionItem value="meds" className="border-[#F0EBE4]">
-          <AccordionTrigger className="py-2.5 hover:no-underline">
+          <AccordionTrigger className="py-3 hover:no-underline">
             <TriggerLabel count={meds.length}>Medications</TriggerLabel>
           </AccordionTrigger>
           <AccordionContent className="pb-3">
@@ -174,7 +231,7 @@ export function VisitContextSidebar({
 
         {/* Allergies */}
         <AccordionItem value="allergies" className="border-[#F0EBE4]">
-          <AccordionTrigger className="py-2.5 hover:no-underline">
+          <AccordionTrigger className="py-3 hover:no-underline">
             <TriggerLabel count={allergies.length}>Allergies</TriggerLabel>
           </AccordionTrigger>
           <AccordionContent className="pb-3">
@@ -192,27 +249,32 @@ export function VisitContextSidebar({
             )}
           </AccordionContent>
         </AccordionItem>
-      </Accordion>
 
-      {/* Visit History — clicking a past visit expands its summary inline, in
-          place, below the item (no overlay; the rest of the screen stays live). */}
-      <section>
-        <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">
-          Visit History
-          <CountBadge n={visits.length} />
-        </div>
-        {visits.length === 0 ? (
-          <p className="text-[12px] italic text-[#9B8775]">No previous visits.</p>
-        ) : (
-          <div className="space-y-0.5">
-            {visibleVisits.map((v) => {
-              const expanded = expandedVisitId === v.id;
-              return (
-                <div key={v.id}>
+        {/* Labs — searchable marker list; a click opens the chart in the Detail panel */}
+        <AccordionItem value="labs" className="border-[#F0EBE4]">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <TriggerLabel count={labs.length}>Labs</TriggerLabel>
+          </AccordionTrigger>
+          <AccordionContent className="pb-3">
+            <LabsSearchList labs={labs} onOpenLab={onOpenLab} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Visit History — collapsed accordion; a click opens the summary in the Detail panel */}
+        <AccordionItem value="visit-history" className="border-[#F0EBE4]">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <TriggerLabel count={visits.length}>Visit History</TriggerLabel>
+          </AccordionTrigger>
+          <AccordionContent className="pb-3">
+            {visits.length === 0 ? (
+              <p className="text-[12px] italic text-[#9B8775]">No previous visits.</p>
+            ) : (
+              <div className="space-y-0.5">
+                {visibleVisits.map((v) => (
                   <button
+                    key={v.id}
                     type="button"
-                    onClick={() => setExpandedVisitId((cur) => (cur === v.id ? null : v.id))}
-                    aria-expanded={expanded}
+                    onClick={() => onOpenVisit(v.id)}
                     className="w-full text-left flex items-center gap-1.5 rounded-md px-1.5 py-1.5 -mx-1.5 hover:bg-[#F0EBE4] transition-colors"
                   >
                     <div className="flex-1 min-w-0">
@@ -223,49 +285,23 @@ export function VisitContextSidebar({
                         {v.reasonNote || VISIT_TYPE_META[v.reason].label}
                       </div>
                     </div>
-                    <ChevronRight className={`h-3.5 w-3.5 text-[#C9BBA9] shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`} />
+                    <ChevronRight className="h-3.5 w-3.5 text-[#C9BBA9] shrink-0" />
                   </button>
-                  {expanded && (
-                    <div
-                      className="mt-1 mb-2 rounded-[8px] animate-fade-in flex flex-col"
-                      style={{ border: "1px solid #E7DCCD", background: "#FFFDFB" }}
-                    >
-                      {/* Fixed header — stays put while the summary body scrolls. */}
-                      <div className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0">
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9B8775]">
-                          Visit summary
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedVisitId(null)}
-                          aria-label="Close"
-                          className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] text-[#9B8775] hover:bg-[#F0EBE4] hover:text-[#2E1F14] transition-colors"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      {/* Own bounded scroll region — only this scrolls; the
-                          patient context + history list above stay fixed. */}
-                      <div className="min-h-0 max-h-[55vh] overflow-y-auto px-3 pb-3">
-                        <VisitSummaryContent visit={v} allVisits={visits} baseline={baseline} compact />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {visits.length > 4 && (
-              <button
-                type="button"
-                onClick={() => setShowAllVisits((v) => !v)}
-                className="text-[11px] font-medium text-[#6E5A48] hover:text-[#2E1F14] transition-colors mt-1 px-1.5"
-              >
-                {showAllVisits ? "Show less" : `See all ${visits.length}`}
-              </button>
+                ))}
+                {visits.length > 4 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllVisits((s) => !s)}
+                    className="text-[11px] font-medium text-[#6E5A48] hover:text-[#2E1F14] transition-colors mt-1 px-1.5"
+                  >
+                    {showAllVisits ? "Show less" : `See all ${visits.length}`}
+                  </button>
+                )}
+              </div>
             )}
-          </div>
-        )}
-      </section>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </aside>
   );
 }

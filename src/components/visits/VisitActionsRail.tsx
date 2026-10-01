@@ -15,6 +15,7 @@ import { ReferralForm, PrescriptionForm, uid } from "@/components/visits/forms";
 import { referralFromForm, prescriptionFromForm } from "./planAdapters";
 import { FollowUpEntryForm } from "./FollowUpEntryForm";
 import { VaccinationEntryForm } from "./VaccinationEntryForm";
+import { LabOrderEntryForm } from "./LabOrderEntryForm";
 
 /** A standing medication the patient is already on (same source as the left
  *  sidebar Medications accordion). Dimensions feed derived scoring on change. */
@@ -26,7 +27,7 @@ export type CurrentMed = {
   dimensions: DimensionKey[];
 };
 
-type GroupKey = "referrals" | "prescriptions" | "vaccination" | "followup";
+type GroupKey = "referrals" | "prescriptions" | "laborders" | "vaccination" | "followup";
 
 const CHANGE_LABEL: Record<MedicationChangeKind, string> = {
   started: "Started",
@@ -40,11 +41,13 @@ export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] })
   const plan = f.draft.plan;
   const medChanges = f.draft.medicationChanges;
   const vaccinations = plan.vaccinations ?? [];
+  const labOrders = plan.labOrders ?? [];
 
   const footer = [
     `${plan.referrals.length} referral${plan.referrals.length === 1 ? "" : "s"}`,
     `${plan.prescriptions.length} prescription${plan.prescriptions.length === 1 ? "" : "s"}`,
     medChanges.length ? `${medChanges.length} med change${medChanges.length === 1 ? "" : "s"}` : null,
+    labOrders.length ? `${labOrders.length} lab order${labOrders.length === 1 ? "" : "s"}` : null,
     vaccinations.length ? `${vaccinations.length} vaccination${vaccinations.length === 1 ? "" : "s"}` : null,
     plan.followUp ? "1 follow-up" : null,
   ].filter(Boolean).join(" · ");
@@ -94,14 +97,17 @@ export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] })
   return (
     <aside className="w-[360px] shrink-0 flex flex-col" style={{ borderLeft: "1px solid #E7DCCD" }}>
       <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
-        <div>
+        {/* Equal-height intro band — matches the left rail so first headers align. */}
+        <div className="min-h-[44px]">
           <SectionLabel>Actions</SectionLabel>
           <p className="text-[12px] text-[#9B8775] mt-1">Care coordination from this visit</p>
         </div>
 
+        {/* Groups separated by the same hairline the left rail uses. */}
+        <div className="divide-y divide-[#F0EBE4] border-t border-b border-[#F0EBE4]">
         {/* Referrals */}
         <PlanGroup
-          label="Referrals to Create"
+          label="Referrals"
           count={plan.referrals.length}
           open={open.has("referrals")}
           onToggle={() => toggle("referrals")}
@@ -157,9 +163,24 @@ export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] })
           )}
         </PlanGroup>
 
-        {/* Lab Orders — stub; wired up by the labs-mirror feature. */}
-        <PlanGroup label="Lab Orders" count={0} disabled disabledHint="Coming soon">
-          <p className="text-[11px] italic text-[#C9BBA9] pt-1">Lab ordering arrives with the labs feature.</p>
+        {/* Lab Orders — order any test from the full catalog (multi-select). */}
+        <PlanGroup
+          label="Lab Orders"
+          count={labOrders.length}
+          open={open.has("laborders")}
+          onToggle={() => toggle("laborders")}
+          form={<LabOrderEntryForm onClose={() => close("laborders")} />}
+        >
+          {labOrders.map((o) => (
+            <Row key={o.id} onRemove={() => f.removeLabOrder(o.id)}>
+              <div className="text-[12px] text-[#2E1F14]">{o.markers.map((m) => m.label).join(", ")}</div>
+              <div className="text-[11px] text-[#9B8775]">
+                {o.markers.length} marker{o.markers.length === 1 ? "" : "s"}
+                {o.fasting && <span className="text-[#B45309]"> · Fasting</span>}
+                {o.note ? ` · ${o.note}` : ""}
+              </div>
+            </Row>
+          ))}
         </PlanGroup>
 
         {/* Vaccinations */}
@@ -195,6 +216,12 @@ export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] })
             </Row>
           )}
         </PlanGroup>
+
+        {/* Statements & Certifications — stub; reserves the slot, no functionality yet. */}
+        <PlanGroup label="Statements & Certifications" count={0} disabled disabledHint="Coming soon">
+          <p className="text-[11px] italic text-[#C9BBA9] pt-1">Sick notes and certificates arrive in a later update.</p>
+        </PlanGroup>
+        </div>
       </div>
 
       <div className="shrink-0 px-5 py-3 bg-white" style={{ borderTop: "1px solid #E7DCCD" }}>
@@ -280,7 +307,7 @@ function PlanGroup({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-2">
+    <section className="space-y-3 py-3">
       <GroupHeader
         label={label}
         count={count}

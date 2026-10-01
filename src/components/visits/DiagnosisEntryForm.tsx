@@ -13,11 +13,14 @@ import { DimensionMultiSelect } from "./DimensionMultiSelect";
 import { Combobox, type ComboOption } from "./Combobox";
 import { useVisitForm } from "./VisitFormProvider";
 
-const ICD_OPTIONS: ComboOption[] = ICD10_ILLNESSES.map((e) => ({
-  value: e.code,
-  label: `${e.code} — ${e.name}`,
-  searchText: `${e.code} ${e.name}`,
-}));
+// Sorted by condition NAME (not code) for predictable scanning.
+const ICD_OPTIONS: ComboOption[] = [...ICD10_ILLNESSES]
+  .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+  .map((e) => ({
+    value: e.code,
+    label: `${e.code} — ${e.name}`,
+    searchText: `${e.code} ${e.name}`,
+  }));
 
 export function DiagnosisEntryForm({ onClose }: { onClose: () => void }) {
   const f = useVisitForm();

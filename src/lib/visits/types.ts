@@ -109,6 +109,16 @@ export interface PlanVaccination {
   note?: string;
 }
 
+/** A lab panel ordered this visit. Markers are chosen from the full lab catalog
+ *  (any test may be ordered, not just ones the patient already has). Raw data. */
+export interface PlanLabOrder {
+  id: string;
+  /** Ordered markers — field is the patient_lab_results column key. */
+  markers: { field: string; label: string }[];
+  fasting: boolean;
+  note?: string;
+}
+
 export interface VisitPlan {
   tasks: PlanTask[];
   referrals: PlanReferral[];
@@ -116,6 +126,7 @@ export interface VisitPlan {
   prescriptions: PlanPrescription[];
   // Optional so existing mock plan literals remain valid; new drafts seed [].
   vaccinations?: PlanVaccination[];
+  labOrders?: PlanLabOrder[];
 }
 
 /* ---------------- Top-level record ---------------- */
@@ -163,5 +174,5 @@ export function emptyVisitNotes(): VisitNotes {
 
 /** Factory for an empty plan. */
 export function emptyVisitPlan(): VisitPlan {
-  return { tasks: [], referrals: [], followUp: null, prescriptions: [], vaccinations: [] };
+  return { tasks: [], referrals: [], followUp: null, prescriptions: [], vaccinations: [], labOrders: [] };
 }

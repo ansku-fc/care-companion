@@ -25,14 +25,16 @@ import {
   type Diagnosis,
   type Medication,
 } from "./shared";
-import { Combobox, type ComboOption, type ComboGroup } from "../Combobox";
+import { Combobox, type ComboOption, type ComboGroup, sortByLabel } from "../Combobox";
 
-// Searchable medication options sourced from the shared ATC list.
-const MED_OPTIONS: ComboOption[] = MEDICATION_LIST.map((m) => ({
-  value: m.name,
-  label: m.atc ? `${m.name} (${m.atc})` : m.name,
-  searchText: `${m.name} ${m.atc}`,
-}));
+// Searchable medication options sourced from the shared ATC list (A→Z).
+const MED_OPTIONS: ComboOption[] = sortByLabel(
+  MEDICATION_LIST.map((m) => ({
+    value: m.name,
+    label: m.atc ? `${m.name} (${m.atc})` : m.name,
+    searchText: `${m.name} ${m.atc}`,
+  })),
+);
 
 export function TaskForm({ onSave, onCancel }: { onSave: (t: Task) => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
@@ -229,12 +231,14 @@ export function PrescriptionForm({
   const [time, setTime] = useState("");
   const [basedOnId, setBasedOnId] = useState<string | null>(null);
 
-  const currentOptions: ComboOption[] = currentMeds.map((c) => ({
-    value: `current:${c.id}`,
-    label: c.name,
-    searchText: c.name,
-    note: `${c.dose} · ${c.frequency}`, // marks it as current + shows the regimen
-  }));
+  const currentOptions: ComboOption[] = sortByLabel(
+    currentMeds.map((c) => ({
+      value: `current:${c.id}`,
+      label: c.name,
+      searchText: c.name,
+      note: `${c.dose} · ${c.frequency}`, // marks it as current + shows the regimen
+    })),
+  );
   const groups: ComboGroup[] = [
     ...(currentOptions.length ? [{ heading: "Current medications", options: currentOptions }] : []),
     { heading: currentOptions.length ? "All medications" : "", options: MED_OPTIONS },

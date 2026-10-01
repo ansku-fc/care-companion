@@ -12,6 +12,7 @@ import type {
   PlanReferral,
   PlanTask,
   PlanVaccination,
+  PlanLabOrder,
   VisitMeasurement,
   VisitNotes,
   VisitPlan,
@@ -42,6 +43,8 @@ type VisitFormContextValue = {
   removePrescription: (id: string) => void;
   addVaccination: (v: PlanVaccination) => void;
   removeVaccination: (id: string) => void;
+  addLabOrder: (o: PlanLabOrder) => void;
+  removeLabOrder: (id: string) => void;
 };
 
 const VisitFormContext = createContext<VisitFormContextValue | null>(null);
@@ -124,6 +127,15 @@ export function VisitFormProvider({
       plan: { ...prev.plan, vaccinations: (prev.plan.vaccinations ?? []).filter((x) => x.id !== id) },
     }));
   }, []);
+  const addLabOrder = useCallback((o: PlanLabOrder) => {
+    setDraft((prev) => ({ ...prev, plan: { ...prev.plan, labOrders: [...(prev.plan.labOrders ?? []), o] } }));
+  }, []);
+  const removeLabOrder = useCallback((id: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      plan: { ...prev.plan, labOrders: (prev.plan.labOrders ?? []).filter((x) => x.id !== id) },
+    }));
+  }, []);
 
   const value = useMemo<VisitFormContextValue>(
     () => ({
@@ -132,6 +144,7 @@ export function VisitFormProvider({
       addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
       addVaccination, removeVaccination,
+      addLabOrder, removeLabOrder,
     }),
     [
       draft, set, patch, hydrate, patchPlan, patchNotes,
@@ -139,6 +152,7 @@ export function VisitFormProvider({
       addMeasurement, removeMeasurement, addDiagnosis, removeDiagnosis,
       addTask, removeTask, addReferral, removeReferral, addPrescription, removePrescription,
       addVaccination, removeVaccination,
+      addLabOrder, removeLabOrder,
     ],
   );
 

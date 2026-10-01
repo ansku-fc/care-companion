@@ -53,6 +53,7 @@ export function VisitReviewScreen({
   const prior = priorVisits[0] ?? null;
   const affected = affectedDimensions(baseline, scoringInputsFromVisit(draft));
   const vaccinations = draft.plan.vaccinations ?? [];
+  const labOrders = draft.plan.labOrders ?? [];
   const summary = [
     `${affected.length} dimension${affected.length === 1 ? "" : "s"} affected`,
     `${draft.plan.referrals.length} referral${draft.plan.referrals.length === 1 ? "" : "s"}`,
@@ -172,6 +173,7 @@ export function VisitReviewScreen({
                 <div className="space-y-2 text-[13px] text-[#1F1611]">
                   <div><span className="text-[#9B8775]">Referrals: </span>{draft.plan.referrals.length ? draft.plan.referrals.map((r) => r.specialty).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Prescriptions: </span>{draft.plan.prescriptions.length ? draft.plan.prescriptions.map((p) => p.medicationName).join("; ") : <Empty>None</Empty>}</div>
+                  <div><span className="text-[#9B8775]">Lab orders: </span>{labOrders.length ? labOrders.map((o) => `${o.markers.map((m) => m.label).join(", ")}${o.fasting ? " (fasting)" : ""}`).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Vaccinations: </span>{vaccinations.length ? vaccinations.map((v) => `${v.vaccine} (${v.status})`).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Follow-up: </span>{draft.plan.followUp ? `${VISIT_TYPE_META[draft.plan.followUp.visitType].label} in ${draft.plan.followUp.timeframe}` : <Empty>None scheduled</Empty>}</div>
                 </div>

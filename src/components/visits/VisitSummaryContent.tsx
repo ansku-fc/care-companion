@@ -142,6 +142,7 @@ export function VisitSummaryContent({
         <div className="space-y-1.5 text-[13px]">
           <div><span className="text-muted-foreground">Referrals: </span>{visit.plan.referrals.length ? visit.plan.referrals.map((r) => r.specialty).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Prescriptions: </span>{visit.plan.prescriptions.length ? visit.plan.prescriptions.map((p) => p.medicationName).join("; ") : <Empty>None</Empty>}</div>
+          <div><span className="text-muted-foreground">Lab orders: </span>{(visit.plan.labOrders ?? []).length ? (visit.plan.labOrders ?? []).map((o) => `${o.markers.map((m) => m.label).join(", ")}${o.fasting ? " (fasting)" : ""}`).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Vaccinations: </span>{(visit.plan.vaccinations ?? []).length ? (visit.plan.vaccinations ?? []).map((v) => `${v.vaccine} (${v.status})`).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Follow-up: </span>{visit.plan.followUp ? `${VISIT_TYPE_META[visit.plan.followUp.visitType].label} in ${visit.plan.followUp.timeframe}` : <Empty>None</Empty>}</div>
         </div>

@@ -5,10 +5,10 @@ import { useState } from "react";
 import { VACCINES } from "@/lib/vaccineCatalog";
 import { type VaccinationStatus } from "@/lib/visits";
 import { FormCard, DateField, ChipSelector, TextField, PrimaryButton, CancelLink, uid } from "@/components/visits/forms";
-import { Combobox, type ComboOption } from "./Combobox";
+import { Combobox, type ComboOption, sortByLabel } from "./Combobox";
 import { useVisitForm } from "./VisitFormProvider";
 
-const VACCINE_OPTIONS: ComboOption[] = VACCINES.map((v) => ({ value: v, label: v, searchText: v }));
+const VACCINE_OPTIONS: ComboOption[] = sortByLabel(VACCINES.map((v) => ({ value: v, label: v, searchText: v })));
 const STATUSES = ["given", "ordered"] as const;
 
 export function VaccinationEntryForm({ onClose }: { onClose: () => void }) {

@@ -59,6 +59,9 @@ interface MarkerDetailChartProps {
   yAxisStartFromZero?: boolean;
   /** Round Y-axis tick labels to this many decimal places. */
   yAxisTickDecimals?: number;
+  /** Draw the value above each data point (used by the enlarged lab pop-up).
+   *  Default off so the dashboard chart's appearance is unchanged. */
+  showPointLabels?: boolean;
 }
 
 // Care Companion chart tokens (warm tonal axis, status palette only)
@@ -91,6 +94,7 @@ export function MarkerDetailChart({
   onCreateTask,
   yAxisStartFromZero = false,
   yAxisTickDecimals,
+  showPointLabels = false,
 }: MarkerDetailChartProps) {
   const [window, setWindow] = useState<Window>("3y");
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
@@ -121,7 +125,7 @@ export function MarkerDetailChart({
       .filter((a) => a.idx >= 0);
   }, [annotations, data]);
 
-  const renderDot = (props: any) => {
+  const renderDot = (props: { cx?: number; cy?: number; payload?: { value?: number }; index?: number }) => {
     const { cx, cy, payload, index } = props;
     if (cx == null || cy == null) return null;
     const v = payload?.value;
@@ -140,6 +144,25 @@ export function MarkerDetailChart({
         stroke="#FFFFFF"
         strokeWidth={isLatest ? 1.5 : 1}
       />
+    );
+  };
+
+  // Permanent value labels above each point — only when showPointLabels is on.
+  const renderValueLabel = (props: { x?: number; y?: number; value?: number | string; index?: number }) => {
+    const { x, y, value, index } = props;
+    if (x == null || y == null || value == null) return null;
+    return (
+      <text
+        key={`vl-${index}`}
+        x={x}
+        y={y - 9}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight={500}
+        fill={INK_DIM}
+      >
+        {value}
+      </text>
     );
   };
 
@@ -199,7 +222,7 @@ export function MarkerDetailChart({
         <>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 8, right: 56, left: 0, bottom: 0 }}>
+              <LineChart data={data} margin={{ top: showPointLabels ? 20 : 8, right: 56, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 3" stroke={HAIR} vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: INK_FAINT }} axisLine={{ stroke: HAIR_STRONG }} tickLine={false} />
                 <YAxis
@@ -280,8 +303,9 @@ export function MarkerDetailChart({
                   name={label}
                   stroke={PRIMARY_LINE}
                   strokeWidth={1.5}
-                  dot={renderDot as any}
+                  dot={renderDot as never}
                   activeDot={{ r: 5, fill: BLUSH, stroke: "#FFFFFF", strokeWidth: 1.5 }}
+                  label={showPointLabels ? (renderValueLabel as never) : undefined}
                 />
                 {secondarySeries && (
                   <Line

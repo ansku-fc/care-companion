@@ -229,3 +229,26 @@ export function affectedDimensions(baseline: PatientBaseline, inputs: ScoringInp
 export function deriveVisitScores(baseline: PatientBaseline, visit: ClinicalVisit): Record<DimensionKey, number> {
   return computeDimensionScores(baseline, scoringInputsFromVisit(visit));
 }
+
+/* ---------------- Dimension longitudinal trend (derived) ---------------- */
+
+export interface DimensionTrendPoint {
+  date: string; // ISO visit date
+  score: number; // derived 1–10 score at that visit
+}
+
+/**
+ * Longitudinal trend of one dimension's DERIVED score across the patient's visit
+ * history: at each past visit, recompute the dimension score from that visit's
+ * tagged inputs (diagnoses / medication changes / measurements) + the baseline.
+ * Chronological ascending. Purely derived — never stored.
+ */
+export function dimensionTrend(
+  dimension: DimensionKey,
+  baseline: PatientBaseline,
+  visits: ClinicalVisit[],
+): DimensionTrendPoint[] {
+  return [...visits]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((v) => ({ date: v.date, score: computeDimensionScores(baseline, scoringInputsFromVisit(v))[dimension] }));
+}

@@ -26,6 +26,13 @@ export type ComboOption = {
 
 export type ComboGroup = { heading: string; options: ComboOption[] };
 
+/** Sort any labelled list alphabetically by display label, case-insensitive.
+ *  Applied at each option-build site so searchable dropdowns are predictable
+ *  (within groups, preserving group order). */
+export function sortByLabel<T extends { label: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+}
+
 export function Combobox({
   options,
   groups,

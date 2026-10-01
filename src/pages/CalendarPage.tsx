@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { visitPathWithSlot } from "@/lib/visitLaunch";
 import { AppointmentFormPanel } from "@/components/calendar/AppointmentFormPanel";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,9 +135,14 @@ const CalendarPage = () => {
     appt.patient_id ?? findPatient(appt.patient_name)?.id ?? null;
   const hasPatientIdentity = (appt: { patient_id?: string; patient_name?: string | null }) =>
     resolveVisitPatientId(appt) !== null;
-  const startVisit = (appt: { patient_id?: string; patient_name?: string | null }) => {
+  const startVisit = (appt: { patient_id?: string; patient_name?: string | null; start_time?: string; end_time?: string }) => {
     const id = resolveVisitPatientId(appt);
-    navigate(id ? `/patients/${id}/visit/new` : "/patients");
+    if (!id) {
+      navigate("/patients");
+      return;
+    }
+    // Carry the appointment slot (query params) so the visit header shows date + time range.
+    navigate(visitPathWithSlot(id, appt.start_time, appt.end_time));
   };
 
   // Calendar grid

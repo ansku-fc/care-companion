@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { visitPathWithSlot } from "@/lib/visitLaunch";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/hooks/useTasks";
@@ -119,7 +120,12 @@ const Dashboard = () => {
 
   const startVisit = (appt: ScheduleItem) => {
     const p = findPatient(appt.name);
-    navigate(p ? `/patients/${p.id}/visit/new` : "/patients");
+    if (!p) {
+      navigate("/patients");
+      return;
+    }
+    // Carry the appointment slot (query params) so the visit header shows date + time range.
+    navigate(visitPathWithSlot(p.id, appt.start.toISOString(), appt.end.toISOString()));
   };
 
   const createTaskForAppt = (appt: ScheduleItem) => {
