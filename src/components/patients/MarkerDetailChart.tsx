@@ -62,6 +62,9 @@ interface MarkerDetailChartProps {
   /** Draw the value above each data point (used by the enlarged lab pop-up).
    *  Default off so the dashboard chart's appearance is unchanged. */
   showPointLabels?: boolean;
+  /** Quick draw-on line animation (used by the visit-view lab pop-up). Default
+   *  off → the dashboard chart keeps its existing (Recharts-default) behaviour. */
+  animate?: boolean;
 }
 
 // Care Companion chart tokens (warm tonal axis, status palette only)
@@ -95,6 +98,7 @@ export function MarkerDetailChart({
   yAxisStartFromZero = false,
   yAxisTickDecimals,
   showPointLabels = false,
+  animate = false,
 }: MarkerDetailChartProps) {
   const [window, setWindow] = useState<Window>("3y");
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
@@ -306,6 +310,8 @@ export function MarkerDetailChart({
                   dot={renderDot as never}
                   activeDot={{ r: 5, fill: BLUSH, stroke: "#FFFFFF", strokeWidth: 1.5 }}
                   label={showPointLabels ? (renderValueLabel as never) : undefined}
+                  animationDuration={animate ? 500 : undefined}
+                  animationEasing={animate ? "ease-out" : undefined}
                 />
                 {secondarySeries && (
                   <Line
@@ -318,6 +324,8 @@ export function MarkerDetailChart({
                     dot={{ r: 2.5, fill: INK_DIM, stroke: "#FFFFFF", strokeWidth: 1 }}
                     activeDot={{ r: 4 }}
                     connectNulls
+                    animationDuration={animate ? 500 : undefined}
+                    animationEasing={animate ? "ease-out" : undefined}
                   />
                 )}
               </LineChart>

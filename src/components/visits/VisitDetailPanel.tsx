@@ -22,13 +22,14 @@ export type DetailItem =
   | { id: string; kind: "medHistory"; icd10: string; diagnosisName: string }
   | { id: string; kind: "visit"; visitId: string };
 
-/** Scrolls itself into view when it mounts — the just-opened (top) card. */
+/** Scrolls itself into view when it mounts — the just-opened (top) card — and
+ *  eases in (fade + slight slide) so a newly added card doesn't pop. */
 function ScrollIntoViewOnMount({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, []);
-  return <div ref={ref}>{children}</div>;
+  return <div ref={ref} className="animate-in fade-in slide-in-from-top-1 duration-200">{children}</div>;
 }
 
 function CardShell({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
@@ -71,8 +72,17 @@ export function VisitDetailPanel({
   currentTreatments: CurrentTreatment[];
   allergies: string[];
 }) {
+  // Zero-width + clipped when empty; eases to full width when the first card is
+  // added (and back out when emptied). The inner wrapper keeps a FIXED width so
+  // content doesn't reflow mid-animation — the aside just reveals it.
+  const open = items.length > 0;
   return (
-    <aside className="w-[320px] xl:w-[360px] shrink-0 flex flex-col" style={{ borderRight: "1px solid #E7DCCD", background: "#F9F7F4" }}>
+    <aside
+      aria-hidden={!open}
+      className={`shrink-0 overflow-hidden transition-[width] duration-200 ease-out ${open ? "w-[320px] xl:w-[360px]" : "w-0"}`}
+      style={{ borderRight: open ? "1px solid #E7DCCD" : "none", background: "#F9F7F4" }}
+    >
+      <div className="w-[320px] xl:w-[360px] h-full flex flex-col">
       <div className="shrink-0 flex items-center justify-between px-4 h-11 bg-white" style={{ borderBottom: "1px solid #E7DCCD" }}>
         <SectionLabel>Detail · {items.length}</SectionLabel>
         <button
@@ -133,6 +143,7 @@ export function VisitDetailPanel({
             </ScrollIntoViewOnMount>
           );
         })}
+      </div>
       </div>
     </aside>
   );

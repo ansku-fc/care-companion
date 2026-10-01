@@ -120,6 +120,7 @@ export function LabChartCard({ series, onClose }: { series: LabSeries; onClose: 
                 refValues={refValues}
                 displayOnly
                 showPointLabels
+                animate
               />
             </div>
             <div className="w-[150px] shrink-0">

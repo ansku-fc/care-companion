@@ -4,6 +4,7 @@
 // chart family (espresso line, blush latest dot, amber out-of-range dots). No
 // hover tooltip: exact values are read from the visible value list LabsPanel
 // renders below. The Y-axis is omitted to maximise plot width.
+import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, CartesianGrid, ReferenceArea, ReferenceLine } from "recharts";
 import type { LabPoint } from "@/lib/labs";
 
@@ -33,7 +34,9 @@ export function LabMiniChart({
   refLow?: number;
   refHigh?: number;
 }) {
-  const data = [...points].sort((a, b) => a.date.localeCompare(b.date));
+  // Memoized so the array ref is stable across re-renders (e.g. typing a note
+  // elsewhere) — the draw-on animation then fires once on open, not every render.
+  const data = useMemo(() => [...points].sort((a, b) => a.date.localeCompare(b.date)), [points]);
 
   const renderDot = (props: { cx?: number; cy?: number; index?: number; payload?: LabPoint }) => {
     const { cx, cy, index, payload } = props;
@@ -83,7 +86,9 @@ export function LabMiniChart({
             dataKey="value"
             stroke={ESPRESSO}
             strokeWidth={1.5}
-            isAnimationActive={false}
+            isAnimationActive
+            animationDuration={500}
+            animationEasing="ease-out"
             dot={renderDot as never}
             activeDot={{ r: 4, fill: BLUSH, stroke: "#FFFFFF", strokeWidth: 1.5 }}
           />

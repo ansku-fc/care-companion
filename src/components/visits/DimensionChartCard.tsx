@@ -4,6 +4,7 @@
 // lab charts' palette/line treatment for coherence; adds a fixed 1–10 Y domain
 // (higher = worse per the taxonomy) and band coloring (low/med/high) via
 // scoreColor. Value list below shows date + score, consistent with lab cards.
+import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { X } from "lucide-react";
 import {
@@ -42,7 +43,8 @@ function fmtDate(iso: string): string {
 }
 
 function DimensionMiniChart({ points }: { points: DimensionTrendPoint[] }) {
-  const data = [...points].sort((a, b) => a.date.localeCompare(b.date));
+  // Stable ref across re-renders → draw-on animation fires once per open.
+  const data = useMemo(() => [...points].sort((a, b) => a.date.localeCompare(b.date)), [points]);
   const renderDot = (props: { cx?: number; cy?: number; index?: number; payload?: DimensionTrendPoint }) => {
     const { cx, cy, index, payload } = props;
     if (cx == null || cy == null || payload == null) return <g key={`d-${index}`} />;
@@ -67,7 +69,7 @@ function DimensionMiniChart({ points }: { points: DimensionTrendPoint[] }) {
           />
           {/* Higher = worse; fix the scale to the full 1–10 band. */}
           <YAxis domain={[1, 10]} hide />
-          <Line type="monotone" dataKey="score" stroke={ESPRESSO} strokeWidth={1.5} isAnimationActive={false} dot={renderDot as never} activeDot={false} />
+          <Line type="monotone" dataKey="score" stroke={ESPRESSO} strokeWidth={1.5} isAnimationActive animationDuration={500} animationEasing="ease-out" dot={renderDot as never} activeDot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -85,7 +87,9 @@ export function DimensionChartCard({
   visits: ClinicalVisit[];
   onClose: () => void;
 }) {
-  const trend = dimensionTrend(dimensionKey, baseline, visits);
+  // Memoized on its stable inputs so note-typing re-renders don't rebuild the
+  // series (which would re-trigger the chart's draw-on animation).
+  const trend = useMemo(() => dimensionTrend(dimensionKey, baseline, visits), [dimensionKey, baseline, visits]);
   const latest = trend.length ? trend[trend.length - 1] : null;
   const rows = [...trend].sort((a, b) => b.date.localeCompare(a.date)); // most recent first
 

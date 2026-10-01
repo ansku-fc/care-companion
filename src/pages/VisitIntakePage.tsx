@@ -277,19 +277,19 @@ function VisitIntakeInner({
           onOpenDimension={openDimension}
           onOpenMedHistory={openMedHistory}
         />
-        {detailItems.length > 0 && (
-          <VisitDetailPanel
-            items={detailItems}
-            onClose={closeItem}
-            onCloseAll={closeAll}
-            labs={baseline.labs}
-            visits={priorVisits}
-            baseline={baseline.scores}
-            currentMeds={baseline.currentMeds}
-            currentTreatments={baseline.currentTreatments}
-            allergies={baseline.allergies}
-          />
-        )}
+        {/* Always mounted so it can ease its width open/closed (zero-width when
+            empty); the panel self-manages the width transition. */}
+        <VisitDetailPanel
+          items={detailItems}
+          onClose={closeItem}
+          onCloseAll={closeAll}
+          labs={baseline.labs}
+          visits={priorVisits}
+          baseline={baseline.scores}
+          currentMeds={baseline.currentMeds}
+          currentTreatments={baseline.currentTreatments}
+          allergies={baseline.allergies}
+        />
         <main className="flex-1 min-w-[400px] overflow-y-auto px-6 py-5">
           <div className="max-w-[880px] mx-auto">
             <VisitWorkspace
