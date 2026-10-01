@@ -39,12 +39,13 @@ export function DiagnosisEntryForm({
   }, [currentDiagnoses]);
 
   // Pick → record a new active diagnosis straight away; dimensions are derived
-  // from the ICD, never hand-tagged. The prompt then opens in "New diagnoses".
+  // from the ICD, never hand-tagged. The box STAYS (ready for another add) and
+  // the just-added diagnosis appears below in its prescribe prompt — so "New"
+  // remains expanded. `onClose` is only the explicit dismiss (collapses New).
   const onPick = (code: string) => {
     const name = ICD10_ILLNESSES.find((e) => e.code === code)?.name ?? "";
     if (!name) return;
     f.addDiagnosis({ id: uid(), name, icd10: code, status: "active", dimensions: suggestDimensionsForIcd(code) });
-    onClose();
   };
 
   return (

@@ -61,11 +61,11 @@ export function DiagnosisPrescribingSection({
   const dp = diagnosisPrescribing(d);
 
   const [sectionOpen, setSectionOpen] = useState(false);
-  // Controlled inner-accordion state: both sub-accordions collapsed by default.
-  // Opening the section just reveals the two (collapsed) headers; "Add" opens
-  // only "New". Nothing auto-expands "Current".
+  // Controlled inner-accordion state. Both sub-accordions collapsed by default;
+  // opening the section resets to collapsed. The add-diagnosis search box lives
+  // inside "New" and is shown whenever New is expanded — so expanding New (via
+  // its header OR "Add") reveals it, and nothing auto-expands "Current".
   const [subOpen, setSubOpen] = useState<string[]>([]);
-  const [addDxOpen, setAddDxOpen] = useState(false);
 
   const savePrescription: (diagnosisId: string) => SavePrescription = (diagnosisId) => (m, basedOnId) => {
     if (basedOnId) {
@@ -194,7 +194,7 @@ export function DiagnosisPrescribingSection({
     <SectionCard>
       {/* Section header — closed by default; attention badge stays visible. */}
       <div className="flex items-center justify-between gap-2">
-        <button type="button" onClick={() => setSectionOpen((o) => !o)} aria-expanded={sectionOpen} className="flex items-center gap-1.5">
+        <button type="button" onClick={() => { if (!sectionOpen) setSubOpen([]); setSectionOpen((o) => !o); }} aria-expanded={sectionOpen} className="flex items-center gap-1.5">
           <ChevronDown className={`h-3.5 w-3.5 text-[#9B8775] transition-transform ${sectionOpen ? "" : "-rotate-90"}`} />
           <SectionLabel>Diagnoses, prescriptions &amp; treatments</SectionLabel>
           {pendingCount > 0 ? (
@@ -214,7 +214,7 @@ export function DiagnosisPrescribingSection({
         </button>
         <button
           type="button"
-          onClick={() => { setSectionOpen(true); setSubOpen(["new"]); setAddDxOpen(true); }}
+          onClick={() => { setSectionOpen(true); setSubOpen(["new"]); }}
           className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline shrink-0"
         >
           <Plus className="h-3 w-3" /> Add
@@ -243,21 +243,12 @@ export function DiagnosisPrescribingSection({
               <SubLabel count={newRows.length}>New diagnoses</SubLabel>
             </AccordionTrigger>
             <AccordionContent className="pb-2">
-              {addDxOpen ? (
-                <DiagnosisEntryForm currentDiagnoses={currentDiagnoses} onClose={() => setAddDxOpen(false)} />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAddDxOpen(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline mb-1.5"
-                >
-                  <Plus className="h-3 w-3" /> Add diagnosis
-                </button>
-              )}
+              {/* Search box lives here — visible whenever "New" is expanded. */}
+              <DiagnosisEntryForm currentDiagnoses={currentDiagnoses} onClose={() => setSubOpen((s) => s.filter((v) => v !== "new"))} />
               {newRows.length === 0 ? (
-                <p className="text-[12px] italic text-[#9B8775]">No new diagnoses recorded this visit.</p>
+                <p className="text-[12px] italic text-[#9B8775] mt-1.5">No new diagnoses recorded this visit.</p>
               ) : (
-                <div className="space-y-2">{newRows.map(renderPrompt)}</div>
+                <div className="space-y-2 mt-2">{newRows.map(renderPrompt)}</div>
               )}
             </AccordionContent>
           </AccordionItem>
