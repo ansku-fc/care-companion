@@ -196,7 +196,7 @@ export function DiagnosisPrescribingSection({
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={() => { if (!sectionOpen) setSubOpen([]); setSectionOpen((o) => !o); }} aria-expanded={sectionOpen} className="flex items-center gap-1.5">
           <ChevronDown className={`h-3.5 w-3.5 text-[#9B8775] transition-transform ${sectionOpen ? "" : "-rotate-90"}`} />
-          <SectionLabel>Diagnoses, prescriptions &amp; treatments</SectionLabel>
+          <SectionLabel>Diagnoses, medications &amp; treatments</SectionLabel>
           {pendingCount > 0 ? (
             <span
               className="ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
