@@ -1,6 +1,6 @@
 // Small presentational helpers for the visit-intake surface. Mirrors the warm
 // palette of the consultation prototype so the two flows feel consistent.
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 export function SectionCard({ children }: { children: ReactNode }) {
@@ -67,6 +67,34 @@ export function AutoTextarea({
       className="w-full resize-none bg-transparent outline-none text-[14px] font-normal text-[#1F1611] placeholder:text-[#C9BBA9] leading-relaxed py-1"
       style={{ minHeight, border: "none" }}
     />
+  );
+}
+
+/**
+ * Smooth height collapse for bespoke (non-Radix) expanders. Animates
+ * grid-template-rows 0fr→1fr (200ms ease-out, matching the shadcn accordion
+ * timing) so content eases open/closed instead of snapping. Content stays
+ * mounted; the inner `overflow-hidden` clips it while collapsed. The whole
+ * block is `inert` when closed so hidden controls aren't focusable/clickable.
+ */
+export function Collapse({ open, children }: { open: boolean; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Toggle the `inert` attribute via the DOM (avoids depending on the React JSX
+  // type for `inert`) so hidden controls aren't focusable/clickable while closed.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (open) el.removeAttribute("inert");
+    else el.setAttribute("inert", "");
+  }, [open]);
+  return (
+    <div
+      ref={ref}
+      className="grid transition-[grid-template-rows] duration-200 ease-out"
+      style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+    >
+      <div className="overflow-hidden min-h-0">{children}</div>
+    </div>
   );
 }
 

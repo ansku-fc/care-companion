@@ -16,7 +16,7 @@ import { useState } from "react";
 import { Plus, ChevronDown, AlertCircle, AlertTriangle, Check, CheckSquare, Activity } from "lucide-react";
 import { diagnosisPrescribing, type DiagnosisRxGroup, type MedicationChangeKind } from "@/lib/visits";
 import { useVisitForm } from "./VisitFormProvider";
-import { SectionCard, SectionLabel, Row } from "./visitUi";
+import { SectionCard, SectionLabel, Row, Collapse } from "./visitUi";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { DiagnosisEntryForm } from "./DiagnosisEntryForm";
 import { PrescriptionForm, TreatmentForm, uid } from "@/components/visits/forms";
@@ -221,7 +221,7 @@ export function DiagnosisPrescribingSection({
         </button>
       </div>
 
-      {sectionOpen && (
+      <Collapse open={sectionOpen}>
         <Accordion type="multiple" value={subOpen} onValueChange={setSubOpen} className="mt-1">
           {/* Current diagnoses — all of the patient's existing conditions. */}
           <AccordionItem value="current" className="border-[#F0EBE4]">
@@ -253,7 +253,7 @@ export function DiagnosisPrescribingSection({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      )}
+      </Collapse>
     </SectionCard>
   );
 }
@@ -390,8 +390,8 @@ function DiagnosisPrompt({
         </button>
       </div>
 
-      {expanded && (
-        <>
+      <Collapse open={expanded}>
+        <div className="space-y-0">
           {/* Current medication(s) — each row carries its own History/Change/Stop. */}
           {hasCurrentMed && (
             <div className="mt-1.5 space-y-1">
@@ -555,7 +555,7 @@ function DiagnosisPrompt({
 
           {/* Inline prescription form (two-mode). Pre-fills the current med for Change. */}
           {form && (form.mode === "change" || form.mode === "add" || form.mode === "prescribe") && (
-            <div className="mt-2">
+            <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
               <PrescriptionForm
                 currentMeds={currentMeds}
                 changeTarget={form.mode === "change" ? form.med : undefined}
@@ -568,7 +568,7 @@ function DiagnosisPrompt({
 
           {/* Inline add-treatment form — catalog dropdown + optional note. */}
           {form?.mode === "treatment" && (
-            <div className="mt-2">
+            <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
               <TreatmentForm
                 onSave={(t) => { onAddTreatment(t); setForm(null); }}
                 onCancel={() => setForm(null)}
@@ -618,8 +618,8 @@ function DiagnosisPrompt({
               )}
             </div>
           )}
-        </>
-      )}
+        </div>
+      </Collapse>
     </div>
   );
 }
@@ -648,7 +648,7 @@ function InlineNoteForm({
 }) {
   const [text, setText] = useState("");
   return (
-    <div className="mt-2 rounded-[8px] p-2.5" style={{ border: "1px solid #E7DCCD", background: "#FDF6EE" }}>
+    <div className="mt-2 rounded-[8px] p-2.5 animate-in fade-in slide-in-from-top-1 duration-200" style={{ border: "1px solid #E7DCCD", background: "#FDF6EE" }}>
       <div className="text-[11px] font-medium" style={{ color: confirmColor }}>{title}</div>
       <label className="mt-1.5 block text-[10px] font-medium uppercase tracking-wide text-[#9B8775]">{label}</label>
       <textarea

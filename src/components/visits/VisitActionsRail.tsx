@@ -155,7 +155,7 @@ function InlineFormSlot({ children }: { children: ReactNode }) {
   useEffect(() => {
     ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, []);
-  return <div ref={ref}>{children}</div>;
+  return <div ref={ref} className="animate-in fade-in slide-in-from-top-1 duration-200">{children}</div>;
 }
 
 function GroupHeader({

@@ -125,7 +125,11 @@ export function VisitWorkspace({
           <SectionLabel>Measurements</SectionLabel>
           <AddToggle open={measureOpen} onClick={() => setMeasureOpen((o) => !o)} />
         </div>
-        {measureOpen && <MeasurementEntryForm onClose={() => setMeasureOpen(false)} />}
+        {measureOpen && (
+          <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+            <MeasurementEntryForm onClose={() => setMeasureOpen(false)} />
+          </div>
+        )}
         {d.measurements.length === 0 ? (
           <Empty>No measurements recorded</Empty>
         ) : (
