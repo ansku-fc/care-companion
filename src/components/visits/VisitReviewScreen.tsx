@@ -52,10 +52,12 @@ export function VisitReviewScreen({
 }) {
   const prior = priorVisits[0] ?? null;
   const affected = affectedDimensions(baseline, scoringInputsFromVisit(draft));
+  const vaccinations = draft.plan.vaccinations ?? [];
   const summary = [
     `${affected.length} dimension${affected.length === 1 ? "" : "s"} affected`,
-    `${draft.plan.tasks.length} task${draft.plan.tasks.length === 1 ? "" : "s"}`,
     `${draft.plan.referrals.length} referral${draft.plan.referrals.length === 1 ? "" : "s"}`,
+    draft.plan.prescriptions.length ? `${draft.plan.prescriptions.length} prescription${draft.plan.prescriptions.length === 1 ? "" : "s"}` : null,
+    vaccinations.length ? `${vaccinations.length} vaccination${vaccinations.length === 1 ? "" : "s"}` : null,
     draft.plan.followUp ? "1 follow-up" : null,
   ].filter(Boolean).join(" · ");
 
@@ -168,9 +170,9 @@ export function VisitReviewScreen({
               <Label>Plan</Label>
               <Card>
                 <div className="space-y-2 text-[13px] text-[#1F1611]">
-                  <div><span className="text-[#9B8775]">Tasks: </span>{draft.plan.tasks.length ? draft.plan.tasks.map((t) => t.title).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Referrals: </span>{draft.plan.referrals.length ? draft.plan.referrals.map((r) => r.specialty).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Prescriptions: </span>{draft.plan.prescriptions.length ? draft.plan.prescriptions.map((p) => p.medicationName).join("; ") : <Empty>None</Empty>}</div>
+                  <div><span className="text-[#9B8775]">Vaccinations: </span>{vaccinations.length ? vaccinations.map((v) => `${v.vaccine} (${v.status})`).join("; ") : <Empty>None</Empty>}</div>
                   <div><span className="text-[#9B8775]">Follow-up: </span>{draft.plan.followUp ? `${VISIT_TYPE_META[draft.plan.followUp.visitType].label} in ${draft.plan.followUp.timeframe}` : <Empty>None scheduled</Empty>}</div>
                 </div>
               </Card>

@@ -18,20 +18,21 @@ import {
   getBaseline,
   createDraftVisit,
   saveVisit,
+  fromLabel,
   type ClinicalVisit,
   type PatientBaseline,
 } from "@/lib/visits";
 import { VisitFormProvider, useVisitForm } from "@/components/visits/VisitFormProvider";
 import { VisitContextSidebar, type BaselineDiagnosis } from "@/components/visits/VisitContextSidebar";
 import { VisitWorkspace } from "@/components/visits/VisitWorkspace";
-import { VisitActionsRail } from "@/components/visits/VisitActionsRail";
+import { VisitActionsRail, type CurrentMed } from "@/components/visits/VisitActionsRail";
 import { VisitReviewScreen } from "@/components/visits/VisitReviewScreen";
-import { VisitDrawer, type DrawerRequest } from "@/components/visits/VisitDrawer";
 
 type Baseline = {
   lastVisit: ClinicalVisit | null;
   scores: PatientBaseline;
   meds: string[];
+  currentMeds: CurrentMed[];
   allergies: string[];
   diagnoses: BaselineDiagnosis[];
 };
@@ -45,7 +46,7 @@ export default function VisitIntakePage() {
   const [patientName, setPatientName] = useState("Patient");
   const [initial, setInitial] = useState<ClinicalVisit | null>(null);
   const [priorVisits, setPriorVisits] = useState<ClinicalVisit[]>([]);
-  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, scores: {}, meds: [], allergies: [], diagnoses: [] });
+  const [baseline, setBaseline] = useState<Baseline>({ lastVisit: null, scores: {}, meds: [], currentMeds: [], allergies: [], diagnoses: [] });
 
   useEffect(() => {
     if (!id) return;
@@ -66,9 +67,15 @@ export default function VisitIntakePage() {
       const scores = await getBaseline(id);
 
       const carter = isCarter(id, name);
-      const meds = carter
-        ? CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => `${m.name} · ${m.dose} · ${m.frequency}`)
+      // Structured current meds (same source the sidebar Medications list uses);
+      // the sidebar string list is derived from this so the two stay identical.
+      const currentMeds: CurrentMed[] = carter
+        ? CARTER_MEDICATIONS.filter((m) => m.status === "active").map((m) => {
+            const key = fromLabel(m.dimension);
+            return { id: m.id, name: m.name, dose: m.dose, frequency: m.frequency, dimensions: key ? [key] : [] };
+          })
         : [];
+      const meds = currentMeds.map((m) => `${m.name} · ${m.dose} · ${m.frequency}`);
       const allergies = carter ? ["NSAIDs", "Penicillin", "Tree nuts"] : [];
       const diagnoses: BaselineDiagnosis[] = carter
         ? CARTER_DIAGNOSES.filter((d) => d.status === "active").map((d) => ({
@@ -81,7 +88,7 @@ export default function VisitIntakePage() {
       if (cancelled) return;
       setPatientName(name);
       setPriorVisits(prior);
-      setBaseline({ lastVisit, scores, meds, allergies, diagnoses });
+      setBaseline({ lastVisit, scores, meds, currentMeds, allergies, diagnoses });
       setInitial(draft);
       setLoading(false);
     })();
@@ -121,7 +128,6 @@ function VisitIntakeInner({
   const f = useVisitForm();
   const [view, setView] = useState<"workspace" | "review">("workspace");
   const [saving, setSaving] = useState(false);
-  const [drawer, setDrawer] = useState<DrawerRequest | null>(null);
   const donePath = `/patients/${patientId}`;
 
   const onSave = async () => {
@@ -178,23 +184,14 @@ function VisitIntakeInner({
           meds={baseline.meds}
           allergies={baseline.allergies}
           diagnoses={baseline.diagnoses}
-          onOpenVisit={(v) => setDrawer({ kind: "visit-summary", visit: v })}
         />
         <main className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
           <div className="max-w-[880px] mx-auto">
-            <VisitWorkspace baseline={baseline.scores} onOpen={setDrawer} />
+            <VisitWorkspace baseline={baseline.scores} />
           </div>
         </main>
-        <VisitActionsRail onOpen={setDrawer} />
+        <VisitActionsRail currentMeds={baseline.currentMeds} />
       </div>
-
-      <VisitDrawer
-        request={drawer}
-        onClose={() => setDrawer(null)}
-        baseline={baseline.scores}
-        allVisits={priorVisits}
-        patientName={patientName}
-      />
     </div>
   );
 }

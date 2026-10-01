@@ -99,11 +99,23 @@ export interface PlanPrescription {
   time: string;
 }
 
+export type VaccinationStatus = "given" | "ordered";
+
+export interface PlanVaccination {
+  id: string;
+  vaccine: string;
+  status: VaccinationStatus;
+  date?: string; // ISO — when given/ordered
+  note?: string;
+}
+
 export interface VisitPlan {
   tasks: PlanTask[];
   referrals: PlanReferral[];
   followUp: PlanFollowUp | null;
   prescriptions: PlanPrescription[];
+  // Optional so existing mock plan literals remain valid; new drafts seed [].
+  vaccinations?: PlanVaccination[];
 }
 
 /* ---------------- Top-level record ---------------- */
@@ -151,5 +163,5 @@ export function emptyVisitNotes(): VisitNotes {
 
 /** Factory for an empty plan. */
 export function emptyVisitPlan(): VisitPlan {
-  return { tasks: [], referrals: [], followUp: null, prescriptions: [] };
+  return { tasks: [], referrals: [], followUp: null, prescriptions: [], vaccinations: [] };
 }

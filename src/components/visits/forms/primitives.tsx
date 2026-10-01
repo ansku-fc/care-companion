@@ -2,13 +2,24 @@
 // intake). Extracted verbatim from ConsultationWorkspacePage so both surfaces
 // share one implementation.
 import { type ReactNode } from "react";
+import { X } from "lucide-react";
 
-export function FormCard({ children }: { children: ReactNode }) {
+export function FormCard({ children, onClose }: { children: ReactNode; onClose?: () => void }) {
   return (
     <div
-      className="bg-white rounded-[8px] animate-fade-in flex flex-col gap-3"
+      className="relative bg-white rounded-[8px] animate-fade-in flex flex-col gap-3"
       style={{ border: "1px solid #E7DCCD", padding: "12px" }}
     >
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-[6px] text-[#9B8775] hover:bg-[#F0EBE4] hover:text-[#2E1F14] transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
       {children}
     </div>
   );

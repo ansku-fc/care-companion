@@ -1,5 +1,7 @@
 // Reusable searchable-select (shadcn command + popover). Used across the visit
-// drawer forms for ICD-10 diagnoses, medications, and lab markers.
+// forms for ICD-10 diagnoses, medications, lab markers, and vaccines. Supports
+// either a flat `options` list or `groups` of options rendered under headings
+// (e.g. "Current medications" above the full catalog).
 import { useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,17 +20,24 @@ export type ComboOption = {
   label: string;
   /** What cmdk filters on when the user types (defaults to label). */
   searchText?: string;
+  /** Optional muted suffix, e.g. a current medication's dose · frequency. */
+  note?: string;
 };
+
+export type ComboGroup = { heading: string; options: ComboOption[] };
 
 export function Combobox({
   options,
+  groups,
   value,
   onSelect,
   placeholder = "Select…",
   searchPlaceholder = "Search…",
   emptyText = "No results.",
 }: {
-  options: ComboOption[];
+  options?: ComboOption[];
+  /** When provided, options render under headings instead of a flat list. */
+  groups?: ComboGroup[];
   value: string | null;
   onSelect: (value: string) => void;
   placeholder?: string;
@@ -36,7 +45,28 @@ export function Combobox({
   emptyText?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.value === value);
+  const renderGroups: ComboGroup[] = groups ?? [{ heading: "", options: options ?? [] }];
+  const all = renderGroups.flatMap((g) => g.options);
+  const selected = all.find((o) => o.value === value);
+
+  const renderItem = (o: ComboOption) => (
+    <CommandItem
+      key={o.value}
+      // Keep the cmdk filter value unique even when the same med appears in two
+      // groups (current + catalog), while still matching the typed query.
+      value={`${o.searchText ?? o.label} ::${o.value}`}
+      onSelect={() => {
+        onSelect(o.value);
+        setOpen(false);
+      }}
+      className="text-[13px]"
+    >
+      <Check className={cn("mr-2 h-3.5 w-3.5 shrink-0", value === o.value ? "opacity-100" : "opacity-0")} />
+      <span className="flex-1 truncate">{o.label}</span>
+      {o.note && <span className="ml-2 shrink-0 text-[11px] text-[#9B8775]">{o.note}</span>}
+    </CommandItem>
+  );
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -58,22 +88,13 @@ export function Combobox({
           <CommandInput placeholder={searchPlaceholder} className="text-[13px]" />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
-            <CommandGroup>
-              {options.map((o) => (
-                <CommandItem
-                  key={o.value}
-                  value={o.searchText ?? o.label}
-                  onSelect={() => {
-                    onSelect(o.value);
-                    setOpen(false);
-                  }}
-                  className="text-[13px]"
-                >
-                  <Check className={cn("mr-2 h-3.5 w-3.5", value === o.value ? "opacity-100" : "opacity-0")} />
-                  {o.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {renderGroups.map((g, i) =>
+              g.options.length === 0 ? null : (
+                <CommandGroup key={g.heading || i} heading={g.heading || undefined}>
+                  {g.options.map(renderItem)}
+                </CommandGroup>
+              ),
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

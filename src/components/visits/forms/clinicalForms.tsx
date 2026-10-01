@@ -25,7 +25,7 @@ import {
   type Diagnosis,
   type Medication,
 } from "./shared";
-import { Combobox, type ComboOption } from "../Combobox";
+import { Combobox, type ComboOption, type ComboGroup } from "../Combobox";
 
 // Searchable medication options sourced from the shared ATC list.
 const MED_OPTIONS: ComboOption[] = MEDICATION_LIST.map((m) => ({
@@ -90,7 +90,7 @@ export function ReferralForm({
   const [notes, setNotes] = useState("");
 
   return (
-    <FormCard>
+    <FormCard onClose={onCancel}>
       <TextField value={specialty} onChange={setSpecialty} placeholder="e.g. Gastroenterology" />
       <TextField
         value={referTo}
@@ -205,22 +205,70 @@ export function DiagnosisForm({ onSave, onCancel }: { onSave: (d: Diagnosis) => 
   );
 }
 
-export function PrescriptionForm({ onSave, onCancel }: { onSave: (m: Medication) => void; onCancel: () => void }) {
+// A standing medication the patient is already on, for the dropdown's "Current
+// medications" group. Structural subset of the rail's CurrentMed (no circular
+// import); `dimensions` are resolved by the caller when recording the change.
+type FormCurrentMed = { id: string; name: string; atc?: string; dose: string; frequency: string; time?: string };
+
+export function PrescriptionForm({
+  onSave,
+  onCancel,
+  currentMeds = [],
+}: {
+  // basedOnCurrentId is the current medication's id when one was picked (→ the
+  // caller records a medication change), or null for a brand-new prescription.
+  onSave: (m: Medication, basedOnCurrentId: string | null) => void;
+  onCancel: () => void;
+  currentMeds?: FormCurrentMed[];
+}) {
+  const [selected, setSelected] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [atc, setAtc] = useState<string | undefined>(undefined);
   const [dose, setDose] = useState("");
   const [frequency, setFrequency] = useState("");
   const [time, setTime] = useState("");
-  const onPickMed = (value: string) => {
-    setName(value);
-    setAtc(MEDICATION_LIST.find((m) => m.name === value)?.atc || undefined);
+  const [basedOnId, setBasedOnId] = useState<string | null>(null);
+
+  const currentOptions: ComboOption[] = currentMeds.map((c) => ({
+    value: `current:${c.id}`,
+    label: c.name,
+    searchText: c.name,
+    note: `${c.dose} · ${c.frequency}`, // marks it as current + shows the regimen
+  }));
+  const groups: ComboGroup[] = [
+    ...(currentOptions.length ? [{ heading: "Current medications", options: currentOptions }] : []),
+    { heading: currentOptions.length ? "All medications" : "", options: MED_OPTIONS },
+  ];
+
+  const onPick = (val: string) => {
+    setSelected(val);
+    if (val.startsWith("current:")) {
+      const cm = currentMeds.find((c) => `current:${c.id}` === val);
+      if (cm) {
+        setName(cm.name);
+        setAtc(cm.atc);
+        setDose(cm.dose);
+        setFrequency(cm.frequency);
+        setTime(cm.time ?? "");
+        setBasedOnId(cm.id);
+      }
+    } else {
+      // Catalog pick → new prescription; start from empty regimen fields.
+      setName(val);
+      setAtc(MEDICATION_LIST.find((m) => m.name === val)?.atc || undefined);
+      setDose("");
+      setFrequency("");
+      setTime("");
+      setBasedOnId(null);
+    }
   };
+
   return (
-    <FormCard>
+    <FormCard onClose={onCancel}>
       <Combobox
-        options={MED_OPTIONS}
-        value={name || null}
-        onSelect={onPickMed}
+        groups={groups}
+        value={selected}
+        onSelect={onPick}
         placeholder="Search medications…"
         searchPlaceholder="Search medication or ATC…"
       />
@@ -233,7 +281,12 @@ export function PrescriptionForm({ onSave, onCancel }: { onSave: (m: Medication)
         <CancelLink onClick={onCancel} />
         <PrimaryButton
           disabled={!name.trim()}
-          onClick={() => onSave({ id: uid(), name: name.trim(), atc, dose: dose.trim(), frequency: frequency.trim(), time: time.trim() })}
+          onClick={() =>
+            onSave(
+              { id: uid(), name: name.trim(), atc, dose: dose.trim(), frequency: frequency.trim(), time: time.trim() },
+              basedOnId,
+            )
+          }
         >
           Prescribe
         </PrimaryButton>

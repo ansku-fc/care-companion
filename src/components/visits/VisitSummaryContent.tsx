@@ -40,17 +40,23 @@ export function VisitSummaryContent({
   visit,
   allVisits,
   baseline,
+  compact = false,
 }: {
   visit: ClinicalVisit;
   allVisits: ClinicalVisit[];
   baseline: PatientBaseline;
+  // Narrow-context variant (e.g. inline in the 280px left sidebar): tighter
+  // spacing, slimmer trend column, wrap-friendly rows. Shows the same content.
+  compact?: boolean;
 }) {
   const priorChain = sortByDateDesc(allVisits.filter((v) => v.date < visit.date));
   const prior = priorChain[0] ?? null;
   const affected = affectedDimensions(baseline, scoringInputsFromVisit(visit));
+  const trendWidth = compact ? "w-[52px]" : "w-[90px]";
+  const rowGap = compact ? "gap-2" : "gap-3";
 
   return (
-    <div className="space-y-5 text-sm">
+    <div className={`${compact ? "space-y-4" : "space-y-5"} text-sm`}>
       {visit.reasonNote && <p className="text-[13px] text-foreground">{visit.reasonNote}</p>}
 
       <Block label="Medication Changes">
@@ -87,10 +93,10 @@ export function VisitSummaryContent({
             {visit.measurements.map((m, i) => {
               const trend = measurementTrend(m, prior);
               return (
-                <div key={m.id} className="flex items-center gap-3 h-7" style={{ borderTop: i === 0 ? "none" : "0.5px solid hsl(var(--border))" }}>
+                <div key={m.id} className={`flex items-center ${rowGap} h-7`} style={{ borderTop: i === 0 ? "none" : "0.5px solid hsl(var(--border))" }}>
                   <span className="flex-1 text-[13px] text-muted-foreground truncate">{m.marker}</span>
                   <span className="text-[13px] font-semibold tabular-nums">{String(m.value)} <span className="text-[12px] font-normal text-muted-foreground">{m.unit}</span></span>
-                  <span className="w-[90px] text-right text-[12px]" style={{ color: trend ? (trend.trend === "up" ? "#E8446A" : trend.trend === "down" ? "#0EA5A0" : "#9B8775") : "#C9BBA9" }}>
+                  <span className={`${trendWidth} text-right text-[12px]`} style={{ color: trend ? (trend.trend === "up" ? "#E8446A" : trend.trend === "down" ? "#0EA5A0" : "#9B8775") : "#C9BBA9" }}>
                     {trend ? `${trend.trend === "up" ? "↑" : trend.trend === "down" ? "↓" : "→"} ${trend.delta! > 0 ? "+" : ""}${trend.delta}` : "no prior"}
                   </span>
                 </div>
@@ -107,7 +113,7 @@ export function VisitSummaryContent({
           <div>
             {affected.map((a, i) => (
               <div key={a.dimension} className="py-2" style={{ borderTop: i === 0 ? "none" : "0.5px solid hsl(var(--border))" }}>
-                <div className="flex items-center justify-between">
+                <div className={`flex items-center justify-between gap-x-2 ${compact ? "flex-wrap gap-y-0.5" : ""}`}>
                   <span className="text-[13px] font-medium">{dimensionLabel(a.dimension)}</span>
                   <span className="flex items-center gap-1.5 text-[12px]">
                     <span className={`tabular-nums ${scoreColorClass(a.from)}`}>{formatScore(a.from)}</span>
@@ -134,9 +140,9 @@ export function VisitSummaryContent({
 
       <Block label="Plan">
         <div className="space-y-1.5 text-[13px]">
-          <div><span className="text-muted-foreground">Tasks: </span>{visit.plan.tasks.length ? visit.plan.tasks.map((t) => t.title).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Referrals: </span>{visit.plan.referrals.length ? visit.plan.referrals.map((r) => r.specialty).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Prescriptions: </span>{visit.plan.prescriptions.length ? visit.plan.prescriptions.map((p) => p.medicationName).join("; ") : <Empty>None</Empty>}</div>
+          <div><span className="text-muted-foreground">Vaccinations: </span>{(visit.plan.vaccinations ?? []).length ? (visit.plan.vaccinations ?? []).map((v) => `${v.vaccine} (${v.status})`).join("; ") : <Empty>None</Empty>}</div>
           <div><span className="text-muted-foreground">Follow-up: </span>{visit.plan.followUp ? `${VISIT_TYPE_META[visit.plan.followUp.visitType].label} in ${visit.plan.followUp.timeframe}` : <Empty>None</Empty>}</div>
         </div>
       </Block>

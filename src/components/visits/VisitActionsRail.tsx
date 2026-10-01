@@ -1,36 +1,117 @@
-// Persistent right-hand actions rail — the at-a-glance action summary for the
-// workspace phase. Tasks / referrals / prescriptions / follow-up as compact
-// lists with counts; "+ Add" opens the single drawer (data entry never happens
-// inline here). Bound to the visit draft's plan via useVisitForm.
+// Persistent right-hand actions rail — the care-coordination plan arising from
+// this visit. Groups, in order: Referrals · Prescriptions · Lab Orders (stub) ·
+// Vaccinations · Follow-up. Each group owns its own open-state; "+ New" toggles
+// an inline FormCard under the header, committed items list below; up to all
+// groups can be open at once. Prescriptions is two-mode: act on the patient's
+// current medications (Change / Stop → recorded as medication changes) or
+// prescribe something new. Column has its own scroll and a pinned counts footer.
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { VISIT_TYPE_META } from "@/lib/episodes";
+import { type DimensionKey, type MedicationChangeKind } from "@/lib/visits";
 import { useVisitForm } from "./VisitFormProvider";
 import { SectionLabel, Row } from "./visitUi";
-import type { DrawerRequest } from "./VisitDrawer";
+import { ReferralForm, PrescriptionForm, uid } from "@/components/visits/forms";
+import { referralFromForm, prescriptionFromForm } from "./planAdapters";
+import { FollowUpEntryForm } from "./FollowUpEntryForm";
+import { VaccinationEntryForm } from "./VaccinationEntryForm";
 
-export function VisitActionsRail({ onOpen }: { onOpen: (request: DrawerRequest) => void }) {
+/** A standing medication the patient is already on (same source as the left
+ *  sidebar Medications accordion). Dimensions feed derived scoring on change. */
+export type CurrentMed = {
+  id: string;
+  name: string;
+  dose: string;
+  frequency: string;
+  dimensions: DimensionKey[];
+};
+
+type GroupKey = "referrals" | "prescriptions" | "vaccination" | "followup";
+
+const CHANGE_LABEL: Record<MedicationChangeKind, string> = {
+  started: "Started",
+  stopped: "Stopped",
+  dose_changed: "Dose changed",
+  continued: "Continued",
+};
+
+export function VisitActionsRail({ currentMeds }: { currentMeds: CurrentMed[] }) {
   const f = useVisitForm();
   const plan = f.draft.plan;
-  const counts = `${plan.tasks.length} task${plan.tasks.length === 1 ? "" : "s"} · ${plan.referrals.length} referral${plan.referrals.length === 1 ? "" : "s"}${plan.followUp ? " · 1 follow-up" : ""}`;
+  const medChanges = f.draft.medicationChanges;
+  const vaccinations = plan.vaccinations ?? [];
+
+  const footer = [
+    `${plan.referrals.length} referral${plan.referrals.length === 1 ? "" : "s"}`,
+    `${plan.prescriptions.length} prescription${plan.prescriptions.length === 1 ? "" : "s"}`,
+    medChanges.length ? `${medChanges.length} med change${medChanges.length === 1 ? "" : "s"}` : null,
+    vaccinations.length ? `${vaccinations.length} vaccination${vaccinations.length === 1 ? "" : "s"}` : null,
+    plan.followUp ? "1 follow-up" : null,
+  ].filter(Boolean).join(" · ");
+
+  // Per-group "new form" open-state (up to all open at once).
+  const [open, setOpen] = useState<Set<GroupKey>>(new Set());
+  const toggle = (key: GroupKey) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const close = (key: GroupKey) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+
+  // Commit a prescription-form submission: a current-med pick (basedOnId set)
+  // becomes a medication change (dose_changed if the regimen was edited, else
+  // continued); a catalog pick becomes a new prescription.
+  const savePrescription = (
+    m: { id: string; name: string; atc?: string; dose: string; frequency: string; time: string },
+    basedOnId: string | null,
+  ) => {
+    if (basedOnId) {
+      const med = currentMeds.find((c) => c.id === basedOnId);
+      const parts: string[] = [];
+      if (med && m.dose && m.dose !== med.dose) parts.push(`${med.dose} → ${m.dose}`);
+      if (med && m.frequency && m.frequency !== med.frequency) parts.push(`${med.frequency} → ${m.frequency}`);
+      f.addMedicationChange({
+        id: uid(),
+        medicationName: m.name,
+        atc: m.atc,
+        change: parts.length ? "dose_changed" : "continued",
+        detail: parts.join(", ") || undefined,
+        dimensions: med?.dimensions ?? [],
+      });
+    } else {
+      f.addPrescription(prescriptionFromForm(m));
+    }
+    close("prescriptions");
+  };
 
   return (
-    <aside className="w-[320px] shrink-0 flex flex-col" style={{ borderLeft: "1px solid #E7DCCD" }}>
+    <aside className="w-[360px] shrink-0 flex flex-col" style={{ borderLeft: "1px solid #E7DCCD" }}>
       <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
         <div>
           <SectionLabel>Actions</SectionLabel>
-          <p className="text-[12px] text-[#9B8775] mt-1">Tasks and actions from this visit</p>
+          <p className="text-[12px] text-[#9B8775] mt-1">Care coordination from this visit</p>
         </div>
 
-        <PlanGroup label="Tasks to Create" count={plan.tasks.length} onAdd={() => onOpen({ kind: "task" })}>
-          {plan.tasks.map((t) => (
-            <Row key={t.id} onRemove={() => f.removeTask(t.id)}>
-              <div className="text-[12px] font-medium text-[#2E1F14]">{t.title}</div>
-              <div className="text-[11px] text-[#9B8775]">{t.assignee} · {t.category} · {t.priority}</div>
-            </Row>
-          ))}
-        </PlanGroup>
-
-        <PlanGroup label="Referrals to Create" count={plan.referrals.length} onAdd={() => onOpen({ kind: "referral" })}>
+        {/* Referrals */}
+        <PlanGroup
+          label="Referrals to Create"
+          count={plan.referrals.length}
+          open={open.has("referrals")}
+          onToggle={() => toggle("referrals")}
+          form={
+            <ReferralForm
+              onSave={(r) => { f.addReferral(referralFromForm(r)); close("referrals"); }}
+              onCancel={() => close("referrals")}
+            />
+          }
+        >
           {plan.referrals.map((r) => (
             <Row key={r.id} onRemove={() => f.removeReferral(r.id)}>
               <div className="text-[12px] font-medium text-[#2E1F14]">
@@ -41,20 +122,71 @@ export function VisitActionsRail({ onOpen }: { onOpen: (request: DrawerRequest) 
           ))}
         </PlanGroup>
 
-        <PlanGroup label="Prescriptions" count={plan.prescriptions.length} onAdd={() => onOpen({ kind: "prescription" })}>
-          {plan.prescriptions.map((p) => (
-            <Row key={p.id} onRemove={() => f.removePrescription(p.id)}>
-              <div className="text-[12px] font-medium text-[#2E1F14]">{p.medicationName}</div>
-              <div className="text-[11px] text-[#9B8775]">{[p.dose, p.frequency, p.time].filter(Boolean).join(" · ")}</div>
+        {/* Prescriptions — current meds live inside the search dropdown; picking
+            one records a medication change, picking from the catalog is new. */}
+        <PlanGroup
+          label="Prescriptions"
+          count={plan.prescriptions.length + medChanges.length}
+          open={open.has("prescriptions")}
+          onToggle={() => toggle("prescriptions")}
+          form={
+            <PrescriptionForm
+              currentMeds={currentMeds}
+              onSave={savePrescription}
+              onCancel={() => close("prescriptions")}
+            />
+          }
+        >
+          {(medChanges.length > 0 || plan.prescriptions.length > 0) && (
+            <div>
+              {medChanges.map((mc) => (
+                <Row key={mc.id} onRemove={() => f.removeMedicationChange(mc.id)}>
+                  <span className="text-[11px] font-medium text-[#B45309]">{CHANGE_LABEL[mc.change]}</span>
+                  <span className="text-[12px] text-[#2E1F14]"> · {mc.medicationName}</span>
+                  {mc.detail && <span className="text-[11px] text-[#9B8775]"> {mc.detail}</span>}
+                </Row>
+              ))}
+              {plan.prescriptions.map((p) => (
+                <Row key={p.id} onRemove={() => f.removePrescription(p.id)}>
+                  <span className="text-[11px] font-medium text-[#0EA5A0]">New</span>
+                  <span className="text-[12px] text-[#2E1F14]"> · {p.medicationName}</span>
+                  <span className="text-[11px] text-[#9B8775]"> {[p.dose, p.frequency, p.time].filter(Boolean).join(" · ")}</span>
+                </Row>
+              ))}
+            </div>
+          )}
+        </PlanGroup>
+
+        {/* Lab Orders — stub; wired up by the labs-mirror feature. */}
+        <PlanGroup label="Lab Orders" count={0} disabled disabledHint="Coming soon">
+          <p className="text-[11px] italic text-[#C9BBA9] pt-1">Lab ordering arrives with the labs feature.</p>
+        </PlanGroup>
+
+        {/* Vaccinations */}
+        <PlanGroup
+          label="Vaccinations"
+          count={vaccinations.length}
+          open={open.has("vaccination")}
+          onToggle={() => toggle("vaccination")}
+          form={<VaccinationEntryForm onClose={() => close("vaccination")} />}
+        >
+          {vaccinations.map((v) => (
+            <Row key={v.id} onRemove={() => f.removeVaccination(v.id)}>
+              <span className="text-[11px] font-medium text-[#0EA5A0]">{v.status === "given" ? "Given" : "Ordered"}</span>
+              <span className="text-[12px] text-[#2E1F14]"> · {v.vaccine}</span>
+              {(v.date || v.note) && <span className="text-[11px] text-[#9B8775]"> {[v.date, v.note].filter(Boolean).join(" · ")}</span>}
             </Row>
           ))}
         </PlanGroup>
 
+        {/* Follow-up */}
         <PlanGroup
           label="Follow-up"
           count={plan.followUp ? 1 : 0}
-          onAdd={() => onOpen({ kind: "followup" })}
-          addLabel={plan.followUp ? "Edit" : "Add"}
+          open={open.has("followup")}
+          onToggle={() => toggle("followup")}
+          addLabel={plan.followUp ? "Edit" : "New"}
+          form={<FollowUpEntryForm onClose={() => close("followup")} />}
         >
           {plan.followUp && (
             <Row onRemove={() => f.patchPlan({ followUp: null })}>
@@ -66,44 +198,99 @@ export function VisitActionsRail({ onOpen }: { onOpen: (request: DrawerRequest) 
       </div>
 
       <div className="shrink-0 px-5 py-3 bg-white" style={{ borderTop: "1px solid #E7DCCD" }}>
-        <div className="text-[12px] text-[#9B8775]">{counts}</div>
+        <div className="text-[12px] text-[#9B8775]">{footer}</div>
       </div>
     </aside>
+  );
+}
+
+/** Scrolls itself into view within the rail when it mounts (on form open). */
+function InlineFormSlot({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, []);
+  return <div ref={ref}>{children}</div>;
+}
+
+function GroupHeader({
+  label,
+  count,
+  open = false,
+  onToggle,
+  addLabel = "New",
+  disabled = false,
+  disabledHint,
+}: {
+  label: string;
+  count: number;
+  open?: boolean;
+  onToggle?: () => void;
+  addLabel?: string;
+  disabled?: boolean;
+  disabledHint?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <SectionLabel>
+        {label}
+        {count > 0 && (
+          <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#F0EBE4] text-[10px] font-medium text-[#6E5A48]">
+            {count}
+          </span>
+        )}
+      </SectionLabel>
+      {disabled ? (
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#C9BBA9] shrink-0" title={disabledHint}>
+          <Plus className="h-3 w-3" /> {disabledHint ?? "New"}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline shrink-0"
+        >
+          <Plus className="h-3 w-3" /> {addLabel}
+        </button>
+      )}
+    </div>
   );
 }
 
 function PlanGroup({
   label,
   count,
-  onAdd,
-  addLabel = "Add",
+  open = false,
+  onToggle,
+  addLabel = "New",
+  form,
+  disabled = false,
+  disabledHint,
   children,
 }: {
   label: string;
   count: number;
-  onAdd: () => void;
+  open?: boolean;
+  onToggle?: () => void;
   addLabel?: string;
-  children: React.ReactNode;
+  form?: ReactNode;
+  disabled?: boolean;
+  disabledHint?: string;
+  children: ReactNode;
 }) {
   return (
-    <section className="space-y-1">
-      <div className="flex items-center justify-between">
-        <SectionLabel>
-          {label}
-          {count > 0 && (
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#F0EBE4] text-[10px] font-medium text-[#6E5A48]">
-              {count}
-            </span>
-          )}
-        </SectionLabel>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline shrink-0"
-        >
-          <Plus className="h-3 w-3" /> {addLabel}
-        </button>
-      </div>
+    <section className="space-y-2">
+      <GroupHeader
+        label={label}
+        count={count}
+        open={open}
+        onToggle={onToggle}
+        addLabel={addLabel}
+        disabled={disabled}
+        disabledHint={disabledHint}
+      />
+      {open && form && <InlineFormSlot>{form}</InlineFormSlot>}
       {children}
     </section>
   );

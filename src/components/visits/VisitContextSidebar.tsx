@@ -3,8 +3,8 @@
 // with their CURRENT derived score (patient baseline + this visit's tagged
 // inputs so far) — nothing is manually scored or stored. Sections are collapsible
 // accordions; "Visit History" opens a read-only summary.
-import { useState } from "react";
-import { Pill, Stethoscope, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Pill, Stethoscope, ChevronRight, X } from "lucide-react";
 import {
   DIMENSION_KEYS,
   dimensionLabel,
@@ -12,7 +12,6 @@ import {
   scoreBand,
   fromLabel,
   computeDimensionScores,
-  scoringInputsFromVisit,
   type ClinicalVisit,
   type PatientBaseline,
 } from "@/lib/visits";
@@ -21,6 +20,7 @@ import { VISIT_TYPE_META } from "@/lib/episodes";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { SectionLabel } from "./visitUi";
 import { useVisitForm } from "./VisitFormProvider";
+import { VisitSummaryContent } from "./VisitSummaryContent";
 
 /** Raw baseline diagnosis. `dimension` is the legacy label as stored on the
  *  patient record; the canonical key + colour are derived at render. */
@@ -51,7 +51,6 @@ export function VisitContextSidebar({
   meds,
   allergies,
   diagnoses,
-  onOpenVisit,
 }: {
   patientName: string;
   baseline: PatientBaseline;
@@ -59,12 +58,23 @@ export function VisitContextSidebar({
   meds: string[];
   allergies: string[];
   diagnoses: BaselineDiagnosis[];
-  onOpenVisit: (visit: ClinicalVisit) => void;
 }) {
   const { draft } = useVisitForm();
   const [showAllVisits, setShowAllVisits] = useState(false);
+  // Which past visit's summary is expanded inline (one at a time; no overlay).
+  const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
   // Live derived scores: patient baseline + this visit's tagged inputs so far.
-  const scores = computeDimensionScores(baseline, scoringInputsFromVisit(draft));
+  // Memoized on the SCORING-RELEVANT slices only, so typing in the center's
+  // always-live notes (which don't feed scoring) never recomputes these.
+  const scores = useMemo(
+    () =>
+      computeDimensionScores(baseline, {
+        diagnoses: draft.diagnoses,
+        medicationChanges: draft.medicationChanges,
+        measurements: draft.measurements,
+      }),
+    [baseline, draft.diagnoses, draft.medicationChanges, draft.measurements],
+  );
   const visibleVisits = showAllVisits ? visits : visits.slice(0, 4);
 
   return (
@@ -184,7 +194,8 @@ export function VisitContextSidebar({
         </AccordionItem>
       </Accordion>
 
-      {/* Visit History — clickable, opens a read-only summary */}
+      {/* Visit History — clicking a past visit expands its summary inline, in
+          place, below the item (no overlay; the rest of the screen stays live). */}
       <section>
         <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B8775] mb-2">
           Visit History
@@ -194,24 +205,55 @@ export function VisitContextSidebar({
           <p className="text-[12px] italic text-[#9B8775]">No previous visits.</p>
         ) : (
           <div className="space-y-0.5">
-            {visibleVisits.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => onOpenVisit(v)}
-                className="w-full text-left flex items-center gap-1.5 rounded-md px-1.5 py-1.5 -mx-1.5 hover:bg-[#F0EBE4] transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium text-[#2E1F14]">
-                    {new Date(v.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                  </div>
-                  <div className="text-[11px] text-[#9B8775] truncate">
-                    {v.reasonNote || VISIT_TYPE_META[v.reason].label}
-                  </div>
+            {visibleVisits.map((v) => {
+              const expanded = expandedVisitId === v.id;
+              return (
+                <div key={v.id}>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedVisitId((cur) => (cur === v.id ? null : v.id))}
+                    aria-expanded={expanded}
+                    className="w-full text-left flex items-center gap-1.5 rounded-md px-1.5 py-1.5 -mx-1.5 hover:bg-[#F0EBE4] transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-medium text-[#2E1F14]">
+                        {new Date(v.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </div>
+                      <div className="text-[11px] text-[#9B8775] truncate">
+                        {v.reasonNote || VISIT_TYPE_META[v.reason].label}
+                      </div>
+                    </div>
+                    <ChevronRight className={`h-3.5 w-3.5 text-[#C9BBA9] shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`} />
+                  </button>
+                  {expanded && (
+                    <div
+                      className="mt-1 mb-2 rounded-[8px] animate-fade-in flex flex-col"
+                      style={{ border: "1px solid #E7DCCD", background: "#FFFDFB" }}
+                    >
+                      {/* Fixed header — stays put while the summary body scrolls. */}
+                      <div className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9B8775]">
+                          Visit summary
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedVisitId(null)}
+                          aria-label="Close"
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] text-[#9B8775] hover:bg-[#F0EBE4] hover:text-[#2E1F14] transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {/* Own bounded scroll region — only this scrolls; the
+                          patient context + history list above stay fixed. */}
+                      <div className="min-h-0 max-h-[55vh] overflow-y-auto px-3 pb-3">
+                        <VisitSummaryContent visit={v} allVisits={visits} baseline={baseline} compact />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <ChevronRight className="h-3.5 w-3.5 text-[#C9BBA9] shrink-0" />
-              </button>
-            ))}
+              );
+            })}
             {visits.length > 4 && (
               <button
                 type="button"
